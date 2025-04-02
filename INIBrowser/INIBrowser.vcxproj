@@ -76,6 +76,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <LibraryPath>$(MSBuildStartupDirectory)\libs\glfw\lib-vc2010-32;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(SolutionDir)ImGui;$(SolutionDir)ImGui\Backends;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
@@ -148,6 +149,15 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\ImGui\backends\imgui_impl_glfw.h" />
+    <ClInclude Include="..\ImGui\backends\imgui_impl_opengl2.h" />
+    <ClInclude Include="..\ImGui\backends\imgui_impl_win32.h" />
+    <ClInclude Include="..\ImGui\imconfig.h" />
+    <ClInclude Include="..\ImGui\imgui.h" />
+    <ClInclude Include="..\ImGui\imgui_internal.h" />
+    <ClInclude Include="..\ImGui\imstb_rectpack.h" />
+    <ClInclude Include="..\ImGui\imstb_textedit.h" />
+    <ClInclude Include="..\ImGui\imstb_truetype.h" />
     <ClInclude Include="cjson\cJSON.h" />
     <ClInclude Include="FromEngine\external_file.h" />
     <ClInclude Include="FromEngine\external_log.h" />
@@ -170,14 +180,14 @@
     <ClInclude Include="Global.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\backends\imgui_impl_glfw.cpp" />
-    <ClCompile Include="..\..\backends\imgui_impl_opengl2.cpp" />
-    <ClCompile Include="..\..\backends\imgui_impl_win32.cpp" />
-    <ClCompile Include="..\..\imgui.cpp" />
-    <ClCompile Include="..\..\imgui_demo.cpp" />
-    <ClCompile Include="..\..\imgui_draw.cpp" />
-    <ClCompile Include="..\..\imgui_tables.cpp" />
-    <ClCompile Include="..\..\imgui_widgets.cpp" />
+    <ClCompile Include="..\ImGui\backends\imgui_impl_glfw.cpp" />
+    <ClCompile Include="..\ImGui\backends\imgui_impl_opengl2.cpp" />
+    <ClCompile Include="..\ImGui\backends\imgui_impl_win32.cpp" />
+    <ClCompile Include="..\ImGui\imgui.cpp" />
+    <ClCompile Include="..\ImGui\imgui_demo.cpp" />
+    <ClCompile Include="..\ImGui\imgui_draw.cpp" />
+    <ClCompile Include="..\ImGui\imgui_tables.cpp" />
+    <ClCompile Include="..\ImGui\imgui_widgets.cpp" />
     <ClCompile Include="cjson\cJSON.c" />
     <ClCompile Include="FromEngine\external_log.cpp" />
     <ClCompile Include="FromEngine\global_tool_func.cpp" />
