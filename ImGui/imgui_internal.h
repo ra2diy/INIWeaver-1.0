@@ -2114,6 +2114,8 @@ struct IMGUI_API ImGuiWindow
     int                     MemoryDrawListIdxCapacity;          // Backup of last idx/vtx count, so when waking up the window we can preallocate and avoid iterative alloc/copy
     int                     MemoryDrawListVtxCapacity;
     bool                    MemoryCompacted;                    // Set when window extraneous data have been garbage collected
+    bool                    LastFrameRendered;                  // Check if it is rendered last frame
+    bool                    ThisFrameRendered;                  // Check if it is rendered this frame
 
 public:
     ImGuiWindow(ImGuiContext* context, const char* name);

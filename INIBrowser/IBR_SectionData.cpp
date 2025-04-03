@@ -203,6 +203,7 @@ void IBR_SectionData::CopyToClipBoard()
 
 void DrawDragPreviewIcon()
 {
+    //ImGui::Text(u8"DRAWN");
     if (ImGui::IsDragDropPayloadBeingAccepted())
     {
         auto& T = IBR_Inst_Project.DragConditionText;
@@ -216,6 +217,7 @@ void DrawDragPreviewIcon()
         else if (T != "ERROR")ImGui::Text(u8"Á´½Óµ½ %s", T.c_str());
         else ImGui::Text(IBR_Inst_Project.DragConditionTextAlt.c_str());
     }
+    //else ImGui::Text(u8"NOT ACCEPTED");
 }
 
 void IBR_SectionData::RenderUI()
@@ -241,7 +243,7 @@ void IBR_SectionData::RenderUI()
                 auto srcsec = IBR_Inst_Project.GetSection(desc);
                 auto srcback = srcsec.GetBack();
 
-                if (back && srcback && back != srcback)
+                if (back && srcback)
                 {
                     auto it = srcback->DefaultLinkKey.find(back->Register);
                     if (it != srcback->DefaultLinkKey.end())
@@ -291,7 +293,7 @@ void IBR_SectionData::RenderUI()
                 auto tgback = tgsec.GetBack();
                 auto Line = back->GetLineFromSubSecs(lin.Line);
 
-                if (back && tgback && back != tgback)
+                if (back && tgback)
                 {
                     bool Check = true;
                     if (!back->Register.empty())
@@ -374,7 +376,7 @@ void IBR_SectionData::RenderUI()
                         {IBR_PopupManager::ClearRightClickMenu(); IBR_Inst_Project.DeleteSection(Desc); },nullptr });
 
                     })
-            ));
+            ),ImGui::GetMousePos());
         else IBR_PopupManager::SetRightClickMenu(std::move(
             IBR_PopupManager::Popup{}.Create(DisplayName + "__MODULE").PushMsgBack([this]() {
                 if (Ignore)
@@ -421,7 +423,7 @@ void IBR_SectionData::RenderUI()
                     {IBR_PopupManager::ClearRightClickMenu(); IBR_Inst_Project.DeleteSection(Desc); },nullptr });
 
                 })
-        ));
+        ), ImGui::GetMousePos());
     }
     {
         auto Col = Rsec.GetRegTypeColor();
@@ -504,20 +506,29 @@ void IBR_SectionData::RenderUI()
                     Used.insert(lt.FromKey);
                     auto _F = Bsec->OnShow.find(lt.FromKey);
                     IBB_Section_Desc _Desc = { lt.To.Ini.GetText(),lt.To.Section.GetText() };
+                    bool IsLinkingToSelf = (Bsec->GetThisDesc() == _Desc);
                     auto TypeAlt = IBF_Inst_DefaultTypeList.GetDefault(lt.FromKey);
                     ImU32 LineCol = TypeAlt ? TypeAlt->Color : 0;
                     ImU32 LineColII = (IBR_EditFrame::CurSection.ID == Rsec.ID) ? (ImU32)IBR_Color::FocusLineColor : LineCol;
+
+
+#define _PB(x) IBR_Inst_Project.LinkList.push_back({((ImVec2)x), _Desc, LineColII, IsLinkingToSelf, Rsec.Dragging()});
                     if (_F != Bsec->OnShow.end() && _F->second.empty())
                     {
-                        IBR_Inst_Project.LinkList.push_back({ HeadLineRN, _Desc, LineColII });
-                        continue;
+                        _PB(HeadLineRN);continue;
                     }
-                    if (Last == lt.FromKey)
+                    else if (Last == lt.FromKey)
                     {
-                        IBR_Inst_Project.LinkList.push_back({ ImGui::GetLineEndPos() - ImVec2{ FontHeight * 1.5f, HalfLine}, _Desc, LineColII });
-                        continue;
+                        auto _G = ImGui::GetLineEndPos() - ImVec2{ FontHeight * 1.5f, HalfLine };
+                        _PB(_G);continue;
                     }
-                    IBR_Inst_Project.LinkList.push_back({ ImGui::GetLineEndPos() + ImVec2{ -FontHeight * 1.5f, HalfLine}, _Desc, LineColII });
+                    else
+                    {
+                        auto _G = ImGui::GetLineEndPos() + ImVec2{ -FontHeight * 1.5f, HalfLine };
+                        _PB(_G);
+                    }
+#undef _PB
+
                     bool HasInput{ OnLineEdit(lt.FromKey, true) };
                     if (!HasInput)
                     {
@@ -578,7 +589,7 @@ void IBR_SectionData::RenderUI()
                                             IBF_Inst_Project.UpdateAll();
                                             IBR_PopupManager::ClearRightClickMenu();
                                         }
-                                        })));
+                                        })), ImGui::GetMousePos());
 
                             }
                             else if (Line)
@@ -634,7 +645,8 @@ void IBR_SectionData::RenderUI()
                                             IBF_Inst_Project.UpdateAll();
                                             IBR_PopupManager::ClearRightClickMenu();
                                         }
-                                        })));
+                                        }))
+                                    , ImGui::GetMousePos());
                             }
 
                         }
@@ -681,6 +693,7 @@ void IBR_SectionData::RenderUI()
                         if (ImGui::BeginDragDropSource())
                         {
                             ImGui::Text((Desc.Ini + " -> " + DisplayName + " : " + k).c_str());
+                            DrawDragPreviewIcon();
                             auto s = RandStr(16);
                             ImGui::SetDragDropPayload("IBR_LineDrag", s.c_str(), 17);
                             IBR_Inst_Project.IBR_LineDragMap[s] = { Desc, k };

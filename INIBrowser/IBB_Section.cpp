@@ -477,6 +477,10 @@ IBB_Project_Index IBB_Section::GetThisIndex() const
 {
     return IBB_Project_Index{ Root->Name,Name };
 }
+IBB_Section_Desc IBB_Section::GetThisDesc() const
+{
+    return IBB_Section_Desc{ Root->Name,Name };
+}
 
 bool IBB_Section::GenerateLines(const IBB_VariableList& Par)
 {

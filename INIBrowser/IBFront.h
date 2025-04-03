@@ -22,6 +22,8 @@ public:
     bool IsDarkMode() { return List.Pack.DarkMode; }
     bool OpenFolderOnOutput() { return List.Pack.OpenFolderOnOutput; }
     bool OutputOnSave() { return List.Pack.OutputOnSave; }
+    float TransparencyBase() { return List.Pack.GetTransparencyBase(); }
+    float ScrollRate() { return List.Pack.GetScrollRate(); }
     std::string _TEXT_UTF8& OutputDir() { return List.LastOutputDir; }
 };
 

@@ -198,6 +198,8 @@ struct IBR_Section
 
     IBB_Section_Desc* _PROJ_CMD_NOINTERRUPT GetDesc() const;
 
+    bool _PROJ_CMD_NOINTERRUPT Dragging() const;
+
     void _PROJ_CMD_NOINTERRUPT SetReOffset(const ImVec2& Offset);
 private:
     IBB_Section* GetBack_Inl() const;
@@ -233,6 +235,8 @@ struct IBR_Project
         ImVec2 BeginR;
         IBB_Section_Desc Dest;
         ImU32 Color;
+        bool IsSelfLinked;
+        bool IsSrcDragging;
     };
     std::vector<_Plink> LinkList;
 
@@ -517,6 +521,7 @@ namespace IBR_PopupManager
         bool CanClose;//Only when Modal==true
         bool Modal;
         bool HasOwnStyle{ false };
+        bool InstantClose{ false };
         _TEXT_UTF8 std::string Title;
         ImGuiWindowFlags Flag{ ImGuiWindowFlags_None };
         StdMessage Show;
@@ -536,20 +541,23 @@ namespace IBR_PopupManager
         Popup& PushTextBack(const _TEXT_UTF8 std::string& Text);
         Popup& PushMsgPrev(StdMessage Msg);
         Popup& PushMsgBack(StdMessage Msg);
+        Popup& EnableInstantClose(bool Enable = true) { InstantClose = Enable; return *this; }
     };
     extern Popup CurrentPopup;
     extern Popup RightClickMenu;
     extern bool HasPopup;
     extern bool HasRightClickMenu;
     extern bool FirstRightClick;
+    extern ImVec2 RightClickMenuPos;
     inline void SetCurrentPopup(Popup&& sc) { HasPopup = true; CurrentPopup = std::move(sc); }
     inline void ClearCurrentPopup() { HasPopup = false; }
     inline void ClearRightClickMenu() { HasRightClickMenu = false; }
-    inline void SetRightClickMenu(Popup&& sc) { FirstRightClick = HasRightClickMenu = true; RightClickMenu = std::move(sc); }
+    inline void SetRightClickMenu(Popup&& sc, ImVec2 Pos) { RightClickMenuPos = Pos; FirstRightClick = HasRightClickMenu = true; RightClickMenu = std::move(sc); }
     Popup SingleText(const _TEXT_UTF8 std::string& StrId, const _TEXT_UTF8 std::string& Text, bool Modal);
     Popup MessageModal(const _TEXT_UTF8 std::string& Title, const _TEXT_UTF8 std::string& Text, ImVec2 Size, bool CanClose, bool UseDefaultOK, StdMessage Close = []() {});
     void RenderUI();
     void ClearPopupDelayed();
+    bool IsMouseOnPopup();
 }
 
 

@@ -16,6 +16,12 @@ IBR_SectionData* _PROJ_CMD_READ _PROJ_CMD_NOINTERRUPT IBR_Section::GetSectionDat
     return (It == Root->IBR_SectionMap.end()) ? nullptr : std::addressof(It->second);
 }
 
+bool _PROJ_CMD_NOINTERRUPT IBR_Section::Dragging() const
+{
+    auto It = Root->IBR_SectionMap.find(ID);
+    return (It == Root->IBR_SectionMap.end()) ? false : It->second.Dragging;
+}
+
 IBB_Section_Desc* _PROJ_CMD_NOINTERRUPT IBR_Section::GetDesc() const
 {
     auto It = Root->IBR_SectionMap.find(ID);

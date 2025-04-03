@@ -207,6 +207,16 @@ IBB_SettingTypeList::IBB_SettingTypeList()
             }
         },
         {
+            IBB_SettingType::IntB,
+                u8"模块透明度",u8"模块显示的基准透明度\n范围10%~100%\n默认80%",
+                (void*)&Pack.WindowTransparencyLevel,
+            {
+                (const void*)&IBG_SettingPack::____WindowTransparency_Min,//Value.Min
+                (const void*)&IBG_SettingPack::____WindowTransparency_Max,//Value.Max
+                (const void*)u8"%d0%%",//Value.Format
+            }
+        },
+        {
             IBB_SettingType::Bool,
                 u8"暗色模式",u8"决定全局主题为亮色还是暗色。\n默认为亮色模式",
                 (void*)&Pack.DarkMode,
@@ -235,8 +245,8 @@ IBB_SettingTypeList::IBB_SettingTypeList()
         }
     };
 }
-std::vector<int> RW_ReadOrder = { 0,1,2,4,3,5,6 };
-std::vector<int> RW_WriteOrder = { 0,1,2,4,3,5,6 };
+std::vector<int> RW_ReadOrder = { 0,1,2,5,3,6,7,4 };
+std::vector<int> RW_WriteOrder = { 0,1,2,5,3,6,7,4 };
 
 
 void IBB_SettingTypeList::PackSetDefault()

@@ -83,17 +83,17 @@ void IBR_Debug::RenderUI()
         ImGui::LogFinish();
     }
 
-    ImGui::Text("IBR_WorkSpace::IsBgDragging = %s", IBR_WorkSpace::IsBgDragging ? "true" : "false");
-    ImGui::Text("IBR_WorkSpace::HoldingModules = %s", IBR_WorkSpace::HoldingModules ? "true" : "false");
-    ImGui::Text("IBR_WorkSpace::IsMassSelecting = %s", IBR_WorkSpace::IsMassSelecting ? "true" : "false");
-    ImGui::Text("IBR_WorkSpace::IsMassAfter = %s", IBR_WorkSpace::IsMassAfter ? "true" : "false");
-    ImGui::Text("IBR_WorkSpace::HasRightDownToWait = %s", IBR_WorkSpace::HasRightDownToWait ? "true" : "false");
-    ImGui::Text("IBR_WorkSpace::HasLeftDownToWait = %s", IBR_WorkSpace::HasLefttDownToWait ? "true" : "false");
-    ImGui::Text("IBR_WorkSpace::MoveAfterMass = %s", IBR_WorkSpace::MoveAfterMass ? "true" : "false");
-    ImGui::Text("IBR_WorkSpace::LastClickable = %s", IBR_WorkSpace::LastClickable ? "true" : "false");
-    ImGui::Text("IBR_WorkSpace::LastOnWindow = %s", IBR_WorkSpace::LastOnWindow ? "true" : "false");
-    ImGui::Text("IBR_WorkSpace::LastCont = %s", IBR_WorkSpace::LastCont ? "true" : "false");
-    ImGui::Text("IBR_WorkSpace::DblClickLeft = %s", ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left) ? "true" : "false");
+    ImGui::Text("IsBgDragging = %s", IBR_WorkSpace::IsBgDragging ? "true" : "false");
+    ImGui::Text("HoldingModules = %s", IBR_WorkSpace::HoldingModules ? "true" : "false");
+    ImGui::Text("IsMassSelecting = %s", IBR_WorkSpace::IsMassSelecting ? "true" : "false");
+    ImGui::Text("IsMassAfter = %s", IBR_WorkSpace::IsMassAfter ? "true" : "false");
+    ImGui::Text("HasRightDownToWait = %s", IBR_WorkSpace::HasRightDownToWait ? "true" : "false");
+    ImGui::Text("HasLeftDownToWait = %s", IBR_WorkSpace::HasLefttDownToWait ? "true" : "false");
+    ImGui::Text("MoveAfterMass = %s", IBR_WorkSpace::MoveAfterMass ? "true" : "false");
+    ImGui::Text("LastClickable = %s", IBR_WorkSpace::LastClickable ? "true" : "false");
+    ImGui::Text("LastOnWindow = %s", IBR_WorkSpace::LastOnWindow ? "true" : "false");
+    ImGui::Text("LastCont = %s", IBR_WorkSpace::LastCont ? "true" : "false");
+    ImGui::Text("DblClickLeft = %s", ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left) ? "true" : "false");
     ImGui::Text("CTRL = %s", ImGui::GetIO().KeyCtrl ? "true" : "false");
     if (UICond.LoopShow) { if (ImGui::ArrowButton("loopc", ImGuiDir_Down))UICond.LoopShow = false; }
     else { if (ImGui::ArrowButton("loopa", ImGuiDir_Right))UICond.LoopShow = true; }

@@ -5,6 +5,14 @@
 #include "FromEngine/global_timer.h"
 #include<imgui_internal.h>
 
+namespace ImGui
+{
+    ImVec2 GetLineEndPos();
+    ImVec2 GetLineBeginPos();
+    bool IsWindowClicked(ImGuiMouseButton Button);
+    void PushOrderFront(ImGuiWindow* Window);
+}
+
 extern float MWWidth, MWWidth2;
 std::tuple<bool, ImVec2, ImVec2> RectangleCross(ImVec2 UL1, ImVec2 DR1, ImVec2 UL2, ImVec2 DR2);
 
@@ -178,8 +186,17 @@ namespace IBR_PopupManager
     Popup RightClickMenu;
     bool HasRightClickMenu = false;
     bool FirstRightClick = false;
+    ImVec2 RightClickMenuPos{ 0,0 };
+    bool IsMouseOnPopupCond{ false };
+
+    std::vector<StdMessage> DelayedPopupAction;
+
+    bool IsMouseOnPopup()
+    {
+        return IsMouseOnPopupCond;
+    }
     Popup BasicPopupA{
-        false,false, false,"",ImGuiWindowFlags_None,[]() {},[]() {}
+        false,false, false, false, "",ImGuiWindowFlags_None,[]() {},[]() {}
     };
     void ClearPopupDelayed()
     {
@@ -281,16 +298,20 @@ namespace IBR_PopupManager
     }
     void RenderUI()
     {
+        IsMouseOnPopupCond = false;
+        bool AboutToCloseRight = false;
         if (HasPopup)
         {
             static bool pp = true;
             ImGui::OpenPopup(CurrentPopup.Title.c_str());
+            DelayedPopupAction.clear();
             bool HPPrev = HasPopup;
             if (CurrentPopup.Size.x >= 1.0F && CurrentPopup.Size.y >= 1.0F)ImGui::SetNextWindowSize(CurrentPopup.Size);
             if (CurrentPopup.Modal)
             {
                 if (ImGui::BeginPopupModal(CurrentPopup.Title.c_str(), CurrentPopup.CanClose ? (&HasPopup) : nullptr), CurrentPopup.Flag)
                 {
+                    IsMouseOnPopupCond |= ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows);
                     CurrentPopup.Show();
                     ImGui::EndPopup();
                 }
@@ -299,12 +320,12 @@ namespace IBR_PopupManager
             {
                 if (ImGui::BeginPopup(CurrentPopup.Title.c_str(), CurrentPopup.Flag))
                 {
+                    IsMouseOnPopupCond |= ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows);
                     CurrentPopup.Show();
                     ImGui::EndPopup();
                 }
             }
             if (CurrentPopup.CanClose && HPPrev && (!HasPopup))CurrentPopup.Close();
-            ImGui::CloseCurrentPopup();
         }
         if (HasRightClickMenu)
         {
@@ -316,19 +337,58 @@ namespace IBR_PopupManager
             {
                 FirstRightClick = false;
                 ImGui::OpenPopup(RightClickMenu.Title.c_str());
+                DelayedPopupAction.clear();
                 if (RightClickMenu.Size.x >= 1.0F && RightClickMenu.Size.y >= 1.0F)ImGui::SetNextWindowSize(RightClickMenu.Size);
-
+                ImGui::SetNextWindowPos(RightClickMenuPos);
                 if (ImGui::BeginPopup(RightClickMenu.Title.c_str(),
-                    RightClickMenu.Flag | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_AlwaysAutoResize))
+                    RightClickMenu.Flag
+                    | ImGuiWindowFlags_NoTitleBar
+                    | ImGuiWindowFlags_NoScrollbar
+                    | ImGuiWindowFlags_AlwaysAutoResize
+                    ))
                 {
+                    IsMouseOnPopupCond |= ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows);
                     if(!RightClickMenu.HasOwnStyle)ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_PopupBg));
                     RightClickMenu.Show();
                     if (!RightClickMenu.HasOwnStyle)ImGui::PopStyleColor();
+                    if (!ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows)
+                        && ImGui::IsMouseClicked(ImGuiMouseButton_Left)
+                        && RightClickMenu.InstantClose)
+                    {
+                        AboutToCloseRight = true;
+                    }
                     ImGui::EndPopup();
                 }
-                ImGui::CloseCurrentPopup();
             }
+            
         }
+        if (HasPopup || HasRightClickMenu)
+        {
+            ImGui::CloseCurrentPopup();
+            int i = 0;
+            while (!DelayedPopupAction.empty())
+            {
+                std::vector<StdMessage> DelayedPopupActionTemp;
+                std::swap(DelayedPopupAction, DelayedPopupActionTemp);
+                for (auto& Msg : DelayedPopupActionTemp)
+                {
+                    if (ImGui::Begin((CurrentPopup.Title + std::to_string(i)).c_str(), nullptr,
+                        ImGuiWindowFlags_AlwaysAutoResize
+                        | ImGuiWindowFlags_NoFocusOnAppearing
+                        | ImGuiWindowFlags_NoTitleBar
+                        | ImGuiWindowFlags_NoCollapse))
+                    {
+                        IsMouseOnPopupCond |= ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows);
+                        Msg();
+                        ImGui::PushOrderFront(ImGui::GetCurrentWindow());
+                        ImGui::End();
+                    }
+                    i++;
+                }
+            }
+            
+        }
+        if (AboutToCloseRight)HasRightClickMenu = false;
     }
 }
 

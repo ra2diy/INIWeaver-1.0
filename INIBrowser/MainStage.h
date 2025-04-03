@@ -57,6 +57,38 @@ namespace ImGui
     {
         return ImGui::IsWindowHovered() && ImGui::IsMouseClicked(Button);
     }
+    void PushOrderFront(ImGuiWindow* Window)
+    {
+        //change WindowFocusOrder and Windows array
+        ImGuiContext& g = *GImGui;
+        //push Window in g.WindowFocusOrder[Window->FocusOrder] to the back of the array (topmost)
+        for (int i = Window->FocusOrder; i < g.WindowsFocusOrder.Size - 1; i++)
+        {
+            g.WindowsFocusOrder[i] = g.WindowsFocusOrder[i + 1];
+        }
+        //Change all focusorder
+        for (short i = 0; i < g.WindowsFocusOrder.Size; i++)
+        {
+            g.WindowsFocusOrder[i]->FocusOrder = i;
+        }
+        //change Window->FocusOrder to the last index
+        Window->FocusOrder = (short)g.WindowsFocusOrder.Size - 1;
+        //change g.Windows array
+        for (int i = 0; i < g.Windows.Size; i++)
+        {
+            if (g.Windows[i] == Window)
+            {
+                //move Window to the back of the array
+                ImGuiWindow* Temp = g.Windows[i];
+                for (int j = i; j < g.Windows.Size - 1; j++)
+                {
+                    g.Windows[j] = g.Windows[j + 1];
+                }
+                g.Windows[g.Windows.Size - 1] = Temp;
+                break;
+            }
+        }
+    }
 }
 
 
@@ -177,9 +209,11 @@ void ControlPanel()
     ImGui::Text(u8"INI浏览器 V%s 平均FPS %.1f", Version.c_str(), ImGui::GetIO().Framerate);
 
     ImGui::End();
-    //这纯属非标的私货，小朋友们不要学坏哦~
-    ImGui::GetCurrentContext()->ExtraTopMostWindow =
-        (IBR_PopupManager::HasPopup&& IBR_PopupManager::CurrentPopup.Modal)? nullptr : ImGui::FindWindowByName("INIBrowserMainMenu");
+    if (!(IBR_PopupManager::HasPopup && IBR_PopupManager::CurrentPopup.Modal))
+    {
+        ImGui::PushOrderFront(ImGui::FindWindowByName("INIBrowserMainMenu"));
+        ImGui::GetCurrentContext()->ExtraTopMostWindow = ImGui::FindWindowByName("INIBrowserMainMenu");
+    }
 
     if (IBR_UICondition::MenuCollapse)
     {
@@ -207,10 +241,13 @@ void ControlPanel()
     IBR_Inst_Menu.RenderUIMenu();
     MWWidth = ImGui::GetWindowWidth();
     ImGui::NewLine(); ImGui::NewLine();
+    auto MainMenuWindow = ImGui::GetCurrentWindow();
 	ImGui::End();
-    //这纯属非标的私货，小朋友们不要学坏哦~
-    ImGui::GetCurrentContext()->ExtraTopMostWindow2 =
-        (IBR_PopupManager::HasPopup && IBR_PopupManager::CurrentPopup.Modal) ? nullptr : ImGui::FindWindowByName(u8"主菜单");
+    if (!(IBR_PopupManager::HasPopup && IBR_PopupManager::CurrentPopup.Modal))
+    {
+        ImGui::PushOrderFront(MainMenuWindow);
+        ImGui::GetCurrentContext()->ExtraTopMostWindow2 = MainMenuWindow;
+    }
     if (!IBR_PopupManager::HasPopup && IBR_ProjectManager::IsOpen())IBR_WorkSpace::ProcessBackgroundOpr();
     if (!IBR_PopupManager::HasPopup)IBR_ProjectManager::ProjActionByKey();
     IBR_WorkSpace::UpdateNewRatio();

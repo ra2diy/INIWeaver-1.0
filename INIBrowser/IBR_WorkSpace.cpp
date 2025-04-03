@@ -18,6 +18,7 @@ namespace ImGui
     ImVec2 GetLineEndPos();
     ImVec2 GetLineBeginPos();
     bool IsWindowClicked(ImGuiMouseButton Button);
+    void PushOrderFront(ImGuiWindow* Window);
 }
 extern const char* LinkGroup_IniName;
 extern wchar_t CurrentDirW[];
@@ -57,15 +58,17 @@ namespace SearchModuleAlt
 
     void RenderModuleAltSelect(IBB_ModuleAlt* pModule)
     {
-        ImGui::TextWrapped(pModule->DescShort.c_str());
+        ImRect R{ ImGui::GetCursorScreenPos(), ImGui::GetCursorScreenPos() + ImVec2{ ImGui::GetWindowWidth(), ImGui::GetTextLineHeightWithSpacing() } };
+        ImGui::Text(pModule->DescShort.c_str());
         if (ImGui::IsItemHovered())
         {
             ImGui::BeginTooltip();
             ImGui::Text(pModule->DescLong.c_str());
             ImGui::EndTooltip();
         }
-        ImGui::SameLine();
-        ImGui::SetCursorPosX(FontHeight * 10.0f);
+        //ImGui::SameLine();
+        //ImGui::SetCursorPosX(FontHeight * 8.0f);
+        /*
         if (ImGui::SmallButton((u8"属性##" + pModule->Name).c_str()))
         {
             IBR_PopupManager::SetCurrentPopup(std::move(IBR_PopupManager::Popup{}.CreateModal(pModule->DescShort, true).SetFlag(ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize).PushMsgBack([pModule]()
@@ -85,8 +88,10 @@ namespace SearchModuleAlt
 
                 })));
         }
-        ImGui::SameLine();
-        if (ImGui::SmallButton((u8"添加##" + pModule->Name).c_str()))
+        */
+        //ImGui::SameLine();
+        //ImGui::SmallButton((u8"添加##" + pModule->Name).c_str());
+        if(R.Contains(ImGui::GetMousePos()) && ImGui::IsMouseDown(ImGuiMouseButton_Left))
             IBR_Inst_Project.AddModule(*pModule, GenerateModuleTag());
     }
 
@@ -119,9 +124,10 @@ namespace SearchModuleAlt
             ImGui::SameLine();
             if (ImGui::Checkbox(u8"描述", &ConsiderDesc))ToUpdate = true;
             ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.9f, 0.9f, 0.9f, 1.0f));
+            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.0f, 0.0f, 0.0f, 1.0f));
             if (ImGui::InputText(u8"##SEARCH", InputBuf, sizeof(InputBuf), ImGuiInputTextFlags_EnterReturnsTrue))
                 ToUpdate = true;
-            ImGui::PopStyleColor();
+            ImGui::PopStyleColor(2);
             ImGui::SameLine();
             ImGui::Text(u8"按回车搜索");
             /*
@@ -159,17 +165,13 @@ namespace IBR_WorkSpace
     bool MoveAfterMass{ false };
     std::vector<IBR_Project::id_t> MassTarget;
 
-    IBR_ListMenu<_TEXT_UTF8 std::string> RightClickTable{ IBB_ModuleAltDefault::ModuleName, u8"RightClick_Module",
-        [](_TEXT_UTF8 std::string& Name,int,int)
-        {
-            auto pModule = IBB_ModuleAltDefault::GetModule(Name);
-            if (!pModule)
-            {
-                ImGui::TextColored(IBR_Color::ErrorTextColor, u8"我测，\"%s\"溜大了", Name.c_str());
-                return;
-            }
-            SearchModuleAlt::RenderModuleAltSelect(pModule);
-        } };
+    
+    void RenderRightClickTable()
+    {
+        ImGui::BeginChild("##RightClick_Module", { FontHeight * 12.0F,FontHeight * 14.0F }, false);
+        IBB_ModuleAltDefault::Tree_RenderUI();
+        ImGui::EndChild();
+    }
 
     bool IsResizingWindow()
     {
@@ -190,7 +192,7 @@ namespace IBR_WorkSpace
     }
     void UpdateScroll(const ImVec2& MousePos)
     {
-        auto ScrollRate = IBF_Inst_Setting.List.Pack.GetScrollRate();
+        auto ScrollRate = IBF_Inst_Setting.ScrollRate();
         auto V = (MousePos - DragStartMouse) * ScrollRate - ExtraMove;
         auto F = (float)FontHeight;
         ImVec2 ExpectedEqCenter = DragStartEqCenter - V / IBR_FullView::Ratio;
@@ -208,7 +210,7 @@ namespace IBR_WorkSpace
     }
     ImVec2 UpdateScrollGeneral(const ImVec2& MousePos)
     {
-        auto ScrollRate = IBG_GetSetting().GetScrollRate();
+        auto ScrollRate = IBF_Inst_Setting.ScrollRate();
         auto F = (float)FontHeight;
         ImVec2 ET{};
         if (IBR_FullView::EqPosInRange(IBR_FullView::EqCenter))
@@ -421,8 +423,12 @@ namespace IBR_WorkSpace
     }
     void OpenRightClick()
     {
+        IBB_ModuleAltDefault::Tree_ResetHover();
         IBR_PopupManager::SetRightClickMenu(std::move(
-            IBR_PopupManager::Popup{}.Create(RandStr(8)).PushMsgBack([]() {
+            IBR_PopupManager::Popup{}.Create(RandStr(8))
+            .SetFlag(ImGuiWindowFlags_NoFocusOnAppearing)
+            .EnableInstantClose()
+            .PushMsgBack([]() {
 
                 //为什么这里检测Drag，我不知道，我也不敢动，虽然说这段代码写下的时间距离这行注释写下的时间只有1小时
                 if (abs((DragCurMouse - DragStartMouse).max()) > 2.0f)
@@ -430,26 +436,32 @@ namespace IBR_WorkSpace
                     MassTarget = IBR_SelectMode::GetMassSelected();
                 }
                 if (IBR_Inst_Project.IBR_SectionMap.empty())ImGui::TextDisabled(u8"全选           ");
-                else if (ImGui::SmallButton(u8"全选           "))
+                else
                 {
-                    SelectAll();
-                    IBR_PopupManager::ClearRightClickMenu();
+                    ImGui::Text(u8"全选           ");
+                    if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+                    {
+                        SelectAll();
+                        IBR_PopupManager::ClearRightClickMenu();
+                    }
                 }
-                if (ImGui::SmallButton(u8"粘贴           "))
+                ImGui::Text(u8"粘贴           ");
+                if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
                 {
                     Paste();
                     IBR_PopupManager::ClearRightClickMenu();
                 }
-                if (ImGui::SmallButton(u8"创建注释块     "))
+                ImGui::Text(u8"创建注释块     ");
+                if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
                 {
                     auto EqMouse = RePosToEqPos(ImGui::GetMousePos());
                     IBRF_CoreBump.SendToR({ [=]() {IBR_Inst_Project.CreateCommentBlock(EqMouse); } });
                     IBR_PopupManager::ClearRightClickMenu();
                 }
                 ImGui::PopStyleColor();
-                RightClickTable.RenderUI();
+                RenderRightClickTable();
                 ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_PopupBg));
-                })));
+                })), ImGui::GetMousePos());
     }
     void OutputSelectedImpl(const char* IPath, const char* IDescShort, const char* IDescLong)
     {
@@ -569,7 +581,15 @@ namespace IBR_WorkSpace
         Cont = IBR_RealCenter::GetWorkSpaceRect().Contains(MousePos);
         for (auto w : ImGui::GetCurrentContext()->Windows)
         {
-            if((w->Flags & ImGuiWindowFlags_Tooltip) || (w->Flags & ImGuiWindowFlags_ChildWindow) || w->Hidden || (w->Flags & ImGuiWindowFlags_Popup) || w->IsFallbackWindow)continue;
+            if((w->Flags & ImGuiWindowFlags_Tooltip) ||
+                (w->Flags & ImGuiWindowFlags_ChildWindow) ||
+                w->Hidden ||
+                (w->Flags & ImGuiWindowFlags_Popup) ||
+                w->IsFallbackWindow ||
+                !w->LastFrameRendered
+                )continue;
+
+
             //ImGui::GetForegroundDrawList()->AddText(w->Rect().Min, IBR_Color::IllegalLineColor, w->Name);
             //ImGui::GetForegroundDrawList()->AddRect(w->Rect().Min, w->Rect().Max, IBR_Color::FocusWindowColor, 2.0F, 0, 3.0F);
             if (w->Rect().Contains(MousePos))
@@ -578,7 +598,7 @@ namespace IBR_WorkSpace
                 break;
             }
         }
-        if (Cont && LastCont)
+        if (Cont && LastCont && !IBR_PopupManager::IsMouseOnPopup())
         {
             auto DeltaWheel = ImGui::GetIO().MouseWheel;
             if (abs(DeltaWheel) > 1e-6f)
@@ -616,7 +636,7 @@ namespace IBR_WorkSpace
                 IBR_PopupManager::Popup{}.Create(RandStr(8)).UseMyStyle().PushMsgBack([]() {
                     SearchModuleAlt::RenderUI();
                     //ControlPanel_ModuleAlt();
-                    })));
+                    })), ImGui::GetMousePos());
         }
         else if ((LastClickable && !IsBgDragging && ImGui::IsMouseDown(ImGuiMouseButton_Left)))
         {
@@ -823,7 +843,7 @@ namespace IBR_WorkSpace
                                 DeleteSelected();
                                 IBR_PopupManager::ClearRightClickMenu();
                             }
-                            })));
+                            })), ImGui::GetMousePos());
                 }
                 else if (OnWindow && Cont)
                 {
@@ -1015,12 +1035,12 @@ namespace IBR_WorkSpace
             if (sd.Dragging || sd.Ignore)
             {
                 TempWbg = ImGui::GetStyleColorVec4(ImGuiCol_WindowBg);
-                if (sd.Dragging)TempWbg.w *= 0.7f;
+                if (sd.Dragging)TempWbg.w *= IBF_Inst_Setting.TransparencyBase() * 0.82f;
                 if (sd.Ignore)
                 {
                     if (IBR_SelectMode::IsWindowMassSelected(sd.Desc))
                     {
-                        TempWbg.w *= 0.6f;
+                        TempWbg.w *= IBF_Inst_Setting.TransparencyBase() * 0.667f;
                     }
                     else
                     {
@@ -1046,7 +1066,7 @@ namespace IBR_WorkSpace
             else
             {
                 TempWbg = ImGui::GetStyleColorVec4(ImGuiCol_WindowBg);
-                TempWbg.w *= 0.8f;
+                TempWbg.w *= IBF_Inst_Setting.TransparencyBase();
                 ImGui::PushStyleColor(ImGuiCol_WindowBg, TempWbg);
             }
 
@@ -1065,7 +1085,13 @@ namespace IBR_WorkSpace
             ImGui::SetWindowFontScale(IBR_FullView::Ratio);
             ImGui::PushClipRect(IBR_RealCenter::WorkSpaceUL, IBR_RealCenter::WorkSpaceDR, true);
 
-            if (ImGui::IsWindowFocused())IBR_EditFrame::SetActive(sp.first);
+            if (sd.Dragging)ImGui::PushOrderFront(ImGui::GetCurrentWindow());
+
+            if (ImGui::IsWindowFocused() && !sd.IsComment)
+            {
+                IBR_EditFrame::SetActive(sp.first);
+                IBR_Inst_Menu.ChooseMenu(MenuItemID_EDIT);
+            }
             auto PCopy = ImGui::GetWindowPos();
             auto SCopy = ImGui::GetWindowSize();
             sd.Hovered = ImGui::IsWindowHovered();
@@ -1214,6 +1240,7 @@ namespace IBR_WorkSpace
             auto RSD = Rsec.GetSectionData();
             if(RSD != nullptr && Rsec.HasBack())
             {
+                //auto KList = ImGui::GetForegroundDrawList();
                 auto KList = !RSD->Dragging ? ImGui::GetBackgroundDrawList() : ImGui::GetForegroundDrawList();
                 //auto KList = IBR_PopupManager::HasPopup ? ImGui::GetBackgroundDrawList() : ImGui::GetForegroundDrawList();
                 KList->PushClipRect(IBR_RealCenter::WorkSpaceUL, IBR_RealCenter::WorkSpaceDR, true);
@@ -1227,15 +1254,16 @@ namespace IBR_WorkSpace
                     ImColor LinkCol = Link.Color;
                     Col = LinkCol.Value.w > 0.0001f ? LinkCol : IBR_Color::LegalLineColor;
                 }
-                if (RSD->Dragging)Col.Value.w *= 0.5;
+                if (RSD->Dragging || Link.IsSrcDragging)
+                    Col.Value.w *= IBF_Inst_Setting.TransparencyBase() * 0.625;
                 {
                     ImVec2 pa = Link.BeginR;
                     ImVec2 pb = EqPosToRePos(RSD->EqPos) + RSD->ReOffset;
                     float LineWidth = FontHeight / 5.0f;
+                    ImVec2 Mid = (pa + pb) / 2.0F;
+                    bool Straight = (pb.x - pa.x >= FontHeight * 5.0F);
 
-                    bool Straight = (pb.x - pa.x >= FontHeight * 1.5F);
-
-                    if(Straight)KList->AddBezierCurve(
+                    if(Straight)KList->AddBezierCubic(
                         pa,
                         { (pa.x + 4 * pb.x) / 5,pa.y },
                         { (4 * pa.x + pb.x) / 5,pb.y },
@@ -1243,23 +1271,77 @@ namespace IBR_WorkSpace
                         Col,
                         LineWidth);
                     else
+                    if (Link.IsSelfLinked)
                     {
-                        auto V = pa.x - pb.x;
-                        auto ExOfs = V < FontHeight * 5.0F;
-                        if (ExOfs)KList->AddBezierCurve(
+                        KList->AddBezierCubic(
+                            pa,
+                            { (7 * pa.x - 2 * pb.x) / 5,(3 * pb.y - pa.y) / 2 },
+                            { pa.x ,(3 * pb.y - pa.y) / 2 } ,
+                            Mid,
+                            Col,
+                            LineWidth);
+                        KList->AddBezierCubic(
+                            Mid,
+                            { pb.x ,(3 * pa.y - pb.y) / 2 },
+                            { (7 * pb.x - 2 * pa.x) / 5,(3 * pa.y - pb.y) / 2 },
+                            pb,
+                            Col,
+                            LineWidth);
+                        //KList->AddCircleFilled({ (7 * pa.x - 2 * pb.x) / 5,(5 * pb.y - pa.y) / 4 }, LineWidth * 2.0F, Col);
+                        //KList->AddCircleFilled({ pb.x ,(5 * pa.y - pb.y) / 4 }, LineWidth * 2.0F, Col);
+                        //KList->AddCircleFilled({ Mid }, LineWidth * 2.0F, Col);
+                        //KList->AddCircleFilled({ pa.x ,(5 * pb.y - pa.y) / 4 }, LineWidth * 2.0F, Col);
+                        //KList->AddCircleFilled({ (7 * pb.x - 2 * pa.x) / 5,(5 * pa.y - pb.y) / 4 }, LineWidth * 2.0F, Col);
+                    }
+                    else
+                    {
+                        //auto V = pa.x - pb.x;
+                        //auto ExOfs = V < FontHeight * 12.5F;
+                        KList->AddBezierCubic(
                             pa,
                             { pa.x + FontHeight * 5.0F ,pa.y },
+                            { pa.x + FontHeight * 5.0F ,(3 * pa.y + pb.y) / 4 },
+                            Mid,
+                            Col,
+                            LineWidth);
+                        KList->AddBezierCubic(
+                            Mid,
+                            { pb.x - FontHeight * 5.0F ,(3 * pb.y + pa.y) / 4 },
                             { pb.x - FontHeight * 5.0F ,pb.y },
                             pb,
                             Col,
                             LineWidth);
-                        else KList->AddBezierCurve(
-                            pa,
-                            { (7 * pa.x - 2 * pb.x) / 5,(pa.y + 3 * pb.y) / 4 },
-                            { (7 * pb.x - 2 * pa.x) / 5,(pb.y + 3 * pa.y) / 4 },
-                            pb,
-                            Col,
-                            LineWidth);
+                        /*
+                        if (ExOfs)
+                        {
+                            //KList->AddCircleFilled({ pa.x + FontHeight * 5.0F ,pa.y }, LineWidth * 2.0F, Col);
+                            //KList->AddCircleFilled({ pb.x - FontHeight * 5.0F ,pb.y }, LineWidth * 2.0F, Col);
+                            //KList->AddCircleFilled(Mid, LineWidth * 2.0F, Col);
+                            //KList->AddCircleFilled({ pb.x - FontHeight * 5.0F ,(3 * pb.y + pa.y) / 4 }, LineWidth * 2.0F, Col);
+                            //KList->AddCircleFilled({ pa.x + FontHeight * 5.0F ,(3 * pa.y + pb.y) / 4 }, LineWidth * 2.0F, Col);
+                        }
+                        else {
+                            KList->AddBezierCubic(
+                                pa,
+                                { (7 * pa.x - 2 * pb.x) / 5 ,pa.y },
+                                { (7 * pa.x - 2 * pb.x) / 5 ,(3 * pa.y + pb.y) / 4 },
+                                Mid,
+                                Col,
+                                LineWidth);
+                            KList->AddBezierCubic(
+                                Mid,
+                                { (7 * pb.x - 2 * pa.x) / 5,(3 * pb.y + pa.y) / 4 },
+                                { (7 * pb.x - 2 * pa.x) / 5,pb.y },
+                                pb,
+                                Col,
+                                LineWidth);
+                            //KList->AddCircleFilled({ (7 * pa.x - 2 * pb.x) / 5 ,pa.y }, LineWidth * 1.0F, Col);
+                            //KList->AddCircleFilled({ (7 * pb.x - 2 * pa.x) / 5 ,pb.y }, LineWidth * 1.0F, Col);
+                            //KList->AddCircleFilled({ (7 * pa.x - 2 * pb.x) / 5 ,(3 * pa.y + pb.y) / 4 }, LineWidth * 1.0F, Col);
+                            //KList->AddCircleFilled({ (7 * pb.x - 2 * pa.x) / 5,(3 * pb.y + pa.y) / 4 }, LineWidth * 1.0F, Col);
+                            //KList->AddCircleFilled(Mid, LineWidth * 2.0F, Col);
+                        }
+                        */
                     }
 
                 }

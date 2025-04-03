@@ -98,6 +98,11 @@ struct IBG_SettingPack
     static constexpr int32_t ____ScrollRate_Max = 6;
     static constexpr int32_t ____ScrollRate_Def = 3;
 
+    int32_t WindowTransparencyLevel;
+    static constexpr int32_t ____WindowTransparency_Min = 1;
+    static constexpr int32_t ____WindowTransparency_Max = 10;
+    static constexpr int32_t ____WindowTransparency_Def = 8;
+
     bool DarkMode;
     static constexpr bool ____DarkMode_Def = false;
 
@@ -116,6 +121,7 @@ struct IBG_SettingPack
         DarkMode = ____DarkMode_Def;
         OpenFolderOnOutput = ____OpenFolderOnOutput_Def;
         OutputOnSave = ____OutputOnSave_Def;
+        WindowTransparencyLevel = ____WindowTransparency_Def;
     }
 
     static constexpr float ScrollRateArray[7]
@@ -126,6 +132,11 @@ struct IBG_SettingPack
     float GetScrollRate() const
     {
         return ScrollRateArray[ScrollRateLevel];
+    }
+
+    float GetTransparencyBase() const
+    {
+        return WindowTransparencyLevel * 0.1f;
     }
 };
 
@@ -500,6 +511,7 @@ struct IBB_Section
 
     IBB_IniLine* GetLineFromSubSecs(const std::string& Name) const;
     IBB_Project_Index GetThisIndex() const;
+    IBB_Section_Desc GetThisDesc() const;
     std::vector<IBB_Link> GetLinkTo() const;//RARELY USED
     std::vector<std::string> GetKeys(bool PrintExtraData) const;//RARELY USED
     IBB_VariableList GetLineList(bool PrintExtraData) const;//RARELY USED

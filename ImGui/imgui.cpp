@@ -3253,6 +3253,8 @@ ImGuiWindow::ImGuiWindow(ImGuiContext* context, const char* name) : DrawListInst
     DrawList = &DrawListInst;
     DrawList->_Data = &context->DrawListSharedData;
     DrawList->_OwnerName = Name;
+    LastFrameRendered = false;
+    ThisFrameRendered = false;
 }
 
 ImGuiWindow::~ImGuiWindow()
@@ -4425,6 +4427,13 @@ void ImGui::NewFrame()
     // [DEBUG] Update debug features
     UpdateDebugToolItemPicker();
     UpdateDebugToolStackQueries();
+
+    //Custom
+    for (auto& w : g.Windows)
+    {
+        w->LastFrameRendered = w->ThisFrameRendered;
+        w->ThisFrameRendered = false;
+    }
 
     // Create implicit/fallback window - which we will only render it if the user has added something to it.
     // We don't use "Debug" to avoid colliding with user trying to create a "Debug" window with custom flags.
@@ -6626,6 +6635,8 @@ bool ImGui::Begin(const char* name, bool* p_open, ImGuiWindowFlags flags)
                 skip_items = true;
         window->SkipItems = skip_items;
     }
+
+    window->ThisFrameRendered = true;
 
     return !window->SkipItems;
 }

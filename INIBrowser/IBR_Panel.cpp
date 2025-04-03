@@ -219,6 +219,7 @@ void ControlPanel_ListView()
                         if (dat != nullptr)
                         {
                             IBR_EditFrame::SetActive(rsc.ID);
+                            //IBR_Inst_Menu.ChooseMenu(MenuItemID_EDIT);
                             IBR_FullView::EqCenter = dat->EqPos + (dat->EqSize / 2.0);
                         }
                     }

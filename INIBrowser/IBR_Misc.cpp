@@ -308,6 +308,17 @@ namespace IBR_EditFrame
         TextEditReset = false;
     }
 
+    void ExitTextEdit()
+    {
+        auto pbk = CurSection.GetBack();
+        if (!pbk)return;
+        OnTextEdit = false;
+        IBG_Undo.SomethingShouldBeHere();
+        pbk->SetText(EditBuf);
+        ResetEdit(pbk);
+        IBR_Inst_Project.UpdateAll();
+    }
+
     void UpdateSection()
     {
         //TODO
@@ -354,20 +365,29 @@ namespace IBR_EditFrame
 
         if (OnTextEdit)
         {
+            
             ImGui::Text(u8"文本编辑");
+
+            ImGui::SameLine();
+            if (ImGui::Button(u8"退出"))
+            {
+                ExitTextEdit();
+                return;
+            }
+
             ImGui::InputTextMultiline(u8"", EditBuf, sizeof(EditBuf), ImVec2{ ImGui::GetWindowWidth() - FontHeight * 1.2f ,ImGui::GetWindowHeight() - FontHeight * 5.4f });
             if (!ImGui::IsItemActive())
             {
                 if (TextEditReset)
-                {
-                    OnTextEdit = false;
-                    IBG_Undo.SomethingShouldBeHere();
-                    pbk->SetText(EditBuf);
-                    ResetEdit(pbk);
-                    IBR_Inst_Project.UpdateAll();
-                }
+                    ExitTextEdit();
             }
             else TextEditReset = true;
+            return;
+        }
+
+        if (ImGui::Button(u8"编辑文本"))
+        {
+            IBR_EditFrame::SwitchToText();
             return;
         }
 

@@ -232,13 +232,15 @@ struct IBB_ModuleAlt
 
 namespace IBB_ModuleAltDefault
 {
-    extern std::vector<std::string> ModuleName;
+    extern std::vector<std::string> FlattenedModuleName;
     void Load(const wchar_t* FileRange, const wchar_t* FileRange2);
     std::wstring GenerateModulePath();
     std::wstring GenerateModulePath_NoName();
     IBB_ModuleAlt* GetModule(const std::string& Name);
     std::vector<IBB_ModuleAlt*> Search(const std::string& Str, bool ConsiderRegName, bool ConsiderDescName, bool ConsiderDesc);
-    void NewModule(IBB_ModuleAlt&& M);
+	void NewModule(IBB_ModuleAlt&& M);
+	void Tree_RenderUI();
+	void Tree_ResetHover();
 
     IBB_ModuleAlt* DefaultArt_Voxel();
     IBB_ModuleAlt* DefaultArt_SHPVehicle();
