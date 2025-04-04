@@ -809,6 +809,7 @@ bool IBB_Section::UpdateAll()
     {
         for (auto& ss : SubSecs)
         {
+            ss.Root = this;
             if (!ss.UpdateAll())Ret = false;
             for (auto& [K, V] : ss.Lines)
             {

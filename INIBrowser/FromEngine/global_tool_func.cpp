@@ -524,6 +524,41 @@ void JsonFile::ParseFromFileWithOpts(const char* FileName, int RequireNullTermin
     delete[]FileStr;
 }
 
+std::string JsonFile::ParseFromFileChecked(const char* FileName, const std::string& ErrorTip, int* ErrorPosition)
+{
+    return ParseTmpChecked(GetStringFromFile(FileName), ErrorTip, ErrorPosition);
+}
+
+std::string JsonFile::ParseTmpChecked(std::string&& Str, const std::string& ErrorTip, int* ErrorPosition)
+{
+    const char* ErrorPtr = nullptr;
+    std::string Str2 = Str;
+    cJSON_Minify(Str.data());
+    File = cJSON_Parse(Str.data());
+    if (!File)ErrorPtr = cJSON_GetErrorPtr();
+    if (!File && ErrorPtr)
+    {
+        for (size_t i = 0, j = 0; i < Str2.size() && Str[j]; i++)
+        {
+            if (Str2[i] == Str[j])
+            {
+                if (Str.c_str() + j + 1 == ErrorPtr)
+                {
+                    Str2.insert(i + 1, ErrorTip);
+                    if (ErrorPosition)*ErrorPosition = i + 1;
+                    break;
+                }
+                ++j;
+            }
+        }
+        return Str2;
+    }
+    else
+    {
+        return "";
+    }
+}
+
 bool RegexFull_Nothrow(const std::string& Str, const std::string& Regex) throw()
 {
     try { return std::regex_match(Str, std::regex(Regex)); }

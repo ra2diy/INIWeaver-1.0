@@ -640,6 +640,7 @@ namespace IBR_WorkSpace
         }
         else if ((LastClickable && !IsBgDragging && ImGui::IsMouseDown(ImGuiMouseButton_Left)))
         {
+            
             if (!OnWindow && MousePos.x != -FLT_MAX &&
                 ImGui::GetCurrentContext()->MouseCursor != ImGuiMouseCursor_ResizeEW/*//TODO: WHAT THE FUCK ?!?!?!?!*/)
             {
@@ -728,6 +729,9 @@ namespace IBR_WorkSpace
                     }
                     else if (ImGui::IsMouseReleased(ImGuiMouseButton_Left))
                     {
+                        IBR_EditFrame::Clear();
+                        IBR_Inst_Menu.ChooseMenu(MenuItemID_FILE);
+
                         HasLefttDownToWait = false;
                         if (MoveAfterMass)
                         {
@@ -923,6 +927,9 @@ namespace IBR_WorkSpace
                 }
                 else if (ImGui::IsMouseReleased(ImGuiMouseButton_Left))
                 {
+                    IBR_EditFrame::Clear();
+                    IBR_Inst_Menu.ChooseMenu(MenuItemID_FILE);
+
                     IsBgDragging = false;
                 }
             }
@@ -1245,7 +1252,8 @@ namespace IBR_WorkSpace
                 //auto KList = IBR_PopupManager::HasPopup ? ImGui::GetBackgroundDrawList() : ImGui::GetForegroundDrawList();
                 KList->PushClipRect(IBR_RealCenter::WorkSpaceUL, IBR_RealCenter::WorkSpaceDR, true);
                 ImColor Col;
-                if (IBR_EditFrame::CurSection.ID == Rsec.ID)
+                if (IBR_EditFrame::CurSection.ID == Rsec.ID
+                    && !ImGui::GetCurrentContext()->OpenPopupStack.Size)
                 {
                     Col = IBR_Color::FocusLineColor;
                 }
@@ -1255,7 +1263,7 @@ namespace IBR_WorkSpace
                     Col = LinkCol.Value.w > 0.0001f ? LinkCol : IBR_Color::LegalLineColor;
                 }
                 if (RSD->Dragging || Link.IsSrcDragging)
-                    Col.Value.w *= IBF_Inst_Setting.TransparencyBase() * 0.625;
+                    Col.Value.w *= IBF_Inst_Setting.TransparencyBase() * 0.625f;
                 {
                     ImVec2 pa = Link.BeginR;
                     ImVec2 pb = EqPosToRePos(RSD->EqPos) + RSD->ReOffset;

@@ -202,6 +202,8 @@ public:
     void ParseWithOpts(std::string Str, const char** ReturnParseEnd, int RequireNullTerminated);
     void ParseFromFile(const char* FileName);
     void ParseFromFileWithOpts(const char* FileName, int RequireNullTerminated);
+    std::string ParseTmpChecked(std::string&& Str, const std::string& ErrorTip, int* ErrorPosition);
+    std::string ParseFromFileChecked(const char* FileName, const std::string& ErrorTip, int* ErrorPosition);
 };
 
 inline const char* Json_GetErrorPtr() { return cJSON_GetErrorPtr(); }

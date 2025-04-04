@@ -111,6 +111,15 @@ IBB_Section* IBB_Project::AddNewSection(const IBB_Section_NameType& Paragraph)
 IBB_Section* IBB_Project::AddNewSectionEx(const IBB_Section_NameType& Paragraph)
 {
     IBB_Project_Index Tg(Paragraph.IniType, Paragraph.Name);
+    if (Paragraph.IniType.empty() || Paragraph.Name.empty())
+    {
+        if (EnableLog)
+        {
+            GlobalLogB.AddLog_CurTime(false);
+            GlobalLogB.AddLog("IBB_Project::AddNewSection ：参数不能为空。");
+        }
+        return nullptr;
+    }
     auto Sc = Tg.GetSec(*this);
     if (Sc != nullptr)return nullptr;//this is AddNewSection plz don't give me an existing paragraph plz
     auto SIni = Tg.GetIni(*this);
@@ -414,5 +423,17 @@ void IBB_Project::Clear()
     CreateVersionMajor = VersionMajor;
     CreateVersionMinor = VersionMinor;
     CreateVersionRelease = VersionRelease;
+}
+
+bool IBB_Project::IsEmpty() const
+{
+    for (const auto& ini : Inis)
+    {
+        if (!ini.Secs.empty())
+        {
+            return false;
+        }
+    }
+    return true;
 }
 

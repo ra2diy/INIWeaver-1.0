@@ -51,10 +51,11 @@ namespace PreLink
     void InitConfigJson()
     {
         JsonFile Cfg;
-        Cfg.ParseFromFile(".\\Resources\\config.json");
+        IBR_PopupManager::AddJsonParseErrorPopup(Cfg.ParseFromFileChecked(".\\Resources\\config.json", u8"【出错位置】", nullptr)
+            , u8"尝试解析 config.json 时发生语法错误。");
         if (!Cfg.Available())
         {
-            MessageBoxA(NULL, "config.json 读取失败！", AppNameA, MB_OK);
+            //MessageBoxA(NULL, "config.json 读取失败！", AppNameA, MB_OK);
             FontPath += "msyh.ttf";
         }
         else

@@ -288,12 +288,44 @@ IBR_MainMenu IBR_Inst_Menu
 void ControlPanel_About()
 {
     ImGui::TextWrapped(u8"INI浏览器 V%s", Version.c_str());
-    ImGui::TextWrapped(u8"最近更新于 2022年11月");
+    ImGui::TextWrapped(u8"GLFW/Dear ImGui", Version.c_str());
     ImGui::Separator();
-    ImGui::TextWrapped(u8"作者：std::iron_hammer");
-    ImGui::TextWrapped(u8"QQ：钢铁之锤（2482911962）");
+    ImGui::TextWrapped(u8"作者：钢铁之锤");
+    ImGui::TextWrapped(u8"QQ：2482911962");
     ImGui::TextWrapped(u8"贴吧：笨030504");
-    ImGui::TextWrapped(u8"邮箱：2482911962@qq.com");
+    ImGui::TextWrapped(u8"GitHub：IronHammer Std");
+    ImGui::NewLine();
+    ImGui::TextWrapped(u8"概念设计 & “产品经理”：");
+    ImGui::TextWrapped(u8"      Kenosis");
+    ImGui::Separator();
+    ImGui::TextWrapped(u8"如有bug或反馈请联系作者");
+    ImGui::TextWrapped(u8"反馈表单："); //ImGui::SameLine();
+    if (ImGui::Button(u8"复制链接##A"))
+    {
+        ImGui::LogToClipboard();
+        ImGui::LogText("https://docs.qq.com/form/page/DWXdKYUFRV1dHSnNE");
+        ImGui::LogFinish();
+    }
+    ImGui::SameLine();
+    if (ImGui::Button(u8"打开链接##A"))
+    {
+        ::ShellExecuteA(nullptr, "open", "https://docs.qq.com/form/page/DWXdKYUFRV1dHSnNE", NULL, NULL, SW_SHOWNORMAL);
+    }
+    ImGui::TextWrapped(u8"GitHub仓库："); 
+    if (ImGui::Button(u8"复制链接##B"))
+    {
+        ImGui::LogToClipboard();
+        ImGui::LogText("https://github.com/IronHammer-Std/INIBrowser-0.2");
+        ImGui::LogFinish();
+    }
+    ImGui::SameLine();
+    if (ImGui::Button(u8"打开链接##B"))
+    {
+        ::ShellExecuteA(nullptr, "open", "https://github.com/IronHammer-Std/INIBrowser-0.2", NULL, NULL, SW_SHOWNORMAL);
+    }
+    //
+    /*
+
     ImGui::Separator();
     ImGui::TextWrapped(u8"更新链接：");
     ImGui::TextWrapped(u8"更新帖（红色警戒吧）"); //ImGui::SameLine();
@@ -342,4 +374,6 @@ void ControlPanel_About()
         ::ShellExecuteA(nullptr, "open", "https://pan.baidu.com/s/1EpzAuIQfbU1-7sjb2YJocg?pwd=EASB", NULL, NULL, SW_SHOWNORMAL);
     }
     ImGui::TextWrapped(u8"提取码：EASB");
+
+    */
 }

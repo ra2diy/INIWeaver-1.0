@@ -625,6 +625,7 @@ struct IBB_Project
     _TEXT_UTF8 std::string GetText(bool PrintExtraData) const;
 
     void Clear();
+    bool IsEmpty() const;
 private:
     IBB_Section* AddNewSectionEx(const IBB_Section_NameType& Paragraph);
 };

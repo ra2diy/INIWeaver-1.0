@@ -4,6 +4,7 @@
 #include "FromEngine/RFBump.h"
 #include "FromEngine/global_timer.h"
 #include<imgui_internal.h>
+#include <ranges>
 
 namespace ImGui
 {
@@ -179,6 +180,8 @@ namespace IBR_RecentManager
     }
 }
 
+std::vector<std::string_view> GetLines(std::string&& Text);
+
 namespace IBR_PopupManager
 {
     Popup CurrentPopup;
@@ -190,6 +193,69 @@ namespace IBR_PopupManager
     bool IsMouseOnPopupCond{ false };
 
     std::vector<StdMessage> DelayedPopupAction;
+
+    struct JsonParseErrorPopup
+    {
+        std::string ErrorStr;
+        std::string Info;
+    };
+    std::vector<JsonParseErrorPopup> JsonParseErrorList;
+    size_t JsonParseErrorListShown = 0;
+    void ShowJsonParseErrorImpl()
+    {
+        if (JsonParseErrorListShown < JsonParseErrorList.size())
+        {
+            SetCurrentPopup(
+                std::move(Popup{}
+                    .CreateModal(u8"JSON解析错误", true, []() { {
+                            JsonParseErrorListShown++;
+                            IBRF_CoreBump.SendToR({ [] {ShowJsonParseErrorImpl(); } });
+                        }})
+                .SetFlag(ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize)
+                .PushMsgBack([]()
+                    {
+                        auto& W = JsonParseErrorList[JsonParseErrorListShown];
+                        ImGui::Text(W.Info.c_str());
+                        auto V = W.ErrorStr | std::views::split('\n');
+                        int TgIdx = 0;
+                        int Idx = 1;
+                        for (auto L : V)
+                        {
+                            auto R = std::string_view{ L.data(), L.size() };
+                            if (R.find(u8"【出错位置】") != R.npos)
+                            {
+                                TgIdx = Idx;
+                                ImGui::Text(u8"第%d行：", Idx);
+                                break;
+                            }
+                            Idx++;
+                        }
+                        Idx = 1;
+                        for (auto L : V)
+                        {
+                            if (Idx >= TgIdx - 4 && Idx <= TgIdx + 4)
+                                ImGui::Text(std::string(L.data(), L.size()).c_str());
+                            Idx++;
+                        }
+                        ImGui::Text(u8"完整信息请见Browser.log。");
+                    }))
+                );
+
+        }
+        else ClearPopupDelayed();
+    }
+    void AddJsonParseErrorPopup(std::string&& ErrorStr, const std::string& Info)
+    {
+        if (ErrorStr.empty())return;
+        if(JsonParseErrorList.empty())IBRF_CoreBump.SendToR({ [] {ShowJsonParseErrorImpl(); } });
+        if (EnableLog)
+        {
+            GlobalLog.AddLog_CurTime(false);
+            sprintf_s(LogBuf, "JSON解析错误：%s", UTF8toMBCS(ErrorStr).c_str());
+            GlobalLog.AddLog(LogBuf);
+        }
+        JsonParseErrorList.push_back({ std::move(ErrorStr), Info });
+    }
 
     bool IsMouseOnPopup()
     {
@@ -277,7 +343,7 @@ namespace IBR_PopupManager
     Popup SingleText(const _TEXT_UTF8 std::string& StrId, const _TEXT_UTF8 std::string& Text, bool Modal)
     {
         return (Modal ? Popup{}.CreateModal(StrId, false) : Popup{}.Create(StrId))
-            .SetFlag(ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize)
+            .SetFlag(ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar )
             .PushTextBack(Text);
     }
     Popup MessageModal(const _TEXT_UTF8 std::string& Title, const _TEXT_UTF8 std::string& Text, ImVec2 Size , bool CanClose, bool UseDefaultOK, StdMessage Close)

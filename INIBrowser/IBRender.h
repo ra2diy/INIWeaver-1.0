@@ -21,17 +21,14 @@ public:
 
 struct IBR_InputManager
 {
-    char* Input;
+    static constexpr size_t InputSize = 5000;
+    std::unique_ptr<char[]> Input;
     std::string ID;
     std::function<void(char*)> AfterInput;
-    static constexpr size_t InputSize = 5000;
+    
     IBR_InputManager(const std::string& InitialText, const std::string& id, const std::function<void(char*)>& Fn);
     bool RenderUI();
-    ~IBR_InputManager()
-    {
-        AfterInput(Input);
-        delete[]Input;
-    }
+    ~IBR_InputManager() = default;
 };
 
 struct IBR_IniLine
@@ -558,6 +555,7 @@ namespace IBR_PopupManager
     void RenderUI();
     void ClearPopupDelayed();
     bool IsMouseOnPopup();
+    void AddJsonParseErrorPopup(std::string&& ErrorStr, const std::string& Info);
 }
 
 

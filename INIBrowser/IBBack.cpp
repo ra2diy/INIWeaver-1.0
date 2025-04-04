@@ -443,8 +443,10 @@ bool IBB_DefaultTypeAltList::Load(JsonObject FromJson)
 
 bool IBB_DefaultTypeAltList::LoadFromJsonFile(const char* Name)
 {
+    std::string FileName(const std::string & ss);
     JsonFile F;
-    F.ParseFromFile(Name);
+    IBR_PopupManager::AddJsonParseErrorPopup(F.ParseFromFileChecked(Name, u8"【出错位置】", nullptr),
+        u8"尝试解析 " + MBCStoUTF8(FileName(Name)) + u8" 时发生语法错误。");
     if (!F.Available())return false;
     Load(F);
 
@@ -760,6 +762,15 @@ bool IBB_Ini::CreateSection(const std::string& _Name)
         GlobalLogB.AddLog_CurTime(false);
         GlobalLogB.AddLog(LogBufB);
     }
+    if (_Name.empty())
+    {
+        if (EnableLog)
+        {
+            GlobalLogB.AddLog_CurTime(false);
+            GlobalLogB.AddLog("IBB_Ini::CreateSection ：空的字段名。");
+        }
+        return false;
+    }
     auto Is = Secs.find(_Name);
     if (Is == Secs.end())
     {
@@ -858,7 +869,11 @@ std::string IBB_Ini::GetText(bool PrintExtraData) const
 bool IBB_Ini::UpdateAll()
 {
     bool Ret = true;
-    for (auto& P : Secs)if (!P.second.UpdateAll())Ret = false;
+    for (auto& P : Secs)
+    {
+        P.second.Root = this;
+        if (!P.second.UpdateAll())Ret = false;
+    }
     return Ret;
 }
 

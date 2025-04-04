@@ -488,7 +488,9 @@ void IBR_SectionData::RenderUI()
             if(!CommentEdit)ImGui::TextColored(IBR_Color::ErrorTextColor, u8"¶ªÊ§×¢ÊÍ»º³åÇø");
             else
             {
-                if (ImGui::InputTextMultiline("##COMMENT", CommentEdit.get(), MAX_STRING_LENGTH, ImVec2(14.6f * FontHeight, 8.0f * FontHeight)))
+                if (ImGui::InputTextMultiline("##COMMENT", CommentEdit.get(), MAX_STRING_LENGTH,
+                    ImVec2(14.6f * FontHeight, 8.0f * FontHeight),
+                    ImGuiInputTextFlags_NoHorizontalScroll | ImGuiInputTextFlags_WrappedText))
                 {
                     Bsec->Comment = CommentEdit.get();
                 }
@@ -509,7 +511,8 @@ void IBR_SectionData::RenderUI()
                     bool IsLinkingToSelf = (Bsec->GetThisDesc() == _Desc);
                     auto TypeAlt = IBF_Inst_DefaultTypeList.GetDefault(lt.FromKey);
                     ImU32 LineCol = TypeAlt ? TypeAlt->Color : 0;
-                    ImU32 LineColII = (IBR_EditFrame::CurSection.ID == Rsec.ID) ? (ImU32)IBR_Color::FocusLineColor : LineCol;
+                    ImU32 LineColII = (IBR_EditFrame::CurSection.ID == Rsec.ID
+                        && !ImGui::GetCurrentContext()->OpenPopupStack.Size) ? (ImU32)IBR_Color::FocusLineColor : LineCol;
 
 
 #define _PB(x) IBR_Inst_Project.LinkList.push_back({((ImVec2)x), _Desc, LineColII, IsLinkingToSelf, Rsec.Dragging()});
@@ -710,6 +713,7 @@ void IBR_SectionData::RenderUI()
                 auto& Line = ActiveLines[k];
                 auto& V = Bsec->UnknownLines.Value[k];
                 Line.Buffer = V;
+                auto K2 = k + " = " + V;
                 if (V == "yes" || V == "no" || V == "true" || V == "false")
                 {
                     bool X = (V == "yes" || V == "true");
@@ -725,6 +729,7 @@ void IBR_SectionData::RenderUI()
                 }
                 else
                 {
+                    /*
                     if (Line.Edit.NeedInit())
                     {
                         IBR_IniLine::InitType It{ l ,"##" + RandStr(8), [desc = Desc,Bsec,Str = k](char* S)
@@ -740,8 +745,24 @@ void IBR_SectionData::RenderUI()
                     }
                     else
                     {
-                        Line.Edit.RenderUI(k, "");
+                        Line.Edit.RenderUI(Line.Edit.HasInput ? k : K2, "");
                     }
+                    */
+                    if (!Line.Edit.Input)
+                    {
+                        Line.Edit.Input.reset(new IBR_InputManager(l, "##" + RandStr(8), [desc = Desc, Bsec, Str = k](char* S)
+                            {
+                                IBG_Undo.SomethingShouldBeHere();
+                                Bsec->UnknownLines.Value[Str] = S;
+                                if (IBR_Inst_Project.IBR_Rev_SectionMap[desc] == IBR_EditFrame::CurSection.ID)
+                                {
+                                    IBR_EditFrame::EditLines[Str].Buffer = S;
+                                }
+                            }));
+                    }
+                    ImGui::Text(k.c_str());
+                    ImGui::SameLine();
+                    Line.Edit.Input->RenderUI();
                 }
             }
         }

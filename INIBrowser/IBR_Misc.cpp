@@ -37,12 +37,12 @@ std::shared_ptr<IBR_InputManager> NewInput(const std::string& InitialText, const
 }
 IBR_InputManager::IBR_InputManager(const std::string& InitialText, const std::string& id, const std::function<void(char*)>& Fn) :ID(id), AfterInput(Fn)
 {
-    Input = new char[InputSize];
-    strcpy_s(Input, InputSize, InitialText.c_str());
+    Input.reset(new char[InputSize]); 
+    strcpy_s(Input.get(), InputSize, InitialText.c_str());
 }
 bool IBR_InputManager::RenderUI()
 {
-    ImGui::InputText(ID.c_str(), Input, InputSize);
+    ImGui::InputText(ID.c_str(), Input.get(), InputSize);
     return ImGui::IsItemActive();
 }
 
@@ -86,6 +86,7 @@ void IBR_IniLine::RenderUI(const std::string& Line, const std::string& Hint, con
 
 void IBR_IniLine::CloseInput()
 {
+    Input->AfterInput(Input->Input.get());
     Input.reset();
     HasInput = false;
     UseInput = false;
@@ -207,11 +208,12 @@ void IBG_UndoStack::Release()
 }
 void IBG_UndoStack::SomethingShouldBeHere()
 {
+    if (IBF_Inst_Project.Project.IsEmpty())return;
     Release();
-    IBF_Inst_Project.Project.ChangeAfterSave = true;
 }
 void IBG_UndoStack::Push(const _Item& a)
 {
+    if (IBF_Inst_Project.Project.IsEmpty())return;
     Release();
     Stack.push_back(a);
     ++Cursor;

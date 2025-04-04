@@ -369,7 +369,7 @@ bool IBB_SubSec::UpdateAll()
     if (Default == nullptr)Ret = false;
     std::vector<IBB_Link> NewLT;
     NewLT.reserve(LinkTo.size());
-    auto pproj = Root->Root->Root; (void)pproj;
+    //auto pproj = Root->Root->Root;
     for (auto& L : Lines)
     {
         GlobalLogB.AddLog_CurTime(false); GlobalLogB.AddLog("IBB_SubSec::UpdateAll Line : ", false); GlobalLogB.AddLog(L.first.c_str());//BREAKPOINT

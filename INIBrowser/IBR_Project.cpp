@@ -284,6 +284,7 @@ bool _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE IBR_Project::DeleteSect
 
 bool _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE IBR_Project::DeleteSection(const IBB_Section_Desc& Desc)
 {
+    if (Desc.Ini.empty() || Desc.Sec.empty())return false;
     bool Ret;
     {
         IBD_RInterruptF(x);

@@ -18,6 +18,8 @@ std::string IBB_RegType::GetNoName(const std::string& Reg)
     return NewName;
 }
 
+std::string FileName(const std::string& ss);
+
 namespace IBB_DefaultRegType
 {
     std::unordered_map<_TEXT_UTF8 std::string, std::set<_TEXT_UTF8 std::string>>CompoundTypeIndex;
@@ -133,7 +135,8 @@ namespace IBB_DefaultRegType
             GlobalLogB.AddLog("IBB_DefaultRegType::LoadFromFile ： 开始读取注册配置。");
         }
         JsonFile F;
-        F.ParseFromFile(FileName);
+        IBR_PopupManager::AddJsonParseErrorPopup(F.ParseFromFileChecked(FileName, u8"【出错位置】", nullptr),
+            u8"尝试解析 "+ MBCStoUTF8(::FileName(FileName)) + u8" 时发生语法错误。");
         if (!F.Available())return false;
         return Load(F);
     }
