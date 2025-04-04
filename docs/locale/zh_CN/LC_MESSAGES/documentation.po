@@ -1,0 +1,309 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, Kenosis
+# This file is distributed under the same license as the INIBrowser package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: INIBrowser \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-04-04 20:00+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: zh_CN\n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.16.0\n"
+
+#: ../../documentation.md:1
+msgid "Docs"
+msgstr "文档"
+
+#: ../../documentation.md:2
+msgid "modules setting"
+msgstr "模块设置"
+
+#: ../../documentation.md:4
+msgid ""
+"Dictionary=`TypeAlt.csv`. You only need to put down flags that link to "
+"other types"
+msgstr "语句字典在 `TypeAlt.csv`，仅需配置链接类的语句。"
+
+#: ../../documentation.md:6
+msgid ""
+"All types are registered in `RegisterTypes`. You can add new types as you"
+" like"
+msgstr "大类类别一览在 `RegisterTypes`，可以任意新增大类。"
+
+#: ../../documentation.md:8
+msgid "ImageModules are default modules when you drag in assets (SHP/VXL)"
+msgstr "ImageModules 为导入 SHP 或 VXL 素材的模板"
+
+#: ../../documentation.md:10
+msgid "All other modules are stored in modules folder."
+msgstr "模块库是 Modules。"
+
+#: ../../documentation.md:12
+msgid ""
+"Module ini is easy to comprehend. Only one tip: any flag that has a `#` "
+"will not be folded. Links are not folded by default."
+msgstr "模块语句格式轻松易懂，无需讲解。唯一特殊点是 `#` 开头的语句默认不会折叠，连线语句默认不折叠。"
+
+#: ../../documentation.md:15
+msgid "YOU MUST MAKE YOUR OWN MODULE LIBRARY！！！！"
+msgstr "用户应当自行建立自己常用的模块库！"
+
+#: ../../documentation.md:18
+msgid "Hotkeys"
+msgstr "键盘命令"
+
+#: ../../documentation.md:14
+msgid "Key"
+msgstr "按键"
+
+#: ../../documentation.md:14
+msgid "Function"
+msgstr "功能"
+
+#: ../../documentation.md:14
+msgid "F2"
+msgstr "F2"
+
+#: ../../documentation.md:14
+msgid "Switch display mode"
+msgstr "切换显示模式"
+
+#: ../../documentation.md:14
+msgid "Ctrl+S"
+msgstr "Ctrl+S"
+
+#: ../../documentation.md:14
+msgid "save"
+msgstr "保存"
+
+#: ../../documentation.md:14
+msgid "Ctrl+Shift+S"
+msgstr "Ctrl+Shift+S"
+
+#: ../../documentation.md:14
+msgid "save as"
+msgstr "另存为"
+
+#: ../../documentation.md:14
+msgid "Ctrl+O"
+msgstr "Ctrl+O"
+
+#: ../../documentation.md:14
+msgid "open project"
+msgstr "打开"
+
+#: ../../documentation.md:14
+msgid "Ctrl+E"
+msgstr "Ctrl+E"
+
+#: ../../documentation.md:14
+msgid "export"
+msgstr "导出"
+
+#: ../../documentation.md:14
+msgid "Ctrl+W"
+msgstr "Ctrl+W"
+
+#: ../../documentation.md:14
+msgid "close project"
+msgstr "关闭"
+
+#: ../../documentation.md:14
+msgid "Ctrl+C"
+msgstr "Ctrl+C"
+
+#: ../../documentation.md:14
+msgid "copy"
+msgstr "复制"
+
+#: ../../documentation.md:14
+msgid "Ctrl+V"
+msgstr "Ctrl+V"
+
+#: ../../documentation.md:14
+msgid "paste"
+msgstr "粘贴"
+
+#: ../../documentation.md:14
+msgid "right click on canvas"
+msgstr "右键画布"
+
+#: ../../documentation.md:14
+msgid "module library"
+msgstr "模块库目录"
+
+#: ../../documentation.md:14
+msgid "double click on canvas"
+msgstr "双击画布"
+
+#: ../../documentation.md:14
+msgid "module search"
+msgstr "模块搜索"
+
+#: ../../documentation.md:14
+msgid "left click on module"
+msgstr "左键模块"
+
+#: ../../documentation.md:14
+msgid "edit this module"
+msgstr "进入编辑"
+
+#: ../../documentation.md:14
+msgid "right click on module title"
+msgstr "右键模块标题"
+
+#: ../../documentation.md:14
+msgid "enter module menu"
+msgstr "进入模块菜单"
+
+#: ../../documentation.md:14
+msgid "double click on flag"
+msgstr "双击语句"
+
+#: ../../documentation.md:14
+msgid "edit value"
+msgstr "编辑语句数值"
+
+#: ../../documentation.md:36
+msgid "Image demonstration"
+msgstr "图像演示"
+
+#: ../../documentation.md:38
+msgid "right click for modules"
+msgstr "右键模块库"
+
+#: ../../documentation.md:40
+msgid "![image](../pic/right_click_for_modules.gif)"
+msgstr "![image](../pic/right_click_for_modules.gif)"
+
+#: ../../documentation.md:40 ../../documentation.md:44
+#: ../../documentation.md:48 ../../documentation.md:52
+#: ../../documentation.md:56 ../../documentation.md:60
+#: ../../documentation.md:64 ../../documentation.md:69
+#: ../../documentation.md:75 ../../documentation.md:79
+#: ../../documentation.md:83 ../../documentation.md:87
+#: ../../documentation.md:91 ../../documentation.md:95
+msgid "image"
+msgstr "图像"
+
+#: ../../documentation.md:42
+msgid "link modules"
+msgstr "连线到节点"
+
+#: ../../documentation.md:44
+msgid "![image](../pic/link_modules.gif)"
+msgstr "![image](../pic/link_modules.gif)"
+
+#: ../../documentation.md:46
+msgid "reverse link"
+msgstr "反向链接"
+
+#: ../../documentation.md:48
+msgid "![image](../pic/reverse_link.gif)"
+msgstr "![image](../pic/reverse_link.gif)"
+
+#: ../../documentation.md:50
+msgid "fold flags"
+msgstr "折叠语句"
+
+#: ../../documentation.md:52
+msgid "![image](../pic/fold_flags.gif)"
+msgstr "![image](../pic/fold_flags.gif)"
+
+#: ../../documentation.md:54
+msgid "text editor"
+msgstr "文本编辑模式"
+
+#: ../../documentation.md:56
+msgid "![image](../pic/text_editor.gif)"
+msgstr "![image](../pic/text_editor.gif)"
+
+#: ../../documentation.md:58
+msgid "directly edit bool"
+msgstr "直接编辑布尔"
+
+#: ../../documentation.md:60
+msgid "![image](../pic/directly_edit_bool.gif)"
+msgstr "![image](../pic/directly_edit_bool.gif)"
+
+#: ../../documentation.md:62
+msgid "directly edit value"
+msgstr "直接编辑值"
+
+#: ../../documentation.md:64
+msgid "![image](../pic/directly_edit_value.gif)"
+msgstr "![image](../pic/directly_edit_value.gif)"
+
+#: ../../documentation.md:66
+msgid "import assets"
+msgstr "直接将素材拖进画布"
+
+#: ../../documentation.md:67
+msgid "Shape/Voxel"
+msgstr "Shape／Voxel 格式"
+
+#: ../../documentation.md:69
+msgid "![image](../pic/import_assets.png)"
+msgstr "![image](../pic/import_assets.png)"
+
+#: ../../documentation.md:71
+msgid "Interface Overview"
+msgstr "界面概述"
+
+#: ../../documentation.md:73
+msgid "main menu"
+msgstr "主菜单"
+
+#: ../../documentation.md:75
+msgid "![image](../pic/main_menu.png)"
+msgstr "![image](../pic/main_menu.png)"
+
+#: ../../documentation.md:77
+msgid "file menu"
+msgstr "文件菜单"
+
+#: ../../documentation.md:79
+msgid "![image](../pic/file_menu.png)"
+msgstr "![image](../pic/file_menu.png)"
+
+#: ../../documentation.md:81
+msgid "navigate menu"
+msgstr "视图菜单"
+
+#: ../../documentation.md:83
+msgid "![image](../pic/navigate_menu.png)"
+msgstr "![image](../pic/navigate_menu.png)"
+
+#: ../../documentation.md:85
+msgid "list menu"
+msgstr "列表菜单"
+
+#: ../../documentation.md:87
+msgid "![image](../pic/list_menu.png)"
+msgstr "![image](../pic/list_menu.png)"
+
+#: ../../documentation.md:89
+msgid "options menu"
+msgstr "设置菜单"
+
+#: ../../documentation.md:91
+msgid "![image](../pic/options_menu.png)"
+msgstr "![image](../pic/options_menu.png)"
+
+#: ../../documentation.md:93
+msgid "right click menu"
+msgstr "右键菜单"
+
+#: ../../documentation.md:95
+msgid "![image](../pic/right_click_menu.png)"
+msgstr "![image](../pic/right_click_menu.png)"
+

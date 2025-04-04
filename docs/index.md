@@ -1,7 +1,7 @@
 ```{toctree}
 :hidden:
-:caption: 文档 | Docs
-文档 | documentation<../documentation.md>
+:caption: Docs
+documentation<../documentation.md>
 ```
 
 ```{include} ../README.md
