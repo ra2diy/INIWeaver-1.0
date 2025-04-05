@@ -1,5 +1,4 @@
 # Docs
-## DUMMYTEXT_1
 
 ## modules setting
 
