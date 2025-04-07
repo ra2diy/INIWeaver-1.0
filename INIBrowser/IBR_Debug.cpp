@@ -74,9 +74,8 @@ void IBR_Debug::RenderUI()
 {
     //_CALL_CMD IBR_Inst_Project.GetText(true);
     static bool Ext = false;
-    ImGui::Checkbox(u8"输出额外信息", &Ext);
-    ImGui::SameLine();
-    if (ImGui::Button(u8"复制导出文本"))
+    ImGui::Checkbox(locc("GUI_DebugOutputExtra"), &Ext);
+    if (ImGui::Button(locc("GUI_DebugCopyOutput")))
     {
         ImGui::LogToClipboard();
         ImGui::LogText(_CALL_CMD IBR_Inst_Project.GetText(Ext).c_str());

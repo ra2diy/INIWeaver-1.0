@@ -116,7 +116,7 @@ IBB_Section* IBB_Project::AddNewSectionEx(const IBB_Section_NameType& Paragraph)
         if (EnableLog)
         {
             GlobalLogB.AddLog_CurTime(false);
-            GlobalLogB.AddLog("IBB_Project::AddNewSection ：参数不能为空。");
+            GlobalLogB.AddLog((u8"IBB_Project::AddNewSection ：" + loc("Log_NoEmptyArgument")).c_str());
         }
         return nullptr;
     }
@@ -132,7 +132,7 @@ IBB_Section* IBB_Project::AddNewSectionEx(const IBB_Section_NameType& Paragraph)
             if (EnableLog)
             {
                 GlobalLogB.AddLog_CurTime(false);
-                GlobalLogB.AddLog("IBB_Project::AddNewSection ：无法添加INI。");
+                GlobalLogB.AddLog((u8"IBB_Project::AddNewSection ：" + loc("Log_CannotCreateINI")).c_str());
             }
             return nullptr;
         }
@@ -142,7 +142,7 @@ IBB_Section* IBB_Project::AddNewSectionEx(const IBB_Section_NameType& Paragraph)
         if (EnableLog)
         {
             GlobalLogB.AddLog_CurTime(false);
-            GlobalLogB.AddLog("IBB_Project::AddNewSection ：CreateSection创建失败。");
+            GlobalLogB.AddLog((u8"IBB_Project::AddNewSection ：" + loc("Log_CreateSectionFailed")).c_str());
         }
         return nullptr;
     }
@@ -153,7 +153,7 @@ IBB_Section* IBB_Project::AddNewSectionEx(const IBB_Section_NameType& Paragraph)
         if (EnableLog)
         {
             GlobalLogB.AddLog_CurTime(false);
-            GlobalLogB.AddLog("IBB_Project::AddNewSection ：无法添加字段。");
+            GlobalLogB.AddLog((u8"IBB_Project::AddNewSection ：" + loc("Log_CannotCreateSection")).c_str());
         }
         return nullptr;
     }
@@ -175,7 +175,7 @@ IBB_Section* IBB_Project::CreateNewSection(const IBB_Section_Desc& Desc)
             if (EnableLog)
             {
                 GlobalLogB.AddLog_CurTime(false);
-                GlobalLogB.AddLog("IBB_Project::CreateNewSection ：无法添加INI。");
+                GlobalLogB.AddLog((u8"IBB_Project::CreateNewSection ：" + loc("Log_CannotCreateINI")).c_str());
             }
             return nullptr;
         }
@@ -185,7 +185,7 @@ IBB_Section* IBB_Project::CreateNewSection(const IBB_Section_Desc& Desc)
         if (EnableLog)
         {
             GlobalLogB.AddLog_CurTime(false);
-            GlobalLogB.AddLog("IBB_Project::CreateNewSection ：CreateSection创建失败。");
+            GlobalLogB.AddLog((u8"IBB_Project::CreateNewSection ：" + loc("Log_CreateSectionFailed")).c_str());
         }
         return nullptr;
     }
@@ -195,7 +195,7 @@ IBB_Section* IBB_Project::CreateNewSection(const IBB_Section_Desc& Desc)
         if (EnableLog)
         {
             GlobalLogB.AddLog_CurTime(false);
-            GlobalLogB.AddLog("IBB_Project::CreateNewSection ：无法添加字段。");
+            GlobalLogB.AddLog((u8"IBB_Project::CreateNewSection ：" + loc("Log_CannotCreateSection")).c_str());
         }
         return nullptr;
     }
@@ -214,7 +214,7 @@ bool IBB_Project::AddNewLinkToLinkGroup(const IBB_Section_Desc& From, const IBB_
             if (EnableLog)
             {
                 GlobalLogB.AddLog_CurTime(false);
-                GlobalLogB.AddLog("IBB_Project::AddNewLinkToLinkGroup ：无法添加From字段。");
+                GlobalLogB.AddLog((u8"IBB_Project::AddNewLinkToLinkGroup ：" + loc("Log_CannotCreateSection")).c_str());
             }
             return false;
         }
@@ -229,7 +229,7 @@ bool IBB_Project::AddNewLinkToLinkGroup(const IBB_Section_Desc& From, const IBB_
             if (EnableLog)
             {
                 GlobalLogB.AddLog_CurTime(false);
-                GlobalLogB.AddLog("IBB_Project::AddNewLinkToLinkGroup ：无法添加From字段。");
+                GlobalLogB.AddLog((u8"IBB_Project::AddNewLinkToLinkGroup ：" + loc("Log_CannotCreateSection")).c_str());
             }
             return false;
         }
@@ -290,7 +290,7 @@ bool IBB_Project::AddModule(const ModuleClipData& Module)
                 if (EnableLog)
                 {
                     GlobalLogB.AddLog_CurTime(false);
-                    GlobalLogB.AddLog("IBB_Project::AddNewSection ：无法添加INI。");
+                    GlobalLogB.AddLog((u8"IBB_Project::AddModule ：" + loc("Log_CannotCreateINI")).c_str());
                 }
                 return false;
             }
@@ -300,7 +300,7 @@ bool IBB_Project::AddModule(const ModuleClipData& Module)
             if (EnableLog)
             {
                 GlobalLogB.AddLog_CurTime(false);
-                GlobalLogB.AddLog("IBB_Project::AddNewSection ：CreateSection创建失败。");
+                GlobalLogB.AddLog((u8"IBB_Project::AddModule ：" + loc("Log_CreateSectionFailed")).c_str());
             }
             return false;
         }

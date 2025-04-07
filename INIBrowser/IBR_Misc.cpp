@@ -48,11 +48,12 @@ bool IBR_InputManager::RenderUI()
 
 void IBR_IniLine::RenderUI(const std::string& Line, const std::string& Hint, const InitType* Init)
 {
-    ImGui::TextWrapped(Line.c_str());
+    ImGui::TextWrappedEx(Line.c_str());
+    //ImGui::TextEx(Line.c_str(), nullptr, ImGuiTextFlags_NoWidthForLargeClippedText);
     if (!Hint.empty() && ImGui::IsItemHovered())
     {
         ImGui::BeginTooltip();
-        ImGui::Text(Hint.c_str());
+        ImGui::TextEx(Hint.c_str());
         ImGui::EndTooltip();
     }
     if (!HasInput && ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
@@ -165,7 +166,7 @@ namespace IBR_UICondition
     std::wstring WindowTitle;
     bool UpdateWindowTitle()
     {
-        std::wstring nt = AppNameW;
+        std::wstring nt = _AppNameW;
         auto& proj = IBF_Inst_Project.Project;
         if (IBR_ProjectManager::IsOpen())nt += L" - " + proj.ProjName;
         if (proj.ChangeAfterSave)nt += L"[*]";
@@ -221,9 +222,11 @@ void IBG_UndoStack::Push(const _Item& a)
 }
 void IBG_UndoStack::RenderUI()
 {
-    if (SmallButton_Disabled_Helper(CanUndo(), u8"撤销"))IBRF_CoreBump.SendToR({ [this]() {IBR_Inst_Debug.AddMsgOnce([=]() {ImGui::Text("Undo"); }); Undo(); } });
+    ImGui::TextDisabled(locc("GUI_Undo"));
+    //if (SmallButton_Disabled_Helper(CanUndo(), locc("GUI_Undo")))IBRF_CoreBump.SendToR({[this]() {IBR_Inst_Debug.AddMsgOnce([=]() {ImGui::Text("Undo"); }); Undo(); }});
     ImGui::SameLine();
-    if (SmallButton_Disabled_Helper(CanRedo(), u8"重做"))IBRF_CoreBump.SendToR({ [this]() {IBR_Inst_Debug.AddMsgOnce([=]() {ImGui::Text("Redo"); }); Redo(); } });
+    ImGui::TextDisabled(locc("GUI_Redo"));
+    //if (SmallButton_Disabled_Helper(CanRedo(), locc("GUI_Redo")))IBRF_CoreBump.SendToR({ [this]() {IBR_Inst_Debug.AddMsgOnce([=]() {ImGui::Text("Redo"); }); Redo(); } });
 }
 void IBG_UndoStack::Clear()
 {
@@ -339,7 +342,7 @@ namespace IBR_EditFrame
             }
             else
             {
-                MessageBoxA(NULL, "错误：back->GetLineFromSubSecs(s) == nullptr", "IBR_EditFrame::RenderUI()", MB_OK);
+                MessageBoxW(NULL, L"back->GetLineFromSubSecs(s) == nullptr", L"IBR_EditFrame::RenderUI", MB_OK);
             }
         }
         else
@@ -368,10 +371,10 @@ namespace IBR_EditFrame
         if (OnTextEdit)
         {
             
-            ImGui::Text(u8"文本编辑");
+            ImGui::Text(locc("GUI_TextEditModeTitle"));
 
             ImGui::SameLine();
-            if (ImGui::Button(u8"退出"))
+            if (ImGui::Button(locc("GUI_Exit")))
             {
                 ExitTextEdit();
                 return;
@@ -387,7 +390,7 @@ namespace IBR_EditFrame
             return;
         }
 
-        if (ImGui::Button(u8"编辑文本"))
+        if (ImGui::Button(locc("GUI_SwitchToTextEdit")))
         {
             IBR_EditFrame::SwitchToText();
             return;

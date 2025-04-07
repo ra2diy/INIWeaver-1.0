@@ -18,7 +18,7 @@ ReadFileHeader IBB_RSetting
         if (EnableLog)
         {
             GlobalLogB.AddLog_CurTime(false);
-            GlobalLogB.AddLog("从Setting.dat读入设置。");
+            GlobalLogB.AddLog(locc("Log_LoadSettingDat"));
         }
         (void)Length;
         if (FVersion > 200)
@@ -52,7 +52,7 @@ ReadFileHeader IBB_RLastOutput
         if (EnableLog)
         {
             GlobalLogB.AddLog_CurTime(false);
-            GlobalLogB.AddLog("从Setting.dat读入上次导出目录。");
+            GlobalLogB.AddLog(locc("Log_LoadLastOutput"));
         }
         (void)Length;
         if (FVersion >= 203)
@@ -70,7 +70,7 @@ ReadFileHeader IBB_RLastOutput
             if (EnableLog)
             {
                 GlobalLogB.AddLog_CurTime(false);
-                GlobalLogB.AddLog("导出目录块的版本过低，读入失败。");
+                GlobalLogB.AddLog(locc("Log_FileVersionTooLow"));
             }
             return false;
         }
@@ -104,6 +104,10 @@ const std::unordered_map<IBB_SettingType::_Type, std::function<bool(const IBB_Se
     {
         return File.ReadData(*((bool*)Ty.Data));
     }},
+    {IBB_SettingType::Lang,[](const IBB_SettingType&, const ExtFileClass&) -> bool
+    {
+        return true;
+    }}
 };
 
 const std::unordered_map<IBB_SettingType::_Type, std::function<bool(const IBB_SettingType&, const ExtFileClass&)>> WriteTypeMap =
@@ -124,6 +128,10 @@ const std::unordered_map<IBB_SettingType::_Type, std::function<bool(const IBB_Se
     {
         return File.WriteData(*((bool*)Ty.Data));
     }},
+    {IBB_SettingType::Lang,[](const IBB_SettingType&, const ExtFileClass&) -> bool
+    {
+        return true;
+    }},
 };
 
 extern std::vector<int> RW_ReadOrder;
@@ -139,9 +147,19 @@ void IBB_SettingRegisterRW(SaveFile& Save)
     Save.WriteBlockProcess.push_back(IBB_WLastOutput);
 }
 
+void RefreshSettingTypes()
+{
+    for (auto& ss : IBF_Inst_Setting.List.Types)
+    {
+        ss.DescShort = loc(ss.DescShortOri);
+        ss.DescLong = loc(ss.DescLongOri);
+    }
+}
+
 bool ReadSettingFileGen(const ExtFileClass& File, int Order)
 {
     (void(Order));
+    RefreshSettingTypes();
     for (int Tg : RW_ReadOrder)
     {
         auto& Ty = IBF_Inst_Setting.List.Types[Tg];
@@ -170,7 +188,7 @@ IBB_SettingTypeList::IBB_SettingTypeList()
     Types = {
         {
             IBB_SettingType::IntA,
-                u8"帧率限制", u8"！！重启后生效\n限制使用的帧率以节约CPU\n范围15~2000\n输入-1则不限制\n默认25",
+                "Back_DescShort_FrameLimit", "Back_DescLong_FrameLimit",
                 (void*)&Pack.FrameRateLimit,
             {
                 (const void*)&IBG_SettingPack::____FrameRateLimit_Def,
@@ -180,7 +198,7 @@ IBB_SettingTypeList::IBB_SettingTypeList()
         },
         {
             IBB_SettingType::IntA,
-                u8"字体大小",u8"！！重启后生效\n使用的字号\n范围12~48\n默认24",
+                "Back_DescShort_FontSize",u8"Back_DescLong_FontSize",
                 (void*)&Pack.FontSize,
             {
                 (const void*)&IBG_SettingPack::____FontSize_Def,
@@ -189,7 +207,7 @@ IBB_SettingTypeList::IBB_SettingTypeList()
         },
         {
             IBB_SettingType::IntA,
-                u8"菜单每页条目",u8"！！重启后生效\n翻页菜单每页的条目数\n范围5~∞\n默认10",
+                "Back_DescShort_MenuPageLength",u8"Back_DescLong_MenuPageLength",
                 (void*)&Pack.MenuLinePerPage,
             {
                 (const void*)&IBG_SettingPack::____MenuLinePerPage_Def,
@@ -198,17 +216,17 @@ IBB_SettingTypeList::IBB_SettingTypeList()
         },
         {
             IBB_SettingType::IntB,
-                u8"拖动速率",u8"画布拖动和边缘滑动的速率基准\n范围1~6\n默认3",
+                "Back_DescShort_ScrollRate","Back_DescLong_ScrollRate",
                 (void*)&Pack.ScrollRateLevel,
             {
                 (const void*)&IBG_SettingPack::____ScrollRate_Min,//Value.Min
                 (const void*)&IBG_SettingPack::____ScrollRate_Max,//Value.Max
-                (const void*)u8"%d 档",//Value.Format
+                (const void*)u8"%d",//Value.Format
             }
         },
         {
             IBB_SettingType::IntB,
-                u8"模块透明度",u8"模块显示的基准透明度\n范围10%~100%\n默认80%",
+                "Back_DescShort_Transparency","Back_DescLong_Transparency",
                 (void*)&Pack.WindowTransparencyLevel,
             {
                 (const void*)&IBG_SettingPack::____WindowTransparency_Min,//Value.Min
@@ -218,7 +236,7 @@ IBB_SettingTypeList::IBB_SettingTypeList()
         },
         {
             IBB_SettingType::Bool,
-                u8"暗色模式",u8"决定全局主题为亮色还是暗色。\n默认为亮色模式",
+                "Back_DescShort_DarkMode","Back_DescLong_DarkMode",
                 (void*)&Pack.DarkMode,
             {
                 (const void*)+[]() { IBR_Color::StyleLight(); },//Action.SwitchToFalse
@@ -227,7 +245,7 @@ IBB_SettingTypeList::IBB_SettingTypeList()
         },
         {
             IBB_SettingType::Bool,
-                u8"导出后打开文件夹",u8"决定导出后是否自动打开文件夹\n默认打开",
+                "Back_DescShort_OpenFolderOnOutput","Back_DescLong_OpenFolderOnOutput",
                 (void*)&Pack.OpenFolderOnOutput,
             {
                 (const void*)nullptr,
@@ -236,17 +254,22 @@ IBB_SettingTypeList::IBB_SettingTypeList()
         },
         {
             IBB_SettingType::Bool,
-                u8"保存后自动导出",u8"决定保存后是否自动导出\n默认不自动导出",
+                "Back_DescShort_OutputOnSave","Back_DescLong_OutputOnSave",
                 (void*)&Pack.OutputOnSave,
             {
                 (const void*)nullptr,
                 (const void*)nullptr,
             }
+        },
+        {
+            IBB_SettingType::Lang,
+                "Back_DescShort_Language","Back_DescLong_Language",
+                nullptr, {}
         }
     };
 }
-std::vector<int> RW_ReadOrder = { 0,1,2,5,3,6,7,4 };
-std::vector<int> RW_WriteOrder = { 0,1,2,5,3,6,7,4 };
+std::vector<int> RW_ReadOrder = { 0,1,2,5,3,6,7,4,8 };
+std::vector<int> RW_WriteOrder = { 0,1,2,5,3,6,7,4,8 };
 
 
 void IBB_SettingTypeList::PackSetDefault()

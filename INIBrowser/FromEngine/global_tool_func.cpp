@@ -136,6 +136,7 @@ uint64_t GetSysTimeMicros()
 //const static char 月份[12][20] = 
 //{ "一月", "二月", "三月", "四月", "五月", "六月", "七月", "八月", "九月", "十月", "十一月", "十二月", };
 //{ "1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月", };
+/*
 std::string TimeNow()
 {
     const static char 星期[7][20] =
@@ -150,18 +151,56 @@ std::string TimeNow()
     return rt;
 }
 
+*/
+
+const std::wstring& WeekN(int x)
+{
+    static std::vector<std::wstring> Week;
+    if (Week.empty())
+    {
+        Week.resize(7);
+        Week[0] = locw("Day0");
+        Week[1] = locw("Day1");
+        Week[2] = locw("Day2");
+        Week[3] = locw("Day3");
+        Week[4] = locw("Day4");
+        Week[5] = locw("Day5");
+        Week[6] = locw("Day6");
+    }
+    return Week[x % 7];
+}
+
+const std::wstring& MonthN(int x)
+{
+    static std::vector<std::wstring> Month;
+    if (Month.empty())
+    {
+        Month.resize(12);
+        Month[0] = locw("Month1");
+        Month[1] = locw("Month2");
+        Month[2] = locw("Month3");
+        Month[3] = locw("Month4");
+        Month[4] = locw("Month5");
+        Month[5] = locw("Month6");
+        Month[6] = locw("Month7");
+        Month[7] = locw("Month8");
+        Month[8] = locw("Month9");
+        Month[9] = locw("Month10");
+        Month[10] = locw("Month11");
+        Month[11] = locw("Month12");
+    }
+    return Month[x % 12];
+}
+
 std::string TimeNowU8()
 {
-    const static char 星期[7][20] =
-    { u8"星期日", u8"星期一", u8"星期二", u8"星期三", u8"星期四", u8"星期五", u8"星期六" };
-    char* TBuf = new char[5000]();
     std::tm stm;
     std::time_t tt = std::time(0);
     localtime_s(&stm, &tt);
-    sprintf(TBuf, u8"%04d年%02d月%02d日 %s %02d:%02d:%02d", stm.tm_year + 1900, stm.tm_mon + 1, stm.tm_mday, 星期[stm.tm_wday], stm.tm_hour, stm.tm_min, stm.tm_sec);
-    std::string rt = TBuf;
-    delete[]TBuf;
-    return rt;
+    auto yyyy = stm.tm_year + 1900;
+    return UnicodetoUTF8(std::vformat(locw("DateFormat"), std::make_wformat_args(
+        yyyy, MonthN(stm.tm_mon), stm.tm_mday, WeekN(stm.tm_wday), stm.tm_hour, stm.tm_min, stm.tm_sec
+    )));
 }
 
 bool IsTrueString(const std::string& s1)
@@ -472,7 +511,7 @@ void JsonFile::ParseFromFile(const char* FileName)
     if (EnableLogEx)
     {
         GlobalLogB.AddLog_CurTime(false);
-        GlobalLogB.AddLog("JsonFile::ParseFromFile ： JSON文本：");
+        GlobalLogB.AddLog((u8"JsonFile::ParseFromFile ： " + loc("Log_ParseJsonFile")).c_str());
         GlobalLogB.AddLog_CurTime(false);
         GlobalLogB.AddLog("\"", false);
         GlobalLogB.AddLog(UTF8toMBCS(FileStr + iPos).c_str(), false);
@@ -514,7 +553,7 @@ void JsonFile::ParseFromFileWithOpts(const char* FileName, int RequireNullTermin
     if (EnableLogEx)
     {
         GlobalLogB.AddLog_CurTime(false);
-        GlobalLogB.AddLog("JsonFile::ParseFromFileWithOpts ： JSON文本：");
+        GlobalLogB.AddLog((u8"JsonFile::ParseFromFileWithOpts ： " + loc("Log_ParseJsonFile")).c_str());
         GlobalLogB.AddLog_CurTime(false);
         GlobalLogB.AddLog("\"", false);
         GlobalLogB.AddLog(UTF8toMBCS(FileStr + iPos).c_str(), false);

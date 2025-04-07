@@ -74,7 +74,7 @@ namespace IBB_DefaultRegType
         S = Obj.GetObjectItem(u8"Name");
         if (S.Available())Reg.Name = S.GetString();
         else if (Reg.UseOwnName)Reg.Name = Obj.GetName() + "_";
-        else Reg.Name = u8"模块";
+        else Reg.Name = loc("Back_DefaultModuleName");
         Reg.Count = 0;
 
         Reg.FrameColorD = Reg.FrameColorL;
@@ -132,11 +132,12 @@ namespace IBB_DefaultRegType
         if (EnableLog)
         {
             GlobalLogB.AddLog_CurTime(false);
-            GlobalLogB.AddLog("IBB_DefaultRegType::LoadFromFile ： 开始读取注册配置。");
+            GlobalLogB.AddLog((u8"IBB_DefaultRegType::LoadFromFile ： " + loc("Log_LoadRegType")).c_str());
         }
         JsonFile F;
-        IBR_PopupManager::AddJsonParseErrorPopup(F.ParseFromFileChecked(FileName, u8"【出错位置】", nullptr),
-            u8"尝试解析 "+ MBCStoUTF8(::FileName(FileName)) + u8" 时发生语法错误。");
+        auto WFN = UTF8toUnicode(::FileName(FileName));
+        IBR_PopupManager::AddJsonParseErrorPopup(F.ParseFromFileChecked(FileName, loc("Error_JsonParseErrorPos"), nullptr),
+            UnicodetoUTF8(std::vformat(locw("Error_JsonSyntaxError"), std::make_wformat_args(WFN))));
         if (!F.Available())return false;
         return Load(F);
     }

@@ -18,14 +18,12 @@ struct IBD_ShutDownDestructor(x)\
 
 //所有版本号相关数据
 extern const std::string Version;
+extern const std::wstring VersionW;
 extern const int VersionMajor;
 extern const int VersionMinor;
 extern const int VersionRelease;
 extern const int VersionN;
 extern const std::string VersionNStr;
-extern const char* _TEXT_UTF8 AppName;
-extern const char* _TEXT_ANSI AppNameA;
-extern const wchar_t* AppNameW;
 std::string GetVersionStr(int Version);
 
 //统一的文件头

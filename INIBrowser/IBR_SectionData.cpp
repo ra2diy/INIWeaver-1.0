@@ -79,26 +79,26 @@ void IBR_SectionData::RenameDisplay()
     const size_t BufSize = 1000;
     char* Str = new char[BufSize] {};
     strcpy(Str, DisplayName.c_str());
-    IBR_PopupManager::SetCurrentPopup(std::move(IBR_PopupManager::Popup{}.CreateModal(u8"模块重命名", true, [this, Str]
+    IBR_PopupManager::SetCurrentPopup(std::move(IBR_PopupManager::Popup{}.CreateModal(loc("GUI_ModuleRename"), true, [this, Str]
         {
             delete[]Str;
         })
         .SetFlag(ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize).PushMsgBack([this, Str]()
             {
                 ImGui::SetWindowSize({ FontHeight * 20.0f,FontHeight * 10.0f });
-                ImGui::Text(u8"请输入新的模块名称：");
+                ImGui::Text(locc("GUI_EnterNewModuleName"));
                 ImGui::InputText("", Str, BufSize);
                 if (Str != DisplayName && IBF_Inst_Project.HasDisplayName(Str))
                 {
-                    ImGui::TextDisabled(u8"确定");
+                    ImGui::TextDisabled(locc("GUI_OK"));
                     ImGui::SameLine();
                     ImGui::PushStyleColor(ImGuiCol_Text, IBR_Color::ErrorTextColor.Value);
-                    ImGui::Text(u8"模块名称不可重复");
+                    ImGui::Text(locc("GUI_ModuleRename_Error1"));
                     ImGui::PopStyleColor(1);
                 }
                 else
                 {
-                    if (ImGui::Button(u8"确定"))
+                    if (ImGui::Button(locc("GUI_OK")))
                     {
                         IBF_Inst_Project.DisplayNames.erase(DisplayName);
                         IBF_Inst_Project.DisplayNames[Str] = Desc;
@@ -138,8 +138,9 @@ bool IBR_SectionData::OnLineEdit(const std::string& Name, bool OnLink)
         if (EnableLog)
         {
             GlobalLog.AddLog_CurTime(false);
-            sprintf_s(LogBuf, "IBR_SectionData::OnLineEdit ： 错误：%s : %s 不存在。", Desc.GetText().c_str(), Name.c_str());
-            GlobalLog.AddLog(LogBuf);
+            auto W = UTF8toUnicode(Desc.GetText() + u8" : " + Name);
+            GlobalLog.AddLog(std::vformat(L"IBR_SectionData::OnLineEdit ： "+locw("Log_INILineNotExist"),
+                std::make_wformat_args(W)));
         }
         return true;
     }
@@ -198,7 +199,8 @@ void IBR_SectionData::CopyToClipBoard()
     EqDelta = { 0.0f,0.0f };
     ClipData.Generate(Sel);
     ImGui::SetClipboardText(ClipData.GetString().c_str());
-    IBR_HintManager::SetHint(u8"已成功复制 1 个模块", HintStayTimeMillis);
+    auto c = 1;
+    IBR_HintManager::SetHint(UnicodetoUTF8(std::vformat(locw("GUI_CopySuccess"), std::make_wformat_args(c))), HintStayTimeMillis);
 }
 
 void DrawDragPreviewIcon()
@@ -209,12 +211,16 @@ void DrawDragPreviewIcon()
         auto& T = IBR_Inst_Project.DragConditionText;
         auto P = ImGui::GetCursorScreenPos();
         if (T.empty())DrawCross(P, float(RFontHeight), IBR_Color::ErrorTextColor);
-        else if (T == "ERROR")DrawNoEntrySymbol(P, float(RFontHeight), IBR_Color::ErrorTextColor);
+        else if (T == "HOLY_SHIT\nWHAT_HAD_JUST_HAPPENED\nONE_MINUTE_AGO")DrawNoEntrySymbol(P, float(RFontHeight), IBR_Color::ErrorTextColor);
         else DrawCheckmark(P, float(RFontHeight), IBR_Color::CheckMarkColor);
         ImGui::Dummy(ImVec2{ float(RFontHeight),float(RFontHeight) });
         ImGui::SameLine();
-        if (IBR_Inst_Project.DragConditionText.empty())ImGui::TextColored(IBR_Color::ErrorTextColor, u8"非法链接");
-        else if (T != "ERROR")ImGui::Text(u8"链接到 %s", T.c_str());
+        if (IBR_Inst_Project.DragConditionText.empty())ImGui::TextColored(IBR_Color::ErrorTextColor, locc("GUI_Preview_InvalidLink"));
+        else if (T != "HOLY_SHIT\nWHAT_HAD_JUST_HAPPENED\nONE_MINUTE_AGO")
+        {
+            auto T2 = UTF8toUnicode(T);
+            ImGui::Text(UnicodetoUTF8(std::vformat(locw("GUI_Preview_LinkTo"), std::make_wformat_args(T2))).c_str());
+        }
         else ImGui::Text(IBR_Inst_Project.DragConditionTextAlt.c_str());
     }
     //else ImGui::Text(u8"NOT ACCEPTED");
@@ -268,8 +274,10 @@ void IBR_SectionData::RenderUI()
                     }
                     else if (payload->IsPreview())
                     {
-                        IBR_Inst_Project.DragConditionText = "ERROR";
-                        IBR_Inst_Project.DragConditionTextAlt = u8"没有到 " + back->Register + u8" 的默认链接";
+                        IBR_Inst_Project.DragConditionText = "HOLY_SHIT\nWHAT_HAD_JUST_HAPPENED\nONE_MINUTE_AGO";
+                        auto W = UTF8toUnicode(back->Register);
+                        IBR_Inst_Project.DragConditionTextAlt = UnicodetoUTF8(std::vformat(locw("GUI_Preview_NoDefaultLink"),
+                            std::make_wformat_args(W)));
                     }
 
                 }
@@ -323,8 +331,11 @@ void IBR_SectionData::RenderUI()
                     }
                     else if (payload->IsPreview())
                     {
-                        IBR_Inst_Project.DragConditionText = "ERROR";
-                        IBR_Inst_Project.DragConditionTextAlt = u8"请求" + Line->Default->Property.TypeAlt + u8"，实则" + tgback->Register;
+                        IBR_Inst_Project.DragConditionText = "HOLY_SHIT\nWHAT_HAD_JUST_HAPPENED\nONE_MINUTE_AGO";
+                        auto W1 = UTF8toUnicode(Line->Default->Property.TypeAlt);
+                        auto W2 = UTF8toUnicode(tgback->Register);
+                        IBR_Inst_Project.DragConditionTextAlt = UnicodetoUTF8(std::vformat(locw("GUI_Preview_WrongType"),
+                            std::make_wformat_args(W1, W2)));
                     }
 
                 }
@@ -347,7 +358,7 @@ void IBR_SectionData::RenderUI()
                 IBR_PopupManager::Popup{}.Create(DisplayName + "__MODULE").PushMsgBack([this]() {
                     if (Ignore)
                     {
-                        if (ImGui::SmallButton(u8"不忽略       "))
+                        if (ImGui::SmallButtonAlignLeft(locc("GUI_NoIgnore"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
                         {
                             Ignore = false;
                             IBR_PopupManager::ClearRightClickMenu();
@@ -355,23 +366,23 @@ void IBR_SectionData::RenderUI()
                     }
                     else
                     {
-                        if (ImGui::SmallButton(u8"忽略         "))
+                        if (ImGui::SmallButtonAlignLeft(locc("GUI_Ignore"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
                         {
                             Ignore = true;
                             IBR_PopupManager::ClearRightClickMenu();
                         }
                     }
-                    if (ImGui::SmallButton(u8"重命名         "))
+                    if (ImGui::SmallButtonAlignLeft(locc("GUI_Rename"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
                     {
                         RenameDisplay();
                         IBR_PopupManager::ClearRightClickMenu();
                     }
-                    if (ImGui::SmallButton(u8"复制           "))
+                    if (ImGui::SmallButtonAlignLeft(locc("GUI_Copy"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
                     {
                         CopyToClipBoard();
                         IBR_PopupManager::ClearRightClickMenu();
                     }
-                    if (ImGui::SmallButton(u8"删除           "))
+                    if (ImGui::SmallButtonAlignLeft(locc("GUI_Delete"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
                         IBRF_CoreBump.SendToR({ [this]()
                         {IBR_PopupManager::ClearRightClickMenu(); IBR_Inst_Project.DeleteSection(Desc); },nullptr });
 
@@ -381,7 +392,7 @@ void IBR_SectionData::RenderUI()
             IBR_PopupManager::Popup{}.Create(DisplayName + "__MODULE").PushMsgBack([this]() {
                 if (Ignore)
                 {
-                    if (ImGui::SmallButton(u8"不忽略       "))
+                    if (ImGui::SmallButtonAlignLeft(locc("GUI_NoIgnore"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
                     {
                         Ignore = false;
                         IBR_PopupManager::ClearRightClickMenu();
@@ -389,36 +400,36 @@ void IBR_SectionData::RenderUI()
                 }
                 else
                 {
-                    if (ImGui::SmallButton(u8"忽略         "))
+                    if (ImGui::SmallButtonAlignLeft(locc("GUI_Ignore"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
                     {
                         Ignore = true;
                         IBR_PopupManager::ClearRightClickMenu();
                     }
                 }
-                if (ImGui::SmallButton(u8"重命名         "))
+                if (ImGui::SmallButtonAlignLeft(locc("GUI_Rename"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
                 {
                     RenameDisplay();
                     IBR_PopupManager::ClearRightClickMenu();
                 }
-                if (ImGui::SmallButton(u8"复制           "))
+                if (ImGui::SmallButtonAlignLeft(locc("GUI_Copy"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
                 {
                     CopyToClipBoard();
                     IBR_PopupManager::ClearRightClickMenu();
                 }
-                if (ImGui::SmallButton(u8"文本编辑       "))
+                if (ImGui::SmallButtonAlignLeft(locc("GUI_EditText"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
                 {
                     IBR_EditFrame::SetActive(IBR_Inst_Project.IBR_Rev_SectionMap[Desc]);
                     IBR_EditFrame::SwitchToText();
                     IBR_Inst_Menu.ChooseMenu(MenuItemID_EDIT);
                     IBR_PopupManager::ClearRightClickMenu();
                 }
-                if (ImGui::SmallButton(u8"编辑           "))
+                if (ImGui::SmallButtonAlignLeft(locc("GUI_Edit"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
                 {
                     IBR_EditFrame::SetActive(IBR_Inst_Project.IBR_Rev_SectionMap[Desc]);
                     IBR_Inst_Menu.ChooseMenu(MenuItemID_EDIT);
                     IBR_PopupManager::ClearRightClickMenu();
                 }
-                if (ImGui::SmallButton(u8"删除           "))
+                if (ImGui::SmallButtonAlignLeft(locc("GUI_Delete"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
                     IBRF_CoreBump.SendToR({ [this]()
                     {IBR_PopupManager::ClearRightClickMenu(); IBR_Inst_Project.DeleteSection(Desc); },nullptr });
 
@@ -457,7 +468,7 @@ void IBR_SectionData::RenderUI()
             IBD_RInterruptF(x);
             auto Bsec = Rsec.GetBack();
             if (Bsec)ImGui::Text(Bsec->Name.c_str());
-            else ImGui::TextColored(IBR_Color::ErrorTextColor, u8"不存在的模块");
+            else ImGui::TextColored(IBR_Color::ErrorTextColor, locc("Back_GunMu"));
         }
         else ImGui::Text(DisplayName.c_str());
         if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
@@ -481,11 +492,11 @@ void IBR_SectionData::RenderUI()
         auto Bsec = Rsec.GetBack();
         if (Bsec == nullptr)
         {
-            ImGui::TextColored(IBR_Color::ErrorTextColor, u8"字段错误链接或无链接");
+            ImGui::TextColored(IBR_Color::ErrorTextColor, locc("GUI_MissingSectionLink"));
         }
         else if (IsComment)
         {
-            if(!CommentEdit)ImGui::TextColored(IBR_Color::ErrorTextColor, u8"丢失注释缓冲区");
+            if(!CommentEdit)ImGui::TextColored(IBR_Color::ErrorTextColor, locc("GUI_MissingCommentBuffer"));
             else
             {
                 if (ImGui::InputTextMultiline("##COMMENT", CommentEdit.get(), MAX_STRING_LENGTH,
@@ -498,7 +509,7 @@ void IBR_SectionData::RenderUI()
         }
         else
         {
-            if (!Bsec->Inherit.empty())ImGui::Text(u8"继承自 %s", Bsec->Inherit.c_str());
+            if (!Bsec->Inherit.empty())ImGui::Text(locc("GUI_InheritFrom"), Bsec->Inherit.c_str());
             for (const auto& sub : Bsec->SubSecs)
             {
                 std::string Last{};
@@ -571,7 +582,8 @@ void IBR_SectionData::RenderUI()
                             if (Sec)
                             {
                                 ImGui::BeginTooltip();
-                                ImGui::Text(u8"连接到 %s", Sec->DisplayName.c_str());
+                                auto wd = UTF8toUnicode(Sec->DisplayName);
+                                ImGui::Text(UnicodetoUTF8(std::vformat(locw("GUI_Preview_LinkTo"), std::make_wformat_args(wd))).c_str());
                                 ImGui::EndTooltip();
                             }
                         }
@@ -585,7 +597,7 @@ void IBR_SectionData::RenderUI()
                             {
                                 IBR_PopupManager::SetRightClickMenu(std::move(
                                     IBR_PopupManager::Popup{}.Create(DisplayName + "__LINK__" + lt.FromKey).PushMsgBack([this, Line]() {
-                                        if (ImGui::SmallButton(u8"断开链接       "))
+                                        if (ImGui::SmallButtonAlignLeft(locc("GUI_Unlink"), ImVec2{FontHeight * 7.0f, ImGui::GetTextLineHeight()}))
                                         {
                                             IBG_Undo.SomethingShouldBeHere();
                                             Line->Data->Clear();
@@ -760,7 +772,7 @@ void IBR_SectionData::RenderUI()
                                 }
                             }));
                     }
-                    ImGui::Text(k.c_str());
+                    ImGui::TextEx(k.c_str());
                     ImGui::SameLine();
                     Line.Edit.Input->RenderUI();
                 }

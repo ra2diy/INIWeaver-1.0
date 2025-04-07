@@ -1,28 +1,5 @@
 #pragma once
-#include "FromEngine/Include.h"
-
-struct IniToken
-{
-    bool IsSection{ false }, Empty{ false }, HasDesc{ false };
-    std::string Key, Value, Desc;
-
-    void Tokenize(std::string_view);
-    IniToken() = default;
-    IniToken(std::string_view Line)
-    {
-        Tokenize(Line);
-    }
-};
-
-std::vector<std::string_view> GetLines(char* Text);
-std::vector<std::string_view> GetLines(BytePointerArray Text, size_t ExtBytes);//ExtBytes > 0
-std::vector<std::string_view> GetLines(std::string&& Text);
-std::vector<IniToken> GetTokens(const std::vector<std::string_view>& Lines);
-std::vector<IniToken> GetTokensFromFile(ExtFileClass& Loader);
-std::vector<std::vector<IniToken>> SplitTokens(std::vector<IniToken>&& Tok);
-std::unordered_map<std::string, std::unordered_map<std::string, std::string>> IniToMap(std::vector<std::vector<IniToken>>&& Secs);
-std::string DataToBase64(const std::vector<BYTE>& Data);
-std::vector<BYTE> Base64ToData(const std::string_view Str);
+#include "IBG_Ini.h"
 
 class ClipWriteStream
 {
@@ -233,7 +210,7 @@ struct IBB_ModuleAlt
 namespace IBB_ModuleAltDefault
 {
     extern std::vector<std::string> FlattenedModuleName;
-    void Load(const wchar_t* FileRange, const wchar_t* FileRange2);
+    void Load(const wchar_t* FileRange, const wchar_t* FileRange2, const wchar_t* FileRange3);
     std::wstring GenerateModulePath();
     std::wstring GenerateModulePath_NoName();
     IBB_ModuleAlt* GetModule(const std::string& Name);

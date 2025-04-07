@@ -171,7 +171,9 @@
     <ClInclude Include="IBB_ModuleAlt.h" />
     <ClInclude Include="IBB_RegType.h" />
     <ClInclude Include="IBFront.h" />
+    <ClInclude Include="IBG_Ini.h" />
     <ClInclude Include="IBRender.h" />
+    <ClInclude Include="IBR_Localization.h" />
     <ClInclude Include="IBSave.h" />
     <ClInclude Include="MainStage.h" />
     <ClInclude Include="PreLink.h" />
@@ -201,6 +203,7 @@
     <ClCompile Include="IBB_Setting.cpp" />
     <ClCompile Include="IBB_SubSec.cpp" />
     <ClCompile Include="IBFront.cpp" />
+    <ClCompile Include="IBR_Localization.cpp" />
     <ClCompile Include="IBR_Misc.cpp" />
     <ClCompile Include="IBR_Components.cpp" />
     <ClCompile Include="IBR_Debug.cpp" />
@@ -214,7 +217,7 @@
     <ClCompile Include="IBR_WorkSpace.cpp" />
     <ClCompile Include="IBSave.cpp" />
     <ClCompile Include="INIBrowser.cpp" />
-    <ClCompile Include="SaveFile.cpp" />
+    <ClCompile Include="IBS_File.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="icon1.ico" />
@@ -225,6 +228,7 @@
   <ItemGroup>
     <None Include="..\Release\Global\RegisterTypes.json" />
     <None Include="..\Release\Global\TypeAlt.csv" />
+    <None Include="..\Release\Resources\language.ini" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

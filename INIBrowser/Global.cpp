@@ -3,19 +3,23 @@
 
 //所有版本号相关数据
 const std::string Version = u8"0.2b3";
+const std::wstring VersionW = L"0.2b3";
 const int VersionMajor = 0;
 const int VersionMinor = 2;
 const int VersionRelease = 3;
 const int VersionN = VersionMajor * 10000 + VersionMinor * 100 + VersionRelease;
 const std::string VersionNStr = u8"000203";
-const char* AppName = u8"INI浏览器";
-const char* AppNameA = "INI浏览器";
-const wchar_t* AppNameW = L"INI浏览器";
 
 std::string GetVersionStr(int Ver)
 {
-    if (Ver < 200)return "旧0.1 b" + std::to_string(Ver % 100);
-    else return std::to_string(Ver / 10000) + "." + std::to_string((Ver / 100) % 100) + "b" + std::to_string(Ver % 100);
+    if (Ver < 200)
+    {
+        return loc("Back_OldVer1")+u8" b" + std::to_string(Ver % 100);
+    }
+    else
+    {
+        return std::to_string(Ver / 10000) + "." + std::to_string((Ver / 100) % 100) + "b" + std::to_string(Ver % 100);
+    }
 }
 
 //统一的文件头

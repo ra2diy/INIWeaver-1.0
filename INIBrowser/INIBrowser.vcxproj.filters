@@ -105,6 +105,12 @@
     <ClInclude Include="..\ImGui\imstb_truetype.h">
       <Filter>ImGui</Filter>
     </ClInclude>
+    <ClInclude Include="IBR_Localization.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="IBG_Ini.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="INIBrowser.cpp">
@@ -122,7 +128,7 @@
     <ClCompile Include="IBBack.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="SaveFile.cpp">
+    <ClCompile Include="IBS_File.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="IBR_Misc.cpp">
@@ -212,6 +218,9 @@
     <ClCompile Include="..\ImGui\backends\imgui_impl_win32.cpp">
       <Filter>ImGui</Filter>
     </ClCompile>
+    <ClCompile Include="IBR_Localization.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Image Include="icon1.ico">
@@ -228,6 +237,9 @@
       <Filter>资源文件</Filter>
     </None>
     <None Include="..\Release\Global\TypeAlt.csv">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="..\Release\Resources\language.ini">
       <Filter>资源文件</Filter>
     </None>
   </ItemGroup>

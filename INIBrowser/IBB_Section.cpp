@@ -518,7 +518,7 @@ bool IBB_Section::Generate(const IBB_Section_NameType& Par)
             if (EnableLog)
             {
                 GlobalLogB.AddLog_CurTime(false);
-                GlobalLogB.AddLog("IBB_Section::Generate ： 错误：Section作为一个LinkGroup却具有非空的Lines。");
+                GlobalLogB.AddLog((u8"IBB_Section::Generate ： " + loc("Log_GenerateInvalidLines")).c_str());
             }
             return false;
         }

@@ -151,10 +151,10 @@ IBR_Section _PROJ_CMD_READ IBR_Project::GetSection(const IBB_Section_Desc& Desc)
         }
         else
         {
-            IBR_SectionMap.insert({ MaxID,IBR_SectionData{Desc,std::string(u8"¹öÄ¾")} });
-            sprintf_s(LogBuf, "IBR_Project::GetSection ²»´æÔÚµÄSection : %s", Desc.GetText().c_str());
+            IBR_SectionMap.insert({ MaxID,IBR_SectionData{Desc,locc("Back_GunMu")} });
+            auto gt = UTF8toUnicode(Desc.GetText());
             GlobalLog.AddLog_CurTime(false);
-            GlobalLog.AddLog(LogBuf);
+            GlobalLog.AddLog(std::vformat(L"IBR_Project::GetSection £º " + locw("Log_SectionNotExist"), std::make_wformat_args(gt)));
         }
         ++MaxID;
     }
@@ -196,10 +196,10 @@ void _PROJ_CMD_NOINTERRUPT _PROJ_CMD_READ IBR_Project::EnsureSection(const IBB_S
         if (pBack)IBR_SectionMap.insert({ MaxID,IBR_SectionData{Desc, std::move(S)} });
         else
         {
-            IBR_SectionMap.insert({ MaxID,IBR_SectionData{Desc,std::string(u8"¹öÄ¾")} });
-            sprintf_s(LogBuf, "IBR_Project::GetSection ²»´æÔÚµÄSection : %s", Desc.GetText().c_str());
+            IBR_SectionMap.insert({ MaxID,IBR_SectionData{Desc,locc("Back_GunMu")} });
+            auto gt = UTF8toUnicode(Desc.GetText());
             GlobalLog.AddLog_CurTime(false);
-            GlobalLog.AddLog(LogBuf);
+            GlobalLog.AddLog(std::vformat(L"IBR_Project::GetSection £º " + locw("Log_SectionNotExist"), std::make_wformat_args(gt)));
         }
         ++MaxID;
     }
@@ -232,13 +232,13 @@ IBR_Section _PROJ_CMD_READ _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE I
     Desc.Ini = DefaultIniName;
     Desc.Sec = GenerateModuleTag();
     CreateSection(Desc);
-    EnsureSection(Desc, u8"×¢ÊÍ¿é");
+    EnsureSection(Desc, loc("Back_CommentBlockName"));
     auto RSec=GetSection(Desc);
 
     auto BSec = RSec.GetBack();
     assert(BSec != nullptr);
     BSec->CreateAsCommentBlock = true;
-    BSec->Register = u8"×¢ÊÍ¿é";
+    BSec->Register = loc("Back_CommentBlockName");
 
     auto RD = RSec.GetSectionData();
     assert(RD != nullptr);

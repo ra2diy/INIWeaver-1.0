@@ -261,7 +261,8 @@ std::string IBB_SubSec::GetText(bool PrintExtraData, bool FromExport) const
             if (EnableLog)
             {
                 GlobalLogB.AddLog_CurTime(false);
-                GlobalLogB.AddLog(("IBB_SubSec::GetText ：SubSec" + sn + "有名字而无对应的内容。").c_str());
+                auto sl = UTF8toUnicode(sn);
+                GlobalLogB.AddLog(std::vformat(L"IBB_SubSec::GetText ：" + locw("Log_SubSecNotExist"), std::make_wformat_args(sl)));
             }
         auto& L = It->second;
         Text += sn; Text.push_back('=');
@@ -293,7 +294,8 @@ std::vector<std::string> IBB_SubSec::GetKeys(bool PrintExtraData) const
             if (EnableLog)
             {
                 GlobalLogB.AddLog_CurTime(false);
-                GlobalLogB.AddLog(("IBB_SubSec::GetKeys ：SubSec" + sn + "有名字而无对应的内容。").c_str());
+                auto sl = UTF8toUnicode(sn);
+                GlobalLogB.AddLog(std::vformat(L"IBB_SubSec::GetKeys ：" + locw("Log_SubSecNotExist"), std::make_wformat_args(sl)));
             }
         Ret.push_back(sn);
     }
@@ -315,7 +317,8 @@ IBB_VariableList IBB_SubSec::GetLineList(bool PrintExtraData) const
             if (EnableLog)
             {
                 GlobalLogB.AddLog_CurTime(false);
-                GlobalLogB.AddLog(("IBB_SubSec::GetLineList ：SubSec" + sn + "有名字而无对应的内容。").c_str());
+                auto sl = UTF8toUnicode(sn);
+                GlobalLogB.AddLog(std::vformat(L"IBB_SubSec::GetLineList ：" + locw("Log_SubSecNotExist"), std::make_wformat_args(sl)));
             }
         auto& L = It->second;
         if (L.Default == nullptr)Ret.Value[sn] = "MISSING Line Default";
@@ -402,8 +405,11 @@ bool IBB_SubSec::UpdateAll()
                             IBF_Inst_Project.Project.GetSecIndex(V)//TODO : TEST!!
                         );
                         NewLT.back().FromKey = L.first;
-                        GlobalLogB.AddLog_CurTime(false); GlobalLogB.AddLog("IBB_SubSec::UpdateAll Line II Type : ", false);//BREAKPOINT
-                        GlobalLogB.AddLog(NewLT.back().GetText(IBF_Inst_Project.Project).c_str());//BREAKPOINT
+                        if (EnableLogEx)
+                        {
+                            GlobalLogB.AddLog_CurTime(false); GlobalLogB.AddLog("IBB_SubSec::UpdateAll Line II Type : ", false);//BREAKPOINT
+                            GlobalLogB.AddLog(NewLT.back().GetText(IBF_Inst_Project.Project).c_str());//BREAKPOINT
+                         }
                     }
                 }
                 else Ret = false;

@@ -16,6 +16,7 @@ public:
     void CallSaveSetting();//call every 5 second with [setting] window
     bool IsSaveSettingComplete();
 
+    void RefreshSetting();
     void RenderUI();
 };
 

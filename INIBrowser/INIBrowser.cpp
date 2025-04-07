@@ -22,17 +22,12 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance,
     hInst = hInstance;
     if (!InitializePath())return 2;
     ProcessCommandLine(lpCmdLine);
+    if (!InitializeLanguage())return 3;
     InitializeLogger();
     InitializeResolution();
 
     if (int PreLoopRet = PreLoop1(); PreLoopRet)
         return PreLoopRet;
-
-    if (EnableLog)
-    {
-        GlobalLog.AddLog_CurTime(false);
-        GlobalLog.AddLog("渲染初始化完成。");
-    }
 
     std::thread FrontThr(IBF_Thr_FrontLoop);
     FrontThr.detach();

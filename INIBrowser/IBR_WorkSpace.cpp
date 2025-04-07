@@ -109,7 +109,7 @@ namespace SearchModuleAlt
 
         void RenderUI()
         {
-            ImGui::Text(u8"搜索模块");
+            ImGui::Text(locc("GUI_Search_Title"));
             bool ToUpdate = false;
             if (!Arr.size())
             {
@@ -118,18 +118,18 @@ namespace SearchModuleAlt
                 ConsiderDesc = true;
                 ToUpdate = true;
             }
-            if (ImGui::Checkbox(u8"名称", &ConsiderDescName))ToUpdate = true;
+            if (ImGui::Checkbox(locc("GUI_Search_Name"), &ConsiderDescName))ToUpdate = true;
             ImGui::SameLine();
-            if (ImGui::Checkbox(u8"注册名", &ConsiderRegName))ToUpdate = true;
+            if (ImGui::Checkbox(locc("GUI_Search_RegName"), &ConsiderRegName))ToUpdate = true;
             ImGui::SameLine();
-            if (ImGui::Checkbox(u8"描述", &ConsiderDesc))ToUpdate = true;
+            if (ImGui::Checkbox(locc("GUI_Search_Desc"), &ConsiderDesc))ToUpdate = true;
             ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.9f, 0.9f, 0.9f, 1.0f));
             ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.0f, 0.0f, 0.0f, 1.0f));
             if (ImGui::InputText(u8"##SEARCH", InputBuf, sizeof(InputBuf), ImGuiInputTextFlags_EnterReturnsTrue))
                 ToUpdate = true;
             ImGui::PopStyleColor(2);
             ImGui::SameLine();
-            ImGui::Text(u8"按回车搜索");
+            ImGui::Text(locc("GUI_Search_Tip"));
             /*
             auto P = ImGui::GetCursorScreenPos();
             ImGui::Dummy(ImVec2{ float(FontHeight),float(FontHeight) });
@@ -168,7 +168,7 @@ namespace IBR_WorkSpace
     
     void RenderRightClickTable()
     {
-        ImGui::BeginChild("##RightClick_Module", { FontHeight * 12.0F,FontHeight * 14.0F }, false);
+        ImGui::BeginChild("##RightClick_Module", { FontHeight * 10.0F,FontHeight * 14.0F }, false);
         IBB_ModuleAltDefault::Tree_RenderUI();
         ImGui::EndChild();
     }
@@ -373,7 +373,8 @@ namespace IBR_WorkSpace
         }
         ClipData.Generate(Sel);
         ImGui::SetClipboardText(ClipData.GetString().c_str());
-        IBR_HintManager::SetHint(u8"已成功复制 " + std::to_string(ClipData.Modules.size()) + u8" 个模块", HintStayTimeMillis);
+        auto c = ClipData.Modules.size();
+        IBR_HintManager::SetHint(UnicodetoUTF8(std::vformat(locw("GUI_CopySuccess"), std::make_wformat_args(c))), HintStayTimeMillis);
     }
     void CutSelected()
     {
@@ -392,12 +393,13 @@ namespace IBR_WorkSpace
             auto X = IBR_Inst_Project.AddModule(ClipData.Modules);
             if (X)
             {
-                IBR_HintManager::SetHint(u8"已成功粘贴 " + std::to_string(X.value().size()) + u8" 个模块", HintStayTimeMillis);
+                auto c = X.value().size();
+                IBR_HintManager::SetHint(UnicodetoUTF8(std::vformat(locw("GUI_PasteSuccess"), std::make_wformat_args(c))), HintStayTimeMillis);
                 MassSelect(X.value());
             }
-            else IBR_HintManager::SetHint(u8"粘贴失败", HintStayTimeMillis);
+            else IBR_HintManager::SetHint(loc("GUI_PasteFailed"), HintStayTimeMillis);
         }
-        else IBR_HintManager::SetHint(u8"粘贴失败", HintStayTimeMillis);
+        else IBR_HintManager::SetHint(loc("GUI_PasteFailed"), HintStayTimeMillis);
     }
     void MassSelect(const std::vector<IBR_Project::id_t>& Target)
     {
@@ -421,6 +423,14 @@ namespace IBR_WorkSpace
             MassTarget.push_back(I);
         IBR_PopupManager::ClearRightClickMenu();
     }
+
+    void RightClickTextHelper(const char* ss)
+    {
+        auto Pos = ImGui::GetCursorPos();
+        ImGui::Text(ss);
+        ImGui::SetCursorPos(Pos);
+        ImGui::Dummy(ImVec2{ FontHeight * 9.7f, ImGui::GetTextLineHeight() });
+    }
     void OpenRightClick()
     {
         IBB_ModuleAltDefault::Tree_ResetHover();
@@ -435,23 +445,26 @@ namespace IBR_WorkSpace
                 {
                     MassTarget = IBR_SelectMode::GetMassSelected();
                 }
-                if (IBR_Inst_Project.IBR_SectionMap.empty())ImGui::TextDisabled(u8"全选           ");
+                if (IBR_Inst_Project.IBR_SectionMap.empty())
+                {
+                    ImGui::TextDisabled(locc("GUI_SelectAll"));
+                }
                 else
                 {
-                    ImGui::Text(u8"全选           ");
+                    RightClickTextHelper(locc("GUI_SelectAll"));
                     if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
                     {
                         SelectAll();
                         IBR_PopupManager::ClearRightClickMenu();
                     }
                 }
-                ImGui::Text(u8"粘贴           ");
+                RightClickTextHelper(locc("GUI_Paste"));
                 if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
                 {
                     Paste();
                     IBR_PopupManager::ClearRightClickMenu();
                 }
-                ImGui::Text(u8"创建注释块     ");
+                ImGui::Text(locc("GUI_CreateCommentBlock"));
                 if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
                 {
                     auto EqMouse = RePosToEqPos(ImGui::GetMousePos());
@@ -501,14 +514,13 @@ namespace IBR_WorkSpace
                 delete[]IDescLong;
                 delete[]IPath;
             };
-        IBR_PopupManager::SetCurrentPopup(std::move(IBR_PopupManager::Popup{}.CreateModal(u8"模块重命名", true, PF)
+        IBR_PopupManager::SetCurrentPopup(std::move(IBR_PopupManager::Popup{}.CreateModal(locc("GUI_OutputModule_Title"), true, PF)
             .SetFlag(ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize).PushMsgBack([=]() mutable
                 {
                     ImGui::SetWindowSize({ FontHeight * 20.0f,FontHeight * 10.0f });
-                    ImGui::Text(u8"导出模块");
-                    ImGui::InputText(u8"名称", IDescShort, sizeof(BufString));
-                    ImGui::InputText(u8"描述", IDescLong, sizeof(BufString));
-                    if (ImGui::InputText(u8"保存路径", IPath, sizeof(BufString)))
+                    ImGui::InputText(locc("GUI_OutputModule_Name"), IDescShort, sizeof(BufString));
+                    ImGui::InputText(locc("GUI_OutputModule_Desc"), IDescLong, sizeof(BufString));
+                    if (ImGui::InputText(locc("GUI_OutputModule_OutputPath"), IPath, sizeof(BufString)))
                     {
                         WPath = UTF8toUnicode(IPath);
                         WD = WPath; PathRemoveFileSpecW(WD.data());
@@ -518,8 +530,19 @@ namespace IBR_WorkSpace
                     ImGui::SameLine();
                     if (ImGui::SmallButton("..."))
                     {
-                        auto Ret  = InsertLoad::SelectFileName(MainWindowHandle,
-                            InsertLoad::SelectFileType{ WD.c_str() ,L"导出模块", PathFindFileNameW(WPath.c_str()), L"模块(.ini)\0*.ini\0所有文件 (*.*)\0*.*\0\0"}, ::GetSaveFileNameW, false);
+                        auto T1 = locw("GUI_OutputModule_Type1");
+                        auto T2 = locw("GUI_OutputModule_Type2");
+                        auto L1 = wcslen(L"*.ini");
+                        auto L2 = wcslen(L"*.*");
+                        std::wstring wbuf;
+                        wbuf.resize(T1.size() + T2.size() + 32, 0);
+                        memcpy(wbuf.data(), T1.c_str(), T1.size() * sizeof(wchar_t));
+                        memcpy(wbuf.data() + (T1.size() + 1), L"*.ini", L1 * sizeof(wchar_t));
+                        memcpy(wbuf.data() + (T1.size() + L1 + 2), T2.c_str(), T2.size() * sizeof(wchar_t));
+                        memcpy(wbuf.data() + (T1.size() + L1 + T2.size() + 3), L"*.*", L2 * sizeof(wchar_t));
+                        auto Ret = InsertLoad::SelectFileName(MainWindowHandle,
+                            InsertLoad::SelectFileType{ WD.c_str() ,locw("GUI_OutputModule_Title"),
+                            PathFindFileNameW(WPath.c_str()), wbuf.c_str() }, ::GetSaveFileNameW, false);
                         if (Ret.Success)
                         {
                             WPath = Ret.RetBuf;
@@ -532,7 +555,7 @@ namespace IBR_WorkSpace
                     auto len = strlen(IDescShort);
                     if (OK1 && OK2 && len)
                     {
-                        if (ImGui::Button(u8"确定"))
+                        if (ImGui::Button(locc("GUI_OK")))
                         {
                             OutputSelectedImpl(IPath, IDescShort, IDescLong);
                             delete[]IDescShort;
@@ -543,21 +566,21 @@ namespace IBR_WorkSpace
                     }
                     else
                     {
-                        ImGui::TextDisabled(u8"确定");
+                        ImGui::TextDisabled(locc("GUI_OK"));
                         ImGui::SameLine();
                         if (!len)
                         {
-                            ImGui::TextColored(IBR_Color::ErrorTextColor, u8"名称不可为空");
+                            ImGui::TextColored(IBR_Color::ErrorTextColor, locc("GUI_OutputModule_Error1"));
                             ImGui::SameLine();
                         }
                         if (!OK2)
                         {
-                            ImGui::TextColored(IBR_Color::ErrorTextColor, u8"模块名称不可重复");
+                            ImGui::TextColored(IBR_Color::ErrorTextColor, locc("GUI_OutputModule_Error2"));
                             ImGui::SameLine();
                         }
                         if (!OK1)
                         {
-                            ImGui::TextColored(IBR_Color::ErrorTextColor, u8"非法的模块路径");
+                            ImGui::TextColored(IBR_Color::ErrorTextColor, locc("GUI_OutputModule_Error3"));
                             ImGui::SameLine();
                         }
                     }
@@ -730,7 +753,8 @@ namespace IBR_WorkSpace
                     else if (ImGui::IsMouseReleased(ImGuiMouseButton_Left))
                     {
                         IBR_EditFrame::Clear();
-                        IBR_Inst_Menu.ChooseMenu(MenuItemID_FILE);
+                        if(IBR_Inst_Menu.GetMenuItem()==MenuItemID_EDIT)
+                            IBR_Inst_Menu.ChooseMenu(MenuItemID_FILE);
 
                         HasLefttDownToWait = false;
                         if (MoveAfterMass)
@@ -799,18 +823,17 @@ namespace IBR_WorkSpace
                 {
                     IBR_PopupManager::SetRightClickMenu(std::move(
                         IBR_PopupManager::Popup{}.Create(RandStr(8)).PushMsgBack([]() {
-
-                            if (ImGui::SmallButton(u8"复制           "))
+                            if (ImGui::SmallButtonAlignLeft(locc("GUI_Copy"), ImVec2{FontHeight * 7.0f, ImGui::GetTextLineHeight()}))
                             {
                                 CopySelected();
                                 IBR_PopupManager::ClearRightClickMenu();
                             }
-                            if (ImGui::SmallButton(u8"剪切           "))
+                            if (ImGui::SmallButtonAlignLeft(locc("GUI_Cut"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
                             {
                                 CutSelected();
                                 IBR_PopupManager::ClearRightClickMenu();
                             }
-                            if (ImGui::SmallButton(u8"粘贴           "))
+                            if (ImGui::SmallButtonAlignLeft(locc("GUI_Paste"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
                             {
                                 IsMassAfter = false;
                                 IsBgDragging = false;
@@ -819,7 +842,7 @@ namespace IBR_WorkSpace
                             }
                             if (SelectedAllIgnored())
                             {
-                                if (ImGui::SmallButton(u8"全不忽略       "))
+                                if (ImGui::SmallButtonAlignLeft(locc("GUI_IgnoreNone"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
                                 {
                                     NoIgnoreSelected();
                                     IBR_PopupManager::ClearRightClickMenu();
@@ -827,20 +850,20 @@ namespace IBR_WorkSpace
                             }
                             else
                             {
-                                if (ImGui::SmallButton(u8"全忽略         "))
+                                if (ImGui::SmallButtonAlignLeft(locc("GUI_IgnoreAll"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
                                 {
                                     IgnoreSelected();
                                     IBR_PopupManager::ClearRightClickMenu();
                                 }
                             }
                             
-                            if (ImGui::SmallButton(u8"导出为模块     "))
+                            if (ImGui::SmallButtonAlignLeft(locc("GUI_ExportModule"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
                             {
                                 OutputSelected();
                                 IBR_PopupManager::ClearRightClickMenu();
                             }
 
-                            if (ImGui::SmallButton(u8"删除           "))
+                            if (ImGui::SmallButtonAlignLeft(locc("GUI_Delete"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
                             {
                                 IsMassAfter = false;
                                 IsBgDragging = false;
@@ -928,7 +951,8 @@ namespace IBR_WorkSpace
                 else if (ImGui::IsMouseReleased(ImGuiMouseButton_Left))
                 {
                     IBR_EditFrame::Clear();
-                    IBR_Inst_Menu.ChooseMenu(MenuItemID_FILE);
+                    if (IBR_Inst_Menu.GetMenuItem() == MenuItemID_EDIT)
+                        IBR_Inst_Menu.ChooseMenu(MenuItemID_FILE);
 
                     IsBgDragging = false;
                 }
@@ -1092,7 +1116,7 @@ namespace IBR_WorkSpace
             ImGui::SetWindowFontScale(IBR_FullView::Ratio);
             ImGui::PushClipRect(IBR_RealCenter::WorkSpaceUL, IBR_RealCenter::WorkSpaceDR, true);
 
-            if (sd.Dragging)ImGui::PushOrderFront(ImGui::GetCurrentWindow());
+            if (sd.Dragging && !IBR_PopupManager::HasPopup)ImGui::PushOrderFront(ImGui::GetCurrentWindow());
 
             if (ImGui::IsWindowFocused() && !sd.IsComment)
             {
@@ -1248,7 +1272,7 @@ namespace IBR_WorkSpace
             if(RSD != nullptr && Rsec.HasBack())
             {
                 //auto KList = ImGui::GetForegroundDrawList();
-                auto KList = !RSD->Dragging ? ImGui::GetBackgroundDrawList() : ImGui::GetForegroundDrawList();
+                auto KList = (!RSD->Dragging || IBR_PopupManager::HasPopup) ? ImGui::GetBackgroundDrawList() : ImGui::GetForegroundDrawList();
                 //auto KList = IBR_PopupManager::HasPopup ? ImGui::GetBackgroundDrawList() : ImGui::GetForegroundDrawList();
                 KList->PushClipRect(IBR_RealCenter::WorkSpaceUL, IBR_RealCenter::WorkSpaceDR, true);
                 ImColor Col;

@@ -23,6 +23,9 @@ class ExtFileClass
     FILE* fp{ nullptr };
 	bool IsOpen{ false };
 public:
+    ExtFileClass() = default;
+    ExtFileClass(const ExtFileClass&) = delete;
+
 	FILE* GetPlain()const
 	{
 		return fp;

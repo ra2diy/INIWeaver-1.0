@@ -7,13 +7,6 @@
 #define _TEXT_UTF8
 #endif
 
-
-/*
-一个总纲：
-back不负责Write和Update的综合
-而由Front统御！
-*/
-
 struct IBG_SettingPack;
 
 struct IBB_Section;
@@ -144,13 +137,14 @@ struct IBB_SettingType
 {
     enum _Type
     {
-        None, IntA, IntB, Bool
+        None, IntA, IntB, Bool, Lang
     }Type;
 
-    std::string DescShort, DescLong;
+    std::string DescShortOri, DescLongOri;
     void* Data;
     std::vector<const void*> Limit;
     std::shared_ptr<bool> Changing{ new bool(false) };
+    std::string DescShort, DescLong;
 };
 
 struct IBB_SettingTypeList

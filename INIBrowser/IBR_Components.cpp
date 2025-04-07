@@ -75,7 +75,7 @@ namespace IBR_DynamicData
         if (EnableLog)
         {
             GlobalLog.AddLog_CurTime(false);
-            GlobalLog.AddLog("设置随机数引擎。");
+            GlobalLog.AddLog(locc("Log_InitRandom"));
         }
     }
     void Open()
@@ -92,10 +92,12 @@ namespace IBR_DynamicData
             if (GetLastError() == ERROR_SHARING_VIOLATION)
             {
                 glfwHideWindow(PreLink::window);
-                MessageBoxA(NULL, "无法启动，另一个 INI浏览器 正在运行！", AppNameA, MB_OK);
+                MessageBoxW(NULL, locwc("Error_AnotherInstanceIsRunning"), _AppNameW, MB_OK);
                 ExitProcess(0);
             }
-            MessageBoxA(NULL, ("GetLastError()错误码：" + std::to_string(GetLastError())).c_str(), "IBR_DynamicData::Open 发生错误", MB_OK);
+            auto ls = std::to_wstring(::GetLastError());
+            MessageBoxW(NULL, (std::vformat(locw("Error_LastErrorCode"), std::make_wformat_args(ls))).c_str(),
+                (L"IBR_DynamicData::Open " + locw("Error_ErrorOccurred")).c_str(), MB_OK);
         }
     }
     void Save()
@@ -128,14 +130,14 @@ namespace IBR_RecentManager
 
     IBR_ListMenu<_TEXT_UTF8 std::string> RecentList{ RecentName,u8"Recent",[](_TEXT_UTF8 std::string& Name,int,int)
         {
-            if (ImGui::SmallButton((u8"打开##" + Name).c_str()))
+            if (ImGui::SmallButton((loc("GUI_Open") + u8"##" + Name).c_str()))
                 IBR_ProjectManager::OpenRecentOptAction(UTF8toUnicode(Name));
             ImGui::SameLine();
             ImGui::TextWrapped(Name.c_str());
         } };
     void RenderUI()
     {
-        ImGui::Text(u8"最近打开");
+        ImGui::Text(locc("GUI_Recent"));
         RecentList.RenderUI();
     }
     void Load()
@@ -144,7 +146,9 @@ namespace IBR_RecentManager
         {
             if (!RecentFile.Available())
             {
-                MessageBoxA(NULL, ("GetLastError()错误码：" + std::to_string(GetLastError())).c_str(), "IBR_RecentManager::Load 发生错误", MB_OK);
+                auto ls = std::to_wstring(::GetLastError());
+                MessageBoxW(NULL, (std::vformat(locw("Error_LastErrorCode"), std::make_wformat_args(ls))).c_str(),
+                    (L"IBR_RecentManager::Load " + locw("Error_ErrorOccurred")).c_str(), MB_OK);
             }
             RecentFile.ReadVector(RecentName);
             RecentFile.Close();
@@ -207,7 +211,7 @@ namespace IBR_PopupManager
         {
             SetCurrentPopup(
                 std::move(Popup{}
-                    .CreateModal(u8"JSON解析错误", true, []() { {
+                    .CreateModal(loc("GUI_JsonParseError"), true, []() { {
                             JsonParseErrorListShown++;
                             IBRF_CoreBump.SendToR({ [] {ShowJsonParseErrorImpl(); } });
                         }})
@@ -237,7 +241,7 @@ namespace IBR_PopupManager
                                 ImGui::Text(std::string(L.data(), L.size()).c_str());
                             Idx++;
                         }
-                        ImGui::Text(u8"完整信息请见Browser.log。");
+                        ImGui::Text(locc("GUI_SeeLogForDetails"));
                     }))
                 );
 
@@ -251,8 +255,8 @@ namespace IBR_PopupManager
         if (EnableLog)
         {
             GlobalLog.AddLog_CurTime(false);
-            sprintf_s(LogBuf, "JSON解析错误：%s", UTF8toMBCS(ErrorStr).c_str());
-            GlobalLog.AddLog(LogBuf);
+            auto V = UTF8toUnicode(ErrorStr);
+            GlobalLog.AddLog(std::vformat(locw("Log_JsonParseErrorInfo"), std::make_wformat_args(V)));
         }
         JsonParseErrorList.push_back({ std::move(ErrorStr), Info });
     }
@@ -357,7 +361,7 @@ namespace IBR_PopupManager
             {
                 ImGui::NewLine();
                 ImGui::SetCursorPosX(X / 2 - FontHeight);
-                if (ImGui::Button(u8"确定"))
+                if (ImGui::Button(locc("GUI_OK")))
                     ClearPopupDelayed();
             });
         return P;
@@ -416,6 +420,7 @@ namespace IBR_PopupManager
                     IsMouseOnPopupCond |= ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows);
                     if(!RightClickMenu.HasOwnStyle)ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_PopupBg));
                     RightClickMenu.Show();
+                    ImGui::PushOrderFront(ImGui::GetCurrentWindow());
                     if (!RightClickMenu.HasOwnStyle)ImGui::PopStyleColor();
                     if (!ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows)
                         && ImGui::IsMouseClicked(ImGuiMouseButton_Left)
@@ -472,11 +477,11 @@ void Browse_ShowList_Impl(const std::string& suffix, int* Page, BrowseParamList&
                 if (EnableLog)
                 {
                     GlobalLog.AddLog_CurTime(false);
-                    GlobalLog.AddLog(("点击了上一页（" + suffix + "）按钮。").c_str());
+                    GlobalLog.AddLog(locc("Log_PrevPage"));
                 }
             }
             ImGui::SameLine();
-            ImGui::Text(u8"上一页");
+            ImGui::Text(locc("GUI_PrevPage"));
             ImGui::SameLine();
         }
         else
@@ -494,7 +499,7 @@ void Browse_ShowList_Impl(const std::string& suffix, int* Page, BrowseParamList&
         else ImGui::SetCursorPosX(FontHeight * 12.0f);
         if (List.HasNext)
         {
-            ImGui::Text(u8"下一页");
+            ImGui::Text(locc("GUI_NextPage"));
             ImGui::SameLine();
             if (ImGui::ArrowButton(("next_" + suffix).c_str(), ImGuiDir_Right))
             {
@@ -502,7 +507,7 @@ void Browse_ShowList_Impl(const std::string& suffix, int* Page, BrowseParamList&
                 if (EnableLog)
                 {
                     GlobalLog.AddLog_CurTime(false);
-                    GlobalLog.AddLog(("点击了下一页（" + suffix + "）按钮。").c_str());
+                    GlobalLog.AddLog(locc("Log_NextPage"));
                 }
             }
             ImGui::SameLine();
@@ -518,11 +523,11 @@ void Browse_ShowList_Impl(const std::string& suffix, int* Page, BrowseParamList&
                 if (EnableLog)
                 {
                     GlobalLog.AddLog_CurTime(false);
-                    GlobalLog.AddLog(("点击了第一页（" + suffix + "）按钮。").c_str());
+                    GlobalLog.AddLog(locc("Log_FirstPage"));
                 }
             }
             ImGui::SameLine();
-            ImGui::Text(u8"第一页");
+            ImGui::Text(locc("GUI_FirstPage"));
             ImGui::SameLine();
         }
         else
@@ -539,7 +544,7 @@ void Browse_ShowList_Impl(const std::string& suffix, int* Page, BrowseParamList&
         else ImGui::SetCursorPosX(FontHeight * 6.0f);
         auto PosYText = ImGui::GetCursorPosY();
         ImGui::SetCursorPosY(PosYText - FontHeight * 0.5f);
-        ImGui::Text(u8"第（%d/%d）页", (*Page) + 1, List.PageN);
+        ImGui::Text(locc("GUI_PageInfo"), (*Page) + 1, List.PageN);
         ImGui::SetCursorPosY(PosYText);
         ImGui::SameLine();
         if ((*Page) + 1 >= 1000)ImGui::SetCursorPosX(FontHeight * 13.0f);
@@ -547,7 +552,7 @@ void Browse_ShowList_Impl(const std::string& suffix, int* Page, BrowseParamList&
         else ImGui::SetCursorPosX(FontHeight * 12.0f);
         if ((*Page) + 1 != List.PageN)
         {
-            ImGui::Text(u8"最后页");
+            ImGui::Text(locc("GUI_LastPage"));
             ImGui::SameLine();
             if (ImGui::ArrowButton(("lpg_" + suffix).c_str(), ImGuiDir_Right))
             {
@@ -555,7 +560,7 @@ void Browse_ShowList_Impl(const std::string& suffix, int* Page, BrowseParamList&
                 if (EnableLog)
                 {
                     GlobalLog.AddLog_CurTime(false);
-                    GlobalLog.AddLog(("点击了最后页（" + suffix + "）按钮。").c_str());
+                    GlobalLog.AddLog(locc("Log_LastPage"));
                 }
             }
             ImGui::SameLine();
@@ -629,7 +634,7 @@ namespace IBR_HintManager
             if (EnableLog)
             {
                 GlobalLog.AddLog_CurTime(false);
-                GlobalLog.AddLog("成功载入.\\Resources\\hint.txt");
+                GlobalLog.AddLog(std::vformat(locwc("Log_LoadHint"), std::make_wformat_args(L".\\Resources\\hint.txt")));
             }
         }
         else
@@ -637,7 +642,7 @@ namespace IBR_HintManager
             if (EnableLog)
             {
                 GlobalLog.AddLog_CurTime(false);
-                GlobalLog.AddLog("未能载入.\\Resources\\hint.txt");
+                GlobalLog.AddLog(std::vformat(locwc("Log_LoadHintFailed"), std::make_wformat_args(L".\\Resources\\hint.txt")));
             }
         }
     }

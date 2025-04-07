@@ -14,22 +14,33 @@ namespace PreLink
 {
     static void glfw_error_callback(int error, const char* description)
     {
-        static BufString gle;
+        auto gle = std::vformat(loc("Error_GlfwErrorText"), std::make_format_args(error, description));
         if (EnableLog)
         {
             GlobalLog.AddLog_CurTime(false);
-            sprintf(gle, "GLFW错误：错误码：%d 错误信息：%s", error, description);
-            GlobalLog.AddLog(gle);
+            GlobalLog.AddLog(gle.c_str());
         }
+        MessageBoxW(NULL,
+            UTF8toUnicode(gle).c_str(),
+            _AppNameW, MB_ICONERROR);
+    }
+
+    bool InitializeLanguage()
+    {
+        if (!IBR_L10n::LoadFromINI(L"\\Resources\\Language.ini"))
+            return false;
+        return true;
     }
 
     int PreLoop1()
     {
+        
+
         glfwSetErrorCallback(glfw_error_callback);
         if (!glfwInit())
             return 1;
         glfwWindowHint(GLFW_VISIBLE, GL_FALSE);
-        window = glfwCreateWindow(ScrX, ScrY, u8"INI浏览器", NULL, NULL);
+        window = glfwCreateWindow(ScrX, ScrY, _AppName, NULL, NULL);
         MainWindowHandle = glfwGetWin32Window(window);
         //glfwHideWindow(window);
         SetClassLong(MainWindowHandle, GCL_HICON, (LONG)LoadIcon(hInst, MAKEINTRESOURCE(IDI_ICON1)));
@@ -43,7 +54,7 @@ namespace PreLink
         if (EnableLog)
         {
             GlobalLog.AddLog_CurTime(false);
-            GlobalLog.AddLog("成功打开窗口。");
+            GlobalLog.AddLog(locc("Log_OpenWindow"));
         }
         return 0;
     }
@@ -51,8 +62,8 @@ namespace PreLink
     void InitConfigJson()
     {
         JsonFile Cfg;
-        IBR_PopupManager::AddJsonParseErrorPopup(Cfg.ParseFromFileChecked(".\\Resources\\config.json", u8"【出错位置】", nullptr)
-            , u8"尝试解析 config.json 时发生语法错误。");
+        IBR_PopupManager::AddJsonParseErrorPopup(Cfg.ParseFromFileChecked(".\\Resources\\config.json", loc("Error_JsonParseErrorPos"), nullptr)
+            , UnicodetoUTF8(std::vformat(locw("Error_JsonSyntaxError"), std::make_wformat_args(L"Config.json"))));
         if (!Cfg.Available())
         {
             //MessageBoxA(NULL, "config.json 读取失败！", AppNameA, MB_OK);
@@ -100,7 +111,7 @@ namespace PreLink
         if (EnableLog)
         {
             GlobalLog.AddLog_CurTime(false);
-            GlobalLog.AddLog(("成功载入最近打开列表：" + FontPath).c_str());
+            GlobalLog.AddLog(std::vformat(locw("Log_LoadRecent"), std::make_wformat_args(L".\\Resources\\recent.dat")));
         }
 
         ImGuiIO& io = ImGui::GetIO();
@@ -113,7 +124,7 @@ namespace PreLink
 
             ImWchar base_ranges[] =
             {
-                0x0020, 0x00FF, // Basic Latin + Latin Supplement
+                0x0020, 0x0FFF, // Basic Supplement
                 0x2000, 0x206F, // General Punctuation
                 0x3000, 0x30FF, // CJK Symbols and Punctuations, Hiragana, Katakana
                 0x31F0, 0x31FF, // Katakana Phonetic Extensions
@@ -137,7 +148,7 @@ namespace PreLink
             if (EnableLog)
             {
                 GlobalLog.AddLog_CurTime(false);
-                GlobalLog.AddLog("成功载入.\\Resources\\load.txt");
+                GlobalLog.AddLog(std::vformat(locw("Log_LoadCharList"), std::make_wformat_args(L".\\Resources\\load.txt")));
             }
 
             //0x4e00, 0x9FAF, // CJK Ideograms
@@ -151,7 +162,7 @@ namespace PreLink
             if (EnableLog)
             {
                 GlobalLog.AddLog_CurTime(false);
-                GlobalLog.AddLog("未能载入.\\Resources\\load.txt 使用默认载入策略");
+                GlobalLog.AddLog(std::vformat(locw("Log_LoadCharListFailed"), std::make_wformat_args(L".\\Resources\\load.txt")));
             }
 
             LoadMyRange = false;
@@ -164,21 +175,12 @@ namespace PreLink
         ImGui_ImplGlfw_InitForOpenGL(window, true);
         ImGui_ImplOpenGL2_Init();
 
-        
-
-
-        if (EnableLog)
-        {
-            GlobalLog.AddLog_CurTime(false);
-            GlobalLog.AddLog("注册OnExit完成。");
-        }
-
         glfwShowWindow(PreLink::window);
         SetClassLong(MainWindowHandle, GCL_HICON, (LONG)LoadIconW(PreLink::hInst, MAKEINTRESOURCE(IDI_ICON1)));
         if (EnableLog)
         {
             GlobalLog.AddLog_CurTime(false);
-            GlobalLog.AddLog("显示渲染窗口。");
+            GlobalLog.AddLog(locc("Log_GlfwShowWindow"));
         }
 
         while (!IBR_Inst_Setting.IsReadSettingComplete());
@@ -197,17 +199,18 @@ namespace PreLink
         }
         if (font == NULL)
         {
-            MessageBoxA(nullptr, "font == NULL", "字体载入失败！", MB_ICONERROR);
+            MessageBoxW(nullptr, L"font == NULL", locwc("Error_FailedToLoadFont"), MB_ICONERROR);
         }
         if (EnableLog)
         {
             GlobalLog.AddLog_CurTime(false);
-            GlobalLog.AddLog(("成功载入字体：" + FontPath).c_str());
+            auto wf = UTF8toUnicode(FontPath);
+            GlobalLog.AddLog(std::vformat(locw("Log_LoadFont"), std::make_wformat_args(wf)));
         }
 
-        IBB_DefaultRegType::LoadFromFile(".\\Global\\RegisterTypes.json");//FIRST !
-        IBF_Inst_DefaultTypeList.ReadAltSetting(".\\Global\\TypeAlt");//SECOND ! DEPENDENT
-        IBB_ModuleAltDefault::Load(L".\\Global\\Modules\\*.*", L".\\Global\\ImageModules\\*.*");//THIRD ! DEPENDENT
+        IBB_DefaultRegType::LoadFromFile(u8".\\Global\\RegisterTypes.json");//FIRST !
+        IBF_Inst_DefaultTypeList.ReadAltSetting(u8".\\Global\\TypeAlt");//SECOND ! DEPENDENT
+        IBB_ModuleAltDefault::Load(L".\\Global\\Modules\\*.*", L".\\Global\\ImageModules\\*.*", L"\\Global\\Modules\\");//THIRD ! DEPENDENT
         IBR_Inst_Debug.DebugLoad();
 
         glfwSetDropCallback(PreLink::window, IBR_ProjectManager::OnDropFile);
@@ -259,10 +262,10 @@ namespace PreLink
                         GlobalLog.AddLog_CurTime(false);
                         GlobalLog.AddLog("font->ContainerAtlas == NULL");
                         GlobalLog.AddLog_CurTime(false);
-                        GlobalLog.AddLog("遇到这种情况请重启几次，感谢你的支持。");
+                        GlobalLog.AddLog(locc("Log_PleaseRestart"));
                     }
-                    MessageBoxA(nullptr, "font->ContainerAtlas == NULL", "字体载入失败！", MB_ICONERROR);
-                    MessageBoxA(nullptr, "遇到这种情况请重启几次", "程序启动失败！", MB_ICONERROR);
+                    MessageBoxW(nullptr, L"font->ContainerAtlas == NULL", locwc("Error_FailedToLoadFont"), MB_ICONERROR);
+                    MessageBoxW(nullptr, locwc("Log_PleaseRestart"), locwc("Error_FailedToLaunch"), MB_ICONERROR);
                     CleanUp();
                     exit(0);
                 }
@@ -314,11 +317,11 @@ namespace PreLink
         //*
         catch (std::exception& e)
         {
-            MessageBoxA(nullptr, e.what(), "抛出异常！", MB_ICONERROR);
+            MessageBoxW(nullptr, UTF8toUnicode(e.what()).c_str(), locwc("Error_ThrowException"), MB_ICONERROR);
             if (EnableLog)
             {
                 GlobalLog.AddLog_CurTime(false);
-                GlobalLog.AddLog("主循环异常，异常信息：");
+                GlobalLog.AddLog(locc("Log_MainLoopErrorDesc"));
                 GlobalLog.AddLog_CurTime(false);
                 GlobalLog.AddLog(e.what());
             }
@@ -328,7 +331,7 @@ namespace PreLink
         if (EnableLog)
         {
             GlobalLog.AddLog_CurTime(false);
-            GlobalLog.AddLog("主循环停止工作。");
+            GlobalLog.AddLog(locc("Log_MainLoopFinish"));
         }
     }
 
@@ -340,9 +343,10 @@ namespace PreLink
         GlobalLogB.ClearLog();
 
         GlobalLog.AddLog_CurTime(false);
-        GlobalLog.AddLog(("INI浏览器 V" + Version).c_str());
+        auto cwa = locw("AppName");
+        GlobalLog.AddLog(std::vformat(locw("Log_InitializeLogger1"), std::make_wformat_args(cwa, VersionW)));
         GlobalLog.AddLog_CurTime(false);
-        GlobalLog.AddLog("INI浏览器已开始运行。");
+        GlobalLog.AddLog(locc("Log_InitializeLogger2"));
     }
 
     bool FixLaunchPath()
@@ -361,7 +365,7 @@ namespace PreLink
     {
         if (!FixLaunchPath())
         {
-            MessageBoxA(NULL, "无法确定启动路径。", "错误", MB_OK);
+            MessageBoxW(NULL, locwc("Error_CannotInitializePath"), locwc("Error_FalledToLaunch"), MB_OK);
             return false;
         }
 

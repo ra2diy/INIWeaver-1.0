@@ -355,8 +355,13 @@ void IBB_DefaultTypeList::EnsureType(const std::string& Key, const std::string& 
 {
     auto it = IniLine_Default.find(Key);
     if (it != IniLine_Default.end())return;//Exists
+    {
+        auto K = UTF8toUnicode(Key);
+        auto LT = UTF8toUnicode(LinkType);
+        MessageBoxW(NULL, std::vformat(locw("Error_LinkTypeNotExist"), std::make_wformat_args(K, LT)).c_str() ,
+            L"IBB_DefaultTypeList::EnsureType", MB_OK);
+    }
     IBB_DefaultTypeAlt Alt;
-    MessageBoxA(NULL, ("ERROR Key : " + Key).c_str(), (LinkType + " link type does not exist").c_str(), MB_OK);
     Alt.LinkType = LinkType;
     Alt.Name = Key;
     Alt.LinkLimit = -1;
@@ -445,8 +450,9 @@ bool IBB_DefaultTypeAltList::LoadFromJsonFile(const char* Name)
 {
     std::string FileName(const std::string & ss);
     JsonFile F;
-    IBR_PopupManager::AddJsonParseErrorPopup(F.ParseFromFileChecked(Name, u8"【出错位置】", nullptr),
-        u8"尝试解析 " + MBCStoUTF8(FileName(Name)) + u8" 时发生语法错误。");
+    auto V = UTF8toUnicode(FileName(Name));
+    IBR_PopupManager::AddJsonParseErrorPopup(F.ParseFromFileChecked(Name, loc("Error_JsonParseErrorPos"), nullptr),
+        UnicodetoUTF8(std::vformat(locw("Error_JsonSyntaxError"), std::make_wformat_args(V))));
     if (!F.Available())return false;
     Load(F);
 
@@ -461,7 +467,7 @@ bool IBB_DefaultTypeAltList::LoadFromJsonFile(const char* Name)
         Et.PutStr(L.DescLong); Et.PutChr('\n');
     }
     Et.Close();
-    MessageBoxA(NULL, "已将TypeAlt注册表从json转换为CSV格式，下次将从TypeAlt.csv加载。", AppNameA, MB_OK);
+    MessageBoxW(NULL, locwc("GUI_TypeAltConverted"), _AppNameW, MB_OK);
 
     return true;
 }
@@ -646,7 +652,8 @@ bool IBB_Ini::Merge(const IBB_Ini& Another, bool IsDuplicate)
             if (EnableLog)
             {
                 GlobalLogB.AddLog_CurTime(false);
-                GlobalLogB.AddLog("IBB_Ini::Merge ：有名字的字段理应存在。");
+                auto gt = UTF8toUnicode(Another.Name + "->" + fs);
+                GlobalLogB.AddLog(std::vformat(L"IBB_Ini::Merge ：" + locw("Log_SectionNotExist"), std::make_wformat_args(gt)));
             }
             Ret = false;
         }
@@ -678,7 +685,10 @@ bool IBB_IniLine::Merge(const std::string& Another, const std::string& Mode)
             if (EnableLog)
             {
                 GlobalLogB.AddLog_CurTime(false);
-                GlobalLogB.AddLog(("IBB_IniLine::Merge ：" + Default->Property.Type + " 类型的 Data 不能被分配。").c_str());
+                auto K = UTF8toUnicode(Default->Name);
+                auto LT = UTF8toUnicode(Default->Property.Type);
+                GlobalLogB.AddLog(std::vformat(L"IBB_DefaultTypeList::Merge ： " + locw("Error_DataTypeNotExist"),
+                    std::make_wformat_args(K, LT)).c_str());
             }
             return false;
         }
@@ -700,8 +710,10 @@ bool IBB_IniLine::Merge(const std::string& Another, const std::string& Mode)
         if (EnableLog)
         {
             GlobalLogB.AddLog_CurTime(false);
-            sprintf_s(LogBufB, "IBB_IniLine::Merge ：Line \"%s\"合并模式\"%s\"不存在。", Default->Name.c_str(), Mode.c_str());
-            GlobalLogB.AddLog(LogBufB);
+            auto K = UTF8toUnicode(Default->Name);
+            auto LT = UTF8toUnicode(Mode);
+            GlobalLogB.AddLog(std::vformat(L"IBB_IniLine::Merge ： " + locw("Error_MergeTypeNotExist"),
+                std::make_wformat_args(K, LT)).c_str());
         }
         return false;
     }
@@ -723,7 +735,10 @@ bool IBB_IniLine::Generate(const std::string& Value, IBB_IniLine_Default* Def)
         if (EnableLog)
         {
             GlobalLogB.AddLog_CurTime(false);
-            GlobalLogB.AddLog(("IBB_IniLine::Generate ：" + Default->Property.Type + " 类型的 Data 不能被分配。").c_str());
+            auto K = UTF8toUnicode(Default->Name);
+            auto LT = UTF8toUnicode(Default->Property.Type);
+            GlobalLogB.AddLog(std::vformat(L"IBB_IniLine::Generate ： " + locw("Error_DataTypeNotExist"),
+                std::make_wformat_args(K, LT)).c_str());
         }
         return false;
     }
@@ -767,7 +782,7 @@ bool IBB_Ini::CreateSection(const std::string& _Name)
         if (EnableLog)
         {
             GlobalLogB.AddLog_CurTime(false);
-            GlobalLogB.AddLog("IBB_Ini::CreateSection ：空的字段名。");
+            GlobalLogB.AddLog((u8"IBB_Ini::CreateSection ：" + loc("Log_EmptySectionName")).c_str());
         }
         return false;
     }
@@ -857,7 +872,8 @@ std::string IBB_Ini::GetText(bool PrintExtraData) const
             if (EnableLog)
             {
                 GlobalLogB.AddLog_CurTime(false);
-                GlobalLogB.AddLog(("IBB_Ini::GetText ：字段"+ sn +"有名字而无对应的内容。").c_str());
+                auto gt = UTF8toUnicode(Name + "->" + sn);
+                GlobalLogB.AddLog(std::vformat(L"IBB_Ini::GetText ：" + locw("Log_SectionNotExist"), std::make_wformat_args(gt)));
             }
         auto& Sec = It->second;
         Text += "[" + Sec.Name + "]\n" + Sec.GetText(PrintExtraData);
@@ -1158,9 +1174,11 @@ bool IBB_DefaultTypeList::BuildQuery()
             if (EnableLog)
             {
                 GlobalLogB.AddLog_CurTime(false);
-                sprintf_s(LogBufB, "IBB_DefaultTypeList::BuildQuery ：Ini行\"%s\"的Limit.Type=\"%s\"不属于任何已知类型。",
-                    p.second.Name.c_str(), p.second.Limit.Type.c_str());
-                GlobalLogB.AddLog(LogBufB);
+                auto K = UTF8toUnicode(p.second.Name);
+                auto LT = UTF8toUnicode(p.second.Limit.Type);
+                GlobalLogB.AddLog(std::vformat(L"IBB_DefaultTypeList::EnsureType ： " + locw("Error_LimitTypeNotExist"),
+                    std::make_wformat_args(K, LT)).c_str());
+
             }
             Ret = false;
         }
