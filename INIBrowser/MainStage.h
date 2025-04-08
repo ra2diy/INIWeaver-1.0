@@ -12,6 +12,7 @@
 #include<imgui_internal.h>
 
 std::string FontPath = ".\\Resources\\";//全过程不变
+std::wstring FontPathW = L".\\Resources\\";//全过程不变
 std::wstring Defaultpath{ L"C:\\" };
 std::string Pathbuf, Desktop, TextEditAboutU8;
 std::wstring PathbufW;
@@ -149,7 +150,7 @@ void ControlPanel()
     IBR_Inst_Menu.RenderUIBar();
 
     ImGui::SameLine();
-    ImGui::SetCursorPosX(ImGui::GetWindowWidth() - 14.0f * FontHeight);
+    ImGui::SetCursorPosX(ImGui::GetWindowWidth() - loc("GUI_TopRightHint").size() * FontHeight * 0.7f);
     ImGui::Text(locc("GUI_TopRightHint"), _AppName, Version.c_str(), ImGui::GetIO().Framerate);
 
     ImGui::End();

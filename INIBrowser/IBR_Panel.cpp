@@ -290,12 +290,12 @@ void ControlPanel_About()
     ImGui::TextWrapped(locc("GUI_About1"), _AppName, Version.c_str());
     ImGui::TextWrapped(u8"GLFW/Dear ImGui", Version.c_str());
     ImGui::Separator();
-    ImGui::TextWrapped(u8"作者：钢铁之锤");
+    ImGui::TextWrapped((loc("GUI_About5") + u8"：钢铁之锤").c_str());
     ImGui::TextWrapped(u8"QQ：2482911962");
     ImGui::TextWrapped(u8"贴吧：笨030504");
     ImGui::TextWrapped(u8"GitHub：IronHammer Std");
     ImGui::NewLine();
-    ImGui::TextWrapped(u8"概念设计 & “产品经理”：");
+    ImGui::TextWrapped((loc("GUI_About6") + u8"：").c_str());
     ImGui::TextWrapped(u8"      Kenosis");
     ImGui::Separator();
     ImGui::TextWrapped(locc("GUI_About2"));

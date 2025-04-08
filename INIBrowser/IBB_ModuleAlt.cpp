@@ -372,6 +372,15 @@ private:
     WIN32_FIND_DATAW findData; // 文件数据
 };
 
+std::vector<std::wstring> FindFileVec(const std::wstring& pattern)
+{
+    std::vector<std::wstring> result;
+    FindFileRange finder(pattern);
+    for (const auto& file : finder) {
+        result.push_back(file.FullPath);
+    }
+    return result;
+}
 
 ClipWriteStream& operator<<(ClipWriteStream& stm, bool v)
 {

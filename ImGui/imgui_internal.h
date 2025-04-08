@@ -1830,6 +1830,9 @@ struct ImGuiContext
         TestEngineHookItems = false;
         TestEngine = NULL;
 
+        ExtraTopMostWindow = NULL;
+        ExtraTopMostWindow2 = NULL;
+
         WindowsActiveCount = 0;
         CurrentWindow = NULL;
         HoveredWindow = NULL;

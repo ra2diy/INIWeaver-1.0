@@ -35,8 +35,8 @@ namespace IBR_L10n
             {
                 ImGui::PushOrderFront(ImGui::GetCurrentWindow());
                 if (k == "Basic")continue;
-                auto it = v.find("LangName");
-                if (ImGui::Selectable((it == v.end() ? k : it->second).c_str(), k == CurrentLanguage))
+                auto i2 = v.find("LangName");
+                if (ImGui::Selectable((i2 == v.end() ? k : i2->second).c_str(), k == CurrentLanguage))
                 {
                     SetLanguage(k);
                 }

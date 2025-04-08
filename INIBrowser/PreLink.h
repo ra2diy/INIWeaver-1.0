@@ -7,6 +7,9 @@
 #include "IBB_ModuleAlt.h"
 #include "IBB_RegType.h"
 #include <Shlwapi.h>
+#include "IBR_Font.h"
+#include <filesystem>
+
 bool ShouldCloseShellLoop = false;
 bool GotoCloseShellLoop = false;
 
@@ -67,12 +70,12 @@ namespace PreLink
         if (!Cfg.Available())
         {
             //MessageBoxA(NULL, "config.json ∂¡»° ß∞‹£°", AppNameA, MB_OK);
-            FontPath += "msyh.ttf";
+            FontPath.clear();
         }
         else
         {
             auto Obj = Cfg.GetObj();
-            FontPath += Obj.ItemStringOr("FontName", "msyh.ttf");
+            FontPath = Obj.ItemStringOr("FontName", "");
 
             auto S = Obj.GetObjectItem("StyleLight");
             if (S.Available())IBR_Color::LoadLight(S);
@@ -80,6 +83,49 @@ namespace PreLink
             S = Obj.GetObjectItem("StyleDark");
             if (S.Available())IBR_Color::LoadDark(S);
         }
+        auto A0 = UTF8toUnicode(FontPath);
+        auto Fin = IBR_Font::SearchFont(A0);
+        FontPath = UnicodetoUTF8(Fin);
+
+        if(FontPath.empty())
+        {
+            std::vector<std::wstring> WPFallback{
+                L"Microsoft Yahei", L"Microsoft Jhenghei", L"SimHei", L"SimSun", L"Segoe UI", L"Consolas"
+            };
+            for (auto& S : WPFallback)
+            {
+                auto Alt = IBR_Font::SearchFont(S);
+                if (!Alt.empty())
+                {
+                    auto P = std::filesystem::path(Alt);
+                    if (std::filesystem::exists(P))
+                    {
+                        FontPath = UnicodetoUTF8(Alt);
+                        if (EnableLog)
+                        {
+                            GlobalLog.AddLog_CurTime(false);
+                            GlobalLog.AddLog(std::vformat(locw("Log_FallbackFont"), std::make_wformat_args(Alt)));
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (FontPath.empty())
+        {
+            MessageBoxW(NULL, std::vformat(locw("Error_InvalidFontName"), std::make_wformat_args(A0)).c_str()
+                , locwc("Error_FailedToLoadFont"), MB_ICONERROR);
+            exit(0);
+        }
+        auto P = std::filesystem::path(Fin);
+        if (!std::filesystem::exists(P))
+        {
+            MessageBoxW(NULL, std::vformat(locw("Error_InvalidTTF"), std::make_wformat_args(A0)).c_str()
+                , locwc("Error_FailedToLoadFont"), MB_ICONERROR);
+            exit(0);
+        }
+        //MessageBoxW(NULL, Fin.c_str(), L"SearchFont", MB_OK);
     }
 
     void PreLoop2()
@@ -89,6 +135,7 @@ namespace PreLink
 
         std::string EncodingStr;//MBCS Unicode UTF8
 
+        IBR_Font::BuildFontQuery();
         InitConfigJson();
         
         IBR_HintManager::Load();
@@ -199,7 +246,8 @@ namespace PreLink
         }
         if (font == NULL)
         {
-            MessageBoxW(nullptr, L"font == NULL", locwc("Error_FailedToLoadFont"), MB_ICONERROR);
+            auto A0 = UTF8toUnicode(FontPath);
+            MessageBoxW(nullptr, std::vformat(locw("Error_InvalidTTF"), std::make_wformat_args(A0)).c_str(), locwc("Error_FailedToLoadFont"), MB_ICONERROR);
         }
         if (EnableLog)
         {

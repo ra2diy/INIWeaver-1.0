@@ -173,6 +173,7 @@
     <ClInclude Include="IBFront.h" />
     <ClInclude Include="IBG_Ini.h" />
     <ClInclude Include="IBRender.h" />
+    <ClInclude Include="IBR_Font.h" />
     <ClInclude Include="IBR_Localization.h" />
     <ClInclude Include="IBSave.h" />
     <ClInclude Include="MainStage.h" />
@@ -203,6 +204,7 @@
     <ClCompile Include="IBB_Setting.cpp" />
     <ClCompile Include="IBB_SubSec.cpp" />
     <ClCompile Include="IBFront.cpp" />
+    <ClCompile Include="IBR_Font.cpp" />
     <ClCompile Include="IBR_Localization.cpp" />
     <ClCompile Include="IBR_Misc.cpp" />
     <ClCompile Include="IBR_Components.cpp" />

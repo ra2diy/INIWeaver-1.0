@@ -111,6 +111,9 @@
     <ClInclude Include="IBG_Ini.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="IBR_Font.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="INIBrowser.cpp">
@@ -219,6 +222,9 @@
       <Filter>ImGui</Filter>
     </ClCompile>
     <ClCompile Include="IBR_Localization.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="IBR_Font.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
