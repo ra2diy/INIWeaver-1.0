@@ -14,6 +14,19 @@ std::optional<std::vector<IBR_Project::id_t>> _PROJ_CMD_WRITE  _PROJ_CMD_UPDATE 
     if (!Module.Available)return std::nullopt;
     std::vector<ModuleClipData> NewMD = Module.Modules;
     for (auto& M : NewMD)M.Replace(Module.Parameter, Argument);
+
+    int X = (int)sqrt(NewMD.size());
+    float Gap = 2.0f * FontHeight;
+    float CX = X * Gap * 0.5f;
+    float CY = (NewMD.size() / X) * Gap * 0.5f;
+    for (size_t i = 0; i < NewMD.size(); i++)
+    {
+        if (abs(NewMD[i].EqDelta).max() > 1e6)//nonsense value
+        {
+            NewMD[i].EqDelta = { (i % X) * Gap - CX,(i / X) * Gap - CY };
+        }
+    }
+
     return AddModule(NewMD, UseMouseCenter);
 }
 std::optional<std::vector<IBR_Project::id_t>> _PROJ_CMD_WRITE  _PROJ_CMD_UPDATE IBR_Project::AddModule(const std::vector<ModuleClipData>& Modules, bool UseMouseCenter)
@@ -84,7 +97,7 @@ std::optional<IBR_Project::id_t> _PROJ_CMD_WRITE _PROJ_CMD_UPDATE IBR_Project::A
     IBB_Section_Desc D = { Module.Desc.A,Module.Desc.B };
     EnsureSection(D, Module.DisplayName);
     auto Sec = GetSection(D);
-    if (Module.FromClipBoard || !UseMouseCenter)
+    //if (Module.FromClipBoard || !UseMouseCenter )
     {
         auto sd = Sec.GetSectionData();
         if (!sd)return std::nullopt;
@@ -282,6 +295,44 @@ bool _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE IBR_Project::DeleteSect
     return DeleteSection(it->second.Desc);
 }
 
+bool _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE IBR_Project::DeleteSection(const std::vector <IBR_Project::id_t>& ids)
+{
+    std::vector<IBB_Section_Desc> Descs;
+    for (auto& id : ids)
+    {
+        auto it = IBR_SectionMap.find(id);
+        if (it == IBR_SectionMap.end())continue;
+        Descs.push_back(it->second.Desc);
+    }
+    return DeleteSection(Descs);
+}
+
+bool _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE IBR_Project::DeleteSection(const std::vector<IBB_Section_Desc>& Descs)
+{
+    bool Ret = true;
+    for (auto& Desc : Descs)
+    {
+        if (Desc.Ini.empty() || Desc.Sec.empty())continue;
+        {
+            IBD_RInterruptF(x);
+            if (IBF_Inst_Project.Project.GetSec(IBB_Project_Index{ Desc }) == nullptr)continue;
+            auto ci = const_cast<IBB_Ini*>(IBF_Inst_Project.Project.GetIni(IBB_Project_Index{ Desc }));
+            Ret &= ci->DeleteSection(Desc.Sec);
+            
+        }
+        IBG_Undo.SomethingShouldBeHere();
+        auto RS = GetSection(Desc);
+        IBF_Inst_Project.DisplayNames.erase(IBR_SectionMap[RS.ID].DisplayName);
+        IBR_SectionMap.erase(RS.ID);
+        IBR_Rev_SectionMap.erase(Desc);
+    }
+    {
+        IBD_RInterruptF(x);
+        IBF_Inst_Project.UpdateAll();
+    }
+    return Ret;
+}
+
 bool _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE IBR_Project::DeleteSection(const IBB_Section_Desc& Desc)
 {
     if (Desc.Ini.empty() || Desc.Sec.empty())return false;
@@ -355,8 +406,7 @@ bool _PROJ_CMD_UPDATE IBR_Project::DataCheck()
     std::vector<IBB_Section_Desc> Descs;
     for (auto& p : IBR_SectionMap)
         if (p.second.Exists == false)Descs.push_back(p.second.Desc);
-    for (auto& D : Descs)
-        IBR_Inst_Project.DeleteSection(D);
+    IBR_Inst_Project.DeleteSection(Descs);
     return Ret;
 }
 
@@ -380,7 +430,7 @@ void IBR_Project::Load(const IBS_Project& Proj)
     if (ClipData.SetStream(Proj.Data))
         AddModule(ClipData.Modules, false);
     IBF_Inst_Project.Project.ChangeAfterSave = false;
-    //MAGIC 忽略3帧之内的改动
+    //MAGIC 
     IBRF_CoreBump.SendToR({ []() {
         IBF_Inst_Project.Project.ChangeAfterSave = false;
         IBRF_CoreBump.SendToR({ []() {
@@ -389,6 +439,12 @@ void IBR_Project::Load(const IBS_Project& Proj)
                 IBF_Inst_Project.Project.ChangeAfterSave = false;
                 IBRF_CoreBump.SendToR({ []() {
                     IBF_Inst_Project.Project.ChangeAfterSave = false;
+                    IBRF_CoreBump.SendToR({ []() {
+                        IBF_Inst_Project.Project.ChangeAfterSave = false;
+                        IBRF_CoreBump.SendToR({ []() {
+                            IBF_Inst_Project.Project.ChangeAfterSave = false;
+                        } });
+                    } });
                 } });
             } });
         } });

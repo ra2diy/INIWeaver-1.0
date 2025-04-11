@@ -110,22 +110,31 @@ namespace IBR_L10n
     }
     bool LoadFromINI(const std::wstring& FileName)
     {
+        TEMPLOG("LanguageININame = CurrentDirW + FileName;")
         LanguageININame = CurrentDirW + FileName;
+        TEMPLOG("LocalizationMap = IniToMap(SplitTokens(GetTokens(GetLines(GetStringFromFile(LanguageININame.c_str())), false)));")
         LocalizationMap = IniToMap(SplitTokens(GetTokens(GetLines(GetStringFromFile(LanguageININame.c_str())), false)));
+        TEMPLOG("ConvertLocMap();")
         ConvertLocMap();
+        TEMPLOG("CurrentLanguage = LocalizationMap[\"Basic\"][\"CurrentLanguage\"];")
         CurrentLanguage = LocalizationMap["Basic"]["CurrentLanguage"];
+        TEMPLOG("CurrentMap = LocalizationMap[CurrentLanguage];")
         CurrentMap = LocalizationMap[CurrentLanguage];
+        TEMPLOG(" if (CurrentLanguage.empty() || CurrentMap.empty())")
         if (CurrentLanguage.empty() || CurrentMap.empty())
         {
             const wchar_t* Msg = L"***FATAL*** String Manager failed to initilaized properly";
-            MessageBoxW(NULL, Msg, Msg/*L"INIBrowser.exe"*/, MB_ICONWARNING);
+            TEMPLOG("MessageBoxW(NULL, Msg, Msg, MB_ICONWARNING);")
+            MessageBoxW(NULL, Msg, Msg, MB_ICONWARNING);
             if (EnableLog)
             {
                 GlobalLog.AddLog_CurTime(false);
                 GlobalLog.AddLog("***FATAL***String Manager failed to initilaized properly");
             }
+            TEMPLOG("return false;")
             return false;
         }
+        TEMPLOG("return true;")
         return true;
     }
     const std::string& _TEXT_UTF8 GetString(const std::string& Key)

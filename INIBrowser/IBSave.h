@@ -1,7 +1,7 @@
 #pragma once
 #include "FromEngine/Include.h"
 #include "FromEngine/RFBump.h"
-#include "IBBack.h"
+
 
 namespace InsertLoad
 {
@@ -56,6 +56,7 @@ struct IBS_Project
     std::wstring ProjName;
     std::wstring Path;
     std::wstring LastOutputDir;
+    std::vector<std::pair<std::string, std::wstring>> LastOutputIniName;
 
     uint64_t CreateTime;
     int CreateVersionMajor, CreateVersionMinor, CreateVersionRelease;

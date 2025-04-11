@@ -24,7 +24,8 @@ std::vector<std::string> SplitParam(const std::string& Text)//ORIG
         ret.push_back(CutSpace(std::string(Text.begin() + cur, Text.begin() + crl)));
         cur = crl + 1;
     }
-    ret.push_back(CutSpace(std::string(Text.begin() + cur, Text.end())));
+    auto U = CutSpace(std::string(Text.begin() + cur, Text.end()));
+    if(!U.empty())ret.push_back(std::move(U));
     return ret;
 }
 
@@ -136,7 +137,10 @@ void IBB_IniLine_DataList::InsertValue(const std::string& Val, size_t Idx)
 {
     Value.insert(Value.begin() + Idx, Val);
 }
-
+void IBB_IniLine_DataList::ReplaceValue(const std::string& Old, const std::string& New)
+{
+    for (auto& s : Value)if (s == Old)s = New;
+}
 
 
 extern const char* DefaultAltPropType;
@@ -265,14 +269,23 @@ std::string IBB_SubSec::GetText(bool PrintExtraData, bool FromExport) const
                 GlobalLogB.AddLog(std::vformat(L"IBB_SubSec::GetText £º" + locw("Log_SubSecNotExist"), std::make_wformat_args(sl)));
             }
         auto& L = It->second;
-        Text += sn; Text.push_back('=');
-        if (L.Default == nullptr)
-            Text += "MISSING Line Default\n";
+        if (FromExport)
+        {
+            auto ex = L.Data->GetStringForExport();
+            if (ex.empty())continue;
+            if (sn == "__INHERIT__")continue;
+            Text += sn;
+            Text += '=';
+            Text += ex;
+            Text += '\n';
+        }
         else
         {
-            if(FromExport)Text += L.Data->GetStringForExport();
-            else Text += L.Data->GetString();
-            Text.push_back('\n');
+            if (sn == "__INHERIT__")continue;
+            Text += sn;
+            Text += '=';
+            Text += L.Data->GetString();
+            Text += '\n';
         }
     }
     if (PrintExtraData)

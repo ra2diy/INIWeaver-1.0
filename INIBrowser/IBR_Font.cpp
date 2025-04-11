@@ -77,6 +77,7 @@ namespace IBR_Font
 
     std::wstring SearchFontName(std::wstring FontName)
     {
+        if (FontName.empty())return L"";
         auto P = std::filesystem::path(FontPathW + FontName);
         if (std::filesystem::exists(P))
             return FontPathW + FontName;

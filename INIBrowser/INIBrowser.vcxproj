@@ -167,17 +167,22 @@
     <ClInclude Include="FromEngine\InfoStack.h" />
     <ClInclude Include="FromEngine\RFBump.h" />
     <ClInclude Include="FromEngine\types.h" />
-    <ClInclude Include="IBBack.h" />
+    <ClInclude Include="IBB_Index.h" />
+    <ClInclude Include="IBB_Components.h" />
+    <ClInclude Include="IBB_Ini.h" />
     <ClInclude Include="IBB_ModuleAlt.h" />
+    <ClInclude Include="IBB_Project.h" />
     <ClInclude Include="IBB_RegType.h" />
+    <ClInclude Include="IBB_Setting.h" />
     <ClInclude Include="IBFront.h" />
     <ClInclude Include="IBG_Ini.h" />
     <ClInclude Include="IBRender.h" />
     <ClInclude Include="IBR_Font.h" />
+    <ClInclude Include="IBR_HotKey.h" />
     <ClInclude Include="IBR_Localization.h" />
     <ClInclude Include="IBSave.h" />
     <ClInclude Include="MainStage.h" />
-    <ClInclude Include="PreLink.h" />
+    <ClInclude Include="Initialize.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="SaveFile.h" />
     <ClInclude Include="Global.h" />
@@ -196,7 +201,9 @@
     <ClCompile Include="FromEngine\global_tool_func.cpp" />
     <ClCompile Include="FromEngine\RFBump.cpp" />
     <ClCompile Include="Global.cpp" />
-    <ClCompile Include="IBBack.cpp" />
+    <ClCompile Include="IBB_Ini.cpp" />
+    <ClCompile Include="IBB_Components.cpp" />
+    <ClCompile Include="IBB_Index.cpp" />
     <ClCompile Include="IBB_ModuleAlt.cpp" />
     <ClCompile Include="IBB_Project.cpp" />
     <ClCompile Include="IBB_RegType.cpp" />
@@ -205,6 +212,7 @@
     <ClCompile Include="IBB_SubSec.cpp" />
     <ClCompile Include="IBFront.cpp" />
     <ClCompile Include="IBR_Font.cpp" />
+    <ClCompile Include="IBR_HotKey.cpp" />
     <ClCompile Include="IBR_Localization.cpp" />
     <ClCompile Include="IBR_Misc.cpp" />
     <ClCompile Include="IBR_Components.cpp" />
@@ -220,6 +228,7 @@
     <ClCompile Include="IBSave.cpp" />
     <ClCompile Include="INIBrowser.cpp" />
     <ClCompile Include="IBS_File.cpp" />
+    <ClCompile Include="Initialize.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="icon1.ico" />

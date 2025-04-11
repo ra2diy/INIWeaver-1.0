@@ -10,13 +10,8 @@
 #include<utility>
 #include<unordered_map>
 
-
-hash_t StrHash(const std::string& __Str);
-hash_t StrHash(const char* __Str);
-
-char* RemoveFrontSpace(char* src);
-void RemoveBackSpace(char* src);
-void RemoveBackSpace(std::string& src);
+void TemporaryLog(const wchar_t*);
+#define TEMPLOG(S) //TemporaryLog(__FUNCTIONW__ L" : " L ## S);
 
 template<typename T>
 T gcd(T a, T b)
@@ -137,6 +132,11 @@ public:
     std::vector<uint8_t> ItemArrayBool(const std::string& Str) const;
     std::vector<std::string> ItemArrayString(const std::string& Str) const;
     std::vector<JsonObject> ItemArrayObject(const std::string& Str) const;
+    std::unordered_map<std::string, JsonObject> ItemMapObject(const std::string& Str) const;
+    std::unordered_map<std::string, double> ItemMapDouble(const std::string& Str) const;
+    std::unordered_map<std::string, int> ItemMapInt(const std::string& Str) const;
+    std::unordered_map<std::string, bool> ItemMapBool(const std::string& Str) const;
+    std::unordered_map<std::string, std::string> ItemMapString(const std::string& Str) const;
 
 #define XXXOR(NAME ,TYPE) \
     template<class... TArgs>\
@@ -145,6 +145,7 @@ public:
         return HasItem(Str) ? Item ## NAME(Str) : TYPE{std::forward<TArgs>(Args)...};\
     }
 
+    template<typename T> using StrUMap = std::unordered_map < std::string, T>;
     XXXOR(Int, int)
     XXXOR(Double, double)
     XXXOR(String, std::string)
@@ -156,6 +157,10 @@ public:
     XXXOR(ArrayBool, std::vector<uint8_t>)
     XXXOR(ArrayString, std::vector<std::string>)
     XXXOR(ArrayObject, std::vector<JsonObject>)
+    XXXOR(MapInt, StrUMap<int>)
+    XXXOR(MapBool, StrUMap<bool>)
+    XXXOR(MapString, StrUMap<std::string>)
+    XXXOR(MapObject, StrUMap<JsonObject>)
 
 #undef XXXOR
 
@@ -177,6 +182,8 @@ public:
     std::unordered_map<std::string, int> GetMapInt() const;
     std::unordered_map<std::string, bool> GetMapBool() const;
     std::unordered_map<std::string, std::string> GetMapString() const;
+
+    std::string PrintData() const;
 };
 
 class JsonFile

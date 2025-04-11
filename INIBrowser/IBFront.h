@@ -1,6 +1,7 @@
 #pragma once
 
-#include "IBBack.h"
+#include "IBB_Setting.h"
+#include "IBB_Project.h"
 #include "SaveFile.h"
 
 void IBF_Thr_FrontLoop();

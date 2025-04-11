@@ -8,11 +8,13 @@
 #include <imgui_internal.h>
 #include <shlwapi.h>
 #include <format>
+#include "IBR_HotKey.h"
 
 extern wchar_t CurrentDirW[];
 extern bool ShouldCloseShellLoop;
 extern bool GotoCloseShellLoop;
 extern const char* LinkGroup_IniName;
+extern std::atomic_bool LoadDatabaseComplete;
 
 std::string ExtName(const std::string& ss);//拓展名，无'.' 
 std::string FileNameNoExt(const std::string& ss);//文件名，无'.' 
@@ -61,6 +63,7 @@ namespace IBR_ProjectManager
         proj.ProjName = locw("Back_DefaultProjectName");
         proj.Path = L"";
         proj.LastOutputDir = L"";
+        proj.LastOutputIniName.clear();
         proj.IsNewlyCreated = true;
         proj.ChangeAfterSave = false;
         proj.LastUpdate = GetSysTimeMicros();
@@ -172,6 +175,7 @@ namespace IBR_ProjectManager
     {
         if (IBS_Inst_Project.Load(Path))
         {
+            while (!LoadDatabaseComplete)Sleep(0);
             std::shared_ptr<bool> SigF = std::make_shared<bool>(false), SigR = std::make_shared<bool>(false);
             IBRF_CoreBump.SendToR({ [=]()
                 {
@@ -282,6 +286,7 @@ namespace IBR_ProjectManager
         for (size_t I = 0; I < N; I++)
         {
             if (Inis[I].Name == LinkGroup_IniName)continue;//不导出这个
+            if (TextPieces[I].empty())continue;
 
             ExtFileClass F;
             if (F.Open(TargetIniPath[I].c_str(), L"w"))
@@ -482,6 +487,7 @@ namespace IBR_ProjectManager
             bool Warning{ false };
             std::string Name;
             std::shared_ptr<BufString> Buf;
+            bool Ignore{ false };
             IniNameInput() :Buf(new BufString) {}
         };
 
@@ -503,7 +509,27 @@ namespace IBR_ProjectManager
             for (size_t i = 0; i < Inis.size(); i++)
             {
                 Inis[i].Name = IBF_Inst_Project.Project.Inis[i].Name;
-                strcpy(Inis[i].Buf.get(), (U + "_" + IBF_Inst_Project.Project.Inis[i].Name + ".ini").c_str());
+                const auto& T = IBF_Inst_Project.Project.LastOutputIniName[Inis[i].Name];
+                if(!T.empty())strcpy(Inis[i].Buf.get(), UnicodetoUTF8(T).c_str());
+                else strcpy(Inis[i].Buf.get(), (U + "_" + IBF_Inst_Project.Project.Inis[i].Name + ".ini").c_str());
+                Inis[i].Ignore = true;
+            }
+            for (size_t i = 0; i < Inis.size(); i++)
+            {
+                if (!IBF_Inst_Project.Project.Inis[i].Secs.empty())
+                {
+                    Inis[i].Ignore = false;
+                    continue;
+                }
+                for (auto& [N, S] : IBF_Inst_Project.Project.Inis[i].Secs)
+                {
+                    const auto& ity = IBB_DefaultRegType::GetRegType(S.Register).IniType;
+                    IBB_Project_Index idx = { ity, "" };
+                    if (idx.GetIni(IBF_Inst_Project.Project) != nullptr)
+                    {
+                        Inis[idx.Ini.Index].Ignore = false;
+                    }
+                }
             }
 
             if(!IBF_Inst_Project.Project.LastOutputDir.empty())
@@ -516,15 +542,16 @@ namespace IBR_ProjectManager
         }
         auto PF{ []() {IBR_HintManager::SetHint(loc("GUI_ActionCanceled"),HintStayTimeMillis); } };
         IBR_PopupManager::SetCurrentPopup(std::move(IBR_PopupManager::Popup{}.CreateModal(loc("GUI_Output_Title"), true, PF)
+            .SetSize({ FontHeight * 20.0f,FontHeight * 15.0f })
             .SetFlag(ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize).PushMsgBack([=]() mutable
                 {
-                    ImGui::SetWindowSize({ FontHeight * 20.0f,FontHeight * 30.0f });
                     if (ImGui::InputText(locc("GUI_Output_Path"), PathBuffer.get(), MAX_STRING_LENGTH))
                     {
                         WP = UTF8toUnicode(PathBuffer.get());
                         *OK = IsExistingDir(WP.c_str());
                         for (auto& I : Inis)I.Warning= PathFileExistsW((WP + UTF8toUnicode(I.Buf.get())).c_str());
                     }
+                    if (ImGui::IsItemActive())IBR_WorkSpace::OperateOnText = true;
                     ImGui::SameLine();
                     if (ImGui::SmallButton("..."))
                     {
@@ -541,7 +568,10 @@ namespace IBR_ProjectManager
                     for (auto& I : Inis)
                     {
                         if (I.Name == LinkGroup_IniName)continue; //不显示这个，因为不导出
+                        if (I.Ignore)continue;
+
                         ImGui::InputText(("##" + I.Name).c_str(), I.Buf.get(), MAX_STRING_LENGTH);
+                        if (ImGui::IsItemActive())IBR_WorkSpace::OperateOnText = true;
                         I.Warning = PathFileExistsW((WP + L"\\" + UTF8toUnicode(I.Buf.get())).c_str());//Refresh per Frame
                         if (I.Warning)ImGui::Text(locc("GUI_Output_Warning1"));
                     }
@@ -555,6 +585,7 @@ namespace IBR_ProjectManager
                             TgPath.reserve(Inis.size());
                             OutputComplete = false;
                             for (auto& I : Inis)TgPath.push_back(WP + L"\\" + UTF8toUnicode(I.Buf.get()));
+
                             IBRF_CoreBump.SendToF([=] {
                                 IBF_Inst_Setting.OutputDir() = UnicodetoUTF8(WP);
                                 IBF_Inst_Setting.SaveSetting(IBR_Inst_Setting.SettingName);
@@ -562,6 +593,16 @@ namespace IBR_ProjectManager
                                 {
                                     IBF_Inst_Project.Project.LastOutputDir = WP;
                                     IBF_Inst_Project.Project.ChangeAfterSave = true;
+                                }
+                                for (auto& I : Inis)
+                                {
+                                    auto G = UTF8toUnicode(I.Buf.get());
+                                    auto& U = IBF_Inst_Project.Project.LastOutputIniName[I.Name];
+                                    if (U != G)
+                                    {
+                                        U = G;
+                                        IBF_Inst_Project.Project.ChangeAfterSave = true;
+                                    }
                                 }
                                 Output(WP, TgPath, V, true); });
                             IBRF_CoreBump.SendToR({ [] { IBR_PopupManager::ClearCurrentPopup(); if(!OutputComplete)SetWaitingPopup(); } });
@@ -600,7 +641,12 @@ namespace IBR_ProjectManager
         TgPath.reserve(IBF_Inst_Project.Project.Inis.size());
         OutputComplete = false;
         for (auto& I : IBF_Inst_Project.Project.Inis)
-            TgPath.push_back(WP + L"\\" + IBF_Inst_Project.Project.ProjName + L"_" + UTF8toUnicode(I.Name) + L".ini");
+        {
+            if (I.Name == LinkGroup_IniName)continue; //不导出这个
+            auto& U = IBF_Inst_Project.Project.LastOutputIniName[I.Name];
+            if (U.empty())TgPath.push_back(WP + L"\\" + IBF_Inst_Project.Project.ProjName + L"_" + UTF8toUnicode(I.Name) + L".ini");
+            else TgPath.push_back(WP + L"\\" + U);
+        }
         IBRF_CoreBump.SendToF([=] {Output(WP, TgPath, GetIgnoredSection(), true); });
     }
 
@@ -794,28 +840,23 @@ namespace IBR_ProjectManager
     }
     void _IN_RENDER_THREAD ProjActionByKey()
     {
-        //Ctrl + Shift + S = Save As
-        if (ImGui::GetIO().KeyCtrl && ImGui::GetIO().KeyShift && ImGui::IsKeyPressed(ImGuiKey_S))
+        if (IsHotKeyPressed(SaveAs))
         {
             SaveAsAction();
         }
-        //Ctrl + S = Save
-        else if (ImGui::GetIO().KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_S))
+        else if (IsHotKeyPressed(Save))
         {
             SaveOptAction();
         }
-        //Ctrl + O = Open
-        else if (ImGui::GetIO().KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_O))
+        else if (IsHotKeyPressed(Open))
         {
             ProjOpen_OpenAction();
         }
-        //Ctrl + W = Close
-        else if (ImGui::GetIO().KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_W))
+        else if (IsHotKeyPressed(Close))
         {
             ProjOpen_CreateAction();
         }
-        //Ctrl + E = Export
-        else if (ImGui::GetIO().KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_E))
+        else if (IsHotKeyPressed(Export))
         {
             OutputAction();
         }

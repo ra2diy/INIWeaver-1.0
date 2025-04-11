@@ -225,7 +225,8 @@ void ControlPanel()
     IBR_HintManager::RenderUI();
     IBR_PopupManager::RenderUI();
 
-    
+    IBR_WorkSpace::LastOperateOnText = IBR_WorkSpace::OperateOnText;
+    IBR_WorkSpace::OperateOnText = false;
 }
 
 

@@ -52,8 +52,8 @@ public:
     void IBG_Disable_RInterruptF(bool Cond);
     void IBG_Disable_FInterruptR(bool Cond);
 
-    void SendToF(const IBR_ToFMessage& Msg);//√ª≤‚ ‘£°
-    void SendToR(const IBF_ToRMessage& Msg);//√ª≤‚ ‘£°
+    void SendToF(const IBR_ToFMessage& Msg);
+    void SendToR(const IBF_ToRMessage& Msg);
     void IBR_SendToFDelayed(const IBR_ToFMessage& Msg, uint64_t DelayMicros);
     void IBF_SendToRDelayed(const IBF_ToRMessage& Msg, uint64_t DelayMicros);
     RToFStack::Cont IBF_TakeAway();

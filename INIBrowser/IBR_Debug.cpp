@@ -94,6 +94,9 @@ void IBR_Debug::RenderUI()
     ImGui::Text("LastCont = %s", IBR_WorkSpace::LastCont ? "true" : "false");
     ImGui::Text("DblClickLeft = %s", ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left) ? "true" : "false");
     ImGui::Text("CTRL = %s", ImGui::GetIO().KeyCtrl ? "true" : "false");
+    ImGui::Text("SHIFT = %s", ImGui::GetIO().KeyShift ? "true" : "false");
+    ImGui::Text("ALT = %s", ImGui::GetIO().KeyAlt ? "true" : "false");
+    ImGui::Text("SUPER = %s", ImGui::GetIO().KeySuper ? "true" : "false");
     if (UICond.LoopShow) { if (ImGui::ArrowButton("loopc", ImGuiDir_Down))UICond.LoopShow = false; }
     else { if (ImGui::ArrowButton("loopa", ImGuiDir_Right))UICond.LoopShow = true; }
     if (UICond.LoopShow)for (auto x : DebugVec)x();

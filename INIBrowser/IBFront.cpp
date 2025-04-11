@@ -192,6 +192,7 @@ bool IBF_DefaultTypeList::ReadAltSetting(const char* Name)
     //CSV then fall back to json
     if (!Alt.LoadFromCSVFile((Name + u8".csv"s).c_str())
         && !Alt.LoadFromJsonFile((Name + u8".json"s).c_str()))Ret = false;
+
     if (!List.LoadFromAlt(Alt))Ret = false;
     if (!List.BuildQuery())Ret = false;
     return Ret;
@@ -261,6 +262,9 @@ void IBF_Project::Load(const IBS_Project& Proj)
     Project.ProjName = Proj.ProjName;
     Project.Path = Proj.Path;
     Project.LastOutputDir = Proj.LastOutputDir;
+    Project.LastOutputIniName.clear();
+    for(auto& l: Proj.LastOutputIniName)
+        Project.LastOutputIniName.insert(l);
     Project.IsNewlyCreated = false;
     Project.ChangeAfterSave = false;
 }
@@ -275,6 +279,10 @@ void IBF_Project::Save(IBS_Project& Proj)
     Proj.ProjName = Project.ProjName;
     Proj.Path = Project.Path;
     Proj.LastOutputDir = Project.LastOutputDir;
+    Proj.LastOutputIniName.clear();
+    Proj.LastOutputIniName.reserve(Project.LastOutputIniName.size());
+    for (auto& l : Project.LastOutputIniName)
+        Proj.LastOutputIniName.push_back(l);
     Project.IsNewlyCreated = false;
     Project.ChangeAfterSave = false;
 }

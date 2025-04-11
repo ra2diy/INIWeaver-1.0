@@ -6,6 +6,9 @@
 #include "IBB_ModuleAlt.h"
 #include<imgui_internal.h>
 #include <shlwapi.h>
+#include "IBR_HotKey.h"
+
+
 
 bool IsExistingDir(const wchar_t* Path)
 {
@@ -126,7 +129,10 @@ namespace SearchModuleAlt
             ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.9f, 0.9f, 0.9f, 1.0f));
             ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.0f, 0.0f, 0.0f, 1.0f));
             if (ImGui::InputText(u8"##SEARCH", InputBuf, sizeof(InputBuf), ImGuiInputTextFlags_EnterReturnsTrue))
+            {
                 ToUpdate = true;
+            }
+            if (ImGui::IsItemActive())IBR_WorkSpace::OperateOnText = true;
             ImGui::PopStyleColor(2);
             ImGui::SameLine();
             ImGui::Text(locc("GUI_Search_Tip"));
@@ -143,6 +149,8 @@ namespace SearchModuleAlt
         }
     }
 
+
+extern std::atomic_bool LoadDatabaseComplete;
 
 namespace IBR_WorkSpace
 {
@@ -164,13 +172,22 @@ namespace IBR_WorkSpace
     bool HasLefttDownToWait{ false };
     bool MoveAfterMass{ false };
     std::vector<IBR_Project::id_t> MassTarget;
+    bool LastOperateOnText{ false };
+    bool OperateOnText{ false };
 
     
     void RenderRightClickTable()
     {
-        ImGui::BeginChild("##RightClick_Module", { FontHeight * 10.0F,FontHeight * 14.0F }, false);
-        IBB_ModuleAltDefault::Tree_RenderUI();
-        ImGui::EndChild();
+        if (!LoadDatabaseComplete)
+        {
+            ImGui::TextDisabled(locc("GUI_ModuleDataLoading"));
+        }
+        else
+        {
+            ImGui::BeginChild("##RightClick_Module", { FontHeight * 10.0F,FontHeight * 14.0F }, false);
+            IBB_ModuleAltDefault::Tree_RenderUI();
+            ImGui::EndChild();
+        }
     }
 
     bool IsResizingWindow()
@@ -282,23 +299,6 @@ namespace IBR_WorkSpace
         }
     }
 
-    bool IsCtrlAPressed()
-    {
-        return ImGui::GetIO().KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_A);
-    }
-    bool IsCtrlCPressed()
-    {
-        return ImGui::GetIO().KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_C);
-    }
-    bool IsCtrlVPressed()
-    {
-        return ImGui::GetIO().KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_V);
-    }
-    bool IsCtrlXPressed()
-    {
-        return ImGui::GetIO().KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_X);
-    }
-
     bool SelectedAllIgnored()
     {
         for (auto& v : MassTarget)
@@ -340,13 +340,11 @@ namespace IBR_WorkSpace
     {
         IBRF_CoreBump.SendToR({ [=]() {
             IBG_Undo.SomethingShouldBeHere();
-            for (auto id : MassTarget)
-                IBR_Inst_Project.DeleteSection(id);
-            IBF_Inst_Project.UpdateAll(); },nullptr });
+            IBR_Inst_Project.DeleteSection(MassTarget);
+            },nullptr });
     }
-    void CopySelected()
+    void GenerateClipDataFromMassSelect(IBB_ClipBoardData& ClipData)
     {
-        IBB_ClipBoardData ClipData;
         std::vector<IBB_Section_Desc> Sel;
         dImVec2 TSum{};
         double Sum{};
@@ -372,6 +370,11 @@ namespace IBR_WorkSpace
             }
         }
         ClipData.Generate(Sel);
+    }
+    void CopySelected()
+    {
+        IBB_ClipBoardData ClipData;
+        GenerateClipDataFromMassSelect(ClipData);
         ImGui::SetClipboardText(ClipData.GetString().c_str());
         auto c = ClipData.Modules.size();
         IBR_HintManager::SetHint(UnicodetoUTF8(std::vformat(locw("GUI_CopySuccess"), std::make_wformat_args(c))), HintStayTimeMillis);
@@ -441,10 +444,12 @@ namespace IBR_WorkSpace
             .PushMsgBack([]() {
 
                 //为什么这里检测Drag，我不知道，我也不敢动，虽然说这段代码写下的时间距离这行注释写下的时间只有1小时
+                /*
                 if (abs((DragCurMouse - DragStartMouse).max()) > 2.0f)
                 {
                     MassTarget = IBR_SelectMode::GetMassSelected();
                 }
+                */
                 if (IBR_Inst_Project.IBR_SectionMap.empty())
                 {
                     ImGui::TextDisabled(locc("GUI_SelectAll"));
@@ -480,6 +485,7 @@ namespace IBR_WorkSpace
     {
         IBB_ModuleAlt Alt;
         IBB_ClipBoardData ClipData;
+        /*
         std::vector<IBB_Section_Desc> Sel;
         for (auto& v : MassTarget)
         {
@@ -487,6 +493,8 @@ namespace IBR_WorkSpace
             if (Data && !Data->Ignore)Sel.push_back(Data->Desc);
         }
         ClipData.Generate(Sel);
+        */
+        GenerateClipDataFromMassSelect(ClipData);
         Alt.Available = true;
         Alt.Name = IDescShort;
         Alt.DescShort = IDescShort;
@@ -519,7 +527,9 @@ namespace IBR_WorkSpace
                 {
                     ImGui::SetWindowSize({ FontHeight * 20.0f,FontHeight * 10.0f });
                     ImGui::InputText(locc("GUI_OutputModule_Name"), IDescShort, sizeof(BufString));
+                    if (ImGui::IsItemActive())IBR_WorkSpace::OperateOnText = true;
                     ImGui::InputText(locc("GUI_OutputModule_Desc"), IDescLong, sizeof(BufString));
+                    if (ImGui::IsItemActive())IBR_WorkSpace::OperateOnText = true;
                     if (ImGui::InputText(locc("GUI_OutputModule_OutputPath"), IPath, sizeof(BufString)))
                     {
                         WPath = UTF8toUnicode(IPath);
@@ -527,6 +537,7 @@ namespace IBR_WorkSpace
                         OK1 = IsExistingDir(WD.c_str());
                         OK2 = !PathFileExistsW(WPath.c_str());
                     }
+                    if (ImGui::IsItemActive())IBR_WorkSpace::OperateOnText = true;
                     ImGui::SameLine();
                     if (ImGui::SmallButton("..."))
                     {
@@ -587,6 +598,12 @@ namespace IBR_WorkSpace
                 })));
     }
 
+    void MoveToCenter()
+    {
+        //move repos
+        IBR_FullView::EqCenter = { 0.0f, 0.0f };
+    }
+
     /*
      状态机:
      Normal -> BgDragging MassSelecting HoldingModules
@@ -639,19 +656,37 @@ namespace IBR_WorkSpace
         }
 
 
-        if (IsCtrlVPressed())
+        if (IsHotKeyPressed(Paste))
         {
             Paste();
         }
-        else if (IsCtrlAPressed())
+        else if (IsHotKeyPressed(Center))
+        {
+            MoveToCenter();
+        }
+        else if (IsHotKeyPressed(SelectAll))
         {
             SelectAll();
         }
-        else if (ImGui::IsKeyPressed(ImGuiKey_F5))
+        else if (IsHotKeyPressed(Refresh))
         {
             IBR_Inst_Project.UpdateAll();
         }
-        else if (ImGui::IsKeyPressed(ImGuiKey_F2))ShowRegName ^= 1;
+        else if (IsHotKeyPressed(DeleteAll))
+        {
+            IBRF_CoreBump.SendToR({ [=]() {
+                IBG_Undo.SomethingShouldBeHere();
+                std::vector<IBB_Section_Desc>All;
+                All.reserve(IBR_Inst_Project.IBR_SectionMap.size());
+                for (auto& [K, V] : IBR_Inst_Project.IBR_SectionMap)
+                {
+                    if (V.Desc.Ini.empty() || V.Desc.Sec.empty())continue;
+                    All.push_back(V.Desc);
+                }
+                IBR_Inst_Project.DeleteSection(All);
+            },nullptr });
+        }
+        else if (IsHotKeyPressed(SwitchDisplayMode))ShowRegName ^= 1;
         else if (!OnWindow && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left) && Cont)
         {
             //IsBgDragging = false;
@@ -744,8 +779,7 @@ namespace IBR_WorkSpace
                             std::vector<IBB_Section_Desc> Descs;
                             for (auto& p : IBR_Inst_Project.IBR_SectionMap)
                                 if (p.second.Dragging)Descs.push_back(p.second.Desc);
-                            for (auto& D : Descs)
-                                IBR_Inst_Project.DeleteSection(D);
+                            IBR_Inst_Project.DeleteSection(Descs);
                             IBF_Inst_Project.UpdateAll();
                                 }, nullptr });
                         }
@@ -799,17 +833,17 @@ namespace IBR_WorkSpace
             }
             else if (IsMassAfter)
             {
-                if (ImGui::IsKeyPressed(ImGuiKey_Delete))
+                if (IsHotKeyPressed(Delete))
                 {
                     IsMassAfter = false;
                     IsBgDragging = false;
                     DeleteSelected();
                 }
-                else if (IsCtrlCPressed())
+                else if (IsHotKeyPressed(Copy))
                 {
                     CopySelected();
                 }
-                else if (IsCtrlXPressed())
+                else if (IsHotKeyPressed(Cut))
                 {
                     CutSelected();
                 }
@@ -1044,7 +1078,8 @@ namespace IBR_WorkSpace
 
         for (auto& sp : IBR_Inst_Project.IBR_SectionMap)
         {
-            if (!IBR_Inst_Project.GetSectionFromID(sp.first).HasBack())continue;
+            auto RSec = IBR_Inst_Project.GetSectionFromID(sp.first);
+            if (!RSec.HasBack())continue;
 
             //IBR_Inst_Debug.AddMsgCycle([=]() {ImGui::TextWrapped("Render Section %s", sp.second.Desc.GetText().c_str());});
 
@@ -1221,7 +1256,8 @@ namespace IBR_WorkSpace
             {
                 auto sz = ImGui::GetWindowSize();
                 if (sd.FinalY < 1.0F)sd.FinalY = FontHeight * 8.0F;
-                ImGui::SetWindowSize({ FontHeight * 15.0f, sd.FinalY + FontHeight * 2.0F });
+                if (sd.WidthFix > FontHeight * 15.0f)ImGui::SetWindowSize({ sd.WidthFix, sd.FinalY + FontHeight * 2.0F });
+                else ImGui::SetWindowSize({ FontHeight * 15.0f, sd.FinalY + FontHeight * 2.0F });
             }
 
             sd.RenderUI();
@@ -1237,12 +1273,22 @@ namespace IBR_WorkSpace
                     FL->PopClipRect();
                 }
             }
-            if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) && !IsMassSelecting && !IsMassAfter)
+            if (sp.first == IBR_EditFrame::CurSection.ID && !IsMassSelecting && !IsMassAfter && LastCont)
             {
                 HasFocusedModule = true;
-                if (ImGui::IsKeyPressed(ImGuiKey_Delete))
+                if (IsHotKeyPressed(Delete))
                     IBRF_CoreBump.SendToR({ [desc = sd.Desc]() { IBG_Undo.SomethingShouldBeHere(); IBR_Inst_Project.DeleteSection(desc); } });
-                else if (IsCtrlCPressed())sd.CopyToClipBoard();
+                else if (IsHotKeyPressed(RenameModule))
+                {
+                    sd.RenameDisplay();
+                    //IBR_PopupManager::ClearRightClickMenu();
+                }
+                else if (IsHotKeyPressed(RenameRegister))
+                {
+                    sd.RenameRegister();
+                    //IBR_PopupManager::ClearRightClickMenu();
+                }
+                else if (IsHotKeyPressed(Copy))sd.CopyToClipBoard();
             }
 
             ImGui::PopClipRect();

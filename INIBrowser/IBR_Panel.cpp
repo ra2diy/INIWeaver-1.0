@@ -155,6 +155,7 @@ void ControlPanel_ListView()
         if (SelectAll || SelectNone || Delete || Duplicate)
         {
             if (Duplicate)IBR_Inst_Project.CopyTransform.clear();
+            std::vector<IBB_Section_Desc> ToDel;
             for (auto& ini : IBF_Inst_Project.Project.Inis)
             {
                 if (ini.Secs_ByName.empty())continue;
@@ -170,7 +171,7 @@ void ControlPanel_ListView()
                 {
                     if (SelectAll)sec.second.Dynamic.Selected = true;
                     if (SelectNone)sec.second.Dynamic.Selected = false;
-                    if (sec.second.Dynamic.Selected && Delete)IBRF_CoreBump.SendToR({ [=]() {IBR_Inst_Project.DeleteSection({ ini.Name,sec.second.Name }); },nullptr });
+                    if (sec.second.Dynamic.Selected && Delete)ToDel.push_back({ ini.Name,sec.second.Name });
                     if (sec.second.Dynamic.Selected && Duplicate)
                         IBRF_CoreBump.SendToR({ [=]()
                             {
@@ -196,7 +197,11 @@ void ControlPanel_ListView()
             }
             if (Duplicate)
                 IBRF_CoreBump.SendToR({ [=]() {IBF_Inst_Project.UpdateAll(); IBR_WorkSpace::HoldingModules = true;  },nullptr });
+            else if (Delete)
+                IBRF_CoreBump.SendToR({ [=]() { IBR_Inst_Project.DeleteSection(ToDel); },nullptr });
             else IBRF_CoreBump.SendToR({ [=]() {IBF_Inst_Project.UpdateAll(); },nullptr });
+
+
         }
 
         for (auto& ini : IBF_Inst_Project.Project.Inis)
@@ -299,6 +304,21 @@ void ControlPanel_About()
     ImGui::TextWrapped(u8"      Kenosis");
     ImGui::Separator();
     ImGui::TextWrapped(locc("GUI_About2"));
+
+
+    ImGui::TextWrapped(locc("GUI_About7")); //ImGui::SameLine();
+    if (ImGui::Button((loc("GUI_CopyLinkToClipboard") + u8"##C").c_str()))
+    {
+        ImGui::LogToClipboard();
+        ImGui::LogText("https://inibrowser-02-chinese.readthedocs.io/zh-cn/latest/documentation.html");
+        ImGui::LogFinish();
+    }
+    ImGui::SameLine();
+    if (ImGui::Button((loc("GUI_OpenLink") + u8"##C").c_str()))
+    {
+        ::ShellExecuteA(nullptr, "open", "https://inibrowser-02-chinese.readthedocs.io/zh-cn/latest/documentation.html", NULL, NULL, SW_SHOWNORMAL);
+    }
+
     ImGui::TextWrapped(locc("GUI_About3")); //ImGui::SameLine();
     if (ImGui::Button((loc("GUI_CopyLinkToClipboard") + u8"##A").c_str()))
     {
@@ -311,6 +331,7 @@ void ControlPanel_About()
     {
         ::ShellExecuteA(nullptr, "open", "https://docs.qq.com/form/page/DWXdKYUFRV1dHSnNE", NULL, NULL, SW_SHOWNORMAL);
     }
+
     ImGui::TextWrapped(locc("GUI_About4"));
     if (ImGui::Button((loc("GUI_CopyLinkToClipboard") + u8"##B").c_str()))
     {

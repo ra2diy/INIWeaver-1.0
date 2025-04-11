@@ -1,7 +1,6 @@
 #include "IBB_ModuleAlt.h"
 #include <wincrypt.h>
 #include <ranges>
-#include "IBBack.h"
 #include "IBFront.h"
 #include "Global.h"
 #include "Shlwapi.h"
@@ -655,6 +654,7 @@ namespace OldClipMagic
 const std::string ClipMagic = "IniBrowserClipDataFormat_" + Version;
 const std::string ClipMagicEnd = "EndOfClipData";
 std::string TimeNowU8();
+extern int RFontHeight;
 
 bool IBB_ModuleAlt::SaveToFile()
 {
@@ -714,6 +714,11 @@ bool IBB_ModuleAlt::SaveToFile()
             E.PutStr(M.Desc.A + "#[" + M.Desc.B + "]:[" + M.Inherit + "]"); E.Ln();//INI#[SEC]:[INHERIT]
         }
         
+        {
+            //EqDelta
+            E.PutStr("ImportDeltaX = " + std::to_string(M.EqDelta.x / RFontHeight)); E.Ln();
+            E.PutStr("ImportDeltaY = " + std::to_string(M.EqDelta.y / RFontHeight)); E.Ln();
+        }
 
         for (auto& D : M.DefaultLinkKey)
         {
@@ -812,7 +817,11 @@ void IBB_ModuleAlt::LoadFromString(std::wstring_view FileName, std::string&& Fil
             M.Ignore = false;
             M.IsComment = false;
             M.IsLinkGroup = false;
+            M.FromClipBoard = false;
             M.LinkGroup_LinkTo.clear();
+            M.EqDelta.x = (float)1e100;
+            M.EqDelta.y = (float)1e100;
+
             for (size_t i = 1; i < sec.size(); i++)
             {
                 if (sec[i].Key == "DefaultLink")
@@ -823,6 +832,8 @@ void IBB_ModuleAlt::LoadFromString(std::wstring_view FileName, std::string&& Fil
                     //TODO : ensure type หฦมห
                     //IBF_Inst_DefaultTypeList.EnsureType(sec[i].Value, sec[i].Desc);
                 }
+                else if (sec[i].Key == "ImportDeltaX")M.EqDelta.x = RFontHeight * (float)atof(sec[i].Value.c_str());
+                else if (sec[i].Key == "ImportDeltaY")M.EqDelta.y = RFontHeight * (float)atof(sec[i].Value.c_str());
                 else
                 {
                     M.Lines.push_back(sec[i]);
@@ -840,7 +851,6 @@ void IBB_ModuleAlt::LoadFromString(std::wstring_view FileName, std::string&& Fil
         {
             M.Register = It->second;
         }
-        M.FromClipBoard = false;
         M.VarList.push_back({ "_Local_Category", M.Register });
     }
 
@@ -1032,8 +1042,9 @@ namespace IBB_ModuleAltDefault
             {
                 auto Pos = ImGui::GetCursorScreenPos();
                 bool Hovered = false;
-                ImRect R{ ImGui::GetCursorScreenPos(), ImGui::GetCursorScreenPos() + ImVec2{ ImGui::GetWindowWidth() + 2.0F * FontHeight, ImGui::GetTextLineHeightWithSpacing() } };
+                ImRect R{ ImGui::GetCursorScreenPos(), ImGui::GetCursorScreenPos() + ImVec2{ ImGui::GetWindowWidth() + 0.5F * FontHeight, ImGui::GetTextLineHeightWithSpacing() } };
                 if (R.Contains(ImGui::GetMousePos()))Hovered = true;
+                //if (Hovered)ImGui::GetForegroundDrawList()->AddRect(R.Min, R.Max, IBR_Color::FocusLineColor);
                 ImGui::Dummy(ImVec2((float)FontHeight, (float)FontHeight));
                 ImGui::SameLine();
                 ImGui::Text(S->Name.c_str());

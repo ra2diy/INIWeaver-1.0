@@ -19,7 +19,6 @@
 #include <utility>
 #include <imgui.h>
 #include "FromEngine/global_tool_func.h"
-#include "IBBack.h"
 
 bool ImGui_TextDisabled_Helper(const char* Text);
 bool SmallButton_Disabled_Helper(bool cond, const char* Text);
@@ -42,7 +41,11 @@ IBR_InputManager::IBR_InputManager(const std::string& InitialText, const std::st
 }
 bool IBR_InputManager::RenderUI()
 {
-    ImGui::InputText(ID.c_str(), Input.get(), InputSize);
+    if (ImGui::InputText(ID.c_str(), Input.get(), InputSize))
+    {
+        AfterInput(Input.get());
+    }
+    if (ImGui::IsItemActive())IBR_WorkSpace::OperateOnText = true;
     return ImGui::IsItemActive();
 }
 
@@ -87,7 +90,7 @@ void IBR_IniLine::RenderUI(const std::string& Line, const std::string& Hint, con
 
 void IBR_IniLine::CloseInput()
 {
-    Input->AfterInput(Input->Input.get());
+    if(Input)Input->AfterInput(Input->Input.get());
     Input.reset();
     HasInput = false;
     UseInput = false;
@@ -331,6 +334,7 @@ namespace IBR_EditFrame
     void AFTER_INTERRUPT_F Modify(const std::string& s, BufferedLine& L)
     {
         auto back = CurSection.GetBack();
+        auto data = CurSection.GetSectionData();
         if (L.Known)
         {
             auto Line = back->GetLineFromSubSecs(s);
@@ -348,6 +352,15 @@ namespace IBR_EditFrame
         else
         {
             back->UnknownLines.Value[s] = L.Buffer;
+        }
+        {
+            auto it = data->ActiveLines.find(s);
+            if (it != data->ActiveLines.end())
+            {
+                it->second.Buffer = L.Buffer;
+                if(it->second.Edit.Input && it->second.Edit.Input->Input)
+                    strcpy(it->second.Edit.Input->Input.get(), L.Buffer.c_str());
+            }
         }
     }
     void RenderUI()
@@ -380,7 +393,9 @@ namespace IBR_EditFrame
                 return;
             }
 
-            ImGui::InputTextMultiline(u8"", EditBuf, sizeof(EditBuf), ImVec2{ ImGui::GetWindowWidth() - FontHeight * 1.2f ,ImGui::GetWindowHeight() - FontHeight * 5.4f });
+            ImGui::InputTextMultiline(u8"", EditBuf, sizeof(EditBuf),
+                ImVec2{ ImGui::GetWindowWidth() - FontHeight * 1.2f ,ImGui::GetWindowHeight() - FontHeight * 5.4f });
+            if (ImGui::IsItemActive())IBR_WorkSpace::OperateOnText = true;
             if (!ImGui::IsItemActive())
             {
                 if (TextEditReset)
@@ -398,6 +413,7 @@ namespace IBR_EditFrame
 
         for (auto& [K, V] : EditLines)
         {
+            if (K == "__INHERIT__")continue;
             if (ImGui::RadioButton(("##" + K).c_str(), !pbk->OnShow[K].empty()))
             {
                 IBG_Undo.SomethingShouldBeHere();

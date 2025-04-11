@@ -28,41 +28,23 @@
 extern LogClass GlobalLogB;
 extern bool EnableLog;
 
-hash_t StrHash(const std::string& __Str)
+LogClass VeryTmp;
+void TemporaryLog(const wchar_t* s)
 {
-	std::hash<std::string> hash_str;
-	return ((hash_t)hash_str(__Str));
+    (void)s;
+    if constexpr (true)
+    {
+        static bool first = true;
+        if (first)
+        {
+            VeryTmp.SetPath("TempRecord.log");
+            VeryTmp.ClearLog();
+            VeryTmp.AddLog("--------TEMPORARY DEBUG LOG FILE--------");
+            first = false;
+        }
+        VeryTmp.AddLog(std::wstring(s));
+    }
 }
-hash_t StrHash(const char* __Str)
-{
-	std::string ____String____(__Str);
-	return StrHash(____String____);
-}
-
-char* RemoveFrontSpace(char* src)
-{
-	char* res = src;
-	while (*res == ' ' || *res == '\t')++res;
-	return res;
-}
-void RemoveBackSpace(char* src)
-{
-	char* res = src;
-	--res;
-	while (*(++res) != 0); --res;
-	while (*res == ' ' || *res == '\t' || *res == '\r' || *res == '\n')--res;
-	*(res + 1) = 0;
-}
-void RemoveBackSpace(std::string& src)
-{
-	while (1)
-	{
-		char i = src[src.length() - 1];
-		if (i == ' ' || i == '\t' || i == '\r' || i == '\n')src.pop_back();
-		else break;
-	}
-}
-
 
 
 // ANSI×Ö·û¼¯×ª»»³ÉUnicode
@@ -369,6 +351,11 @@ std::vector<int> JsonObject::ItemArrayInt(const std::string& Str) const { ____GE
 std::vector<uint8_t> JsonObject::ItemArrayBool(const std::string& Str) const { ____GET____; return Obj.GetArrayBool(); }
 std::vector<std::string> JsonObject::ItemArrayString(const std::string& Str) const { ____GET____; return Obj.GetArrayString(); }
 std::vector<JsonObject> JsonObject::ItemArrayObject(const std::string& Str) const { ____GET____; return Obj.GetArrayObject(); }
+std::unordered_map<std::string, JsonObject> JsonObject::ItemMapObject(const std::string& Str) const { ____GET____; return Obj.GetMapObject(); }
+std::unordered_map<std::string, double> JsonObject::ItemMapDouble(const std::string& Str) const { ____GET____; return Obj.GetMapDouble(); }
+std::unordered_map<std::string, int> JsonObject::ItemMapInt(const std::string& Str) const { ____GET____; return Obj.GetMapInt(); }
+std::unordered_map<std::string, bool> JsonObject::ItemMapBool(const std::string& Str) const { ____GET____; return Obj.GetMapBool(); }
+std::unordered_map<std::string, std::string> JsonObject::ItemMapString(const std::string& Str) const { ____GET____; return Obj.GetMapString(); }
 #undef ____GET____
 
 std::unordered_map<std::string, JsonObject> JsonObject::GetMapObject() const
@@ -425,6 +412,15 @@ std::unordered_map<std::string, std::string> JsonObject::GetMapString() const
         Node = Node.GetNextItem();
     }
     return Ret;
+}
+
+std::string JsonObject::PrintData() const
+{
+    if (!Available())return "";
+    auto u = cJSON_Print(Object);
+    std::string r = u;
+    free(u);
+    return r;
 }
 
 std::string GetStringFromFile(const char* FileName)

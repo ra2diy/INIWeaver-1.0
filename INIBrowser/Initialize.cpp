@@ -9,13 +9,18 @@
 #include <Shlwapi.h>
 #include "IBR_Font.h"
 #include <filesystem>
+#include "IBR_HotKey.h"
 
 bool ShouldCloseShellLoop = false;
 bool GotoCloseShellLoop = false;
+std::atomic_bool LoadDatabaseComplete{ false };
+JsonFile Cfg;//Config.json
 
-namespace PreLink
+namespace Initialize
 {
-    static void glfw_error_callback(int error, const char* description)
+
+
+    void glfw_error_callback(int error, const char* description)
     {
         auto gle = std::vformat(loc("Error_GlfwErrorText"), std::make_format_args(error, description));
         if (EnableLog)
@@ -35,23 +40,37 @@ namespace PreLink
         return true;
     }
 
-    int PreLoop1()
+    int Initialize_Stage_II()
     {
-        
+        using namespace PreLink;
 
+        TEMPLOG("glfwSetErrorCallback(glfw_error_callback);");
         glfwSetErrorCallback(glfw_error_callback);
-        if (!glfwInit())
-            return 1;
+
+        TEMPLOG("if (!glfwInit())return 1;");
+        if (!glfwInit())return 1;
+
+        TEMPLOG("glfwWindowHint(GLFW_VISIBLE, GL_FALSE);");
         glfwWindowHint(GLFW_VISIBLE, GL_FALSE);
+
+        TEMPLOG("window = glfwCreateWindow(ScrX, ScrY, _AppName, NULL, NULL);");
         window = glfwCreateWindow(ScrX, ScrY, _AppName, NULL, NULL);
+
+        TEMPLOG("MainWindowHandle = glfwGetWin32Window(window);");
         MainWindowHandle = glfwGetWin32Window(window);
         //glfwHideWindow(window);
-        SetClassLong(MainWindowHandle, GCL_HICON, (LONG)LoadIcon(hInst, MAKEINTRESOURCE(IDI_ICON1)));
+
+        TEMPLOG("SetClassLongW(MainWindowHandle, GCL_HICON, (LONG)LoadIcon(hInst, MAKEINTRESOURCE(IDI_ICON1)));");
+        SetClassLongW(MainWindowHandle, GCL_HICON, (LONG)LoadIcon(hInst, MAKEINTRESOURCE(IDI_ICON1)));
         //ShowWindow(MainWindowHandle, SW_HIDE);
 
-        if (window == NULL)
-            return 1;
+        TEMPLOG("if (window == NULL)return 1;");
+        if (window == NULL)return 1;
+
+        TEMPLOG("glfwMakeContextCurrent(window);");
         glfwMakeContextCurrent(window);
+
+        TEMPLOG("glfwSwapInterval(1); ");
         glfwSwapInterval(1); // Enable vsync
 
         if (EnableLog)
@@ -64,7 +83,6 @@ namespace PreLink
 
     void InitConfigJson()
     {
-        JsonFile Cfg;
         IBR_PopupManager::AddJsonParseErrorPopup(Cfg.ParseFromFileChecked(".\\Resources\\config.json", loc("Error_JsonParseErrorPos"), nullptr)
             , UnicodetoUTF8(std::vformat(locw("Error_JsonSyntaxError"), std::make_wformat_args(L"Config.json"))));
         if (!Cfg.Available())
@@ -87,7 +105,7 @@ namespace PreLink
         auto Fin = IBR_Font::SearchFont(A0);
         FontPath = UnicodetoUTF8(Fin);
 
-        if(FontPath.empty())
+        if (FontPath.empty())
         {
             std::vector<std::wstring> WPFallback{
                 L"Microsoft Yahei", L"Microsoft Jhenghei", L"SimHei", L"SimSun", L"Segoe UI", L"Consolas"
@@ -112,13 +130,15 @@ namespace PreLink
             }
         }
 
+        A0 = UTF8toUnicode(FontPath);
+
         if (FontPath.empty())
         {
             MessageBoxW(NULL, std::vformat(locw("Error_InvalidFontName"), std::make_wformat_args(A0)).c_str()
                 , locwc("Error_FailedToLoadFont"), MB_ICONERROR);
             exit(0);
         }
-        auto P = std::filesystem::path(Fin);
+        auto P = std::filesystem::path(A0);
         if (!std::filesystem::exists(P))
         {
             MessageBoxW(NULL, std::vformat(locw("Error_InvalidTTF"), std::make_wformat_args(A0)).c_str()
@@ -128,20 +148,100 @@ namespace PreLink
         //MessageBoxW(NULL, Fin.c_str(), L"SearchFont", MB_OK);
     }
 
-    void PreLoop2()
+    void Initialize_Stage_III()
     {
+        TEMPLOG(" std::thread FrontThr(IBF_Thr_FrontLoop);");
+        std::thread FrontThr(IBF_Thr_FrontLoop);
+        TEMPLOG(" FrontThr.detach();");
+        FrontThr.detach();
+        TEMPLOG("std::thread SaveThr(IBS_Thr_SaveLoop);");
+        std::thread SaveThr(IBS_Thr_SaveLoop);
+        TEMPLOG("SaveThr.detach();");
+        SaveThr.detach();
+    }
+
+    void InitializeHotKeys()
+    {
+        auto o = Cfg.GetObj();
+        if (!o.Available())return;
+        auto S = o.GetObjectItem("HotKeys");
+        IBR_HotKey::InitFromJson(S);
+    }
+
+    void InitializeStyle()
+    {
+        FontHeight = IBG_GetSetting().FontSize;
+        KeyPerPage = IBG_GetSetting().MenuLinePerPage;
+        if (IBG_GetSetting().DarkMode)IBR_Color::StyleDark();
+        else IBR_Color::StyleLight();
+    }
+
+    bool LoadMyRange = false;
+    ImVector<ImWchar> myRange;
+
+    void InitializeFontFile()
+    {
+        using namespace PreLink;
+        ImGuiIO& io = ImGui::GetIO();
+        if (LoadMyRange)
+        {
+            font = io.Fonts->AddFontFromFileTTF(FontPath.c_str(), (float)FontHeight, NULL, myRange.Data);
+        }
+        else
+        {
+            font = io.Fonts->AddFontFromFileTTF(FontPath.c_str(), (float)FontHeight, NULL, io.Fonts->GetGlyphRangesChineseSimplifiedCommon());
+        }
+        if (font == NULL)
+        {
+            auto A0 = UTF8toUnicode(FontPath);
+            MessageBoxW(nullptr, std::vformat(locw("Error_InvalidTTF"), std::make_wformat_args(A0)).c_str(), locwc("Error_FailedToLoadFont"), MB_ICONERROR);
+        }
+        if (EnableLog)
+        {
+            GlobalLog.AddLog_CurTime(false);
+            auto wf = UTF8toUnicode(FontPath);
+            GlobalLog.AddLog(std::vformat(locw("Log_LoadFont"), std::make_wformat_args(wf)));
+        }
+    }
+
+    void CallInitializeDatabase()
+    {
+        IBRF_CoreBump.SendToF([] {
+            IBB_DefaultRegType::LoadFromFile(u8".\\Global\\RegisterTypes.json");//FIRST !
+            IBF_Inst_DefaultTypeList.ReadAltSetting(u8".\\Global\\TypeAlt");//SECOND ! DEPENDENT
+            IBB_ModuleAltDefault::Load(L".\\Global\\Modules\\*.*", L".\\Global\\ImageModules\\*.*", L"\\Global\\Modules\\");//THIRD ! DEPENDENT
+            IBR_Inst_Debug.DebugLoad();
+            LoadDatabaseComplete = true;
+            });
+    }
+
+    void Initialize_Stage_IV()
+    {
+        using namespace PreLink;
+
+        TEMPLOG("IBR_FullView::ViewSize = { FontHeight * 12.0f, FontHeight * 12.0f };");
+        IBR_FullView::ViewSize = { FontHeight * 12.0f, FontHeight * 12.0f };
+
+        TEMPLOG("IBR_Inst_Setting.SetSettingName(SettingFileName);");
         IBR_Inst_Setting.SetSettingName(SettingFileName);
+
+        TEMPLOG("IBR_Inst_Setting.CallReadSetting();");
         IBR_Inst_Setting.CallReadSetting();
 
         std::string EncodingStr;//MBCS Unicode UTF8
 
+        TEMPLOG("IBR_Font::BuildFontQuery();");
         IBR_Font::BuildFontQuery();
+
+        TEMPLOG(" InitConfigJson();");
         InitConfigJson();
-        
+
+        TEMPLOG("IBR_HintManager::Load();");
         IBR_HintManager::Load();
 
         // Setup Dear ImGui context
         IMGUI_CHECKVERSION();
+        TEMPLOG("ImGui::CreateContext();");
         ImGui::CreateContext();
         ImGui::GetIO().IniFilename = NULL;
         ImGui::GetIO().LogFilename = NULL;
@@ -152,8 +252,8 @@ namespace PreLink
         //ImGui::StyleColorsDark();
         //ImGui::StyleColorsClassic();
         //ImGui::StyleColorsLight();
-        
 
+        TEMPLOG("IBR_RecentManager::Load();");
         IBR_RecentManager::Load();
         if (EnableLog)
         {
@@ -163,8 +263,8 @@ namespace PreLink
 
         ImGuiIO& io = ImGui::GetIO();
         ExtFileClass GetHint;
-        static ImVector<ImWchar> myRange;
-        bool LoadMyRange = false;
+
+
         if (GetHint.Open(".\\Resources\\load.txt", "rb"))
         {
             ImFontGlyphRangesBuilder myGlyph;
@@ -200,7 +300,7 @@ namespace PreLink
 
             //0x4e00, 0x9FAF, // CJK Ideograms
             //font = io.Fonts->AddFontFromFileTTF(FontPath.c_str(), (float)FontHeight, NULL, LoadRange.data());
-            
+
             LoadMyRange = true;
 
         }
@@ -216,12 +316,16 @@ namespace PreLink
             font = io.Fonts->AddFontFromFileTTF(FontPath.c_str(), (float)FontHeight, NULL, io.Fonts->GetGlyphRangesChineseSimplifiedCommon());
             //font = io.Fonts->AddFontFromFileTTF(FontPath.c_str(), (float)FontHeight, NULL, io.Fonts->GetGlyphRangesChineseFull());
         }
-        
+
 
         // Setup Platform/Renderer backends
+        TEMPLOG("ImGui_ImplGlfw_InitForOpenGL(window, true);");
         ImGui_ImplGlfw_InitForOpenGL(window, true);
+
+        TEMPLOG("ImGui_ImplOpenGL2_Init();");
         ImGui_ImplOpenGL2_Init();
 
+        TEMPLOG("glfwShowWindow(PreLink::window);");
         glfwShowWindow(PreLink::window);
         SetClassLong(MainWindowHandle, GCL_HICON, (LONG)LoadIconW(PreLink::hInst, MAKEINTRESOURCE(IDI_ICON1)));
         if (EnableLog)
@@ -231,58 +335,44 @@ namespace PreLink
         }
 
         while (!IBR_Inst_Setting.IsReadSettingComplete());
-        FontHeight = IBG_GetSetting().FontSize;
-        KeyPerPage = IBG_GetSetting().MenuLinePerPage;
-        if (IBG_GetSetting().DarkMode)IBR_Color::StyleDark();
-        else IBR_Color::StyleLight();
 
-        if (LoadMyRange)
-        {
-            font = io.Fonts->AddFontFromFileTTF(FontPath.c_str(), (float)FontHeight, NULL, myRange.Data);
-        }
-        else
-        {
-            font = io.Fonts->AddFontFromFileTTF(FontPath.c_str(), (float)FontHeight, NULL, io.Fonts->GetGlyphRangesChineseSimplifiedCommon());
-        }
-        if (font == NULL)
-        {
-            auto A0 = UTF8toUnicode(FontPath);
-            MessageBoxW(nullptr, std::vformat(locw("Error_InvalidTTF"), std::make_wformat_args(A0)).c_str(), locwc("Error_FailedToLoadFont"), MB_ICONERROR);
-        }
-        if (EnableLog)
-        {
-            GlobalLog.AddLog_CurTime(false);
-            auto wf = UTF8toUnicode(FontPath);
-            GlobalLog.AddLog(std::vformat(locw("Log_LoadFont"), std::make_wformat_args(wf)));
-        }
+        TEMPLOG("CallInitializeDatabase();");
+        CallInitializeDatabase();
 
-        IBB_DefaultRegType::LoadFromFile(u8".\\Global\\RegisterTypes.json");//FIRST !
-        IBF_Inst_DefaultTypeList.ReadAltSetting(u8".\\Global\\TypeAlt");//SECOND ! DEPENDENT
-        IBB_ModuleAltDefault::Load(L".\\Global\\Modules\\*.*", L".\\Global\\ImageModules\\*.*", L"\\Global\\Modules\\");//THIRD ! DEPENDENT
-        IBR_Inst_Debug.DebugLoad();
+        TEMPLOG("InitializeStyle();");
+        InitializeStyle();
 
+        TEMPLOG("InitializeHotKeys();");
+        InitializeHotKeys();
+
+        TEMPLOG("InitializeFontFile();");
+        InitializeFontFile();
+
+        TEMPLOG("glfwSetDropCallback(PreLink::window, IBR_ProjectManager::OnDropFile);");
         glfwSetDropCallback(PreLink::window, IBR_ProjectManager::OnDropFile);
+
+        TEMPLOG("IBR_ProjectManager::CreateAction();");
         IBR_ProjectManager::CreateAction();
     }
 
     void CleanUp()
     {
-        
         // Cleanup
         ImGui_ImplOpenGL2_Shutdown();
         ImGui_ImplGlfw_Shutdown();
         ImGui::DestroyContext();
         //DeleteFileA("imgui.ini");
-        glfwDestroyWindow(window);
+        glfwDestroyWindow(PreLink::window);
         glfwTerminate();
     }
 
     void ShellLoop()
     {
+        using namespace PreLink;
         try
         {
             uint64_t TimeWait = GetSysTimeMicros();
-            
+
             while (!ShouldCloseShellLoop)
             {
                 if (IBG_GetSetting().FrameRateLimit != -1)
@@ -399,32 +489,65 @@ namespace PreLink
 
     bool FixLaunchPath()
     {
-        char szExePath[MAX_PATH];
-        if (GetModuleFileNameA(NULL, szExePath, MAX_PATH) == 0)
-            return false;
-        if (!PathRemoveFileSpecA(szExePath))
-            return false;
-        if (!SetCurrentDirectoryA(szExePath))
-            return false;
-        return true;
+        TEMPLOG("wchar_t szExePath[MAX_PATH];")
+            wchar_t szExePath[MAX_PATH];
+
+        TEMPLOG("if (GetModuleFileNameW(NULL, szExePath, MAX_PATH) == 0)")
+            if (GetModuleFileNameW(NULL, szExePath, MAX_PATH) == 0)
+            {
+                TEMPLOG("return false;")
+                    return false;
+            }
+
+        TEMPLOG("if (!PathRemoveFileSpecW(szExePath))")
+            if (!PathRemoveFileSpecW(szExePath))
+            {
+                TEMPLOG("return false;")
+                    return false;
+            }
+
+        TEMPLOG("if (!SetCurrentDirectoryW(szExePath))")
+            if (!SetCurrentDirectoryW(szExePath))
+            {
+                TEMPLOG("return false;")
+                    return false;
+            }
+
+        TEMPLOG("wchar_t szExePath[MAX_PATH];")
+            return true;
     }
 
     bool InitializePath()
     {
-        if (!FixLaunchPath())
-        {
-            MessageBoxW(NULL, locwc("Error_CannotInitializePath"), locwc("Error_FalledToLaunch"), MB_OK);
-            return false;
-        }
+        TEMPLOG("if (!FixLaunchPath())")
+            if (!FixLaunchPath())
+            {
+                MessageBoxW(NULL, locwc("Error_CannotInitializePath"), locwc("Error_FalledToLaunch"), MB_OK);
+                TEMPLOG("return false;")
+                    return false;
+            }
+
 
         char DesktopTmp[300];
+        wchar_t DefaultpathTmp[300];
+
+        TEMPLOG("SHGetSpecialFolderPathW(0, DefaultpathTmp, CSIDL_DESKTOPDIRECTORY, 0);")
+            SHGetSpecialFolderPathW(0, DefaultpathTmp, CSIDL_DESKTOPDIRECTORY, 0);
         SHGetSpecialFolderPathA(0, DesktopTmp, CSIDL_DESKTOPDIRECTORY, 0);
-        GetCurrentDirectoryW(MAX_PATH, CurrentDirW);
+
+        TEMPLOG("GetCurrentDirectoryW(MAX_PATH, CurrentDirW);")
+            GetCurrentDirectoryW(MAX_PATH, CurrentDirW);
         GetCurrentDirectoryA(MAX_PATH, CurrentDirA);
-        IBR_RecentManager::Path = CurrentDirW;
-        IBR_RecentManager::Path += L"\\Resources\\recent.dat";
+
+        TEMPLOG("IBR_RecentManager::Path = CurrentDirW;")
+            IBR_RecentManager::Path = CurrentDirW;
+
+        TEMPLOG("IBR_RecentManager::Path += L\"\\Resources\\recent.dat\";")
+            IBR_RecentManager::Path += L"\\Resources\\recent.dat";
+
+        TEMPLOG("Defaultpath = DefaultpathTmp;")
+            Defaultpath = DefaultpathTmp;
         Desktop = DesktopTmp;
-        Defaultpath = MBCStoUnicode(Desktop);
 
         return true;
     }
@@ -449,9 +572,9 @@ namespace PreLink
             if (!_wcsicmp(PathFindExtensionW(szArglist[i]), ExtensionNameW) && PathFileExistsW(szArglist[i]))
             {
                 //delayed open
-                IBRF_CoreBump.SendToR({ [Path=std::wstring(szArglist[i])]() {IBR_ProjectManager::OpenRecentAction(Path); }});
+                IBRF_CoreBump.SendToR({ [Path = std::wstring(szArglist[i])]() {IBR_ProjectManager::OpenRecentAction(Path); } });
             }
-            else if(!_wcsicmp(szArglist[i], L"-log"))
+            else if (!_wcsicmp(szArglist[i], L"-log"))
             {
                 EnableLog = true;
             }
@@ -481,5 +604,30 @@ namespace PreLink
 
         LocalFree(szArglist);
     }
+
+    int Initialize_Stage_I(HINSTANCE hInstance, LPWSTR lpCmdLine)
+    {
+        TEMPLOG("PreLink::hInst = hInstance;")
+            PreLink::hInst = hInstance;
+
+        TEMPLOG("if (!InitializePath())return 2;")
+            if (!InitializePath())return 2;
+
+        TEMPLOG(" ProcessCommandLine(lpCmdLine);")
+            ProcessCommandLine(lpCmdLine);
+
+        TEMPLOG("if (!InitializeLanguage())return 3;")
+            if (!InitializeLanguage())return 3;
+
+        TEMPLOG("InitializeLogger();")
+            InitializeLogger();
+
+        TEMPLOG("InitializeResolution();")
+            InitializeResolution();
+
+        TEMPLOG("return 0;")
+            return 0;
+    }
+
 }
 

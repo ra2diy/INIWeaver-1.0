@@ -1,19 +1,12 @@
 
 #include "FromEngine/Include.h"
 #include "FromEngine/global_tool_func.h"
-#include "IBBack.h"
+#include "IBB_Index.h"
 #include "Global.h"
 #include "IBB_RegType.h"
 
 const char* LinkGroup_IniName = "_LINKGROUP_INI_FILE";
-
-std::string IBB_DIndex::GetText() const
-{
-    return UseIndex ? ("<IDX:" + std::to_string(Index) + ">") : Name;
-}
-
-
-
+extern const char* LinkAltPropType;
 
 
 
@@ -291,8 +284,6 @@ bool IBB_Link_Default::Load(JsonObject FromJson)
 
 
 
-const char* DefaultAltPropType = "\"D\"";
-const char* LinkAltPropType = "\"L\"";
 
 bool IBB_IniLine_Default::IsLinkAlt() const
 {
@@ -311,245 +302,9 @@ LineData IBB_IniLine_Default::Create() const
     return LineData(new IBB_IniLine_Data_String);
 }
 
-const char* DefaultSubSecName = "_DEFAULT_SUBSEC";
-
-void IBB_DefaultTypeList::EnsureType(const IBB_DefaultTypeAlt& D, std::set<std::string>* UsedStrings)
-{
-    auto& L = IniLine_Default[D.Name];
-    L.Name = D.Name;
-    L.Platform = { "" };
-    L.Limit.Type = "String";
-    L.Limit.Lim = D.Name;
-    L.DescShort = D.DescShort;
-    L.DescLong = D.DescLong;
-    L.Color = D.Color;
-    if (D.LinkType.empty() || D.LinkLimit == 0 || D.LinkType == "bool")
-    {
-        L.Property.Type = DefaultAltPropType;
-        L.Property.Lim = JsonObject(nullptr);
-        L.Property.TypeAlt = D.LinkType;
-    }
-    else
-    {
-        L.Property.Type = LinkAltPropType;
-        L.Property.Lim = JsonObject(reinterpret_cast<cJSON*>(D.LinkLimit));
-        L.Property.TypeAlt = D.LinkType;
-        if(UsedStrings)
-            UsedStrings->insert(D.LinkType);
-        else
-        {
-            auto& TheOnlySubSec = SubSec_Default[DefaultSubSecName];
-            TheOnlySubSec.Lines_ByName.push_back(D.Name);
-            TheOnlySubSec.Lines[D.Name] = L;
-
-            auto& K = Link_Default[D.LinkType];
-            K.Name = D.LinkType;
-            K.NameOnlyAsRegister = true;
-            IBB_DefaultRegType::EnsureRegType(D.LinkType);
-            
-        }
-    }
-}
-
-void IBB_DefaultTypeList::EnsureType(const std::string& Key, const std::string& LinkType)
-{
-    auto it = IniLine_Default.find(Key);
-    if (it != IniLine_Default.end())return;//Exists
-    {
-        auto K = UTF8toUnicode(Key);
-        auto LT = UTF8toUnicode(LinkType);
-        MessageBoxW(NULL, std::vformat(locw("Error_LinkTypeNotExist"), std::make_wformat_args(K, LT)).c_str() ,
-            L"IBB_DefaultTypeList::EnsureType", MB_OK);
-    }
-    IBB_DefaultTypeAlt Alt;
-    Alt.LinkType = LinkType;
-    Alt.Name = Key;
-    Alt.LinkLimit = -1;
-    Alt.DescShort = Alt.DescLong = Key;
-    EnsureType(Alt);
-}
-
-bool IBB_DefaultTypeList::LoadFromAlt(const IBB_DefaultTypeAltList& AltList)
-{
-    Require_Default.clear();
-
-    std::set<std::string> UsedStrings;
-    for (const auto& D : AltList.List)EnsureType(D, &UsedStrings);
-
-    auto& TheOnlySubSec = SubSec_Default[DefaultSubSecName];
-    TheOnlySubSec.Name = DefaultSubSecName;
-    TheOnlySubSec.DescShort = "";
-    TheOnlySubSec.DescLong = "";
-    TheOnlySubSec.Platform = { "" };
-    TheOnlySubSec.Lines_ByName.reserve(IniLine_Default.size());
-    for (auto& [k, v] : IniLine_Default)
-        TheOnlySubSec.Lines_ByName.push_back(k);
-    TheOnlySubSec.Lines = IniLine_Default;
-    TheOnlySubSec.Require.RequiredValues.clear();
-    TheOnlySubSec.Require.ForbiddenValues.clear();
-
-    for (const auto& s : UsedStrings)
-    {
-        auto& L = Link_Default[s];
-        L.Name = s;
-        L.NameOnlyAsRegister = true;
-        IBB_DefaultRegType::EnsureRegType(s);
-    }
-
-    return true;
-}
-
-ImU32 StrToCol(const std::string& Str)
-{
-    ImU32 V = strtol(Str.c_str(), nullptr, 16);
-    if (V > 0x1000000 || Str.length() > 6)
-    {
-        //ABGR
-        return V;
-    }
-    else
-    {
-        return V >> 16 | (V & 0xFF) << 16 | (V & 0xFF00) | 0xFF000000;
-    }
-}
-
-bool IBB_DefaultTypeAlt::Load(JsonObject FromJson)
-{
-    Name = FromJson.ItemStringOr("Name");
-    DescLong = FromJson.ItemStringOr("DescLong");
-    DescShort = FromJson.ItemStringOr("DescShort");
-    LinkType = FromJson.ItemStringOr("LinkType");
-    LinkLimit = FromJson.ItemIntOr("LinkLimit", 1);
-    Color = StrToCol(FromJson.ItemStringOr("LineColor", "00000000").c_str());
-    return true;
-}
-
-bool IBB_DefaultTypeAlt::Load(const std::vector<std::string>& FromCSV)
-{
-    if (FromCSV.size() < 5)return false;
-    // Name LinkType LinkLimit DescShort DescLong;
-    Name = FromCSV[0];
-    LinkType = FromCSV[1];
-    LinkLimit = atoi(FromCSV[2].c_str());
-    DescShort = FromCSV[3];
-    DescLong = FromCSV[4];
-    Color = StrToCol(FromCSV.size() > 5 ? FromCSV[5].c_str() : "00000000");
-    return true;
-}
-
-bool IBB_DefaultTypeAltList::Load(JsonObject FromJson)
-{
-    auto V = FromJson.ItemArrayObjectOr("IniLine");
-    List.resize(V.size());
-    for (size_t i = 0; i < V.size(); i++)
-        List[i].Load(V[i]);
-    return true;
-}
-
-bool IBB_DefaultTypeAltList::LoadFromJsonFile(const char* Name)
-{
-    std::string FileName(const std::string & ss);
-    JsonFile F;
-    auto V = UTF8toUnicode(FileName(Name));
-    IBR_PopupManager::AddJsonParseErrorPopup(F.ParseFromFileChecked(Name, loc("Error_JsonParseErrorPos"), nullptr),
-        UnicodetoUTF8(std::vformat(locw("Error_JsonSyntaxError"), std::make_wformat_args(V))));
-    if (!F.Available())return false;
-    Load(F);
-
-    ExtFileClass Et;
-    Et.Open(".\\Global\\TypeAlt.csv", "w");
-    for (auto& L : List)
-    {
-        Et.PutStr(L.Name); Et.PutChr(',');
-        Et.PutStr(L.LinkType); Et.PutChr(',');
-        Et.PutStr(std::to_string(L.LinkLimit)); Et.PutChr(',');
-        Et.PutStr(L.DescShort); Et.PutChr(',');
-        Et.PutStr(L.DescLong); Et.PutChr('\n');
-    }
-    Et.Close();
-    MessageBoxW(NULL, locwc("GUI_TypeAltConverted"), _AppNameW, MB_OK);
-
-    return true;
-}
-
-bool IBB_DefaultTypeAltList::LoadFromCSVFile(const char* Name)
-{
-    CSVReader Reader;
-    Reader.ReadFromFile(Name);
-    auto& D = Reader.GetData();
-    if (D.size() <= 1)return false;
-    List.resize(D.size());
-    bool Ret = true;
-    for (size_t i = 1; i < D.size(); i++)
-        Ret &= List[i].Load(D[i]);
-    return Ret;
-}
-
-bool IBB_VariableList::Load(JsonObject FromJson)
-{
-    Value = FromJson.GetMapString();
-    return true;
-}
 
 
-bool operator<(const IBB_Section_Desc& A, const IBB_Section_Desc& B) { return (A.Ini < B.Ini) ? true : (A.Sec < B.Sec); }
 
-IBB_Ini* IBB_Project_Index::GetIni(IBB_Project& Proj)
-{
-    if (EnableLogEx) { GlobalLogB.AddLog_CurTime(false); GlobalLogB.AddLog("IBB_Project_Index::GetIni £ºFunc I Idx=", false); GlobalLogB.AddLog(GetText().c_str()); }
-    auto Iter = Ini.Search<IBB_Ini>(Proj.Inis, true, true, [](const IBB_Ini& F) {return F.Name; });
-    return (Iter == Proj.Inis.end()) ? nullptr : std::addressof(*Iter);
-}
-IBB_Section* IBB_Project_Index::GetSec(IBB_Project& Proj)
-{
-    if (EnableLogEx) { GlobalLogB.AddLog_CurTime(false); GlobalLogB.AddLog("IBB_Project_Index::GetSec £ºFunc I Idx=", false); GlobalLogB.AddLog(GetText().c_str()); }
-    auto Iter = Ini.Search<IBB_Ini>(Proj.Inis, true, true, [](const IBB_Ini& F) {return F.Name; });
-    if (Iter == Proj.Inis.end())return nullptr;
-    auto Iter1 = Section.Search(Iter->Secs, true, false);
-    return (Iter1 == Iter->Secs.end()) ? nullptr : std::addressof(Iter1->second);
-}
-IBB_Ini* IBB_Project_Index::GetIni(IBB_Project& Proj) const
-{
-    if (EnableLogEx) { GlobalLogB.AddLog_CurTime(false); GlobalLogB.AddLog("IBB_Project_Index::GetIni £ºFunc II Idx=", false); GlobalLogB.AddLog(GetText().c_str()); }
-    auto Iter = Ini.Search<IBB_Ini>(Proj.Inis, true, [](const IBB_Ini& F) {return F.Name; });
-    return (Iter == Proj.Inis.end()) ? nullptr : std::addressof(*Iter);
-}
-IBB_Section* IBB_Project_Index::GetSec(IBB_Project& Proj) const
-{
-    if (EnableLogEx) { GlobalLogB.AddLog_CurTime(false); GlobalLogB.AddLog("IBB_Project_Index::GetSec £ºFunc II Idx=", false); GlobalLogB.AddLog(GetText().c_str()); }
-    auto Iter = Ini.Search<IBB_Ini>(Proj.Inis, true, [](const IBB_Ini& F) {return F.Name; });
-    if (Iter == Proj.Inis.end())return nullptr;
-    auto Iter1 = Section.Search(Iter->Secs, true);
-    return (Iter1 == Iter->Secs.end()) ? nullptr : std::addressof(Iter1->second);
-}
-const IBB_Ini* IBB_Project_Index::GetIni(const IBB_Project& Proj)
-{
-    if (EnableLogEx) { GlobalLogB.AddLog_CurTime(false); GlobalLogB.AddLog("IBB_Project_Index::GetIni £ºFunc III Idx=", false); GlobalLogB.AddLog(GetText().c_str()); }
-    auto Iter = Ini.Search<IBB_Ini>(Proj.Inis, true, true, [](const IBB_Ini& F) {return F.Name; });
-    return (Iter == Proj.Inis.end()) ? nullptr : std::addressof(*Iter);
-}
-const IBB_Section* IBB_Project_Index::GetSec(const IBB_Project& Proj)
-{
-    if (EnableLogEx) { GlobalLogB.AddLog_CurTime(false); GlobalLogB.AddLog("IBB_Project_Index::GetSec £ºFunc III Idx=", false); GlobalLogB.AddLog(GetText().c_str()); }
-    auto Iter = Ini.Search<IBB_Ini>(Proj.Inis, true, true, [](const IBB_Ini& F) {return F.Name; });
-    if (Iter == Proj.Inis.end())return nullptr;
-    auto Iter1 = Section.Search(Iter->Secs, true, false);
-    return (Iter1 == Iter->Secs.end()) ? nullptr : std::addressof(Iter1->second);
-}
-const IBB_Ini* IBB_Project_Index::GetIni(const IBB_Project& Proj) const
-{
-    if (EnableLogEx) { GlobalLogB.AddLog_CurTime(false); GlobalLogB.AddLog("IBB_Project_Index::GetIni £ºFunc IV Idx=", false); GlobalLogB.AddLog(GetText().c_str()); }
-    auto Iter = Ini.Search<IBB_Ini>(Proj.Inis, true, [](const IBB_Ini& F) {return F.Name; });
-    return (Iter == Proj.Inis.end()) ? nullptr : std::addressof(*Iter);
-}
-const IBB_Section* IBB_Project_Index::GetSec(const IBB_Project& Proj) const
-{
-    if (EnableLogEx) { GlobalLogB.AddLog_CurTime(false); GlobalLogB.AddLog("IBB_Project_Index::GetSec £ºFunc IV Idx=", false); GlobalLogB.AddLog(GetText().c_str()); }
-    auto Iter = Ini.Search<IBB_Ini>(Proj.Inis, true, [](const IBB_Ini& F) {return F.Name; });
-    if (Iter == Proj.Inis.end())return nullptr;
-    auto Iter1 = Section.Search(Iter->Secs, true);
-    return (Iter1 == Iter->Secs.end()) ? nullptr : std::addressof(Iter1->second);
-}
 const IBB_Ini* IBB_Project::GetIni(const IBB_Project_Index& Index) const
 {
     return Index.GetIni(*this);
@@ -576,19 +331,6 @@ IBB_Project_Index IBB_Project::GetSecIndex(const std::string& Name) const
     return { "","" };
 }
 
-bool IBB_Project_Index::SameTarget(const IBB_Project& Proj, const IBB_Project_Index& A) const
-{
-    return GetSec(Proj) == A.GetSec(Proj);
-}
-std::string IBB_Project_Index::GetText() const
-{
-    return Ini.GetText() + "->" + Section.GetText();
-}
-
-std::string IBB_Section_Desc::GetText() const
-{
-    return Ini + "->" + Sec;
-}
 
 
 
@@ -845,7 +587,7 @@ bool IBB_Ini::DeleteSection(const std::string& Tg)
     {
         for (auto ij = Secs_ByName.begin(); ij != Secs_ByName.end(); ++ij)
             if (*ij == Tg){ Secs_ByName.erase(ij); break; }
-        //if(it->second.Isolate())Ret = false;
+        if(!it->second.Isolate())Ret = false;
         auto psc = &it->second;
         for (auto& rl : Root->RegisterLists)
         {
@@ -894,64 +636,6 @@ bool IBB_Ini::UpdateAll()
 }
 
 
-
-void IBB_VariableList::FillKeys(const std::vector<std::string>& List, const std::string& Val)
-{
-    for (const auto& s : List)Value[s] = Val;
-}
-void IBB_VariableList::Merge(const IBB_VariableList& Another, bool MergeUpValue)
-{
-    for (const auto& p : Another.Value)
-        Value[p.first] = p.second;
-    if (MergeUpValue && UpValue != nullptr && Another.UpValue != nullptr && UpValue != Another.UpValue)
-        UpValue->Merge(*Another.UpValue, true);
-}
-const std::string& IBB_VariableList::GetVariable(const std::string& Name) const
-{
-    static std::string Null = "";
-    auto It = Value.find(Name);
-    if (It != Value.end())return It->second;
-    else if (UpValue == nullptr)return Null;
-    else return UpValue->GetVariable(Name);
-}
-bool IBB_VariableList::HasValue(const std::string& Name) const
-{
-    if ((Value.find(Name) != Value.end()))return true;
-    else if (UpValue == nullptr)return false;
-    else return UpValue->HasValue(Name);
-}
-bool IBB_VariableList::CoverUpValue(const std::string& Name) const
-{
-    if (UpValue == nullptr)return false;
-    else return (Value.find(Name) != Value.end()) && UpValue->HasValue(Name);
-}
-std::string IBB_VariableList::GetText(bool ConsiderUpValue) const
-{
-    if (!ConsiderUpValue)
-    {
-        std::string Ret;
-        for (const auto& p : Value)
-        {
-            Ret += p.first;
-            Ret.push_back('=');
-            Ret += p.second;
-            Ret.push_back('\n');
-        }
-        return Ret;
-    }
-    else
-    {
-        IBB_VariableList List;
-        Flatten(List);
-        return List.GetText(false);
-    }
-}
-void IBB_VariableList::Flatten(IBB_VariableList& Target) const
-{
-    if (UpValue != nullptr)UpValue->Flatten(Target);
-    for (const auto& p : Value)
-        Target.Value[p.first]=p.second;
-}
 
 
 

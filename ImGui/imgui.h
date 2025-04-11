@@ -287,7 +287,7 @@ struct dImVec2
 };
 
 double abs(double x) noexcept;
-inline dImVec2 abs(dImVec2 a)
+inline dImVec2 abs(dImVec2 a) noexcept
 {
     return dImVec2{ abs(a.x),abs(a.y) };
 }
