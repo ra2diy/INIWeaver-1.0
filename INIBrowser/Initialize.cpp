@@ -13,6 +13,7 @@
 
 bool ShouldCloseShellLoop = false;
 bool GotoCloseShellLoop = false;
+bool EnableDebugList = false;
 std::atomic_bool LoadDatabaseComplete{ false };
 JsonFile Cfg;//Config.json
 
@@ -589,6 +590,10 @@ namespace Initialize
             else if (!_wcsicmp(szArglist[i], L"-nologex"))
             {
                 EnableLogEx = false;
+            }
+            else if (!_wcsicmp(szArglist[i], L"-debugmenu"))
+            {
+                EnableDebugList = true;
             }
             else if (!_wcsnicmp(szArglist[i], L"-width=", 7))
             {
