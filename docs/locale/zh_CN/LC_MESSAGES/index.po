@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: INIBrowser \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-04-04 20:01+0800\n"
+"POT-Creation-Date: 2025-04-12 19:34+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh_CN\n"
@@ -24,5 +24,37 @@ msgid "documentation"
 msgstr "文档"
 
 #: ../../index.md:1
+msgid "info"
+msgstr "信息"
+
+#: ../../index.md:1
 msgid "Docs"
 msgstr "文档"
+
+#: ../../../README.txt:2
+msgid ""
+"See BACKENDS and EXAMPLES files in the docs/ folder, or on the web at: "
+"https://github.com/ocornut/imgui/tree/master/docs"
+msgstr ""
+
+#: ../../../README.txt:4
+msgid ""
+"Backends = Helper code to facilitate integration with platforms/graphics "
+"api (used by Examples + should be used by your app). Examples = "
+"Standalone applications showcasing integration with platforms/graphics "
+"api."
+msgstr ""
+
+#: ../../../README.txt:7
+msgid ""
+"Some Examples have extra README files in their respective directory, "
+"please check them too!"
+msgstr ""
+
+#: ../../../README.txt:9
+msgid ""
+"Once Dear ImGui is running (in either examples or your own "
+"application/game/engine), run and refer to ImGui::ShowDemoWindow() in "
+"imgui_demo.cpp for the end-user API."
+msgstr ""
+
