@@ -80,9 +80,29 @@ namespace IBR_FullView
             ImVec2 WUL = CC + sd.EqPos / ViewScale;
             ImVec2 WDR = CC + (sd.EqPos + sd.EqSize) / ViewScale;
             //MessageBoxA(NULL, sp.second.Desc.GetText().c_str(), "!!!FFF!!!", MB_OK);
-            dl->AddRectFilled(WUL, WDR, ImColor(ImGui::GetStyleColorVec4(ImGuiCol_WindowBg)));
+            auto RSec = IBR_Inst_Project.GetSectionFromID(sp.first);
+            if (sd.Ignore)
+            {
+                auto C = ImColor(ImGui::GetStyleColorVec4(ImGuiCol_WindowBg));
+                if (IBF_Inst_Setting.IsDarkMode())
+                {
+                    C.Value.x += 0.3f;
+                    C.Value.y += 0.3f;
+                    C.Value.z += 0.3f;
+                }
+                else
+                {
+                    C.Value.x *= 0.8f;
+                    C.Value.y *= 0.8f;
+                    C.Value.z *= 0.8f;
+                }
+                dl->AddRectFilled(WUL, WDR, C);
+            }
+            else
+            {
+                dl->AddRectFilled(WUL, WDR, RSec.GetRegTypeColor());
+            }
             dl->AddRect(WUL, WDR, ImColor(ImGui::GetStyleColorVec4(ImGuiCol_Border)), 0.0f, 0, 1.0f);
-
         }
         if (psd != nullptr)
         {
@@ -128,20 +148,22 @@ namespace IBR_FullView
     {
         static float TmpScale;
         TmpScale = 100.0f * IBR_FullView::Ratio;
-        ImGui::SliderFloat(u8"Àı∑≈±»¿˝", &TmpScale, RatioMin, RatioMax, "%.0f%%", ImGuiSliderFlags_Logarithmic);
+        ImGui::SliderFloat(locc("GUI_ZoomRatio"), &TmpScale, RatioMin, RatioMax, "%.0f%%", ImGuiSliderFlags_Logarithmic);
         TmpScale = floor(TmpScale / 5.0f) * 5.0f;
         IBR_FullView::Ratio = TmpScale / 100.0f;
 
-        ImGui::Text(u8" ”Õº");
+        ImGui::Text(locc("GUI_ViewTitle"));
         ImGui::BeginChildFrame(114514 + 2, ViewSize + ImVec2{ 5, 8 });
         auto CRect = ImGui::GetCursorScreenPos();
         ImGui::Dummy(ViewSize);
+        ///*
         {
             bool CHover = ImGui::IsItemHovered();
             IBR_Inst_Debug.AddMsgCycle([=]() {ImGui::Text("View Hovered = %s", (CHover ? "true" : "false")); });
             IBR_Inst_Debug.AddMsgCycle([=]() {ImGui::Text("View Pos = ( %.2f, %.2f )", CRect.x, CRect.y); });
             IBR_Inst_Debug.AddMsgCycle([=]() {ImGui::Text("Offset Pos = ( %.2f, %.2f )", IBR_FullView::EqCenter.x, IBR_FullView::EqCenter.y); });
         }
+        //*/
         if (ImGui::IsItemHovered() && ImGui::IsMouseDown(ImGuiMouseButton_Left))
         {
             auto MP = ImGui::GetIO().MousePos;

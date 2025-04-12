@@ -4,6 +4,7 @@
 #include "Global.h"
 #include <shlwapi.h>
 #include ".\FromEngine\global_tool_func.h"
+extern bool RefreshLangBuffer1;
 
 namespace InsertLoad
 {
@@ -122,6 +123,16 @@ namespace InsertLoad
         WCHAR szFile[296]{};
         StrCpyW(szFile, Type.InitialFileName.c_str());
 
+        static std::wstring FilterStr;
+        if (FilterStr.empty() || RefreshLangBuffer1)
+        {
+            auto T4 = locw("GUI_OutputModule_Type4");
+            FilterStr.resize(T4.size() + 16);
+            wcscpy(FilterStr.data(), T4.c_str());
+            wcscpy(FilterStr.data() + T4.size() + 1 , L"..");
+            RefreshLangBuffer1 = false;
+        }
+
         std::wstring wptitle = Type.Title;
 
         memset(&ofn, 0, sizeof(ofn));
@@ -137,7 +148,7 @@ namespace InsertLoad
         if (UseFolder)
         {
             ofn.lpfnHook = MyFolderProc;
-            ofn.lpstrFilter = L"文件夹\0..\0\0";
+            ofn.lpstrFilter = FilterStr.c_str();
             ofn.nFilterIndex = 1;
             ofn.Flags = OFN_EXPLORER | OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_ENABLEHOOK | OFN_HIDEREADONLY;
         }
@@ -161,7 +172,7 @@ namespace InsertLoad
         if (EnableLog)
         {
             GlobalLog.AddLog_CurTime(false);
-            GlobalLog.AddLog("选择文件。");
+            GlobalLog.AddLog(locc("Log_SelectFile"));
         }
         return Ret;
     }
@@ -206,7 +217,7 @@ WriteFileHeader IBS_SaveProject
         if (EnableLog)
         {
             GlobalLogB.AddLog_CurTime(false);
-            GlobalLogB.AddLog("调用了IBS_SaveProject.Action。");
+            GlobalLogB.AddLog(locc("Log_CallSaveAction"));
         }
         File.WriteData(IBS_Inst_Project.CreateTime);
         File.WriteData(IBS_Inst_Project.CreateVersionMajor);
@@ -215,6 +226,14 @@ WriteFileHeader IBS_SaveProject
         File.WriteData(IBS_Inst_Project.FullView_Ratio);
         File.WriteData(IBS_Inst_Project.FullView_EqCenter);
         File.WriteData(IBS_Inst_Project.LastOutputDir);
+        std::function<bool(const ExtFileClass&, const std::pair<std::string, std::wstring>&)> F = [](const auto& E, const auto& U)->auto
+            {
+                auto R = true;
+                R &= E.WriteData(U.first);
+                R &= E.WriteData(U.second);
+                return R;
+            };
+        File.WriteVector(IBS_Inst_Project.LastOutputIniName, F);
         File.WriteVector(IBS_Inst_Project.Data);
         return true;
      }
@@ -227,7 +246,7 @@ ReadFileHeader IBS_LoadProject
         if (EnableLog)
         {
             GlobalLogB.AddLog_CurTime(false);
-            GlobalLogB.AddLog("调用了IBS_LoadProject.Action。");
+            GlobalLogB.AddLog(locc("Log_CallLoadAction"));
         }
         (void)Length;
         if (FVersion > VersionN)
@@ -235,11 +254,33 @@ ReadFileHeader IBS_LoadProject
             if (EnableLog)
             {
                 GlobalLogB.AddLog_CurTime(false);
-                GlobalLogB.AddLog("IBS_LoadProject.Action : 版本不匹配。");
+                GlobalLogB.AddLog((u8"IBS_LoadProject.Action ： " + loc("Log_FileVersionTooHigh")).c_str());
             }
-            sprintf_s(LogBuf, "此工程文件至少需要 %s (#%d) 或更高版本才能打开！", GetVersionStr(FVersion).c_str(), FVersion);
-            MessageBoxA(MainWindowHandle, LogBuf, "载入错误", MB_OK | MB_ICONERROR);
+            {
+                auto VS = UTF8toUnicode(GetVersionStr(FVersion));
+                MessageBoxW(MainWindowHandle, std::vformat(locw("Error_NeedHigherVersion"),
+                    std::make_wformat_args(VS, FVersion)).c_str(), locwc("Error_LoadProjectFailed"), MB_OK | MB_ICONERROR);
+            }
             return false;
+        }
+        else if (FVersion >= 204)
+        {
+            File.ReadData(IBS_Inst_Project.CreateTime);
+            File.ReadData(IBS_Inst_Project.CreateVersionMajor);
+            File.ReadData(IBS_Inst_Project.CreateVersionMinor);
+            File.ReadData(IBS_Inst_Project.CreateVersionRelease);
+            File.ReadData(IBS_Inst_Project.FullView_Ratio);
+            File.ReadData(IBS_Inst_Project.FullView_EqCenter);
+            File.ReadData(IBS_Inst_Project.LastOutputDir);
+            std::function<bool(const ExtFileClass&, std::pair<std::string, std::wstring>&)> F = [](const auto& E, auto& U)->auto
+                {
+                    auto R = true;
+                    R &= E.ReadData(U.first);
+                    R &= E.ReadData(U.second);
+                    return R;
+                };
+            File.ReadVector(IBS_Inst_Project.LastOutputIniName, F);
+            File.ReadVector(IBS_Inst_Project.Data);
         }
         else if (FVersion >= 203)
         {

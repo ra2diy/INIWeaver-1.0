@@ -1,6 +1,6 @@
 ﻿
 #include "FromEngine/Include.h"
-#include "PreLink.h"
+#include "Initialize.h"
 
 
 #if defined(_MSC_VER) && (_MSC_VER >= 1900) && !defined(IMGUI_DISABLE_WIN32_FUNCTIONS)
@@ -14,37 +14,65 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance,
     _In_ int       nCmdShow)
 
 {
-    using namespace PreLink;
+    using namespace Initialize;
 
     (void)hPrevInstance;
     (void)nCmdShow;
 
-    hInst = hInstance;
-    if (!InitializePath())return 2;
-    ProcessCommandLine(lpCmdLine);
-    InitializeLogger();
-    InitializeResolution();
+    /*
 
-    if (int PreLoopRet = PreLoop1(); PreLoopRet)
-        return PreLoopRet;
+    初始化：
+    阶段1： （Initialize_Stage_I）
+        重定向当前路径
+        解析命令行
+        初始化语言
+        初始化日志
+        初始化分辨率
+    阶段2： （Initialize_Stage_II）
+        初始化GLFW
+        创建窗口
+        设置窗口图标
+    阶段3： （Initialize_Stage_III）
+        创建后端线程
+        创建保存线程
+    阶段4： （Initialize_Stage_IV）
+        同时执行：
+            后端线程：加载设置
+            主线程：  初始化ImGui
+                      读取提示信息
+                      读取最近打开的文件
+                      读取字体载入信息
+                      显示窗口
+        等待后端线程执行完成
+        同时执行：
+            后端线程：加载模块类型（RegisterTypes）
+                      加载语句类型（TypeAlt）
+                      加载模块库
+                      初始化调试信息
+            主线程：  设置显示主题
+                      载入字库
+                      初始化工作区
+    */
 
-    if (EnableLog)
-    {
-        GlobalLog.AddLog_CurTime(false);
-        GlobalLog.AddLog("渲染初始化完成。");
-    }
+    
+    TEMPLOG("if (int Ret_I = Initialize_Stage_I(hInstance, lpCmdLine); Ret_I)")
+    if (int Ret_I = Initialize_Stage_I(hInstance, lpCmdLine); Ret_I)
+        return Ret_I;
 
-    std::thread FrontThr(IBF_Thr_FrontLoop);
-    FrontThr.detach();
-    std::thread SaveThr(IBS_Thr_SaveLoop);
-    SaveThr.detach();
+    TEMPLOG("if (int Ret_II = Initialize_Stage_II(); Ret_II)")
+    if (int Ret_II = Initialize_Stage_II(); Ret_II)
+        return Ret_II;
 
-    PreLoop2();
+    TEMPLOG("Initialize_Stage_III()")
+    Initialize_Stage_III();
 
-    IBR_FullView::ViewSize = { FontHeight * 12.0f, FontHeight * 12.0f };
+    TEMPLOG("Initialize_Stage_IV")
+    Initialize_Stage_IV();
 
+    TEMPLOG("ShellLoop();")
     ShellLoop();
 
+    TEMPLOG("CleanUp");
     CleanUp();
 
     return 0;

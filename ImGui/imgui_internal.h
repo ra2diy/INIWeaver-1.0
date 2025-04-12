@@ -813,6 +813,7 @@ enum ImGuiButtonFlagsPrivate_
     ImGuiButtonFlags_NoHoldingActiveId      = 1 << 17,  // don't set ActiveId while holding the mouse (ImGuiButtonFlags_PressedOnClick only)
     ImGuiButtonFlags_NoNavFocus             = 1 << 18,  // don't override navigation focus when activated
     ImGuiButtonFlags_NoHoveredOnFocus       = 1 << 19,  // don't report as hovered when nav focus is on this item
+    ImGuiButtonFlags_AlignLeft              = 1 << 20,
     ImGuiButtonFlags_PressedOnMask_         = ImGuiButtonFlags_PressedOnClick | ImGuiButtonFlags_PressedOnClickRelease | ImGuiButtonFlags_PressedOnClickReleaseAnywhere | ImGuiButtonFlags_PressedOnRelease | ImGuiButtonFlags_PressedOnDoubleClick | ImGuiButtonFlags_PressedOnDragDropHold,
     ImGuiButtonFlags_PressedOnDefault_      = ImGuiButtonFlags_PressedOnClickRelease
 };
@@ -1829,6 +1830,9 @@ struct ImGuiContext
         TestEngineHookItems = false;
         TestEngine = NULL;
 
+        ExtraTopMostWindow = NULL;
+        ExtraTopMostWindow2 = NULL;
+
         WindowsActiveCount = 0;
         CurrentWindow = NULL;
         HoveredWindow = NULL;
@@ -2798,6 +2802,7 @@ namespace ImGui
 
     // Widgets
     IMGUI_API void          TextEx(const char* text, const char* text_end = NULL, ImGuiTextFlags flags = 0);
+    IMGUI_API void          TextWrappedEx(const char* text, const char* text_end = NULL, ImGuiTextFlags flags = 0);
     IMGUI_API bool          ButtonEx(const char* label, const ImVec2& size_arg = ImVec2(0, 0), ImGuiButtonFlags flags = 0);
     IMGUI_API bool          CloseButton(ImGuiID id, const ImVec2& pos);
     IMGUI_API bool          CollapseButton(ImGuiID id, const ImVec2& pos);

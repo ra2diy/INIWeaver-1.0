@@ -1,7 +1,6 @@
 #include "IBB_ModuleAlt.h"
 #include <wincrypt.h>
 #include <ranges>
-#include "IBBack.h"
 #include "IBFront.h"
 #include "Global.h"
 #include "Shlwapi.h"
@@ -116,7 +115,7 @@ std::string_view TrimView(std::string_view Line)
     return Line;
 }
 
-void IniToken::Tokenize(std::string_view Line)
+void IniToken::Tokenize(std::string_view Line, bool UseDesc)
 {
     Line = TrimView(Line);
     HasDesc = Empty = IsSection = false;
@@ -130,12 +129,15 @@ void IniToken::Tokenize(std::string_view Line)
     {
         Line = Line.substr(0, p);
     }
-    p = Line.find_first_of("#");
-    if (p != std::string_view::npos)
+    if (UseDesc)
     {
-        HasDesc = true;
-        Desc= Line.substr(0, p);
-        Line = Line.substr(p + 1, Line.size() - p);
+        p = Line.find_first_of("#");
+        if (p != std::string_view::npos)
+        {
+            HasDesc = true;
+            Desc = Line.substr(0, p);
+            Line = Line.substr(p + 1, Line.size() - p);
+        }
     }
     Line = TrimView(Line);
     if (Line.front() == '[')
@@ -192,7 +194,7 @@ void IniToken::Tokenize(std::string_view Line)
     return;
 }
 
-std::vector<std::string_view> GetLines(char* Text)
+std::vector<std::string_view> GetLines(char* Text, bool SkipEmptyLine)
 {
     std::vector<std::string_view> Res;
     size_t S = strlen(Text);
@@ -204,17 +206,17 @@ std::vector<std::string_view> GetLines(char* Text)
     {
         auto Dt = Text + i;
         i++;
-        if (!*Dt)continue;
+        if (!*Dt && SkipEmptyLine)continue;
         Res.push_back(Dt);
         i += strlen(Dt);
     }
     return Res;
 }
-std::vector<std::string_view> GetLines(std::string&& Text)
+std::vector<std::string_view> GetLines(std::string&& Text, bool SkipEmptyLine)
 {
-    return GetLines(Text.data());
+    return GetLines(Text.data(), SkipEmptyLine);
 }
-std::vector<std::string_view> GetLines(BytePointerArray Text, size_t ExtBytes)
+std::vector<std::string_view> GetLines(BytePointerArray Text, size_t ExtBytes, bool SkipEmptyLine)
 {
     std::vector<std::string_view> Res;
     auto Data = (char*)Text.Data;
@@ -227,19 +229,19 @@ std::vector<std::string_view> GetLines(BytePointerArray Text, size_t ExtBytes)
     {
         auto Dt = Data + i;
         i++;
-        if (!*Dt)continue;
+        if (!*Dt && SkipEmptyLine)continue;
         Res.push_back(Dt);
         i += strlen(Dt);
     }
     return Res;
 }
-std::vector<IniToken> GetTokens(const std::vector<std::string_view>& Lines)
+std::vector<IniToken> GetTokens(const std::vector<std::string_view>& Lines, bool UseDesc)
 {
     std::vector<IniToken> Result;
     Result.reserve(Lines.size());
     for (auto view : Lines)
     {
-        Result.emplace_back(view);
+        Result.emplace_back(view, UseDesc);
     }
     return Result;
 }
@@ -369,6 +371,15 @@ private:
     WIN32_FIND_DATAW findData; // 文件数据
 };
 
+std::vector<std::wstring> FindFileVec(const std::wstring& pattern)
+{
+    std::vector<std::wstring> result;
+    FindFileRange finder(pattern);
+    for (const auto& file : finder) {
+        result.push_back(file.FullPath);
+    }
+    return result;
+}
 
 ClipWriteStream& operator<<(ClipWriteStream& stm, bool v)
 {
@@ -643,6 +654,7 @@ namespace OldClipMagic
 const std::string ClipMagic = "IniBrowserClipDataFormat_" + Version;
 const std::string ClipMagicEnd = "EndOfClipData";
 std::string TimeNowU8();
+extern int RFontHeight;
 
 bool IBB_ModuleAlt::SaveToFile()
 {
@@ -651,9 +663,11 @@ bool IBB_ModuleAlt::SaveToFile()
     ExtFileClass E;
     E.Open(Path.c_str(), L"w");
     if (!E.Available())return false;
-    E.PutStr(";"s + AppName + " " + Version); E.Ln();
-    E.PutStr(u8";这是一个生成模块的样板"); E.Ln();
-    E.PutStr(u8";生成于 " + TimeNowU8()); E.Ln();
+    auto cwa = locw("AppName");
+    auto cwb = UTF8toUnicode(TimeNowU8());
+    E.PutStr(";" + UnicodetoUTF8(std::vformat(locw("Back_SaveModuleAltLine1"), std::make_wformat_args(cwa, VersionW)))); E.Ln();
+    E.PutStr(";" + loc("Back_SaveModuleAltLine2")); E.Ln();
+    E.PutStr(";" + UnicodetoUTF8(std::vformat(locw("Back_SaveModuleAltLine3"), std::make_wformat_args(cwb)))); E.Ln();
     E.Ln();
 
     for (size_t i = 0; i < Modules.size(); i++)
@@ -700,6 +714,11 @@ bool IBB_ModuleAlt::SaveToFile()
             E.PutStr(M.Desc.A + "#[" + M.Desc.B + "]:[" + M.Inherit + "]"); E.Ln();//INI#[SEC]:[INHERIT]
         }
         
+        {
+            //EqDelta
+            E.PutStr("ImportDeltaX = " + std::to_string(M.EqDelta.x / RFontHeight)); E.Ln();
+            E.PutStr("ImportDeltaY = " + std::to_string(M.EqDelta.y / RFontHeight)); E.Ln();
+        }
 
         for (auto& D : M.DefaultLinkKey)
         {
@@ -798,7 +817,11 @@ void IBB_ModuleAlt::LoadFromString(std::wstring_view FileName, std::string&& Fil
             M.Ignore = false;
             M.IsComment = false;
             M.IsLinkGroup = false;
+            M.FromClipBoard = false;
             M.LinkGroup_LinkTo.clear();
+            M.EqDelta.x = (float)1e100;
+            M.EqDelta.y = (float)1e100;
+
             for (size_t i = 1; i < sec.size(); i++)
             {
                 if (sec[i].Key == "DefaultLink")
@@ -809,6 +832,8 @@ void IBB_ModuleAlt::LoadFromString(std::wstring_view FileName, std::string&& Fil
                     //TODO : ensure type 似了
                     //IBF_Inst_DefaultTypeList.EnsureType(sec[i].Value, sec[i].Desc);
                 }
+                else if (sec[i].Key == "ImportDeltaX")M.EqDelta.x = RFontHeight * (float)atof(sec[i].Value.c_str());
+                else if (sec[i].Key == "ImportDeltaY")M.EqDelta.y = RFontHeight * (float)atof(sec[i].Value.c_str());
                 else
                 {
                     M.Lines.push_back(sec[i]);
@@ -826,7 +851,6 @@ void IBB_ModuleAlt::LoadFromString(std::wstring_view FileName, std::string&& Fil
         {
             M.Register = It->second;
         }
-        M.FromClipBoard = false;
         M.VarList.push_back({ "_Local_Category", M.Register });
     }
 
@@ -966,9 +990,8 @@ bool IBB_ClipBoardData::SetString(const std::string_view Str)
         if (EnableLog)
         {
             GlobalLogB.AddLog_CurTime(false);
-            sprintf_s(LogBufB, "IBB_ClipBoardData::SetString ：剪贴板信息剪切失败(%s)",
-                e.what());
-            GlobalLogB.AddLog(LogBufB);
+            auto w1 = UTF8toUnicode(e.what());
+            GlobalLogB.AddLog(std::vformat(L"IBB_ClipBoardData::SetString ：" + locw("Error_CannotCopyToClipboard"), std::make_wformat_args(w1)));
         }
         return false;
     }
@@ -1004,6 +1027,7 @@ namespace IBB_ModuleAltDefault
         std::vector<std::unique_ptr<ModuleTree>> Sub;
         std::unordered_map<std::string, IBB_ModuleAlt*> Modules;
         bool ChildMenuHovered{ false };
+        bool LastHovered{ false };
 
         void ResetHover()
         {
@@ -1019,8 +1043,9 @@ namespace IBB_ModuleAltDefault
             {
                 auto Pos = ImGui::GetCursorScreenPos();
                 bool Hovered = false;
-                ImRect R{ ImGui::GetCursorScreenPos(), ImGui::GetCursorScreenPos() + ImVec2{ ImGui::GetWindowWidth() + 2.0F * FontHeight, ImGui::GetTextLineHeightWithSpacing() } };
+                ImRect R{ ImGui::GetCursorScreenPos(), ImGui::GetCursorScreenPos() + ImVec2{ ImGui::GetWindowWidth() + 0.5F * FontHeight, ImGui::GetTextLineHeightWithSpacing() } };
                 if (R.Contains(ImGui::GetMousePos()))Hovered = true;
+                //if (Hovered)ImGui::GetForegroundDrawList()->AddRect(R.Min, R.Max, IBR_Color::FocusLineColor);
                 ImGui::Dummy(ImVec2((float)FontHeight, (float)FontHeight));
                 ImGui::SameLine();
                 ImGui::Text(S->Name.c_str());
@@ -1030,7 +1055,7 @@ namespace IBB_ModuleAltDefault
                 {
                     V |= C->ChildMenuHovered;
                 }
-                if (Hovered || V)
+                if (S->LastHovered || V)
                 {
                     DrawOpenFolderIcon(Pos, (float)FontHeight);
                     if (!S->Sub.empty() || !S->Modules.empty())
@@ -1050,6 +1075,7 @@ namespace IBB_ModuleAltDefault
                     }
                 }
                 else DrawFolderIcon(Pos, (float)FontHeight);
+                S->LastHovered = Hovered;
             }
             for (auto& [N, M] : Modules)
             {
@@ -1102,13 +1128,14 @@ namespace IBB_ModuleAltDefault
     ModuleTree AllModules;
     std::wstring Range1;
     std::wstring Range2;
+    std::wstring Range3;
     std::wstring GenerateModulePath()
     {
-        return CurrentDirW + Range2 + RandWStr(12) + L".ini";
+        return CurrentDirW + Range3 + RandWStr(12) + L".ini";
     }
     std::wstring GenerateModulePath_NoName()
     {
-        return CurrentDirW + Range2;
+        return CurrentDirW + Range3;
     }
     
     void NewModuleII(IBB_ModuleAlt&& Mod)
@@ -1152,10 +1179,11 @@ namespace IBB_ModuleAltDefault
     {
         return GetModuleII("DefaultArt_Animation");
     }
-    void Load(const wchar_t* FileRange, const wchar_t* FileRange2)
+    void Load(const wchar_t* FileRange, const wchar_t* FileRange2, const wchar_t* FileRange3)
     {
         Range1 = FileRange;
         Range2 = FileRange2;
+        Range3 = FileRange3;
         AllModules.LoadFromDir(FileRange);
         for (auto& File : FindFileRange(FileRange2))
         {

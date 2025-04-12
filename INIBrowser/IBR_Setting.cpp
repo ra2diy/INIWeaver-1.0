@@ -34,6 +34,16 @@ void IBR_Setting::CallSaveSetting()
 
 std::vector<IBF_SettingType> IBR_Inst_Setting_UIList;
 
+void IBR_Setting::RefreshSetting()
+{
+    IBRF_CoreBump.SendToF({ [this]()
+            {
+                IBF_Inst_Setting.UploadSettingBoard([](const std::vector<IBF_SettingType>& Vec)
+                    {
+                        IBR_Inst_Setting_UIList = Vec;
+                    });
+            } });
+}
 
 void IBR_Setting::RenderUI()
 {
@@ -62,7 +72,7 @@ void IBR_Setting::RenderUI()
             } });
             Called = true;
         }
-        ImGui::TextDisabled(u8"加载设置列表中……");
+        ImGui::TextDisabled(locc("GUI_SettingListLoading"));
     }
     else
     {

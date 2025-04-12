@@ -16,6 +16,7 @@ public:
     void CallSaveSetting();//call every 5 second with [setting] window
     bool IsSaveSettingComplete();
 
+    void RefreshSetting();
     void RenderUI();
 };
 
@@ -130,7 +131,8 @@ struct IBR_SectionData
     bool Dragging{ false };
     bool Ignore{ false };
     bool IsComment{ false };
-    float FinalY{0.0f};
+    float FinalY{ 0.0f };
+    float WidthFix{ 0.0f };
     std::unordered_map<std::string, ActiveLine> ActiveLines;
     std::shared_ptr<BufString> CommentEdit;
     ImVec2 ReOffset;
@@ -142,9 +144,12 @@ struct IBR_SectionData
     IBR_SectionData(const IBB_Section_Desc& D, std::string&& Name);
 
     void RenameDisplayImpl(const std::string& Name);
+    void RenameRegisterImpl(const std::string& Name);
     void RenameDisplay();
+    void RenameRegister();
     bool OnLineEdit(const std::string& Name, bool OnLink);
     void RenderUI();
+    void RenderUI_TitleBar(bool& TriggeredRightMenu);
     void CopyToClipBoard();
 };
 
@@ -192,6 +197,8 @@ struct IBR_Section
     bool _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO Register(const std::string& Name, const std::string& IniName) _PROJ_CMD_BACK_CONST const;
 
     IBR_SectionData* _PROJ_CMD_READ _PROJ_CMD_NOINTERRUPT GetSectionData() const;//可能为空
+
+    _TEXT_UTF8 std::string _PROJ_CMD_NOINTERRUPT GetDisplayName() const;
 
     IBB_Section_Desc* _PROJ_CMD_NOINTERRUPT GetDesc() const;
 
@@ -269,9 +276,13 @@ struct IBR_Project
     //同GetSection的HasBack
     bool _PROJ_CMD_READ HasSection(id_t id) _PROJ_CMD_BACK_CONST;
 
+    bool _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE DeleteSection(const std::vector<IBB_Section_Desc>& Descs);
+
     bool _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE DeleteSection(const IBB_Section_Desc& Desc);
 
     bool _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE DeleteSection(id_t id);
+
+    bool _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE DeleteSection(const std::vector <IBR_Project::id_t>& ids);
 
     //不保证ID有效
     inline IBR_Section _PROJ_CMD_NOINTERRUPT _PROJ_CMD_READ GetSectionFromID(id_t id) _PROJ_CMD_BACK_CONST { return { this,id }; }
@@ -404,6 +415,7 @@ namespace IBR_WorkSpace
     extern bool IsBgDragging, HoldingModules, IsMassSelecting;
     extern std::vector<IBR_Project::id_t> MassTarget;
     extern ImVec4 TempWbg;
+    extern bool LastOperateOnText, OperateOnText;
 
     void UpdatePrev();
     void  _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE UpdatePrevII();

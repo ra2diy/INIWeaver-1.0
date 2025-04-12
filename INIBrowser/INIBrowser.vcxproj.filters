@@ -21,7 +21,7 @@
     <ClInclude Include="Resource.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="PreLink.h">
+    <ClInclude Include="Initialize.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="MainStage.h">
@@ -42,7 +42,7 @@
     <ClInclude Include="IBFront.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="IBBack.h">
+    <ClInclude Include="IBB_Index.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="SaveFile.h">
@@ -105,6 +105,30 @@
     <ClInclude Include="..\ImGui\imstb_truetype.h">
       <Filter>ImGui</Filter>
     </ClInclude>
+    <ClInclude Include="IBR_Localization.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="IBG_Ini.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="IBR_Font.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="IBR_HotKey.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="IBB_Setting.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="IBB_Ini.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="IBB_Components.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="IBB_Project.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="INIBrowser.cpp">
@@ -119,10 +143,10 @@
     <ClCompile Include="IBFront.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="IBBack.cpp">
+    <ClCompile Include="IBB_Ini.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="SaveFile.cpp">
+    <ClCompile Include="IBS_File.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="IBR_Misc.cpp">
@@ -212,6 +236,24 @@
     <ClCompile Include="..\ImGui\backends\imgui_impl_win32.cpp">
       <Filter>ImGui</Filter>
     </ClCompile>
+    <ClCompile Include="IBR_Localization.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="IBR_Font.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="IBR_HotKey.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="IBB_Components.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="IBB_Index.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Initialize.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Image Include="icon1.ico">
@@ -228,6 +270,9 @@
       <Filter>资源文件</Filter>
     </None>
     <None Include="..\Release\Global\TypeAlt.csv">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="..\Release\Resources\language.ini">
       <Filter>资源文件</Filter>
     </None>
   </ItemGroup>

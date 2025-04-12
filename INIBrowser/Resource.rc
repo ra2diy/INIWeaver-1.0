@@ -61,8 +61,8 @@ IDI_ICON1               ICON                    "icon1.ico"
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 0,2,0,3
- PRODUCTVERSION 0,2,0,3
+ FILEVERSION 1,0,0,0
+ PRODUCTVERSION 1,0,0,0
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -78,13 +78,13 @@ BEGIN
         BLOCK "080404b0"
         BEGIN
             VALUE "CompanyName", "by ¸ÖÌúÖ®´¸ 2022-2025"
-            VALUE "FileDescription", "INIä¯ÀÀÆ÷"
-            VALUE "FileVersion", "0.2.0.3"
-            VALUE "InternalName", "INIBrows.exe"
+            VALUE "FileDescription", "INIÖ¯ÍøÕß"
+            VALUE "FileVersion", "1.0.0.0"
+            VALUE "InternalName", "INIWeaver.exe"
             VALUE "LegalCopyright", "Copyright (C) 2025"
-            VALUE "OriginalFilename", "INIBrowser.exe"
-            VALUE "ProductName", "INIä¯ÀÀÆ÷ V0.2"
-            VALUE "ProductVersion", "0.2.0.3"
+            VALUE "OriginalFilename", "INIWeaver.exe"
+            VALUE "ProductName", "INIÖ¯ÍøÕß V0.2"
+            VALUE "ProductVersion", "1.0.0.0"
         END
     END
     BLOCK "VarFileInfo"

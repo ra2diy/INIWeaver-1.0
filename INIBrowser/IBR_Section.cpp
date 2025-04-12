@@ -8,12 +8,24 @@
 #include "IBB_RegType.h"
 #include <imgui_internal.h>
 
+namespace IBR_WorkSpace
+{
+    extern InfoStack<StdMessage> ExtSetPos;
+    extern IBR_SectionData* CurOnRender;
+}
+
 const IBB_Section_Desc IBB_Section_DescNull{ "","" };
 
 IBR_SectionData* _PROJ_CMD_READ _PROJ_CMD_NOINTERRUPT IBR_Section::GetSectionData() const
 {
     auto It = Root->IBR_SectionMap.find(ID);
     return (It == Root->IBR_SectionMap.end()) ? nullptr : std::addressof(It->second);
+}
+
+_TEXT_UTF8 std::string _PROJ_CMD_NOINTERRUPT IBR_Section::GetDisplayName() const
+{
+    auto It = Root->IBR_SectionMap.find(ID);
+    return (It == Root->IBR_SectionMap.end()) ? u8"" : It->second.DisplayName;
 }
 
 bool _PROJ_CMD_NOINTERRUPT IBR_Section::Dragging() const
@@ -153,13 +165,20 @@ bool _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE IBR_Section::Rename(con
 {
     IBG_Undo.SomethingShouldBeHere();
     bool Ret = true;
-    auto pDesc = GetDesc();
-    if (pDesc == nullptr)return false;
+    auto pData = GetSectionData();
+    if(pData == nullptr)return false;
+    auto& Desc = pData->Desc;
+    if (Desc.Ini.empty() || Desc.Sec.empty())return false;
+
+    IBB_Section_Desc desc = { Desc.Ini, NewName };
+    if (IBF_Inst_Project.Project.GetSec(desc))return false;
+
+    Root->IBR_Rev_SectionMap.erase(Desc);
+    Root->IBR_Rev_SectionMap[desc] = ID;
 
     {
         IBD_RInterruptF(x);
-        auto pSec = const_cast<IBB_Section*>(IBF_Inst_Project.Project.GetSec(IBB_Project_Index{ *pDesc }));
-        IBB_Section_Desc desc = *pDesc; desc.Sec = NewName;
+        auto pSec = const_cast<IBB_Section*>(IBF_Inst_Project.Project.GetSec(IBB_Project_Index{ Desc }));
         auto npSec = const_cast<IBB_Section*>(IBF_Inst_Project.Project.GetSec(IBB_Project_Index{ desc }));
         if (pSec == nullptr || npSec != nullptr)Ret = false;
         else
@@ -173,9 +192,18 @@ bool _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE IBR_Section::Rename(con
             auto sp = pIni->Secs.insert(std::move(Node));
             for (auto& s : pIni->Secs_ByName)if (s == OldName)s = NewName;
         }
+
+        auto& d = IBF_Inst_Project.DisplayNames;
+        auto& Disp = pData->DisplayName;
+        auto it = d.find(Disp);
+        if (it != d.end()) it->second.Sec = NewName;
+        else if(!Disp.empty()) d[Disp] = desc;
+
+        auto Re = IBR_WorkSpace::EqPosToRePos(pData->EqPos);
+        IBR_WorkSpace::ExtSetPos.Push([Re, desc] { if (desc == IBR_WorkSpace::CurOnRender->Desc)ImGui::SetNextWindowPos(Re); });
     }
 
-    pDesc->Sec = NewName;
+    Desc.Sec = NewName;
     //Update Contained in Rename so no Extra
     //TODO: Undo Action
     return Ret;

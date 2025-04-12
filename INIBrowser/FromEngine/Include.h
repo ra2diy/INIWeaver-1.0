@@ -4,6 +4,7 @@
 #include "external_log.h"
 #include "..\SaveFile.h"
 #include "global_tool_func.h"
+#include "..\IBR_Localization.h"
 #include <iostream>
 #include <string>
 #include <vector>

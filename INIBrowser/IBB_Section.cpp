@@ -1,7 +1,7 @@
 
 #include "FromEngine/Include.h"
 #include "FromEngine/global_tool_func.h"
-#include "IBBack.h"
+
 #include "Global.h"
 #include "IBB_ModuleAlt.h"
 #include "IBB_RegType.h"
@@ -26,7 +26,7 @@ bool IBB_Section::Generate(const ModuleClipData& Clip)
         OnShow.clear();
         Inherit = Clip.Inherit;
         Register = Clip.Register;
-        IBB_DefaultRegType::GenerateDLK(Clip.DefaultLinkKey, DefaultLinkKey);
+        IBB_DefaultRegType::GenerateDLK(Clip.DefaultLinkKey, Register, DefaultLinkKey);
         for (auto& L : Clip.LinkGroup_LinkTo)
             Root->Root->AddNewLinkToLinkGroup({ Root->Name,Name }, { L.A, L.B });
     }
@@ -71,13 +71,16 @@ bool IBB_Section::Generate(const ModuleClipData& Clip)
             LinkGroup_LinkTo.clear();
             Register = Clip.Register;
             Inherit = Clip.Inherit;
-            IBB_DefaultRegType::GenerateDLK(Clip.DefaultLinkKey, DefaultLinkKey);
+            IBB_DefaultRegType::GenerateDLK(Clip.DefaultLinkKey, Register, DefaultLinkKey);
             IBB_VariableList VL;
+            VL.Value["__INHERIT__"] = Inherit;
+            OnShow["__INHERIT__"] = "\n";
             for (auto& L : Clip.Lines)
             {
                 VL.Value[L.Key] = L.Value;
                 OnShow[L.Key] = L.Desc;
             }
+            
             GenerateLines(VL);
         }
     }
@@ -101,7 +104,9 @@ void IBB_Section::GetClipData(ModuleClipData& Clip)
         Clip.IsComment = false;
         Clip.Desc.A = Root->Name;
         Clip.Desc.B = Name;
-        for (auto& [A, B] : DefaultLinkKey)
+        IBB_VariableList DD;
+        DefaultLinkKey.Flatten(DD);
+        for (auto& [A, B] : DD.Value)
             Clip.DefaultLinkKey.push_back({ A, B });
         for (auto& L : LinkGroup_LinkTo)
             Clip.LinkGroup_LinkTo.push_back({ L.To.Ini.GetText(), L.To.Section.GetText() });
@@ -152,13 +157,18 @@ void IBB_Section::GetClipData(ModuleClipData& Clip)
             {
                 for (auto& [key, lin] : sec.Lines)
                 {
+                    if (key == "__INHERIT__")
+                    {
+                        Clip.Inherit = lin.Data->GetStringForExport();
+                        continue;
+                    }
                     Clip.Lines.emplace_back();
                     auto& Tok = Clip.Lines.back();
                     Tok.Empty = false;
                     Tok.HasDesc = !OnShow[key].empty();
                     Tok.IsSection = false;
                     Tok.Key = key;
-                    Tok.Value = lin.Data->GetString();
+                    Tok.Value = lin.Data->GetStringForExport();
                     Tok.Desc = OnShow[key];
                 }
             }
@@ -173,7 +183,9 @@ void IBB_Section::GetClipData(ModuleClipData& Clip)
                 Tok.Value = val;
                 Tok.Desc = OnShow[key];
             }
-            for (auto& [A, B] : DefaultLinkKey)
+            IBB_VariableList DD;
+            DefaultLinkKey.Flatten(DD);
+            for (auto& [A, B] : DD.Value)
                 Clip.DefaultLinkKey.push_back({ A, B });
             for (auto& [A, B] : VarList.Value)
                 Clip.VarList.push_back({ A, B });
@@ -190,13 +202,14 @@ bool IBB_Section::SetText(const std::vector<IniToken>& Tokens)
 {
     IsLinkGroup = false;
     bool Ret = true;
+    auto l = this->GetLineFromSubSecs("__INHERIT__");
+    if (l)Inherit = l->Data->GetString();
     SubSecs.clear();
     UnknownLines.Value.clear();
     std::unordered_map<IBB_SubSec_Default*, int> SubSecList;
-    for (auto& tok : Tokens)
-    {
+    auto u = [&](const IniToken& tok) {
         //if (tok.Value.empty())MessageBoxA(MainWindowHandle, tok.Key.c_str(), "fff1", MB_OK);
-        if (tok.Empty || tok.IsSection)continue;
+
         auto ptr = IBF_Inst_DefaultTypeList.List.KeyBelongToSubSec(tok.Key);
         if (ptr == nullptr)UnknownLines.Value[tok.Key] = tok.Value;
         else
@@ -209,10 +222,24 @@ bool IBB_Section::SetText(const std::vector<IniToken>& Tokens)
             }
             auto& Sub = SubSecs.at(It->second);
             {
-                if (!Sub.AddLine({tok.Key,tok.Value}))Ret = false;
+                if (!Sub.AddLine({ tok.Key,tok.Value }))Ret = false;
             }
         }
+        };
+
+    IniToken i;
+    i.Key = "__INHERIT__";
+    i.Value = Inherit;
+    i.HasDesc = false;
+    i.IsSection = false;
+    i.Empty = false;
+    u(i);
+    for (auto& tok : Tokens)
+    {
+        if (tok.Empty || tok.IsSection)continue;
+        u(tok);
     }
+
     return Ret;
 }
 
@@ -354,7 +381,7 @@ std::string IBB_Section::GetText(bool PrintExtraData, bool FromExport) const
             Text += "\n;ExtraData - Name\n";
             Text += "_SECTION_NAME=" + Name;
             Text += "\n\n;ExtraData - IsLinkGroup\n_IS_LINKGROUP=true\n;ExtraData - Variables\n";
-            Text += VarList.GetText(true);
+            Text += VarList.GetText(true, FromExport);
         }
     }
     else
@@ -362,13 +389,13 @@ std::string IBB_Section::GetText(bool PrintExtraData, bool FromExport) const
         for (const auto& Sub : SubSecs)
             Text += Sub.GetText(PrintExtraData, FromExport);
         //Text.push_back('\n');
-        Text += UnknownLines.GetText(false);
+        Text += UnknownLines.GetText(false, FromExport);
         if (PrintExtraData)
         {
             Text += "\n;ExtraData - Name\n";
             Text += "_SECTION_NAME=" + Name;
             Text += "\n\n;ExtraData - IsLinkGroup\n_IS_LINKGROUP=false\n;ExtraData - Variables\n";
-            Text += VarList.GetText(true);
+            Text += VarList.GetText(true, FromExport);
             Text += "\n;ExtraData - Linked By\n";
             for (const auto& L : LinkedBy)
                 Text += L.GetText(*(Root->Root));
@@ -518,7 +545,7 @@ bool IBB_Section::Generate(const IBB_Section_NameType& Par)
             if (EnableLog)
             {
                 GlobalLogB.AddLog_CurTime(false);
-                GlobalLogB.AddLog("IBB_Section::Generate ： 错误：Section作为一个LinkGroup却具有非空的Lines。");
+                GlobalLogB.AddLog((u8"IBB_Section::Generate ： " + loc("Log_GenerateInvalidLines")).c_str());
             }
             return false;
         }
@@ -629,6 +656,7 @@ bool IBB_Section::ChangeRoot(const IBB_Ini* NewRoot)
 
 bool IBB_Section::Rename(const std::string& NewName)
 {
+    auto OldName = Name;
     if (EnableLogEx)
     {
         GlobalLogB.AddLog_CurTime(false);
@@ -655,16 +683,6 @@ bool IBB_Section::Rename(const std::string& NewName)
         {
             for (auto& p : s.LinkTo)
             {
-                auto it = s.Lines.find(p.FromKey);
-                if (it != s.Lines.end())
-                {
-                    if (it->second.Default != nullptr)
-                    {
-                        if (it->second.Default->Property.Type == "Link")
-                            it->second.Data->SetValue(NewName);
-                        //TODO:LinkList
-                    }
-                }
                 if (p.Another != nullptr)p.Another->From.Section.Assign(NewName);
                 p.From.Section.Assign(NewName);
             }
@@ -674,6 +692,29 @@ bool IBB_Section::Rename(const std::string& NewName)
         {
             if (p.Another != nullptr)p.Another->To.Section.Assign(NewName);
             p.To.Section.Assign(NewName);
+            auto U = p.From.GetSec(*Root->Root);
+            if (U && !U->IsLinkGroup)
+            {
+                for (auto& sub : U->SubSecs)
+                {
+                    for (auto& [N, L] : sub.Lines)
+                    {
+                        auto q = L.GetData<IBB_IniLine_DataList>();
+                        if(q)q->ReplaceValue(OldName, NewName);
+                        else L.Data->SetValue(NewName);
+                    }
+                }
+            }
+        }
+
+        for (auto& sub : SubSecs)
+        {
+            for (auto& [N, L] : sub.Lines)
+            {
+                auto q = L.GetData<IBB_IniLine_DataList>();
+                if(q)q->ReplaceValue(OldName, NewName);
+                else L.Data->SetValue(NewName);
+            }
         }
     }
     return true;
@@ -697,7 +738,52 @@ bool IBB_Section::ChangeAddress()
 bool IBB_Section::Isolate()
 {
     auto pproj = Root->Root;
-    //*
+
+    for (auto& L : LinkedBy)
+    {
+        auto ps = L.From.GetSec(*pproj);
+        if (L.Another != nullptr && ps != nullptr)
+        {
+            if (ps->IsLinkGroup)
+            {
+                if (L.Another->Order < ps->LinkGroup_LinkTo.size() - 1)
+                {
+                    ps->LinkGroup_LinkTo.at(L.Another->Order) = ps->LinkGroup_LinkTo.back();
+                    ps->LinkGroup_LinkTo.pop_back();
+                }
+                if (L.Another->Order == ps->LinkGroup_LinkTo.size() - 1)
+                {
+                    ps->LinkGroup_LinkTo.pop_back();
+                }
+            }
+            else
+            {
+                if (L.Another->OrderEx < ps->SubSecs.size())
+                {
+                    auto& ss = ps->SubSecs.at(L.Another->OrderEx);
+                    auto it = ss.Lines.find(L.Another->FromKey);
+                    if (it != ss.Lines.end())if (it->second.Default != nullptr)
+                    {
+                        //it->second.Data->Clear();
+                        auto p = it->second.GetData<IBB_IniLine_DataList>();
+                        if (p)p->RemoveValue(Name);
+                        else p->Clear();
+                    }
+                    if (L.Another->Order < ss.LinkTo.size() - 1)
+                    {
+                        ss.LinkTo.at(L.Another->Order) = ss.LinkTo.back();
+                        ss.LinkTo.pop_back();
+                    }
+                    if (L.Another->Order == ss.LinkTo.size() - 1)
+                    {
+                        ss.LinkTo.pop_back();
+                    }
+                }
+
+            }
+        }
+    }
+    /*
     for (auto& L : LinkedBy)
     {
         auto ps = L.From.GetSec(*pproj);

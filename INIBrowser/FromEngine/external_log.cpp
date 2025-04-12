@@ -2,8 +2,9 @@
 #include "external_log.h"
 #include "global_tool_func.h"
 
+std::string TimeNowU8();
 
-#define __Open(_Mode) lk.lock(); if(!LogFile.Open(path.c_str(), #_Mode))return false;
+#define __Open(_Mode) lk.lock(); if(!LogFile.Open(path.c_str(), #_Mode)){lk.unlock(); return false;}
 #define __Exit LogFile.Close();lk.unlock();return true
 
 bool LogClass::AddLog(const char* str, bool ln)
@@ -13,6 +14,15 @@ bool LogClass::AddLog(const char* str, bool ln)
 	if(ln)LogFile.PutChr('\n');
 	__Exit;
 }
+
+bool LogClass::AddLog(const std::wstring& str, bool ln)
+{
+    __Open(a);
+    LogFile.PutStr(UnicodetoUTF8(str));
+    if (ln)LogFile.PutChr('\n');
+    __Exit;
+}
+
 
 bool LogClass::AddLogC(const char c, bool ln)
 {
@@ -72,7 +82,7 @@ bool LogClass::ClearLog()
 bool LogClass::AddLog_CurTime(bool ln)
 {
 	__Open(a);
-	LogFile.PutStr(("["  + TimeNow() + "]").c_str());
+	LogFile.PutStr(("["  + TimeNowU8() + "]").c_str());
 	if (ln)LogFile.PutChr('\n');
 	__Exit;
 }

@@ -340,6 +340,17 @@ void ImGui::TextWrappedV(const char* fmt, va_list args)
         PopTextWrapPos();
 }
 
+void ImGui::TextWrappedEx(const char* text, const char* text_end, ImGuiTextFlags flags)
+{
+    ImGuiContext& g = *GImGui;
+    bool need_backup = (g.CurrentWindow->DC.TextWrapPos < 0.0f);  // Keep existing wrap position if one is already set
+    if (need_backup)
+        PushTextWrapPos(0.0f);
+    TextEx(text, text_end, flags | ImGuiTextFlags_NoWidthForLargeClippedText); // Skip formatting
+    if (need_backup)
+        PopTextWrapPos();
+}
+
 void ImGui::LabelText(const char* label, const char* fmt, ...)
 {
     va_list args;
@@ -703,7 +714,8 @@ bool ImGui::ButtonEx(const char* label, const ImVec2& size_arg, ImGuiButtonFlags
 
     if (g.LogEnabled)
         LogSetNextTextDecoration("[", "]");
-    RenderTextClipped(bb.Min + style.FramePadding, bb.Max - style.FramePadding, label, NULL, &label_size, style.ButtonTextAlign, &bb);
+    if (!(flags & ImGuiButtonFlags_AlignLeft))
+        RenderTextClipped(bb.Min + style.FramePadding, bb.Max - style.FramePadding, label, NULL, &label_size, style.ButtonTextAlign, &bb);
 
     // Automatically close popups
     //if (pressed && !(flags & ImGuiButtonFlags_DontClosePopups) && (window->Flags & ImGuiWindowFlags_Popup))
@@ -719,13 +731,29 @@ bool ImGui::Button(const char* label, const ImVec2& size_arg)
 }
 
 // Small buttons fits within text without additional vertical spacing.
-bool ImGui::SmallButton(const char* label)
+bool ImGui::SmallButton(const char* label, const ImVec2& size)
 {
     ImGuiContext& g = *GImGui;
     float backup_padding_y = g.Style.FramePadding.y;
     g.Style.FramePadding.y = 0.0f;
-    bool pressed = ButtonEx(label, ImVec2(0, 0), ImGuiButtonFlags_AlignTextBaseLine);
+    bool pressed = ButtonEx(label, size, ImGuiButtonFlags_AlignTextBaseLine);
     g.Style.FramePadding.y = backup_padding_y;
+    return pressed;
+}
+
+bool ImGui::SmallButtonAlignLeft(const char* label, const ImVec2& size)
+{
+    ImGuiContext& g = *GImGui;
+    float backup_padding_y = g.Style.FramePadding.y;
+    g.Style.FramePadding.y = 0.0f;
+    ImVec2 Pos = GetCursorPos();
+    bool pressed = ButtonEx(label, size, ImGuiButtonFlags_AlignTextBaseLine | ImGuiButtonFlags_AlignLeft);
+    ImVec2 Pos2 = GetCursorPos();
+    g.Style.FramePadding.y = backup_padding_y;
+    Pos.x += backup_padding_y;
+    SetCursorPos(Pos);
+    TextEx(label, NULL);
+    SetCursorPos(Pos2);
     return pressed;
 }
 

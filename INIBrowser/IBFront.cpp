@@ -15,7 +15,7 @@ void IBF_Thr_FrontLoop()
     if (EnableLog)
     {
         GlobalLogB.AddLog_CurTime(false);
-        GlobalLogB.AddLog("启动了IBF_Thr_FrontLoop。");
+        GlobalLogB.AddLog(locc("Log_LaunchFrontThread"));
     }
     while (1)
     {
@@ -38,7 +38,7 @@ bool IBF_Setting::ReadSetting(const wchar_t* Name)
     if (EnableLog)
     {
         GlobalLogB.AddLog_CurTime(false);
-        GlobalLogB.AddLog("调用了IBF_Setting::ReadSetting。");
+        GlobalLogB.AddLog(locc("Log_FReadSetting"));
     }
     IBB_SettingRegisterRW(SettingFile);
     List.PackSetDefault();
@@ -54,6 +54,7 @@ bool IBF_Setting::SaveSetting(const wchar_t* Name)
     SettingSaveComplete.store(true);
     return Ret;
 }
+
 
 const std::unordered_map<IBB_SettingType::_Type, std::function<IBF_SettingType(IBB_SettingType&)>> UploadSettingMap =
 {
@@ -130,6 +131,16 @@ const std::unordered_map<IBB_SettingType::_Type, std::function<IBF_SettingType(I
         };
         return Ret;
     }},
+    {IBB_SettingType::Lang,[](IBB_SettingType& BSet)->IBF_SettingType
+    {
+        IBF_SettingType Ret;
+        Ret.DescLong = BSet.DescLong;
+        Ret.Action = [=]() -> bool
+        {
+            return IBR_L10n::RenderUI(BSet.DescShort);
+        };
+        return Ret;
+    }},
 };
 
 void IBF_Setting::UploadSettingBoard(std::function<void(const std::vector<IBF_SettingType>&)> Callback)
@@ -175,12 +186,13 @@ bool IBF_DefaultTypeList::ReadAltSetting(const char* Name)
     if (EnableLog)
     {
         GlobalLogB.AddLog_CurTime(false);
-        GlobalLogB.AddLog("IBF_DefaultTypeList::ReadAltSetting ： 开始读取模块配置。");
+        GlobalLogB.AddLog((u8"IBF_DefaultTypeList::ReadAltSetting ： " + loc("Log_ReadTypeAlt")).c_str());
     }
     bool Ret = true;
     //CSV then fall back to json
-    if (!Alt.LoadFromCSVFile((Name + ".csv"s).c_str())
-        && !Alt.LoadFromJsonFile((Name + ".json"s).c_str()))Ret = false;
+    if (!Alt.LoadFromCSVFile((Name + u8".csv"s).c_str())
+        && !Alt.LoadFromJsonFile((Name + u8".json"s).c_str()))Ret = false;
+
     if (!List.LoadFromAlt(Alt))Ret = false;
     if (!List.BuildQuery())Ret = false;
     return Ret;
@@ -250,6 +262,9 @@ void IBF_Project::Load(const IBS_Project& Proj)
     Project.ProjName = Proj.ProjName;
     Project.Path = Proj.Path;
     Project.LastOutputDir = Proj.LastOutputDir;
+    Project.LastOutputIniName.clear();
+    for(auto& l: Proj.LastOutputIniName)
+        Project.LastOutputIniName.insert(l);
     Project.IsNewlyCreated = false;
     Project.ChangeAfterSave = false;
 }
@@ -264,6 +279,10 @@ void IBF_Project::Save(IBS_Project& Proj)
     Proj.ProjName = Project.ProjName;
     Proj.Path = Project.Path;
     Proj.LastOutputDir = Project.LastOutputDir;
+    Proj.LastOutputIniName.clear();
+    Proj.LastOutputIniName.reserve(Project.LastOutputIniName.size());
+    for (auto& l : Project.LastOutputIniName)
+        Proj.LastOutputIniName.push_back(l);
     Project.IsNewlyCreated = false;
     Project.ChangeAfterSave = false;
 }

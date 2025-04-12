@@ -36,6 +36,7 @@ public:
         path = std::move(_Path);
     }
 	bool AddLog(const char* str, bool ln = true);
+    bool AddLog(const std::wstring& str, bool ln = true);
 	bool AddLogC(const char c, bool ln = false);
 	bool AddLog(const int num, bool ln = true);
 	bool AddLog(const void* ptr, bool ln = true);

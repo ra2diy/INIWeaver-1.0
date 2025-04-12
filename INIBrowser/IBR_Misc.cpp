@@ -19,7 +19,6 @@
 #include <utility>
 #include <imgui.h>
 #include "FromEngine/global_tool_func.h"
-#include "IBBack.h"
 
 bool ImGui_TextDisabled_Helper(const char* Text);
 bool SmallButton_Disabled_Helper(bool cond, const char* Text);
@@ -42,17 +41,22 @@ IBR_InputManager::IBR_InputManager(const std::string& InitialText, const std::st
 }
 bool IBR_InputManager::RenderUI()
 {
-    ImGui::InputText(ID.c_str(), Input.get(), InputSize);
+    if (ImGui::InputText(ID.c_str(), Input.get(), InputSize))
+    {
+        AfterInput(Input.get());
+    }
+    if (ImGui::IsItemActive())IBR_WorkSpace::OperateOnText = true;
     return ImGui::IsItemActive();
 }
 
 void IBR_IniLine::RenderUI(const std::string& Line, const std::string& Hint, const InitType* Init)
 {
-    ImGui::TextWrapped(Line.c_str());
+    ImGui::TextWrappedEx(Line.c_str());
+    //ImGui::TextEx(Line.c_str(), nullptr, ImGuiTextFlags_NoWidthForLargeClippedText);
     if (!Hint.empty() && ImGui::IsItemHovered())
     {
         ImGui::BeginTooltip();
-        ImGui::Text(Hint.c_str());
+        ImGui::TextEx(Hint.c_str());
         ImGui::EndTooltip();
     }
     if (!HasInput && ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
@@ -86,7 +90,7 @@ void IBR_IniLine::RenderUI(const std::string& Line, const std::string& Hint, con
 
 void IBR_IniLine::CloseInput()
 {
-    Input->AfterInput(Input->Input.get());
+    if(Input)Input->AfterInput(Input->Input.get());
     Input.reset();
     HasInput = false;
     UseInput = false;
@@ -165,7 +169,7 @@ namespace IBR_UICondition
     std::wstring WindowTitle;
     bool UpdateWindowTitle()
     {
-        std::wstring nt = AppNameW;
+        std::wstring nt = _AppNameW;
         auto& proj = IBF_Inst_Project.Project;
         if (IBR_ProjectManager::IsOpen())nt += L" - " + proj.ProjName;
         if (proj.ChangeAfterSave)nt += L"[*]";
@@ -221,9 +225,11 @@ void IBG_UndoStack::Push(const _Item& a)
 }
 void IBG_UndoStack::RenderUI()
 {
-    if (SmallButton_Disabled_Helper(CanUndo(), u8"撤销"))IBRF_CoreBump.SendToR({ [this]() {IBR_Inst_Debug.AddMsgOnce([=]() {ImGui::Text("Undo"); }); Undo(); } });
-    ImGui::SameLine();
-    if (SmallButton_Disabled_Helper(CanRedo(), u8"重做"))IBRF_CoreBump.SendToR({ [this]() {IBR_Inst_Debug.AddMsgOnce([=]() {ImGui::Text("Redo"); }); Redo(); } });
+    //ImGui::TextDisabled(locc("GUI_Undo"));
+    //if (SmallButton_Disabled_Helper(CanUndo(), locc("GUI_Undo")))IBRF_CoreBump.SendToR({[this]() {IBR_Inst_Debug.AddMsgOnce([=]() {ImGui::Text("Undo"); }); Undo(); }});
+    //ImGui::SameLine();
+    //ImGui::TextDisabled(locc("GUI_Redo"));
+    //if (SmallButton_Disabled_Helper(CanRedo(), locc("GUI_Redo")))IBRF_CoreBump.SendToR({ [this]() {IBR_Inst_Debug.AddMsgOnce([=]() {ImGui::Text("Redo"); }); Redo(); } });
 }
 void IBG_UndoStack::Clear()
 {
@@ -328,6 +334,7 @@ namespace IBR_EditFrame
     void AFTER_INTERRUPT_F Modify(const std::string& s, BufferedLine& L)
     {
         auto back = CurSection.GetBack();
+        auto data = CurSection.GetSectionData();
         if (L.Known)
         {
             auto Line = back->GetLineFromSubSecs(s);
@@ -339,12 +346,21 @@ namespace IBR_EditFrame
             }
             else
             {
-                MessageBoxA(NULL, "错误：back->GetLineFromSubSecs(s) == nullptr", "IBR_EditFrame::RenderUI()", MB_OK);
+                MessageBoxW(NULL, L"back->GetLineFromSubSecs(s) == nullptr", L"IBR_EditFrame::RenderUI", MB_OK);
             }
         }
         else
         {
             back->UnknownLines.Value[s] = L.Buffer;
+        }
+        {
+            auto it = data->ActiveLines.find(s);
+            if (it != data->ActiveLines.end())
+            {
+                it->second.Buffer = L.Buffer;
+                if(it->second.Edit.Input && it->second.Edit.Input->Input)
+                    strcpy(it->second.Edit.Input->Input.get(), L.Buffer.c_str());
+            }
         }
     }
     void RenderUI()
@@ -368,16 +384,18 @@ namespace IBR_EditFrame
         if (OnTextEdit)
         {
             
-            ImGui::Text(u8"文本编辑");
+            ImGui::Text(locc("GUI_TextEditModeTitle"));
 
             ImGui::SameLine();
-            if (ImGui::Button(u8"退出"))
+            if (ImGui::Button(locc("GUI_Exit")))
             {
                 ExitTextEdit();
                 return;
             }
 
-            ImGui::InputTextMultiline(u8"", EditBuf, sizeof(EditBuf), ImVec2{ ImGui::GetWindowWidth() - FontHeight * 1.2f ,ImGui::GetWindowHeight() - FontHeight * 5.4f });
+            ImGui::InputTextMultiline(u8"", EditBuf, sizeof(EditBuf),
+                ImVec2{ ImGui::GetWindowWidth() - FontHeight * 1.2f ,ImGui::GetWindowHeight() - FontHeight * 5.4f });
+            if (ImGui::IsItemActive())IBR_WorkSpace::OperateOnText = true;
             if (!ImGui::IsItemActive())
             {
                 if (TextEditReset)
@@ -387,7 +405,7 @@ namespace IBR_EditFrame
             return;
         }
 
-        if (ImGui::Button(u8"编辑文本"))
+        if (ImGui::Button(locc("GUI_SwitchToTextEdit")))
         {
             IBR_EditFrame::SwitchToText();
             return;
@@ -395,6 +413,7 @@ namespace IBR_EditFrame
 
         for (auto& [K, V] : EditLines)
         {
+            if (K == "__INHERIT__")continue;
             if (ImGui::RadioButton(("##" + K).c_str(), !pbk->OnShow[K].empty()))
             {
                 IBG_Undo.SomethingShouldBeHere();

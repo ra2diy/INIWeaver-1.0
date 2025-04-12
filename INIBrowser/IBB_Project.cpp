@@ -5,7 +5,203 @@
 #include "FromEngine/global_timer.h"
 #include "IBB_ModuleAlt.h"
 #include "IBB_RegType.h"
+#include "IBB_Index.h"
 #include<imgui_internal.h>
+
+const char* DefaultSubSecName = "_DEFAULT_SUBSEC";
+const char* DefaultAltPropType = "\"D\"";
+const char* LinkAltPropType = "\"L\"";
+
+void IBB_DefaultTypeList::EnsureType(const IBB_DefaultTypeAlt& D, std::set<std::string>* UsedStrings)
+{
+    auto& L = IniLine_Default[D.Name];
+    L.Name = D.Name;
+    L.Platform = { "" };
+    L.Limit.Type = "String";
+    L.Limit.Lim = D.Name;
+    L.DescShort = D.DescShort;
+    L.DescLong = D.DescLong;
+    L.Color = D.Color;
+    if (D.LinkType.empty() || D.LinkLimit == 0 || D.LinkType == "bool")
+    {
+        L.Property.Type = DefaultAltPropType;
+        L.Property.Lim = JsonObject(nullptr);
+        L.Property.TypeAlt = D.LinkType;
+    }
+    else
+    {
+        L.Property.Type = LinkAltPropType;
+        L.Property.Lim = JsonObject(reinterpret_cast<cJSON*>(D.LinkLimit));
+        L.Property.TypeAlt = D.LinkType;
+        if (UsedStrings)
+            UsedStrings->insert(D.LinkType);
+        else
+        {
+            auto& TheOnlySubSec = SubSec_Default[DefaultSubSecName];
+            TheOnlySubSec.Lines_ByName.push_back(D.Name);
+            TheOnlySubSec.Lines[D.Name] = L;
+
+            auto& K = Link_Default[D.LinkType];
+            K.Name = D.LinkType;
+            K.NameOnlyAsRegister = true;
+            IBB_DefaultRegType::EnsureRegType(D.LinkType);
+
+        }
+    }
+}
+
+void IBB_DefaultTypeList::EnsureType(const std::string& Key, const std::string& LinkType)
+{
+    auto it = IniLine_Default.find(Key);
+    if (it != IniLine_Default.end())return;//Exists
+    {
+        auto K = UTF8toUnicode(Key);
+        auto LT = UTF8toUnicode(LinkType);
+        MessageBoxW(NULL, std::vformat(locw("Error_LinkTypeNotExist"), std::make_wformat_args(K, LT)).c_str(),
+            L"IBB_DefaultTypeList::EnsureType", MB_OK);
+    }
+    IBB_DefaultTypeAlt Alt;
+    Alt.LinkType = LinkType;
+    Alt.Name = Key;
+    Alt.LinkLimit = -1;
+    Alt.DescShort = Alt.DescLong = Key;
+    EnsureType(Alt);
+}
+
+bool IBB_DefaultTypeList::LoadFromAlt(const IBB_DefaultTypeAltList& AltList)
+{
+    Require_Default.clear();
+
+    std::set<std::string> UsedStrings;
+    for (const auto& D : AltList.List)EnsureType(D, &UsedStrings);
+
+    auto& TheOnlySubSec = SubSec_Default[DefaultSubSecName];
+    TheOnlySubSec.Name = DefaultSubSecName;
+    TheOnlySubSec.DescShort = "";
+    TheOnlySubSec.DescLong = "";
+    TheOnlySubSec.Platform = { "" };
+    TheOnlySubSec.Lines_ByName.reserve(IniLine_Default.size());
+    for (auto& [k, v] : IniLine_Default)
+        TheOnlySubSec.Lines_ByName.push_back(k);
+    TheOnlySubSec.Lines = IniLine_Default;
+    TheOnlySubSec.Require.RequiredValues.clear();
+    TheOnlySubSec.Require.ForbiddenValues.clear();
+
+    IBB_DefaultTypeAlt b;
+    b.Name = "__INHERIT__";
+    b.LinkLimit = 1;
+    b.LinkType = "_AnyType";
+    b.DescShort = "__INHERIT_SHORT__";
+    b.DescLong = "";
+    b.Color = ImColor(0, 0, 255);
+    EnsureType(b, &UsedStrings);
+    auto& InheritSubSec = SubSec_Default["  INHERIT_SUBSEC__"];
+    InheritSubSec.Name = "  INHERIT_SUBSEC__";
+    InheritSubSec.DescShort = "";
+    InheritSubSec.DescLong = "";
+    InheritSubSec.Platform = { "" };
+    InheritSubSec.Lines_ByName = { "__INHERIT__" };
+    InheritSubSec.Lines["__INHERIT__"] = IniLine_Default["__INHERIT__"];
+    InheritSubSec.Require.RequiredValues.clear();
+    InheritSubSec.Require.ForbiddenValues.clear();
+
+    for (const auto& s : UsedStrings)
+    {
+        auto& L = Link_Default[s];
+        L.Name = s;
+        L.NameOnlyAsRegister = true;
+        IBB_DefaultRegType::EnsureRegType(s);
+    }
+
+    return true;
+}
+
+ImU32 StrToCol(const std::string& Str)
+{
+    ImU32 V = strtol(Str.c_str(), nullptr, 16);
+    if (V > 0x1000000 || Str.length() > 6)
+    {
+        //ABGR
+        return V;
+    }
+    else
+    {
+        return V >> 16 | (V & 0xFF) << 16 | (V & 0xFF00) | 0xFF000000;
+    }
+}
+
+bool IBB_DefaultTypeAlt::Load(JsonObject FromJson)
+{
+    Name = FromJson.ItemStringOr("Name");
+    DescLong = FromJson.ItemStringOr("DescLong");
+    DescShort = FromJson.ItemStringOr("DescShort");
+    LinkType = FromJson.ItemStringOr("LinkType");
+    LinkLimit = FromJson.ItemIntOr("LinkLimit", 1);
+    Color = StrToCol(FromJson.ItemStringOr("LineColor", "00000000").c_str());
+    return true;
+}
+
+bool IBB_DefaultTypeAlt::Load(const std::vector<std::string>& FromCSV)
+{
+    if (FromCSV.size() < 5)return false;
+    // Name LinkType LinkLimit DescShort DescLong;
+    Name = FromCSV[0];
+    LinkType = FromCSV[1];
+    LinkLimit = atoi(FromCSV[2].c_str());
+    DescShort = FromCSV[3];
+    DescLong = FromCSV[4];
+    Color = StrToCol(FromCSV.size() > 5 ? FromCSV[5].c_str() : "00000000");
+    return true;
+}
+
+bool IBB_DefaultTypeAltList::Load(JsonObject FromJson)
+{
+    auto V = FromJson.ItemArrayObjectOr("IniLine");
+    List.resize(V.size());
+    for (size_t i = 0; i < V.size(); i++)
+        List[i].Load(V[i]);
+    return true;
+}
+
+bool IBB_DefaultTypeAltList::LoadFromJsonFile(const char* Name)
+{
+    std::string FileName(const std::string & ss);
+    JsonFile F;
+    auto V = UTF8toUnicode(FileName(Name));
+    IBR_PopupManager::AddJsonParseErrorPopup(F.ParseFromFileChecked(Name, loc("Error_JsonParseErrorPos"), nullptr),
+        UnicodetoUTF8(std::vformat(locw("Error_JsonSyntaxError"), std::make_wformat_args(V))));
+    if (!F.Available())return false;
+    Load(F);
+
+    ExtFileClass Et;
+    Et.Open(".\\Global\\TypeAlt.csv", "w");
+    for (auto& L : List)
+    {
+        Et.PutStr(L.Name); Et.PutChr(',');
+        Et.PutStr(L.LinkType); Et.PutChr(',');
+        Et.PutStr(std::to_string(L.LinkLimit)); Et.PutChr(',');
+        Et.PutStr(L.DescShort); Et.PutChr(',');
+        Et.PutStr(L.DescLong); Et.PutChr('\n');
+    }
+    Et.Close();
+    MessageBoxW(NULL, locwc("GUI_TypeAltConverted"), _AppNameW, MB_OK);
+
+    return true;
+}
+
+bool IBB_DefaultTypeAltList::LoadFromCSVFile(const char* Name)
+{
+    CSVReader Reader;
+    Reader.ReadFromFile(Name);
+    auto& D = Reader.GetData();
+    if (D.size() <= 1)return false;
+    List.resize(D.size());
+    bool Ret = true;
+    for (size_t i = 1; i < D.size(); i++)
+        Ret &= List[i].Load(D[i]);
+    return Ret;
+}
+
 
 bool IBB_Project::CreateIni(const std::string& Name)
 {
@@ -116,7 +312,7 @@ IBB_Section* IBB_Project::AddNewSectionEx(const IBB_Section_NameType& Paragraph)
         if (EnableLog)
         {
             GlobalLogB.AddLog_CurTime(false);
-            GlobalLogB.AddLog("IBB_Project::AddNewSection ：参数不能为空。");
+            GlobalLogB.AddLog((u8"IBB_Project::AddNewSection ：" + loc("Log_NoEmptyArgument")).c_str());
         }
         return nullptr;
     }
@@ -132,7 +328,7 @@ IBB_Section* IBB_Project::AddNewSectionEx(const IBB_Section_NameType& Paragraph)
             if (EnableLog)
             {
                 GlobalLogB.AddLog_CurTime(false);
-                GlobalLogB.AddLog("IBB_Project::AddNewSection ：无法添加INI。");
+                GlobalLogB.AddLog((u8"IBB_Project::AddNewSection ：" + loc("Log_CannotCreateINI")).c_str());
             }
             return nullptr;
         }
@@ -142,7 +338,7 @@ IBB_Section* IBB_Project::AddNewSectionEx(const IBB_Section_NameType& Paragraph)
         if (EnableLog)
         {
             GlobalLogB.AddLog_CurTime(false);
-            GlobalLogB.AddLog("IBB_Project::AddNewSection ：CreateSection创建失败。");
+            GlobalLogB.AddLog((u8"IBB_Project::AddNewSection ：" + loc("Log_CreateSectionFailed")).c_str());
         }
         return nullptr;
     }
@@ -153,7 +349,7 @@ IBB_Section* IBB_Project::AddNewSectionEx(const IBB_Section_NameType& Paragraph)
         if (EnableLog)
         {
             GlobalLogB.AddLog_CurTime(false);
-            GlobalLogB.AddLog("IBB_Project::AddNewSection ：无法添加字段。");
+            GlobalLogB.AddLog((u8"IBB_Project::AddNewSection ：" + loc("Log_CannotCreateSection")).c_str());
         }
         return nullptr;
     }
@@ -175,7 +371,7 @@ IBB_Section* IBB_Project::CreateNewSection(const IBB_Section_Desc& Desc)
             if (EnableLog)
             {
                 GlobalLogB.AddLog_CurTime(false);
-                GlobalLogB.AddLog("IBB_Project::CreateNewSection ：无法添加INI。");
+                GlobalLogB.AddLog((u8"IBB_Project::CreateNewSection ：" + loc("Log_CannotCreateINI")).c_str());
             }
             return nullptr;
         }
@@ -185,7 +381,7 @@ IBB_Section* IBB_Project::CreateNewSection(const IBB_Section_Desc& Desc)
         if (EnableLog)
         {
             GlobalLogB.AddLog_CurTime(false);
-            GlobalLogB.AddLog("IBB_Project::CreateNewSection ：CreateSection创建失败。");
+            GlobalLogB.AddLog((u8"IBB_Project::CreateNewSection ：" + loc("Log_CreateSectionFailed")).c_str());
         }
         return nullptr;
     }
@@ -195,7 +391,7 @@ IBB_Section* IBB_Project::CreateNewSection(const IBB_Section_Desc& Desc)
         if (EnableLog)
         {
             GlobalLogB.AddLog_CurTime(false);
-            GlobalLogB.AddLog("IBB_Project::CreateNewSection ：无法添加字段。");
+            GlobalLogB.AddLog((u8"IBB_Project::CreateNewSection ：" + loc("Log_CannotCreateSection")).c_str());
         }
         return nullptr;
     }
@@ -214,7 +410,7 @@ bool IBB_Project::AddNewLinkToLinkGroup(const IBB_Section_Desc& From, const IBB_
             if (EnableLog)
             {
                 GlobalLogB.AddLog_CurTime(false);
-                GlobalLogB.AddLog("IBB_Project::AddNewLinkToLinkGroup ：无法添加From字段。");
+                GlobalLogB.AddLog((u8"IBB_Project::AddNewLinkToLinkGroup ：" + loc("Log_CannotCreateSection")).c_str());
             }
             return false;
         }
@@ -229,7 +425,7 @@ bool IBB_Project::AddNewLinkToLinkGroup(const IBB_Section_Desc& From, const IBB_
             if (EnableLog)
             {
                 GlobalLogB.AddLog_CurTime(false);
-                GlobalLogB.AddLog("IBB_Project::AddNewLinkToLinkGroup ：无法添加From字段。");
+                GlobalLogB.AddLog((u8"IBB_Project::AddNewLinkToLinkGroup ：" + loc("Log_CannotCreateSection")).c_str());
             }
             return false;
         }
@@ -290,7 +486,7 @@ bool IBB_Project::AddModule(const ModuleClipData& Module)
                 if (EnableLog)
                 {
                     GlobalLogB.AddLog_CurTime(false);
-                    GlobalLogB.AddLog("IBB_Project::AddNewSection ：无法添加INI。");
+                    GlobalLogB.AddLog((u8"IBB_Project::AddModule ：" + loc("Log_CannotCreateINI")).c_str());
                 }
                 return false;
             }
@@ -300,7 +496,7 @@ bool IBB_Project::AddModule(const ModuleClipData& Module)
             if (EnableLog)
             {
                 GlobalLogB.AddLog_CurTime(false);
-                GlobalLogB.AddLog("IBB_Project::AddNewSection ：CreateSection创建失败。");
+                GlobalLogB.AddLog((u8"IBB_Project::AddModule ：" + loc("Log_CreateSectionFailed")).c_str());
             }
             return false;
         }
@@ -387,11 +583,19 @@ _TEXT_UTF8 std::string IBB_Project::GetText(bool PrintExtraData) const
     std::string Text{ ";Project::GetText\n\n" };
     {
         Text = "[ProjectBasicInfo]\n";
-        Text += "ProjName=" + UnicodetoMBCS(ProjName); Text.push_back('\n');
+        Text += "ProjName=" + UnicodetoUTF8(ProjName); Text.push_back('\n');
+        Text += "Path=" + UnicodetoUTF8(Path); Text.push_back('\n');
         Text += "CreateTime=" + std::to_string(CreateTime); Text.push_back('\n');
         Text += "LastUpdate=" + std::to_string(LastUpdate); Text.push_back('\n');
-        Text += "CreateVersion=" + std::to_string(CreateVersionMajor) + "." +
-            std::to_string(CreateVersionMinor) + "." + std::to_string(CreateVersionRelease);
+        Text += "CreateVersion=" + GetVersionStr(CreateVersionMajor * 10000 + CreateVersionMinor * 100 + CreateVersionRelease); Text.push_back('\n');
+        Text += "ChangeAfterSave=" + std::string(IBD_BoolStr(ChangeAfterSave)); Text.push_back('\n');
+        Text += "LastOutputDir=" + UnicodetoUTF8(LastOutputDir); Text.push_back('\n');
+        for (auto& [k, v] : LastOutputIniName)
+        {
+            Text += "LastOutputIniName[" + k + "]=" + UnicodetoUTF8(v); Text.push_back('\n');
+        }
+        Text += "IsNewlyCreated=" + std::string(IBD_BoolStr(IsNewlyCreated)); Text.push_back('\n');
+
         Text.push_back('\n');
     }
     Text += "\n;INI Files\n";
@@ -414,6 +618,7 @@ void IBB_Project::Clear()
     ProjName.clear();
     Path.clear();
     LastOutputDir.clear();
+    LastOutputIniName.clear();
     IsNewlyCreated = true;
     ChangeAfterSave = false;
     RegisterLists.clear();

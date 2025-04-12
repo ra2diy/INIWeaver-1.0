@@ -74,9 +74,8 @@ void IBR_Debug::RenderUI()
 {
     //_CALL_CMD IBR_Inst_Project.GetText(true);
     static bool Ext = false;
-    ImGui::Checkbox(u8"输出额外信息", &Ext);
-    ImGui::SameLine();
-    if (ImGui::Button(u8"复制导出文本"))
+    ImGui::Checkbox(locc("GUI_DebugOutputExtra"), &Ext);
+    if (ImGui::Button(locc("GUI_DebugCopyOutput")))
     {
         ImGui::LogToClipboard();
         ImGui::LogText(_CALL_CMD IBR_Inst_Project.GetText(Ext).c_str());
@@ -95,6 +94,9 @@ void IBR_Debug::RenderUI()
     ImGui::Text("LastCont = %s", IBR_WorkSpace::LastCont ? "true" : "false");
     ImGui::Text("DblClickLeft = %s", ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left) ? "true" : "false");
     ImGui::Text("CTRL = %s", ImGui::GetIO().KeyCtrl ? "true" : "false");
+    ImGui::Text("SHIFT = %s", ImGui::GetIO().KeyShift ? "true" : "false");
+    ImGui::Text("ALT = %s", ImGui::GetIO().KeyAlt ? "true" : "false");
+    ImGui::Text("SUPER = %s", ImGui::GetIO().KeySuper ? "true" : "false");
     if (UICond.LoopShow) { if (ImGui::ArrowButton("loopc", ImGuiDir_Down))UICond.LoopShow = false; }
     else { if (ImGui::ArrowButton("loopa", ImGuiDir_Right))UICond.LoopShow = true; }
     if (UICond.LoopShow)for (auto x : DebugVec)x();

@@ -12,6 +12,7 @@
 #include<imgui_internal.h>
 
 std::string FontPath = ".\\Resources\\";//全过程不变
+std::wstring FontPathW = L".\\Resources\\";//全过程不变
 std::wstring Defaultpath{ L"C:\\" };
 std::string Pathbuf, Desktop, TextEditAboutU8;
 std::wstring PathbufW;
@@ -94,61 +95,6 @@ namespace ImGui
 
 
 
-namespace _TempSelectLink
-{
-    const ImColor ForegroundCoverColor(0, 145, 255, 35);
-    const ImColor ForegroundMarkColor(0, 100, 255, 255);
-    const ImColor LinkingLineColor(255, 168, 21, 255);
-    const ImColor LegalLineColor(255, 138, 5, 255);
-    const ImColor IllegalLineColor(255, 45, 45, 255);
-    bool InLinkProcess;
-    int LinkFrom, LinkAt;
-    ImVec2 MouseStartPos;
-    
-    void InLink(int From, int At)
-    {
-        if (!InLinkProcess)
-        {
-            InLinkProcess = true;
-            LinkFrom = From;
-            LinkAt = At;
-            MouseStartPos = ImGui::GetLineEndPos();
-        }
-    }
-    int OutLink()
-    {
-        if (InLinkProcess)
-        {
-            InLinkProcess = false;
-            return LinkAt;
-        }
-        return -1;
-    }
-    bool IsInLink()
-    {
-        return InLinkProcess;
-    }
-
-    struct SectionRect
-    {
-        ImVec2 PosUL, PosDR;
-    };
-    std::vector<SectionRect>SecRect;
-    void AddSecRect()
-    {
-        SecRect.emplace_back(SectionRect{});
-        SecRect.back().PosUL = ImGui::GetWindowPos();
-        SecRect.back().PosDR = {
-            SecRect.back().PosUL.x + ImGui::GetWindowSize().x,
-            SecRect.back().PosUL.y + ImGui::GetWindowSize().y };
-    }
-    void ClearLoop()
-    {
-        SecRect.clear();
-    }
-
-}
-
 int PrevSet = 0;
 bool WaitingInsertLoad{ false };
 int A_INI = -2, A_Sec = -2;
@@ -165,7 +111,6 @@ void ControlPanel()
 {
     static bool First = true;
 
-    _TempSelectLink::ClearLoop();
     GetWindowRect(MainWindowHandle, &FinalWP);
     IBR_UICondition::UpdateWindowTitle();
     IBR_WorkSpace::UpdatePrev();
@@ -177,7 +122,7 @@ void ControlPanel()
         if (EnableLog)
         {
             GlobalLog.AddLog_CurTime(false);
-            GlobalLog.AddLog("主循环开始运转。");
+            GlobalLog.AddLog(locc("Log_MainLoopStart"));
         }
         First = false;
     }
@@ -205,8 +150,8 @@ void ControlPanel()
     IBR_Inst_Menu.RenderUIBar();
 
     ImGui::SameLine();
-    ImGui::SetCursorPosX(ImGui::GetWindowWidth() - 14.0f * FontHeight);
-    ImGui::Text(u8"INI浏览器 V%s 平均FPS %.1f", Version.c_str(), ImGui::GetIO().Framerate);
+    ImGui::SetCursorPosX(ImGui::GetWindowWidth() - loc("GUI_TopRightHint").size() * FontHeight * 0.7f);
+    ImGui::Text(locc("GUI_TopRightHint"), _AppName, Version.c_str(), ImGui::GetIO().Framerate);
 
     ImGui::End();
     if (!(IBR_PopupManager::HasPopup && IBR_PopupManager::CurrentPopup.Modal))
@@ -226,9 +171,9 @@ void ControlPanel()
         IBR_UICondition::MenuChangeShow = false;
     }
     if (IBR_Inst_Menu.GetMenuItem() == MenuItemID_EDIT && IBR_EditFrame::CurSection.GetSectionData())
-        ImGui::Begin((IBR_EditFrame::CurSection.GetSectionData()->DisplayName + u8"###主菜单").c_str()
+        ImGui::Begin((IBR_EditFrame::CurSection.GetSectionData()->DisplayName + u8"###" + loc("GUI_MainMenu")).c_str()
             , nullptr, ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoMove);
-    else ImGui::Begin(u8"主菜单", nullptr, ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoMove);
+    else ImGui::Begin(locc("GUI_MainMenu"), nullptr, ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoMove);
     ImGui::SetWindowPos({ 0,FontHeight * 2.0f - WindowSizeAdjustY });
     auto M = std::min(((float)(FinalWP.right - FinalWP.left - WindowSizeAdjustX)) / 4, 400.0f);
     ImGui::SetWindowSize({ std::max(ImGui::GetWindowWidth(),M),
@@ -238,16 +183,19 @@ void ControlPanel()
     if (ImGui::GetWindowWidth() == MWWidth2)
         MWWidthSetSuccess = true;
     IBR_RealCenter::Update();
-    IBR_Inst_Menu.RenderUIMenu();
-    MWWidth = ImGui::GetWindowWidth();
-    ImGui::NewLine(); ImGui::NewLine();
+
     auto MainMenuWindow = ImGui::GetCurrentWindow();
-	ImGui::End();
     if (!(IBR_PopupManager::HasPopup && IBR_PopupManager::CurrentPopup.Modal))
     {
         ImGui::PushOrderFront(MainMenuWindow);
-        ImGui::GetCurrentContext()->ExtraTopMostWindow2 = MainMenuWindow;
+        //ImGui::GetCurrentContext()->ExtraTopMostWindow2 = MainMenuWindow;
     }
+
+    IBR_Inst_Menu.RenderUIMenu();
+    MWWidth = ImGui::GetWindowWidth();
+    ImGui::NewLine(); ImGui::NewLine();
+	ImGui::End();
+   
     if (!IBR_PopupManager::HasPopup && IBR_ProjectManager::IsOpen())IBR_WorkSpace::ProcessBackgroundOpr();
     if (!IBR_PopupManager::HasPopup)IBR_ProjectManager::ProjActionByKey();
     IBR_WorkSpace::UpdateNewRatio();
@@ -277,7 +225,8 @@ void ControlPanel()
     IBR_HintManager::RenderUI();
     IBR_PopupManager::RenderUI();
 
-    
+    IBR_WorkSpace::LastOperateOnText = IBR_WorkSpace::OperateOnText;
+    IBR_WorkSpace::OperateOnText = false;
 }
 
 

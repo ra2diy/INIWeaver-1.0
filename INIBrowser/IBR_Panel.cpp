@@ -5,6 +5,7 @@
 #include "FromEngine/global_timer.h"
 #include<imgui_internal.h>
 
+extern bool EnableDebugList;
 
 void IBR_MainMenu::RenderUIBar()
 {
@@ -18,7 +19,7 @@ void IBR_MainMenu::RenderUIBar()
             if (EnableLog)
             {
                 GlobalLog.AddLog_CurTime(false);
-                GlobalLog.AddLog("切换了主菜单");
+                GlobalLog.AddLog(locc("Log_SwitchMainMenu"));
             }
         }
         ImGui::SameLine();
@@ -37,7 +38,7 @@ void IBR_MainMenu::ChooseMenu(size_t S)
 
 void ControlPanel_Debug()
 {
-    ImGui::Text(u8"调试信息：");
+    ImGui::Text(locc("GUI_DebugTitle"));
 
     IBR_Inst_Debug.RenderUI();
 
@@ -55,19 +56,19 @@ void ControlPanel_About();
 
 void ControlPanel_WaitOpen()
 {
-    ImGui::TextDisabled(u8"请等待打开项目");
+    ImGui::TextDisabled(locc("GUI_WaitOpen"));
 }
 
 void ControlPanel_File()
 {
-    if (ImGui::Button(u8"保存"))IBR_ProjectManager::SaveOptAction();//
-    if (ImGui::Button(u8"另存为"))IBR_ProjectManager::SaveAsAction();//
-    if (IBR_Inst_Project.IBR_SectionMap.empty())ImGui::TextDisabled(u8"导出");
-    else if (ImGui::Button(u8"导出"))IBR_ProjectManager::OutputAction();//
+    if (ImGui::Button(locc("GUI_Save")))IBR_ProjectManager::SaveOptAction();//
+    if (ImGui::Button(locc("GUI_SaveAs")))IBR_ProjectManager::SaveAsAction();//
+    if (IBR_Inst_Project.IBR_SectionMap.empty())ImGui::TextDisabled(locc("GUI_Output"));
+    else if (ImGui::Button(locc("GUI_Output")))IBR_ProjectManager::OutputAction();//
 
     ImGui::NewLine();
-    if (ImGui::Button(u8"关闭项目"))IBR_ProjectManager::ProjOpen_CreateAction(); //王德发你猜为什么是CreateAction
-    if (ImGui::Button(u8"打开项目"))IBR_ProjectManager::ProjOpen_OpenAction();//
+    if (ImGui::Button(locc("GUI_CloseProject")))IBR_ProjectManager::ProjOpen_CreateAction(); //王德发你猜为什么是CreateAction
+    if (ImGui::Button(locc("GUI_OpenProject")))IBR_ProjectManager::ProjOpen_OpenAction();//
     ImGui::NewLine();
     IBR_RecentManager::RenderUI();//
     /*
@@ -136,25 +137,26 @@ void ControlPanel_ListView()
         bool SelectAll{ false }, SelectNone{ false }, Delete{ false }, Duplicate{ false };
         if (FullSelected)
         {
-            if (SelectN == 0)ImGui::TextDisabled(u8"全选");
-            else if (ImGui::Button(u8"全不选"))SelectNone = true;
+            if (SelectN == 0)ImGui::TextDisabled(locc("GUI_SelectAll"));
+            else if (ImGui::Button(locc("GUI_SelectNone")))SelectNone = true;
         }
-        else if (ImGui::Button(u8"全选"))SelectAll = true;
+        else if (ImGui::Button(locc("GUI_SelectAll")))SelectAll = true;
         ImGui::SameLine();
         if (SelectN == 0)
         {
-            ImGui::TextDisabled(u8"删除"); ImGui::SameLine();
-            ImGui::TextDisabled(u8"复制");
+            ImGui::TextDisabled(locc("GUI_Delete")); ImGui::SameLine();
+            ImGui::TextDisabled(locc("GUI_Duplicate"));
         }
         else
         {
-            if (ImGui::Button(u8"删除"))Delete = true; ImGui::SameLine();
-            if (ImGui::Button(u8"复制"))Duplicate = true;
+            if (ImGui::Button(locc("GUI_Delete")))Delete = true; ImGui::SameLine();
+            if (ImGui::Button(locc("GUI_Duplicate")))Duplicate = true;
         }
 
         if (SelectAll || SelectNone || Delete || Duplicate)
         {
             if (Duplicate)IBR_Inst_Project.CopyTransform.clear();
+            std::vector<IBB_Section_Desc> ToDel;
             for (auto& ini : IBF_Inst_Project.Project.Inis)
             {
                 if (ini.Secs_ByName.empty())continue;
@@ -170,7 +172,7 @@ void ControlPanel_ListView()
                 {
                     if (SelectAll)sec.second.Dynamic.Selected = true;
                     if (SelectNone)sec.second.Dynamic.Selected = false;
-                    if (sec.second.Dynamic.Selected && Delete)IBRF_CoreBump.SendToR({ [=]() {IBR_Inst_Project.DeleteSection({ ini.Name,sec.second.Name }); },nullptr });
+                    if (sec.second.Dynamic.Selected && Delete)ToDel.push_back({ ini.Name,sec.second.Name });
                     if (sec.second.Dynamic.Selected && Duplicate)
                         IBRF_CoreBump.SendToR({ [=]()
                             {
@@ -196,7 +198,11 @@ void ControlPanel_ListView()
             }
             if (Duplicate)
                 IBRF_CoreBump.SendToR({ [=]() {IBF_Inst_Project.UpdateAll(); IBR_WorkSpace::HoldingModules = true;  },nullptr });
+            else if (Delete)
+                IBRF_CoreBump.SendToR({ [=]() { IBR_Inst_Project.DeleteSection(ToDel); },nullptr });
             else IBRF_CoreBump.SendToR({ [=]() {IBF_Inst_Project.UpdateAll(); },nullptr });
+
+
         }
 
         for (auto& ini : IBF_Inst_Project.Project.Inis)
@@ -273,53 +279,72 @@ bool SmallButton_Disabled_Helper(bool cond, const char* Text)
 IBR_MainMenu IBR_Inst_Menu
 {
 {
-    {[]() {return ImGui::SmallButton(u8"文件"); },ControlPanel_File},
-    {[]() {return SmallButton_Disabled_Helper(IBR_ProjectManager::IsOpen(), u8"视图"); },ControlPanel_View},
-    {[]() {return SmallButton_Disabled_Helper(IBR_ProjectManager::IsOpen(), u8"列表"); },ControlPanel_ListView},
+    {[]() {return ImGui::SmallButton(locc("GUI_MenuItem_File")); },ControlPanel_File},
+    {[]() {ImGui::NewLine(); ImGui::SameLine(); return SmallButton_Disabled_Helper(IBR_ProjectManager::IsOpen(), locc("GUI_MenuItem_View")); },ControlPanel_View},
+    {[]() {ImGui::NewLine(); ImGui::SameLine(); return SmallButton_Disabled_Helper(IBR_ProjectManager::IsOpen(), locc("GUI_MenuItem_List")); },ControlPanel_ListView},
     //{[]() {return false;/*SmallButton_Disabled_Helper(IsProjectOpen, u8"预设");*/ },ControlPanel_Module},
-    {[]() {return SmallButton_Disabled_Helper(IBR_ProjectManager::IsOpen(), u8"编辑"); },ControlPanel_Edit},
-    {[]() {return ImGui::SmallButton(u8"设置"); },[]() {IBR_Inst_Setting.RenderUI(); }},
-    {[]() {return ImGui::SmallButton(u8"关于"); },ControlPanel_About},
-    {[]() {return ImGui::SmallButton(u8"调试"); },ControlPanel_Debug},
+
+    //{[]() {return SmallButton_Disabled_Helper(IBR_ProjectManager::IsOpen(), locc("GUI_MenuItem_Edit")); },ControlPanel_Edit},
+    {[]() {ImGui::NewLine(); return false; },ControlPanel_Edit},
+
+    {[]() {return ImGui::SmallButton(locc("GUI_MenuItem_Setting")); },[]() {IBR_Inst_Setting.RenderUI(); }},
+    {[]() {ImGui::NewLine(); ImGui::SameLine(); return ImGui::SmallButton(locc("GUI_MenuItem_About")); },ControlPanel_About},
+    {[]() {if (EnableDebugList) return ImGui::SmallButton(locc("GUI_MenuItem_Debug")); else { ImGui::NewLine(); return false; } },ControlPanel_Debug},
 }
 };
 
 
 void ControlPanel_About()
 {
-    ImGui::TextWrapped(u8"INI浏览器 V%s", Version.c_str());
+    ImGui::TextWrapped(locc("GUI_About1"), _AppName, Version.c_str());
     ImGui::TextWrapped(u8"GLFW/Dear ImGui", Version.c_str());
     ImGui::Separator();
-    ImGui::TextWrapped(u8"作者：钢铁之锤");
+    ImGui::TextWrapped((loc("GUI_About5") + u8"：钢铁之锤").c_str());
     ImGui::TextWrapped(u8"QQ：2482911962");
     ImGui::TextWrapped(u8"贴吧：笨030504");
     ImGui::TextWrapped(u8"GitHub：IronHammer Std");
     ImGui::NewLine();
-    ImGui::TextWrapped(u8"概念设计 & “产品经理”：");
+    ImGui::TextWrapped((loc("GUI_About6") + u8"：").c_str());
     ImGui::TextWrapped(u8"      Kenosis");
     ImGui::Separator();
-    ImGui::TextWrapped(u8"如有bug或反馈请联系作者");
-    ImGui::TextWrapped(u8"反馈表单："); //ImGui::SameLine();
-    if (ImGui::Button(u8"复制链接##A"))
+    ImGui::TextWrapped(locc("GUI_About2"));
+
+
+    ImGui::TextWrapped(locc("GUI_About7")); //ImGui::SameLine();
+    if (ImGui::Button((loc("GUI_CopyLinkToClipboard") + u8"##C").c_str()))
+    {
+        ImGui::LogToClipboard();
+        ImGui::LogText("https://inibrowser-02-chinese.readthedocs.io/zh-cn/latest/documentation.html");
+        ImGui::LogFinish();
+    }
+    ImGui::SameLine();
+    if (ImGui::Button((loc("GUI_OpenLink") + u8"##C").c_str()))
+    {
+        ::ShellExecuteA(nullptr, "open", "https://inibrowser-02-chinese.readthedocs.io/zh-cn/latest/documentation.html", NULL, NULL, SW_SHOWNORMAL);
+    }
+
+    ImGui::TextWrapped(locc("GUI_About3")); //ImGui::SameLine();
+    if (ImGui::Button((loc("GUI_CopyLinkToClipboard") + u8"##A").c_str()))
     {
         ImGui::LogToClipboard();
         ImGui::LogText("https://docs.qq.com/form/page/DWXdKYUFRV1dHSnNE");
         ImGui::LogFinish();
     }
     ImGui::SameLine();
-    if (ImGui::Button(u8"打开链接##A"))
+    if (ImGui::Button((loc("GUI_OpenLink") + u8"##A").c_str()))
     {
         ::ShellExecuteA(nullptr, "open", "https://docs.qq.com/form/page/DWXdKYUFRV1dHSnNE", NULL, NULL, SW_SHOWNORMAL);
     }
-    ImGui::TextWrapped(u8"GitHub仓库："); 
-    if (ImGui::Button(u8"复制链接##B"))
+
+    ImGui::TextWrapped(locc("GUI_About4"));
+    if (ImGui::Button((loc("GUI_CopyLinkToClipboard") + u8"##B").c_str()))
     {
         ImGui::LogToClipboard();
         ImGui::LogText("https://github.com/IronHammer-Std/INIBrowser-0.2");
         ImGui::LogFinish();
     }
     ImGui::SameLine();
-    if (ImGui::Button(u8"打开链接##B"))
+    if (ImGui::Button((loc("GUI_OpenLink") + u8"##B").c_str()))
     {
         ::ShellExecuteA(nullptr, "open", "https://github.com/IronHammer-Std/INIBrowser-0.2", NULL, NULL, SW_SHOWNORMAL);
     }

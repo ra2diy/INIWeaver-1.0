@@ -1,6 +1,7 @@
 #include "IBB_RegType.h"
 #include "Global.h"
 #include "IBB_ModuleAlt.h"
+#include "IBB_Index.h"
 
 std::string IBB_RegType::GetNoName()
 {
@@ -59,23 +60,18 @@ namespace IBB_DefaultRegType
         }
         else Reg.FrameColorL = DefaultColor;
 
-        S = Obj.GetObjectItem(u8"Export");
-        if (S.Available())Reg.Export = S.GetBool();
-        else Reg.Export = false;
-
-        S = Obj.GetObjectItem(u8"UseRegName");
-        if (S.Available())Reg.RegNameAsDisplay = S.GetBool();
-        else Reg.RegNameAsDisplay = false;
-
-        S = Obj.GetObjectItem(u8"UseOwnName");
-        if (S.Available())Reg.UseOwnName = S.GetBool();
-        else Reg.UseOwnName = false;
+        Reg.Export = Obj.ItemBoolOr(u8"Export", false);
+        Reg.RegNameAsDisplay = Obj.ItemBoolOr(u8"UseRegName", false);
+        Reg.UseOwnName = Obj.ItemBoolOr(u8"UseOwnName", false);
+        Reg.DefaultLinks.Value = Obj.ItemMapStringOr(u8"DefaultLinks");
 
         S = Obj.GetObjectItem(u8"Name");
         if (S.Available())Reg.Name = S.GetString();
         else if (Reg.UseOwnName)Reg.Name = Obj.GetName() + "_";
-        else Reg.Name = u8"模块";
+        else Reg.Name = loc("Back_DefaultModuleName");
         Reg.Count = 0;
+
+
 
         Reg.FrameColorD = Reg.FrameColorL;
         ImVec4 X;
@@ -122,9 +118,42 @@ namespace IBB_DefaultRegType
             {
                 IBB_CompoundRegType Com;
                 Com.Name = N;
-                Com.Regs = V.GetArrayString();
+                Com.DisplayName = V.ItemStringOr(u8"Name", N);
+                Com.Regs = V.ItemArrayStringOr(u8"Types");
+                Com.DefaultLinks.Value = V.ItemMapStringOr(u8"DefaultLinks");
                 RegisterCompoundType(std::move(Com));
             }
+
+        for (auto& [Name, Reg] : RegisterTypes)
+        {
+            auto it = CompoundTypeIndex.find(Name);
+            if (it != CompoundTypeIndex.end())
+            {
+                for (auto& Comp : it->second)
+                {
+                    auto cit = CompoundTypes.find(Comp);
+                    if (cit != CompoundTypes.end())
+                    {
+                        Reg.DefaultLinks.Merge(cit->second.DefaultLinks, true);
+                    }
+                }
+            }
+        }
+        for (auto& [Name, Reg] : RegisterTypes)
+        {
+            std::unordered_map<std::string, std::string> Temp;
+            for (auto& [K, V] : Reg.DefaultLinks.Value)
+            {
+                auto it = CompoundTypes.find(K);
+                if (it != CompoundTypes.end())
+                {
+                    for (auto& R : it->second.Regs)
+                        Temp[R] = V;
+                }
+            }
+            Reg.DefaultLinks.Value.insert(Temp.begin(), Temp.end());
+        }
+
         return true;
     }
     bool LoadFromFile(const char* FileName)
@@ -132,11 +161,12 @@ namespace IBB_DefaultRegType
         if (EnableLog)
         {
             GlobalLogB.AddLog_CurTime(false);
-            GlobalLogB.AddLog("IBB_DefaultRegType::LoadFromFile ： 开始读取注册配置。");
+            GlobalLogB.AddLog((u8"IBB_DefaultRegType::LoadFromFile ： " + loc("Log_LoadRegType")).c_str());
         }
         JsonFile F;
-        IBR_PopupManager::AddJsonParseErrorPopup(F.ParseFromFileChecked(FileName, u8"【出错位置】", nullptr),
-            u8"尝试解析 "+ MBCStoUTF8(::FileName(FileName)) + u8" 时发生语法错误。");
+        auto WFN = UTF8toUnicode(::FileName(FileName));
+        IBR_PopupManager::AddJsonParseErrorPopup(F.ParseFromFileChecked(FileName, loc("Error_JsonParseErrorPos"), nullptr),
+            UnicodetoUTF8(std::vformat(locw("Error_JsonSyntaxError"), std::make_wformat_args(WFN))));
         if (!F.Available())return false;
         return Load(F);
     }
@@ -158,13 +188,15 @@ namespace IBB_DefaultRegType
         if (TypeA == TypeB)return true;
         return ContainType(TypeA, TypeB) || ContainType(TypeB, TypeA);
     }
-    void GenerateDLK(const std::vector<PairClipString>& DLK1, std::unordered_map<std::string, std::string>& DefaultLinkKey)
+    void GenerateDLK(const std::vector<PairClipString>& DLK1, const std::string& Register, IBB_VariableList& DefaultLinkKey)
     {
         for (auto& L : DLK1)
         {
             auto it = CompoundTypes.find(L.A);
-            if (it == CompoundTypes.end())DefaultLinkKey[L.A] = L.B;
-            else for (auto& V : it->second.Regs)DefaultLinkKey[V] = L.B;
+            if (it == CompoundTypes.end())DefaultLinkKey.Value[L.A] = L.B;
+            else for (auto& V : it->second.Regs)DefaultLinkKey.Value[V] = L.B;
         }
+        auto& Reg = GetRegType(Register);
+        DefaultLinkKey.UpValue = &Reg.DefaultLinks;
     }
 }
