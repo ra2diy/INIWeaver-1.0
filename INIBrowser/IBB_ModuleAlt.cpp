@@ -1027,7 +1027,6 @@ namespace IBB_ModuleAltDefault
         std::vector<std::unique_ptr<ModuleTree>> Sub;
         std::unordered_map<std::string, IBB_ModuleAlt*> Modules;
         bool ChildMenuHovered{ false };
-        bool LastHovered{ false };
 
         void ResetHover()
         {
@@ -1055,7 +1054,7 @@ namespace IBB_ModuleAltDefault
                 {
                     V |= C->ChildMenuHovered;
                 }
-                if (S->LastHovered || V)
+                if (Hovered || V)
                 {
                     DrawOpenFolderIcon(Pos, (float)FontHeight);
                     if (!S->Sub.empty() || !S->Modules.empty())
@@ -1075,7 +1074,6 @@ namespace IBB_ModuleAltDefault
                     }
                 }
                 else DrawFolderIcon(Pos, (float)FontHeight);
-                S->LastHovered = Hovered;
             }
             for (auto& [N, M] : Modules)
             {

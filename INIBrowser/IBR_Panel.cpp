@@ -5,7 +5,6 @@
 #include "FromEngine/global_timer.h"
 #include<imgui_internal.h>
 
-extern bool EnableDebugList;
 
 void IBR_MainMenu::RenderUIBar()
 {
@@ -280,16 +279,13 @@ IBR_MainMenu IBR_Inst_Menu
 {
 {
     {[]() {return ImGui::SmallButton(locc("GUI_MenuItem_File")); },ControlPanel_File},
-    {[]() {ImGui::NewLine(); ImGui::SameLine(); return SmallButton_Disabled_Helper(IBR_ProjectManager::IsOpen(), locc("GUI_MenuItem_View")); },ControlPanel_View},
-    {[]() {ImGui::NewLine(); ImGui::SameLine(); return SmallButton_Disabled_Helper(IBR_ProjectManager::IsOpen(), locc("GUI_MenuItem_List")); },ControlPanel_ListView},
+    {[]() {return SmallButton_Disabled_Helper(IBR_ProjectManager::IsOpen(), locc("GUI_MenuItem_View")); },ControlPanel_View},
+    {[]() {return SmallButton_Disabled_Helper(IBR_ProjectManager::IsOpen(), locc("GUI_MenuItem_List")); },ControlPanel_ListView},
     //{[]() {return false;/*SmallButton_Disabled_Helper(IsProjectOpen, u8"Ô¤Éè");*/ },ControlPanel_Module},
-
-    //{[]() {return SmallButton_Disabled_Helper(IBR_ProjectManager::IsOpen(), locc("GUI_MenuItem_Edit")); },ControlPanel_Edit},
-    {[]() {ImGui::NewLine(); return false; },ControlPanel_Edit},
-
+    {[]() {return SmallButton_Disabled_Helper(IBR_ProjectManager::IsOpen(), locc("GUI_MenuItem_Edit")); },ControlPanel_Edit},
     {[]() {return ImGui::SmallButton(locc("GUI_MenuItem_Setting")); },[]() {IBR_Inst_Setting.RenderUI(); }},
-    {[]() {ImGui::NewLine(); ImGui::SameLine(); return ImGui::SmallButton(locc("GUI_MenuItem_About")); },ControlPanel_About},
-    {[]() {if (EnableDebugList) return ImGui::SmallButton(locc("GUI_MenuItem_Debug")); else { ImGui::NewLine(); return false; } },ControlPanel_Debug},
+    {[]() {return ImGui::SmallButton(locc("GUI_MenuItem_About")); },ControlPanel_About},
+    {[]() {return ImGui::SmallButton(locc("GUI_MenuItem_Debug")); },ControlPanel_Debug},
 }
 };
 

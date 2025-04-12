@@ -225,10 +225,10 @@ void IBG_UndoStack::Push(const _Item& a)
 }
 void IBG_UndoStack::RenderUI()
 {
-    //ImGui::TextDisabled(locc("GUI_Undo"));
+    ImGui::TextDisabled(locc("GUI_Undo"));
     //if (SmallButton_Disabled_Helper(CanUndo(), locc("GUI_Undo")))IBRF_CoreBump.SendToR({[this]() {IBR_Inst_Debug.AddMsgOnce([=]() {ImGui::Text("Undo"); }); Undo(); }});
-    //ImGui::SameLine();
-    //ImGui::TextDisabled(locc("GUI_Redo"));
+    ImGui::SameLine();
+    ImGui::TextDisabled(locc("GUI_Redo"));
     //if (SmallButton_Disabled_Helper(CanRedo(), locc("GUI_Redo")))IBRF_CoreBump.SendToR({ [this]() {IBR_Inst_Debug.AddMsgOnce([=]() {ImGui::Text("Redo"); }); Redo(); } });
 }
 void IBG_UndoStack::Clear()
