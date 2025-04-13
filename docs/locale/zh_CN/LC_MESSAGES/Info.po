@@ -1,0 +1,376 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, Kenosis
+# This file is distributed under the same license as the INIBrowser package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: INIBrowser \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-04-12 19:34+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: zh_CN\n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.16.0\n"
+
+#: ../../Info.md:2
+msgid "INIBrowser"
+msgstr "INI 浏览器"
+
+#: ../../Info.md:3
+msgid "What is This Tool"
+msgstr "这是一个什么工具"
+
+#: ../../Info.md:5
+msgid ""
+"This is an advanced tool for advanced INI users. For so-called advanced "
+"users, they rarely need to verify basic INI flag meanings and syntax when"
+" writing INI files, having already established clear understanding of "
+"which flags to use for specific effects and which INI types to employ."
+msgstr ""
+"这是一个面向高级 INI 用户的高级工具。所谓高级用户，写 INI 已经很少需要再去确认 INI "
+"语句含义和写法之类基础，对于实现什么效果需要用什么语句、用什么类型的 INI 已经有了清晰的认识。"
+
+#: ../../Info.md:7
+msgid ""
+"For advanced users, INI writing can generally be abstracted as: copying "
+"and pasting existing INI sections from vanilla files, making minor "
+"modifications, and then establishing connections."
+msgstr "对于高级用户而言，写 INI 总的来说可以抽象为：从原版的许多现存 INI 段中复制粘贴原有的内容，并进行少量修改，然后建立联系。"
+
+#: ../../Info.md:9
+msgid ""
+"During this process, users must repeatedly search in Rulesmd, copy-paste "
+"content, manually input new INI names, reference other INI sections using"
+" various flags, and finally perform registrations. In the Ares era, "
+"although creating copied units could be simplified through inheritance "
+"systems, the registration step remained unavoidable; modifying certain "
+"attributes still required searching for original flags within INI files."
+msgstr ""
+"在这一过程中，用户需要在 Rulesmd 中反复查找，复制粘贴，手动输入新的 INI 名称，再用各种语句去引用其他类的 INI "
+"片段，最后还需要添加注册。在 Ares "
+"时代，虽然新增复制单位的过程可以用继承系统来简单实现，但注册这一步是始终没法省略的；而如果要对某些属性进行改动，终究还是得去 INI "
+"里面找原有语句。"
+
+#: ../../Info.md:11
+msgid ""
+"These processes constitute the most labor-intensive aspects of INI "
+"editing. When dealing with complex INI content, the interconnections "
+"between modules become particularly troublesome - units link to weapons, "
+"weapons link to warheads, warheads link to particle systems, particle "
+"systems link to particles, particles link to graphics, graphics connect "
+"to trailers that link other animations. If INI arrangements are "
+"disorganized, users inevitably end up scrolling through multiple INI "
+"files, searching for various modules, frequently forgetting previous "
+"sections while viewing subsequent ones."
+msgstr ""
+"这些过程可谓是写 INI 中最大的苦力活。而如果 INI "
+"内容比较复杂，则模块之间的相互关联就会变成一个非常令人头疼的问题——单位连着武器，武器连着弹头，弹头连着粒子系统，粒子系统连着粒子，粒子连着图形，图形又有"
+" trailer 连着其他动画，如果 INI 的安排比较散乱，则最终又难免在多个 INI "
+"文件中上下滚动，查找各种模块，最后往往是看了上段忘下段，看了下段忘上段。"
+
+#: ../../Info.md:13
+msgid ""
+"This editor resolves these tedious aspects, simplifying the INI writing "
+"process as much as possible."
+msgstr "本编辑器解决了这些繁琐之处，让写 INI 的过程尽可能地简化了。"
+
+#: ../../Info.md:15
+msgid ""
+"The tool aims to maximize flexibility, essentially functioning as a "
+"graphical notepad with connection capabilities. Beyond connection rules, "
+"the tool itself contains no built-in INI specifications and will not "
+"check for INI syntax errors."
+msgstr "本工具旨在最大限度增加灵活性，只是可以连线的图形化记事本罢了，除了连线规则外，工具本身并无内置的 INI 规范，不会检查 INI 的写作错误。"
+
+#: ../../Info.md:17
+msgid "Module Library & Module Links"
+msgstr "模块库与模块链接"
+
+#: ../../Info.md:18
+msgid ""
+"The editor uses canvas-based visual editing with modules. Left-drag to "
+"move canvas, click to select modules, right-drag to box-select modules, "
+"ctrl+c to copy, ctrl+v to paste."
+msgstr "编辑器使用画布和模块的可视化编辑方式。左键拖拽移动画布，点击选中模块，右键画框框选模块，ctrlc 复制，ctrlv 粘贴。"
+
+#: ../../Info.md:20
+msgid "![image](../pic/Module_Links.png)"
+msgstr "![image](../pic/Module_Links.png)"
+
+#: ../../Info.md:20 ../../Info.md:26 ../../Info.md:32 ../../Info.md:40
+#: ../../Info.md:48 ../../Info.md:56 ../../Info.md:60 ../../Info.md:65
+#: ../../Info.md:77 ../../Info.md:79
+msgid "image"
+msgstr "图像"
+
+#: ../../Info.md:22
+msgid ""
+"The editor employs a module library system. This system can be understood"
+" as having numerous pre-copied modules stored in several file "
+"directories. Users simply need to drag these modules onto the canvas, "
+"which equates to copying existing INI blocks into ini files. While the "
+"editor provides many modules upon release, these cannot possibly cover "
+"all daily user requirements. Therefore, we encourage users to create "
+"custom module libraries, storing frequently used content in "
+"\\Global\\Modules for future convenience."
+msgstr ""
+"编辑器使用模块库系统。模块库系统可以理解为，系统内已经在几个文件目录内装好了许许多多复制好了的模块，用户只需要把这些模块扔到画布上，就等于是将一个原有的"
+" INI 块复制粘贴到 ini "
+"文件里了。编辑器发布时，虽然也提供了许多个模块，但这显然不可能涵盖一个用户日常可能使用到的一切需求。因此，我们鼓励用户自己定义自己的模块库，将自己需要经常复制的内容放入模块库里，以方便之后使用。各种自定义模块都位于"
+" \\Global\\Modules 下。"
+
+#: ../../Info.md:24
+msgid ""
+"Besides manual module library creation, the system supports module "
+"generation from clipboard. Simply select a group of modules, press "
+"ctrl+c, then open the clipboard template provided by the editor and "
+"replace the content after Data=. Clipboard-created modules preserve "
+"positional relationships between modules, while manually created ones "
+"cannot."
+msgstr ""
+"除了手动录入模块库之外，系统也支持从剪贴板创建模块。只需要选定一系列模块，按 ctrl+c，然后打开编辑器提供的剪贴板样本，将 `Data=` "
+"后面的内容替换掉即可。剪贴板样本创建的模块可以保留模块之间的位置关系，而手动录入的不能。"
+
+#: ../../Info.md:26
+msgid "![image](../pic/Data.png)"
+msgstr "![image](../pic/Data.png)"
+
+#: ../../Info.md:28
+msgid ""
+"When dragging modules onto the canvas, the system automatically replaces "
+"**** portions in prefabricated modules with randomized section names "
+"(which makes editor-generated INIs nearly unreadable unless manually "
+"renaming section names). Major categories requiring registration will "
+"automatically generate registration entries if declared in the category "
+"registry. If a flag needs to reference another module's name (e.g., a "
+"weapon specifying its projectile), simply connect the projectile's "
+"linkage point behind the corresponding flag."
+msgstr ""
+"在拖入模块后，系统会自动将预制模块中****的部分替换为乱数注册名（这也使得编辑器生成的 INI "
+"在不手动变更注册名的情况下几乎没有可读性），需要注册的大类如在大类注册表中声明，则会自动生成注册表。如果需要让某个语句后面填写其他模块的名称，如武器需要指明抛射体，则只需要将抛射体语句后的连接点连到一个抛射体上即可。"
+
+#: ../../Info.md:30
+msgid ""
+"Additionally, the tool supports reverse-linking with automatic flag "
+"creation: For instance, dragging a projectile module onto a weapon module"
+" will automatically connect via Projectile= flag. If the weapon module "
+"lacks this flag, the system will automatically generate it. For reverse-"
+"linking configuration details, refer to RegisterTypes.json documentation "
+"mentioned later."
+msgstr ""
+"此外，工具也支持反向链接并自动创建连接语句：如一个抛射体需要被武器引用，则只需要将抛射体拖拽到武器模块上，将会自动连接 `Projectile=`"
+" 语句。如果武器模块上没有这个语句，则会自动生成一个语句并连接。关于反向链接的构成，可以参考下文中 `RegisterTypes.json` "
+"相关内容。"
+
+#: ../../Info.md:32
+msgid "![image](../pic/RegisterTypes.png)"
+msgstr "![image](../pic/RegisterTypes.png)"
+
+#: ../../Info.md:34
+msgid ""
+"Module labels like \"Weapon2\", \"Projectile1\", \"Warhead1\" displayed "
+"in the interface are ultimately comments. Press F1 to toggle display "
+"modes (showing real section names). By default, F2 renames module "
+"comments, while F3 modifies section names. Module categories currently "
+"cannot be modified. Right-clicking module headers opens a context menu "
+"for editing comment/section names, or copying existing modules "
+"(equivalent to ctrl+c). Ctrl+v creates duplicates."
+msgstr ""
+"软件界面上显示的「武器2」、「抛射体1」、「弹头1」等最终均为注释。按 F1 可以切换显示模式，即显示真实注册名。默认按 F2 "
+"可以重命名模块的注释名。按 F3 "
+"可以修改模块的注册名。模块大类暂时不支持修改。右键模块标题可以呼出菜单，修改模块的注释名、注册名，或对现有模块进行复制（等于是 "
+"Ctrl+C）。Ctrl+V 即可创建复制。"
+
+#: ../../Info.md:37
+msgid ""
+"Inheritance currently appears as forcibly displayed linkage nodes on all "
+"modules. This may be relocated in future versions."
+msgstr "继承目前是一种强行显示在所有模块上的链接节点。下版本可能会移动到其他位置。"
+
+#: ../../Info.md:40
+msgid "![image](../pic/Edit_Text.png)"
+msgstr "![image](../pic/Edit_Text.png)"
+
+#: ../../Info.md:42
+msgid ""
+"Click any module to enter edit mode. The toggle on the left side of flags"
+" controls whether to display them on the canvas. Numeric values can be "
+"directly edited on the canvas when displayed, or double-clicked in the "
+"left menu bar for edit mode. Boolean flags can be toggled directly on the"
+" canvas or in the edit interface."
+msgstr "单击任何模块，进入编辑模式。语句左侧的单选点为是否将语句显示在画布上。数值类如果显示在画布上，则可以直接编辑，或在左菜单栏双击数值进入编辑模式编辑。填是否的语句可以在画布和编辑界面直接勾选是否。"
+
+#: ../../Info.md:44
+msgid ""
+"Double-click the module's colored header or click the \"Edit Text\" "
+"button to enter free text mode, allowing Notepad-style editing of any "
+"content and modification of flags."
+msgstr "双击模块彩色标题栏或点击「编辑文本」按钮，进入自由文本模式，可以如同记事本一样编辑任何内容，增删任何语句。"
+
+#: ../../Info.md:46
+msgid ""
+"Drag-and-drop SHP/VXL files directly into the interface to automatically "
+"create modules with matching names. SHP requires selecting a type."
+msgstr "可以将 SHP 和 VXL 直接拖进界面，系统会自动创建同名的模块。SHP 需要选择类型。"
+
+#: ../../Info.md:48
+msgid "![image](../pic/drag_file.png)"
+msgstr "![image](../pic/drag_file.png)"
+
+#: ../../Info.md:50
+msgid ""
+"After editing, use the File menu: \"Save\" and \"Save As\" preserve "
+"project files, while \"Export\" generates directly includable INI files "
+"with automatic registration entries."
+msgstr "在完成编辑后，进入文件菜单，保存和另存为保存的是工程文件，而导出会输出可以直接 include 且自带注册表的 ini 文件。"
+
+#: ../../Info.md:53
+msgid "Unconnected linkage nodes will be omitted from final output."
+msgstr "如果一个链接节点没有连接到任何模块，则这个节点在最终不会输出。"
+
+#: ../../Info.md:56
+msgid "![image](../pic/save_iproj.png)"
+msgstr "![image](../pic/save_iproj.png)"
+
+#: ../../Info.md:58
+msgid ""
+"Additionally, the Settings menu enables \"Auto-export after saving\", "
+"allowing INI debugging by simply saving project files without manual "
+"export confirmation."
+msgstr "另外，在设置菜单中可以设置保存后立刻自动导出，使得用户在调试 ini 工程时不必反复确认和导出，只需要保存工程文件即可同步改动 INI。"
+
+#: ../../Info.md:60
+msgid "![image](../pic/Settings_menu.png)"
+msgstr "![image](../pic/Settings_menu.png)"
+
+#: ../../Info.md:62
+msgid "Dictionaries and Categories"
+msgstr "字典和类别"
+
+#: ../../Info.md:63
+msgid ""
+"The editor includes built-in flag dictionaries and category registry "
+"tables located in the Global folder. TypeAlt.csv serves as the "
+"dictionary, while RegisterTypes.json defines the category registry."
+msgstr ""
+"编辑器内置了语句字典和大类类别注册表，位于 Global 文件夹下。 `TypeAlt.csv` 是字典，`RegisterTypes.json`"
+" 是大类注册表。"
+
+#: ../../Info.md:65
+msgid "![image](../pic/excel.png)"
+msgstr "![image](../pic/excel.png)"
+
+#: ../../Info.md:68
+msgid ""
+"To avoid the complexity of manually coding flag definitions, the "
+"dictionary system adopts a minimalistic approach:"
+msgstr "为了避免录入代码词典这种麻烦事，本软件的字典系统采取了一种最精简的定义策略："
+
+#: ../../Info.md:70
+msgid ""
+"only flags linking to other categories need to be defined in the "
+"dictionary."
+msgstr "字典只需要收录链接到其他大类的语句。"
+
+#: ../../Info.md:71
+msgid ""
+"**LinkLimit: 1** restricts connections to one module, **-1** allows "
+"unlimited links to a category."
+msgstr "**链接限制 1** 表示限定 1 个，**-1** 表示无限链接某个类别。"
+
+#: ../../Info.md:72
+msgid ""
+"Flags not in the dictionary derive their definitions from preconfigured "
+"module libraries."
+msgstr "其他类别的语句，完全取决于预先录入在模块库里的内容。"
+
+#: ../../Info.md:75
+msgid "For example:"
+msgstr "如图："
+
+#: ../../Info.md:77
+msgid "![image](../pic/LinkLimit_Brow.png)"
+msgstr "![image](../pic/LinkLimit_Brow.png)"
+
+#: ../../Info.md:79
+msgid "![image](../pic/LinkLimit_npp.png)"
+msgstr "![image](../pic/LinkLimit_npp.png)"
+
+#: ../../Info.md:81
+msgid ""
+"Flags with =yes or =no in preloaded modules are automatically classified "
+"as **boolean type** and can be toggled via checkboxes."
+msgstr ""
+"所有在预录入模块库内写了 `=yes` 或 `=no` 的语句都会自动被系统判定为 bool 类，只要在模块上的框内打钩即等于填写 `yes` 或"
+" `no`。"
+
+#: ../../Info.md:82
+msgid "Flags with predefined values are classified as **text type**."
+msgstr "而其他已填写数值的语句会被判为文本类。"
+
+#: ../../Info.md:84
+msgid ""
+"RegisterTypes.json declares all valid categories in the system. The "
+"\"LinkCategory\" field in the dictionary **must reference categories "
+"declared in** RegisterTypes.json. The JSON file includes detailed "
+"comments, allowing users to extend it with custom categories (e.g., for "
+"engine patches or mods)."
+msgstr ""
+"`RegisterTypes.json` 中可以对系统内存在的大类进行声明。字典中的「链接种类」必须填写在 `RegisterTypes` "
+"内声明过的大类。Json 文件中已经有较为详细的注释了，用户可以根据需求自行引入其他引擎补丁可能添加的各种抽象大类。"
+
+#: ../../Info.md:86
+msgid "Other Settings"
+msgstr "其他设置"
+
+#: ../../Info.md:87
+msgid ""
+"\\Resources\\language.ini: Localization file for translating the editor "
+"interface."
+msgstr "`\\Resources\\language.ini` 为语言文件，可以将编辑器翻译为其他语言。"
+
+#: ../../Info.md:88
+msgid ""
+"\\Resources\\config.json: Main configuration file for customizing "
+"shortcuts and settings (common hotkeys are predefined)."
+msgstr "`\\Resources\\config.json` 为编辑器的主配置文件，可以修改快捷键等。常用快捷键也在其中登记了。"
+
+#: ../../Info.md:89
+msgid "Launch the editor with the -debugmenu parameter to enable debug menus."
+msgstr "以启动参数 `-debugmenu` 启动，可以显示调试菜单。"
+
+#: ../../Info.md:91
+msgid "Planned Features"
+msgstr "后续内容"
+
+#: ../../Info.md:92
+msgid "**Flag-to-flag linking**: E.g., referencing ArmorTypes directly."
+msgstr "将会允许**语句链接到语句**，如 `ArmorTypes` 的引用"
+
+#: ../../Info.md:93
+msgid ""
+"**Flag bundle modules**: Linking to these modules will copy their sub-"
+"flags into the parent module."
+msgstr "将会引入**语句包类模块**，链接到这类模块等于将这一模块的下属语句抄写到上级模块内。"
+
+#: ../../Info.md:94
+msgid "**Relocation of inheritance linkage points.**"
+msgstr "**继承链接点将会修改位置**"
+
+#: ../../Info.md:95
+msgid "**Expanded module categories**: Support for AI, Sound, and other types."
+msgstr "将会增添**更多模块导出类别**，如AI、Sound之类。"
+
+#: ../../Info.md:96
+msgid ""
+"**INI file parsing**: Import and visualize entire INI files as connection"
+" diagrams."
+msgstr "将会允许**读取整个 ini 文件**并整理线路图"
+

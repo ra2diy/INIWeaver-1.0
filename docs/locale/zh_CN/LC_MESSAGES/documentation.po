@@ -21,7 +21,7 @@ msgstr ""
 
 #: ../../documentation.md:1
 msgid "Docs"
-msgstr "没想到这站刚建起来给群里测试的群友用就被传播开了，然而很可惜——因为一些后期改进性内容之后地址可能会发生变更，所以不应大肆传播，况且本来就还没到彻底完成的阶段也本就不应进行小范围外的传播。"
+msgstr "文档"
 
 #: ../../documentation.md:4
 msgid "modules setting"
