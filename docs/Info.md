@@ -1,5 +1,5 @@
 
-# INIBrowser
+# INI Weaver
 ## What is This Tool
 
 This is an advanced tool for advanced INI users. For so-called advanced users, they rarely need to verify basic INI flag meanings and syntax when writing INI files, having already established clear understanding of which flags to use for specific effects and which INI types to employ.

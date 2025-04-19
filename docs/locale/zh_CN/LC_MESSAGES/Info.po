@@ -20,8 +20,8 @@ msgstr ""
 "Generated-By: Babel 2.16.0\n"
 
 #: ../../Info.md:2
-msgid "INIBrowser"
-msgstr "INI 浏览器"
+msgid "INI Weaver"
+msgstr "INI 织网者"
 
 #: ../../Info.md:3
 msgid "What is This Tool"
