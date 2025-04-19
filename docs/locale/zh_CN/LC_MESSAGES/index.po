@@ -20,8 +20,8 @@ msgstr ""
 "Generated-By: Babel 2.16.0\n"
 
 #: ../../index.md:1
-msgid "documentation"
-msgstr "文档"
+msgid "Info"
+msgstr "信息"
 
 #: ../../index.md:1
 msgid "Docs"

@@ -67,32 +67,32 @@ void ControlPanel_File()
     else if (ImGui::Button(locc("GUI_Output")))IBR_ProjectManager::OutputAction();//
 
     ImGui::NewLine();
-    if (ImGui::Button(locc("GUI_CloseProject")))IBR_ProjectManager::ProjOpen_CreateAction(); //ÍõµÂ·¢Äã²ÂÎªÊ²Ã´ÊÇCreateAction
+    if (ImGui::Button(locc("GUI_CloseProject")))IBR_ProjectManager::ProjOpen_CreateAction(); //ï¿½ï¿½ï¿½Â·ï¿½ï¿½ï¿½ï¿½ÎªÊ²Ã´ï¿½ï¿½CreateAction
     if (ImGui::Button(locc("GUI_OpenProject")))IBR_ProjectManager::ProjOpen_OpenAction();//
     ImGui::NewLine();
     IBR_RecentManager::RenderUI();//
     /*
     if (!IsProjectOpen)
     {
-        if (ImGui::Button(u8"ÐÂ½¨"))IBR_ProjectManager::CreateAction();//
-        if (ImGui::Button(u8"´ò¿ª"))IBR_ProjectManager::OpenAction();//
+        if (ImGui::Button(u8"ï¿½Â½ï¿½"))IBR_ProjectManager::CreateAction();//
+        if (ImGui::Button(u8"ï¿½ï¿½"))IBR_ProjectManager::OpenAction();//
         ImGui::NewLine();
         IBR_RecentManager::RenderUI();//
     }
     else
     {
-        if (ImGui::Button(u8"±£´æ"))IBR_ProjectManager::SaveOptAction();//
-        if (ImGui::Button(u8"Áí´æÎª"))IBR_ProjectManager::SaveAsAction();//
-        if (IBR_Inst_Project.IBR_SectionMap.empty())ImGui::TextDisabled(u8"µ¼³ö");
-        else if (ImGui::Button(u8"µ¼³ö"))IBR_ProjectManager::OutputAction();//
+        if (ImGui::Button(u8"ï¿½ï¿½ï¿½ï¿½"))IBR_ProjectManager::SaveOptAction();//
+        if (ImGui::Button(u8"ï¿½ï¿½ï¿½ï¿½Îª"))IBR_ProjectManager::SaveAsAction();//
+        if (IBR_Inst_Project.IBR_SectionMap.empty())ImGui::TextDisabled(u8"ï¿½ï¿½ï¿½ï¿½");
+        else if (ImGui::Button(u8"ï¿½ï¿½ï¿½ï¿½"))IBR_ProjectManager::OutputAction();//
 
         ImGui::NewLine();
-        if (ImGui::Button(u8"¹Ø±Õ"))IBR_ProjectManager::ProjOpen_CreateAction(); //ÍõµÂ·¢Äã²ÂÎªÊ²Ã´ÊÇCreateAction
+        if (ImGui::Button(u8"ï¿½Ø±ï¿½"))IBR_ProjectManager::ProjOpen_CreateAction(); //ï¿½ï¿½ï¿½Â·ï¿½ï¿½ï¿½ï¿½ÎªÊ²Ã´ï¿½ï¿½CreateAction
         //IBR_ProjectManager::CloseAction();//
 
         ImGui::NewLine();
-        //if (ImGui::Button(u8"ÐÂ½¨"))IBR_ProjectManager::ProjOpen_CreateAction();//
-        if (ImGui::Button(u8"´ò¿ª"))IBR_ProjectManager::ProjOpen_OpenAction();//
+        //if (ImGui::Button(u8"ï¿½Â½ï¿½"))IBR_ProjectManager::ProjOpen_CreateAction();//
+        if (ImGui::Button(u8"ï¿½ï¿½"))IBR_ProjectManager::ProjOpen_OpenAction();//
         ImGui::NewLine();
         IBR_RecentManager::RenderUI();//
     }
@@ -193,7 +193,7 @@ void ControlPanel_ListView()
                                     strcpy(rsd.CommentEdit.get(), rsd_orig.CommentEdit.get());
                                 }
                             },nullptr });
-                    //¼ûV0.2.0ÈÎÎñÇåµ¥£¨ËÄ£©µÚ75Ìõ¡°Éæ¼°×Ö¶ÎÊýÄ¿±ä»¯µÄÖ¸ÁîÓ¦½èÓÉIBF_SendToRµÈÌáÖÁÖ÷Ñ­»·¿ªÍ·¡±
+                    //ï¿½ï¿½V0.2.0ï¿½ï¿½ï¿½ï¿½ï¿½åµ¥ï¿½ï¿½ï¿½Ä£ï¿½ï¿½ï¿½75ï¿½ï¿½ï¿½ï¿½ï¿½æ¼°ï¿½Ö¶ï¿½ï¿½ï¿½Ä¿ï¿½ä»¯ï¿½ï¿½Ö¸ï¿½ï¿½Ó¦ï¿½ï¿½ï¿½ï¿½IBF_SendToRï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ñ­ï¿½ï¿½ï¿½ï¿½Í·ï¿½ï¿½
                 }
             }
             if (Duplicate)
@@ -207,8 +207,8 @@ void ControlPanel_ListView()
 
         for (auto& ini : IBF_Inst_Project.Project.Inis)
         {
-            if (ini.Secs_ByName.empty())continue;//ÆÁ±Î¿ÕINI
-            //if (ImGui::TreeNode(ini.Name == LinkGroup_IniName ? u8"Á´½Ó×é" : (MBCStoUTF8(ini.Name).c_str())))
+            if (ini.Secs_ByName.empty())continue;//ï¿½ï¿½ï¿½Î¿ï¿½INI
+            //if (ImGui::TreeNode(ini.Name == LinkGroup_IniName ? u8"ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½" : (MBCStoUTF8(ini.Name).c_str())))
             {
                 for (auto& sec : ini.Secs)
                 {
@@ -217,7 +217,7 @@ void ControlPanel_ListView()
                     ImGui::SameLine();
                     ImGui::Text(rsc.GetSectionData()->DisplayName.c_str());
                     ImGui::SameLine();
-                    ImGui::SetCursorPosX(std::max(ImGui::GetCursorPosX(), ImGui::GetWindowWidth() - FontHeight * 2.0f));//4.5¸ö×Ö·ûÊÇÓÒ²àÄÚÈÝµÄÔ¤Áô¿Õ¼ä
+                    ImGui::SetCursorPosX(std::max(ImGui::GetCursorPosX(), ImGui::GetWindowWidth() - FontHeight * 2.0f));//4.5ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½Ò²ï¿½ï¿½ï¿½ï¿½Ýµï¿½Ô¤ï¿½ï¿½ï¿½Õ¼ï¿½
                     if (ImGui::ArrowButton((sec.second.Name + "_ub_arr").c_str(), ImGuiDir_Right))
                     {
                         //auto rsc = IBR_Inst_Project.GetSection(IBB_Section_Desc{ ini.Name,sec.second.Name });
@@ -282,7 +282,7 @@ IBR_MainMenu IBR_Inst_Menu
     {[]() {return ImGui::SmallButton(locc("GUI_MenuItem_File")); },ControlPanel_File},
     {[]() {ImGui::NewLine(); ImGui::SameLine(); return SmallButton_Disabled_Helper(IBR_ProjectManager::IsOpen(), locc("GUI_MenuItem_View")); },ControlPanel_View},
     {[]() {ImGui::NewLine(); ImGui::SameLine(); return SmallButton_Disabled_Helper(IBR_ProjectManager::IsOpen(), locc("GUI_MenuItem_List")); },ControlPanel_ListView},
-    //{[]() {return false;/*SmallButton_Disabled_Helper(IsProjectOpen, u8"Ô¤Éè");*/ },ControlPanel_Module},
+    //{[]() {return false;/*SmallButton_Disabled_Helper(IsProjectOpen, u8"Ô¤ï¿½ï¿½");*/ },ControlPanel_Module},
 
     //{[]() {return SmallButton_Disabled_Helper(IBR_ProjectManager::IsOpen(), locc("GUI_MenuItem_Edit")); },ControlPanel_Edit},
     {[]() {ImGui::NewLine(); return false; },ControlPanel_Edit},
@@ -299,12 +299,12 @@ void ControlPanel_About()
     ImGui::TextWrapped(locc("GUI_About1"), _AppName, Version.c_str());
     ImGui::TextWrapped(u8"GLFW/Dear ImGui", Version.c_str());
     ImGui::Separator();
-    ImGui::TextWrapped((loc("GUI_About5") + u8"£º¸ÖÌúÖ®´¸").c_str());
-    ImGui::TextWrapped(u8"QQ£º2482911962");
-    ImGui::TextWrapped(u8"Ìù°É£º±¿030504");
-    ImGui::TextWrapped(u8"GitHub£ºIronHammer Std");
+    ImGui::TextWrapped((loc("GUI_About5") + u8"ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö®ï¿½ï¿½").c_str());
+    ImGui::TextWrapped(u8"QQï¿½ï¿½2482911962");
+    ImGui::TextWrapped(u8"ï¿½ï¿½ï¿½É£ï¿½ï¿½ï¿½030504");
+    ImGui::TextWrapped(u8"GitHubï¿½ï¿½IronHammer Std");
     ImGui::NewLine();
-    ImGui::TextWrapped((loc("GUI_About6") + u8"£º").c_str());
+    ImGui::TextWrapped((loc("GUI_About6") + u8"ï¿½ï¿½").c_str());
     ImGui::TextWrapped(u8"      Kenosis");
     ImGui::Separator();
     ImGui::TextWrapped(locc("GUI_About2"));
@@ -314,13 +314,13 @@ void ControlPanel_About()
     if (ImGui::Button((loc("GUI_CopyLinkToClipboard") + u8"##C").c_str()))
     {
         ImGui::LogToClipboard();
-        ImGui::LogText("https://inibrowser-02-chinese.readthedocs.io/zh-cn/latest/documentation.html");
+        ImGui::LogText("https://inibrowser-02-chinese.readthedocs.io/zh-cn/latest/INIBrowser%20Docs.html");
         ImGui::LogFinish();
     }
     ImGui::SameLine();
     if (ImGui::Button((loc("GUI_OpenLink") + u8"##C").c_str()))
     {
-        ::ShellExecuteA(nullptr, "open", "https://inibrowser-02-chinese.readthedocs.io/zh-cn/latest/documentation.html", NULL, NULL, SW_SHOWNORMAL);
+        ::ShellExecuteA(nullptr, "open", "https://inibrowser-02-chinese.readthedocs.io/zh-cn/latest/INIBrowser%20Docs.html", NULL, NULL, SW_SHOWNORMAL);
     }
 
     ImGui::TextWrapped(locc("GUI_About3")); //ImGui::SameLine();
@@ -352,53 +352,53 @@ void ControlPanel_About()
     /*
 
     ImGui::Separator();
-    ImGui::TextWrapped(u8"¸üÐÂÁ´½Ó£º");
-    ImGui::TextWrapped(u8"¸üÐÂÌû£¨ºìÉ«¾¯½ä°É£©"); //ImGui::SameLine();
-    if (ImGui::Button(u8"¸´ÖÆÁ´½Ó##A"))
+    ImGui::TextWrapped(u8"ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó£ï¿½");
+    ImGui::TextWrapped(u8"ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½É«ï¿½ï¿½ï¿½ï¿½É£ï¿½"); //ImGui::SameLine();
+    if (ImGui::Button(u8"ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½##A"))
     {
         ImGui::LogToClipboard();
         ImGui::LogText("https://tieba.baidu.com/p/8005920823");
         ImGui::LogFinish();
     }ImGui::SameLine();
-    if (ImGui::Button(u8"´ò¿ªÁ´½Ó##A"))
+    if (ImGui::Button(u8"ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½##A"))
     {
         ::ShellExecuteA(nullptr, "open", "https://tieba.baidu.com/p/8005920823", NULL, NULL, SW_SHOWNORMAL);
     }
-    ImGui::TextWrapped(u8"¸üÐÂÌû£¨ÐÄÁéÖÕ½á°É£©"); //ImGui::SameLine();
-    if (ImGui::Button(u8"¸´ÖÆÁ´½Ó##B"))
+    ImGui::TextWrapped(u8"ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Õ½ï¿½É£ï¿½"); //ImGui::SameLine();
+    if (ImGui::Button(u8"ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½##B"))
     {
         ImGui::LogToClipboard();
         ImGui::LogText("https://tieba.baidu.com/p/8005924464");
         ImGui::LogFinish();
     }ImGui::SameLine();
-    if (ImGui::Button(u8"´ò¿ªÁ´½Ó##B"))
+    if (ImGui::Button(u8"ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½##B"))
     {
         ::ShellExecuteA(nullptr, "open", "https://tieba.baidu.com/p/8005924464", NULL, NULL, SW_SHOWNORMAL);
     }
-    ImGui::TextWrapped(u8"¸üÐÂÌû£¨ÐÄÁéÖÕ½á3ini°É£©"); //ImGui::SameLine();
-    if (ImGui::Button(u8"¸´ÖÆÁ´½Ó##C"))
+    ImGui::TextWrapped(u8"ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Õ½ï¿½3iniï¿½É£ï¿½"); //ImGui::SameLine();
+    if (ImGui::Button(u8"ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½##C"))
     {
         ImGui::LogToClipboard();
         ImGui::LogText("https://tieba.baidu.com/p/8133473361");
         ImGui::LogFinish();
     }ImGui::SameLine();
-    if (ImGui::Button(u8"´ò¿ªÁ´½Ó##C"))
+    if (ImGui::Button(u8"ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½##C"))
     {
         ::ShellExecuteA(nullptr, "open", "https://tieba.baidu.com/p/8133473361", NULL, NULL, SW_SHOWNORMAL);
     }
-    ImGui::TextWrapped(u8"×¢£ºÈý¸ö¸üÐÂÌûÍ¬²½¸üÐÂ");
-    ImGui::TextWrapped(u8"È«²¿°æ±¾ÏÂÔØ£¨°Ù¶ÈÍøÅÌ£©"); //ImGui::SameLine();
-    if (ImGui::Button(u8"¸´ÖÆÁ´½Ó##D"))
+    ImGui::TextWrapped(u8"×¢ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½");
+    ImGui::TextWrapped(u8"È«ï¿½ï¿½ï¿½æ±¾ï¿½ï¿½ï¿½Ø£ï¿½ï¿½Ù¶ï¿½ï¿½ï¿½ï¿½Ì£ï¿½"); //ImGui::SameLine();
+    if (ImGui::Button(u8"ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½##D"))
     {
         ImGui::LogToClipboard();
         ImGui::LogText("https://pan.baidu.com/s/1EpzAuIQfbU1-7sjb2YJocg?pwd=EASB");
         ImGui::LogFinish();
     }ImGui::SameLine();
-    if (ImGui::Button(u8"´ò¿ªÁ´½Ó##D"))
+    if (ImGui::Button(u8"ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½##D"))
     {
         ::ShellExecuteA(nullptr, "open", "https://pan.baidu.com/s/1EpzAuIQfbU1-7sjb2YJocg?pwd=EASB", NULL, NULL, SW_SHOWNORMAL);
     }
-    ImGui::TextWrapped(u8"ÌáÈ¡Âë£ºEASB");
+    ImGui::TextWrapped(u8"ï¿½ï¿½È¡ï¿½ë£ºEASB");
 
     */
 }
