@@ -24,10 +24,6 @@ msgid "documentation"
 msgstr "文档"
 
 #: ../../index.md:1
-msgid "info"
-msgstr "信息"
-
-#: ../../index.md:1
 msgid "Docs"
 msgstr "文档"
 
