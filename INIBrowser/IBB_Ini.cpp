@@ -302,6 +302,21 @@ LineData IBB_IniLine_Default::Create() const
     return LineData(new IBB_IniLine_Data_String);
 }
 
+//char** IBB_IniLine_Default::VetStrToChar(const std::vector<std::string>& vec)
+//{
+//    const size_t size = vec.size();
+//    char** result = new char* [size]; // 多分配一个元素用于 nullptr 结尾
+//
+//    for (size_t i = 0; i < size; ++i) {
+//        const std::string& s = vec[i];
+//        const size_t length = s.size();
+//        result[i] = new char[length + 1]; // 分配空间，包含 '\0'
+//        memcpy(result[i], s.c_str(), length + 1); // 复制整个字符串，包括末尾的 '\0'
+//    }
+//
+//    //result[size] = nullptr; // 最后一个元素设为 nullptr
+//    return result;
+//}
 
 
 

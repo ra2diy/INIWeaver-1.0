@@ -229,6 +229,63 @@ bool IBR_SectionData::OnLineEdit(const std::string& Name, bool OnLink)
             }
             return true;
         }
+        if (line->Default->Property.TypeAlt == "enum")
+        {
+            bool Redefine = line->Default->Property.EnumValue.size() > 0;
+            Line.Buffer = line->Data->GetString();
+            int X=-1;
+            if (Redefine)
+            {
+                for (int i = 0; i < line->Default->Property.EnumValue.size(); i++)
+                {
+                    if (Line.Buffer == line->Default->Property.EnumValue[i]) { X = i; break; }
+                }
+            }
+            else
+            {
+                for (int i = 0; i < line->Default->Property.Enum.size(); i++)
+                {
+                    if (Line.Buffer == line->Default->Property.Enum[i]) { X = i; break; }
+                }
+            }
+            if (X < 0) X = 0;
+            if (!IBR_WorkSpace::ShowRegName)Line.Edit.RenderUI(line->Default->DescShort, line->Default->DescLong);
+            else Line.Edit.RenderUI(Name, line->Default->DescLong);
+            ImGui::SameLine();
+            ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+            if (ImGui::BeginCombo(("##" + Name).c_str(), line->Default->Property.Enum[X].c_str()))
+            {
+                for (int i = 0; i < line->Default->Property.Enum.size(); i++) {
+					if (ImGui::Selectable(line->Default->Property.Enum[i].c_str(), i == X)) {
+						X = i;
+                        if (Redefine)
+                        {
+                            line->Data->SetValue(line->Default->Property.EnumValue[X]);
+                            if (IBR_Inst_Project.IBR_Rev_SectionMap[Desc] == IBR_EditFrame::CurSection.ID)
+                            {
+                                IBR_EditFrame::EditLines[Name].Buffer = line->Default->Property.EnumValue[X];
+                            }
+                        }
+                        else
+                        {
+                            line->Data->SetValue(line->Default->Property.Enum[X]);
+                            if (IBR_Inst_Project.IBR_Rev_SectionMap[Desc] == IBR_EditFrame::CurSection.ID)
+                            {
+                                IBR_EditFrame::EditLines[Name].Buffer = line->Default->Property.Enum[X];
+                            }
+                        }
+					}
+                }
+                ImGui::EndCombo();
+            }
+            if (!line->Default->DescLong.empty() && ImGui::IsItemHovered())
+            {
+                ImGui::BeginTooltip();
+                ImGui::Text(line->Default->DescLong.c_str());
+                ImGui::EndTooltip();
+            }
+            return true;
+        }
     }
     if (Line.Edit.NeedInit())
     {

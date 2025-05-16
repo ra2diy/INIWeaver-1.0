@@ -27,6 +27,8 @@ struct IBB_IniLine_Default
         std::string Type;
         JsonObject Lim;
         std::string TypeAlt;
+        std::vector<std::string> Enum;
+        std::vector<std::string> EnumValue;
     };
 
     std::string Name, DescShort, DescLong;
@@ -34,6 +36,8 @@ struct IBB_IniLine_Default
     _Limit Limit;
     _Property Property;
     ImU32 Color;
+
+    //char** VetStrToChar(const std::vector<std::string>& vec);
 
     LineData Create() const;
     bool IsLinkAlt() const;
