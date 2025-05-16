@@ -267,6 +267,12 @@ namespace IBR_EditFrame
                 Line.Buffer = V.Data->GetString();
                 Line.Known = true;
                 Line.IsAltBool = V.Default->Property.TypeAlt == "bool";
+                if (V.Default->Property.TypeAlt == "enum")
+                {
+                    Line.IsAltEnum = true;
+                    Line.Enum = V.Default->Property.Enum;
+                    Line.EnumValue = V.Default->Property.EnumValue;
+                }
                 Line.Hint = V.Default->DescLong;
             }
         }
@@ -421,46 +427,88 @@ namespace IBR_EditFrame
                 else pbk->OnShow[K].clear();
             }
             ImGui::SameLine();
-            if ((V.Known && V.IsAltBool) || (!V.Known && (V.Buffer == "yes" || V.Buffer == "no" || V.Buffer == "true" || V.Buffer == "false")))
+            if (V.Known && V.IsAltEnum)
             {
-                V.AltRes = (V.Buffer == "yes" || V.Buffer == "true");
+                bool Redefine = V.EnumValue.size() > 0;
+                int X = -1;
+                std::vector<std::string>* pEnum;
+                if (Redefine)
+                {
+                    pEnum = &V.EnumValue;
+                    for (int i = 0; i < V.EnumValue.size(); i++)
+                    {
+                        if (V.Buffer == V.EnumValue[i]) { X = i; break; }
+                    }
+                }
+                else
+                {
+                    pEnum = &V.Enum;
+                    for (int i = 0; i < V.Enum.size(); i++)
+                    {
+                        if (V.Buffer == V.Enum[i]) { X = i; break; }
+                    }
+                }
+                if (X < 0) X = 0;
                 ImGui::TextWrapped(K.c_str());
                 ImGui::SetCursorPosX(ImGui::GetCursorPosX() + FontHeight);
                 ImGui::SameLine();
-                ImGui::Checkbox(("##" + K).c_str(), &V.AltRes);
-                if (ImGui::IsItemClicked(ImGuiMouseButton_Left))
+                ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+                if (ImGui::BeginCombo(("##" + K).c_str(), (*pEnum)[X].c_str()))
                 {
-                    IBG_Undo.SomethingShouldBeHere();
-                    V.Buffer = !V.AltRes ? "yes" : "no";
-                    IBR_HintManager::SetHint(V.Buffer, 1000);
+                    for (int i = 0; i < V.Enum.size(); i++) {
+                        if (ImGui::Selectable((*pEnum)[X].c_str(), i == X)) {
+                            X = i;
+                            IBG_Undo.SomethingShouldBeHere();
+                            V.Buffer = (*pEnum)[X].c_str();
+                        }
+                    }
+                    ImGui::EndCombo();
                     Modify(K, V);
                 }
             }
             else
             {
-                if (V.Edit.NeedInit())
+                if ((V.Known && V.IsAltBool) || (!V.Known && (V.Buffer == "yes" || V.Buffer == "no" || V.Buffer == "true" || V.Buffer == "false")))
                 {
-                    if (!EditingLine.empty() && EditingLine != K)
+                    V.AltRes = (V.Buffer == "yes" || V.Buffer == "true");
+                    ImGui::TextWrapped(K.c_str());
+                    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + FontHeight);
+                    ImGui::SameLine();
+                    ImGui::Checkbox(("##" + K).c_str(), &V.AltRes);
+                    if (ImGui::IsItemClicked(ImGuiMouseButton_Left))
                     {
-                        auto it = EditLines.find(EditingLine);
-                        if (it != EditLines.end())
-                        {
-                            it->second.Edit.CloseInput();
-                        }
+                        IBG_Undo.SomethingShouldBeHere();
+                        V.Buffer = !V.AltRes ? "yes" : "no";
+                        IBR_HintManager::SetHint(V.Buffer, 1000);
+                        Modify(K, V);
                     }
-                    EditingLine = K;
-                    IBR_IniLine::InitType It{ V.Buffer ,"##" + RandStr(8),[Str = K](char* S)
-                             {
-                                 IBG_Undo.SomethingShouldBeHere();
-                                 EditLines[Str].Buffer = S;
-                                 Modify(Str, EditLines[Str]);
-                             } };
-                    V.Edit.RenderUI(K, V.Hint, &It);
                 }
                 else
                 {
-                    if (V.Edit.HasInput)V.Edit.RenderUI(K, V.Hint);
-                    else V.Edit.RenderUI(K + " = " + V.Buffer, V.Hint);
+                    if (V.Edit.NeedInit())
+                    {
+                        if (!EditingLine.empty() && EditingLine != K)
+                        {
+                            auto it = EditLines.find(EditingLine);
+                            if (it != EditLines.end())
+                            {
+                                it->second.Edit.CloseInput();
+                            }
+                        }
+                        EditingLine = K;
+                        IBR_IniLine::InitType It{ V.Buffer ,"##" + RandStr(8),[Str = K](char* S)
+                                 {
+                                     IBG_Undo.SomethingShouldBeHere();
+                                     EditLines[Str].Buffer = S;
+                                     Modify(Str, EditLines[Str]);
+                                 } };
+                        V.Edit.RenderUI(K, V.Hint, &It);
+                    }
+                    else
+                    {
+                        if (V.Edit.HasInput)V.Edit.RenderUI(K, V.Hint);
+                        else V.Edit.RenderUI(K + " = " + V.Buffer, V.Hint);
+                    }
                 }
             }
         }
