@@ -37,8 +37,6 @@ struct IBB_IniLine_Default
     _Property Property;
     ImU32 Color;
 
-    //char** VetStrToChar(const std::vector<std::string>& vec);
-
     LineData Create() const;
     bool IsLinkAlt() const;
     //bool Load(JsonObject FromJson);
