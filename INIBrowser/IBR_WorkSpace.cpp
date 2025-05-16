@@ -638,7 +638,7 @@ namespace IBR_WorkSpace
                 break;
             }
         }
-        if (Cont && LastCont && !IBR_PopupManager::IsMouseOnPopup())
+        if (Cont && LastCont && !IBR_PopupManager::IsMouseOnPopup() && !IsEnumHovered)
         {
             auto DeltaWheel = ImGui::GetIO().MouseWheel;
             if (abs(DeltaWheel) > 1e-6f)
