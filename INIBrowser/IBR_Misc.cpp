@@ -22,6 +22,10 @@
 
 bool ImGui_TextDisabled_Helper(const char* Text);
 bool SmallButton_Disabled_Helper(bool cond, const char* Text);
+namespace ImGui
+{
+    void PushOrderFront(ImGuiWindow* Window);
+}
 
 int HintStayTimeMillis = 3000;
 
@@ -448,17 +452,18 @@ namespace IBR_EditFrame
                         if (V.Buffer == V.Enum[i]) { X = i; break; }
                     }
                 }
-                if (X < 0) X = 0;
+                bool EnumExist = !(X < 0);
                 ImGui::TextWrapped(K.c_str());
                 ImGui::SetCursorPosX(ImGui::GetCursorPosX() + FontHeight);
                 ImGui::SameLine();
                 ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-                if (ImGui::BeginCombo(("##" + K).c_str(), (*pEnum)[X].c_str()))
+                if (ImGui::BeginCombo(("##" + K).c_str(), EnumExist ? (*pEnum)[X].c_str() : V.Buffer.c_str()))
                 {
+                    ImGui::PushOrderFront(ImGui::GetCurrentWindow());
                     for (int i = 0; i < V.Enum.size(); i++) {
                         if (ImGui::Selectable((*pEnum)[X].c_str(), i == X)) {
                             X = i;
-                            IBG_Undo.SomethingShouldBeHere();
+                            //IBG_Undo.SomethingShouldBeHere();
                             V.Buffer = (*pEnum)[X].c_str();
                         }
                     }

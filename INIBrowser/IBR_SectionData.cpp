@@ -250,13 +250,13 @@ bool IBR_SectionData::OnLineEdit(const std::string& Name, bool OnLink)
                     if (Line.Buffer == line->Default->Property.Enum[i]) { X = i; break; }
                 }
             }
-            if (X < 0) X = 0;
+            bool EnumExist = !(X < 0);
             if (!IBR_WorkSpace::ShowRegName)Line.Edit.RenderUI(line->Default->DescShort, line->Default->DescLong);
             else Line.Edit.RenderUI(Name, line->Default->DescLong);
             ImGui::SameLine();
             ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
             ImGui::SetNextWindowSizeConstraints(ImVec2(0, 0), ImVec2(FLT_MAX, IBR_FullView::Ratio*150));
-            if (ImGui::BeginCombo(("##" + Name + sec.GetSectionData()->DisplayName).c_str(), line->Default->Property.Enum[X].c_str()))
+            if (ImGui::BeginCombo(("##" + Name + sec.GetSectionData()->DisplayName).c_str(), EnumExist ? line->Default->Property.Enum[X].c_str() : Line.Buffer.c_str()))
             {
                 ImGuiListClipper Clipper;
                 Clipper.Begin(line->Default->Property.Enum.size());
