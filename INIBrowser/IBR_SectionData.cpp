@@ -274,6 +274,7 @@ bool IBR_SectionData::OnLineEdit(const std::string& Name, bool OnLink)
                             IBR_EditFrame::EditLines[Name].Buffer = Redefine ? line->Default->Property.EnumValue[X] : line->Default->Property.Enum[X];
                         }
                         EnumHovered = false;
+                        HasScrolled = false;
                     }
                     else if (ImGui::IsItemHovered()) EnumHovered = true;
                     if (Redefine && ImGui::IsItemHovered())
@@ -290,10 +291,6 @@ bool IBR_SectionData::OnLineEdit(const std::string& Name, bool OnLink)
                 }
                 IsEnumHovered = EnumHovered;
                 ImGui::EndCombo();
-            }
-            else
-            {
-                HasScrolled = false;
             }
             if (!line->Default->DescLong.empty() && ImGui::IsItemHovered())
             {

@@ -373,6 +373,8 @@ namespace IBR_EditFrame
             }
         }
     }
+    const char* a[] = { "1","2","3","4" };
+    const char* x = a[0];
     void RenderUI()
     {
         if (Empty)
@@ -390,7 +392,7 @@ namespace IBR_EditFrame
             Empty = true;
             return;
         }
-
+        
         if (OnTextEdit)
         {
             
@@ -435,10 +437,10 @@ namespace IBR_EditFrame
             {
                 bool Redefine = V.EnumValue.size() > 0;
                 int X = -1;
-                std::vector<std::string>* pEnum;
+                std::vector<std::string> EnumVector;
                 if (Redefine)
                 {
-                    pEnum = &V.EnumValue;
+                    EnumVector = V.EnumValue;
                     for (int i = 0; i < V.EnumValue.size(); i++)
                     {
                         if (V.Buffer == V.EnumValue[i]) { X = i; break; }
@@ -446,7 +448,7 @@ namespace IBR_EditFrame
                 }
                 else
                 {
-                    pEnum = &V.Enum;
+                    EnumVector = V.Enum;
                     for (int i = 0; i < V.Enum.size(); i++)
                     {
                         if (V.Buffer == V.Enum[i]) { X = i; break; }
@@ -457,19 +459,23 @@ namespace IBR_EditFrame
                 ImGui::SetCursorPosX(ImGui::GetCursorPosX() + FontHeight);
                 ImGui::SameLine();
                 ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-                if (ImGui::BeginCombo(("##" + K).c_str(), EnumExist ? (*pEnum)[X].c_str() : V.Buffer.c_str()))
+                ImGui::PushID(("##" + K).c_str());
+                if (ImGui::BeginCombo(("##" + K).c_str(), EnumExist ? EnumVector[X].c_str() : V.Buffer.c_str()))
                 {
-                    ImGui::PushOrderFront(ImGui::GetCurrentWindow());
-                    for (int i = 0; i < V.Enum.size(); i++) {
-                        if (ImGui::Selectable((*pEnum)[X].c_str(), i == X)) {
+                    for (int i = 0; i < EnumVector.size(); i++)
+                    {
+                        ImGui::PushOrderFront(ImGui::GetCurrentWindow());
+                        if (ImGui::Selectable(EnumVector[i].c_str(), i == X))
+                        {
                             X = i;
                             //IBG_Undo.SomethingShouldBeHere();
-                            V.Buffer = (*pEnum)[X].c_str();
+                            V.Buffer = EnumVector[X].c_str();
+                            Modify(K, V);
                         }
                     }
                     ImGui::EndCombo();
-                    Modify(K, V);
                 }
+                ImGui::PopID();
             }
             else
             {
