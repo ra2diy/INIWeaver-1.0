@@ -186,6 +186,7 @@ void IBR_SectionData::RenameRegisterImpl(const std::string& Name)
 }
 
 bool IsEnumHovered = false;
+bool HasScrolled = false;
 
 bool IBR_SectionData::OnLineEdit(const std::string& Name, bool OnLink)
 {
@@ -261,27 +262,38 @@ bool IBR_SectionData::OnLineEdit(const std::string& Name, bool OnLink)
                 ImGuiListClipper Clipper;
                 Clipper.Begin(line->Default->Property.Enum.size());
                 bool EnumHovered = false;
-                while (Clipper.Step())
+                for (int i = 0; i < line->Default->Property.Enum.size(); i++)
                 {
-                    for (int i = Clipper.DisplayStart; i < Clipper.DisplayEnd; i++)
+                    bool IsSelected = i == X;
+                    if (ImGui::Selectable(line->Default->Property.Enum[i].c_str(), IsSelected))
                     {
-                        bool IsSelected = i == X;
-                        if (ImGui::Selectable(line->Default->Property.Enum[i].c_str(), IsSelected))
+                        X = i;
+                        line->Data->SetValue(Redefine ? line->Default->Property.EnumValue[X] : line->Default->Property.Enum[X]);
+                        if (IBR_Inst_Project.IBR_Rev_SectionMap[Desc] == IBR_EditFrame::CurSection.ID)
                         {
-                            X = i;
-                            line->Data->SetValue(Redefine ? line->Default->Property.EnumValue[X] : line->Default->Property.Enum[X]);
-                            if (IBR_Inst_Project.IBR_Rev_SectionMap[Desc] == IBR_EditFrame::CurSection.ID)
-                            {
-                                IBR_EditFrame::EditLines[Name].Buffer = Redefine ? line->Default->Property.EnumValue[X] : line->Default->Property.Enum[X];
-                            }
-                            EnumHovered = false;
+                            IBR_EditFrame::EditLines[Name].Buffer = Redefine ? line->Default->Property.EnumValue[X] : line->Default->Property.Enum[X];
                         }
-                        else if (ImGui::IsItemHovered()) EnumHovered = true;
-                        if (IsSelected) ImGui::SetItemDefaultFocus();
+                        EnumHovered = false;
                     }
-                    IsEnumHovered = EnumHovered;
+                    else if (ImGui::IsItemHovered()) EnumHovered = true;
+                    if (Redefine && ImGui::IsItemHovered())
+                    {
+                        ImGui::BeginTooltip();
+                        ImGui::Text(line->Default->Property.EnumValue[i].c_str());
+                        ImGui::EndTooltip();
+                    }
+                    if (IsSelected)
+                    {
+                        if (!HasScrolled) { ImGui::SetScrollHereY(0.0f); HasScrolled = true; }
+                        ImGui::SetItemDefaultFocus();
+                    }
                 }
+                IsEnumHovered = EnumHovered;
                 ImGui::EndCombo();
+            }
+            else
+            {
+                HasScrolled = false;
             }
             if (!line->Default->DescLong.empty() && ImGui::IsItemHovered())
             {
