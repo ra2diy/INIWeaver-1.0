@@ -255,22 +255,32 @@ bool IBR_SectionData::OnLineEdit(const std::string& Name, bool OnLink)
             else Line.Edit.RenderUI(Name, line->Default->DescLong);
             ImGui::SameLine();
             ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+            ImGui::SetNextWindowSizeConstraints(ImVec2(0, 0), ImVec2(FLT_MAX, IBR_FullView::Ratio*150));
             if (ImGui::BeginCombo(("##" + Name + sec.GetSectionData()->DisplayName).c_str(), line->Default->Property.Enum[X].c_str()))
             {
+                ImGuiListClipper Clipper;
+                Clipper.Begin(line->Default->Property.Enum.size());
                 bool EnumHovered = false;
-                for (int i = 0; i < line->Default->Property.Enum.size(); i++) {
-					if (ImGui::Selectable(line->Default->Property.Enum[i].c_str(), i == X)) {
-						X = i;
-                        line->Data->SetValue(Redefine ? line->Default->Property.EnumValue[X] : line->Default->Property.Enum[X]);
-                        if (IBR_Inst_Project.IBR_Rev_SectionMap[Desc] == IBR_EditFrame::CurSection.ID)
+                while (Clipper.Step())
+                {
+                    for (int i = Clipper.DisplayStart; i < Clipper.DisplayEnd; i++)
+                    {
+                        bool IsSelected = i == X;
+                        if (ImGui::Selectable(line->Default->Property.Enum[i].c_str(), IsSelected))
                         {
-                            IBR_EditFrame::EditLines[Name].Buffer = Redefine ? line->Default->Property.EnumValue[X] : line->Default->Property.Enum[X];
+                            X = i;
+                            line->Data->SetValue(Redefine ? line->Default->Property.EnumValue[X] : line->Default->Property.Enum[X]);
+                            if (IBR_Inst_Project.IBR_Rev_SectionMap[Desc] == IBR_EditFrame::CurSection.ID)
+                            {
+                                IBR_EditFrame::EditLines[Name].Buffer = Redefine ? line->Default->Property.EnumValue[X] : line->Default->Property.Enum[X];
+                            }
+                            EnumHovered = false;
                         }
-                        EnumHovered = false;
-					}
-                    else if (ImGui::IsItemHovered()) EnumHovered = true;
+                        else if (ImGui::IsItemHovered()) EnumHovered = true;
+                        if (IsSelected) ImGui::SetItemDefaultFocus();
+                    }
+                    IsEnumHovered = EnumHovered;
                 }
-                IsEnumHovered = EnumHovered;
                 ImGui::EndCombo();
             }
             if (!line->Default->DescLong.empty() && ImGui::IsItemHovered())
