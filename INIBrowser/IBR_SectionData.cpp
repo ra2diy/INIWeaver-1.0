@@ -252,8 +252,14 @@ bool IBR_SectionData::OnLineEdit(const std::string& Name, bool OnLink)
                 }
             }
             bool EnumExist = !(X < 0);
-            if (!IBR_WorkSpace::ShowRegName)Line.Edit.RenderUI(line->Default->DescShort, line->Default->DescLong);
-            else Line.Edit.RenderUI(Name, line->Default->DescLong);
+            if (!IBR_WorkSpace::ShowRegName) ImGui::Text(line->Default->DescShort.c_str());
+            else ImGui::Text(Name.c_str());
+            if (!line->Default->DescLong.empty() && ImGui::IsItemHovered())
+            {
+                ImGui::BeginTooltip();
+                ImGui::Text(line->Default->DescLong.c_str());
+                ImGui::EndTooltip();
+            }
             ImGui::SameLine();
             ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
             ImGui::SetNextWindowSizeConstraints(ImVec2(0, 0), ImVec2(FLT_MAX, IBR_FullView::Ratio*150));
