@@ -179,9 +179,11 @@ const IBB_IniLine_Default* IBF_DefaultTypeList::GetDefault(const std::string& Ke
     else return std::addressof(it->second);
 }
 
-bool IBF_DefaultTypeList::ReadAltSetting(const char* Name)
+bool IBF_DefaultTypeList::ReadAltSetting(const wchar_t* Name)
 {
+    std::vector<std::wstring> FindFileVec(const std::wstring & pattern);
     using namespace std::string_literals;
+
     IBB_DefaultTypeAltList Alt;
     if (EnableLog)
     {
@@ -189,9 +191,15 @@ bool IBF_DefaultTypeList::ReadAltSetting(const char* Name)
         GlobalLogB.AddLog((u8"IBF_DefaultTypeList::ReadAltSetting £º " + loc("Log_ReadTypeAlt")).c_str());
     }
     bool Ret = true;
-    //CSV then fall back to json
-    if (!Alt.LoadFromCSVFile((Name + u8".csv"s).c_str())
-        && !Alt.LoadFromJsonFile((Name + u8".json"s).c_str()))Ret = false;
+
+    for (auto& CSV : FindFileVec(Name + L".csv"s))
+    {
+        if (!Alt.LoadFromCSVFile(CSV.c_str()))Ret = false;
+    }
+    for (auto& JSON : FindFileVec(Name + L".json"s))
+    {
+        if (!Alt.LoadFromJsonFile(JSON.c_str()))Ret = false;
+    }
 
     if (!List.LoadFromAlt(Alt))Ret = false;
     if (!List.BuildQuery())Ret = false;

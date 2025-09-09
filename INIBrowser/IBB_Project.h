@@ -107,8 +107,8 @@ struct IBB_DefaultTypeAltList
     std::vector<IBB_DefaultTypeAlt> List;
 
     bool Load(JsonObject FromJson);
-    bool LoadFromJsonFile(const char* Name);
-    bool LoadFromCSVFile(const char* Name);
+    bool LoadFromJsonFile(const wchar_t* Name);
+    bool LoadFromCSVFile(const wchar_t* Name);
 };
 
 struct IBB_DefaultTypeList

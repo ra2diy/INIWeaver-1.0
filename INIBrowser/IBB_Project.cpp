@@ -93,7 +93,7 @@ bool IBB_DefaultTypeList::LoadFromAlt(const IBB_DefaultTypeAltList& AltList)
     b.LinkType = "_AnyType";
     b.DescShort = "__INHERIT_SHORT__";
     b.DescLong = "";
-    b.Color = ImColor(0, 0, 255);
+    b.Color = ImColor(50, 80, 255);
     EnsureType(b, &UsedStrings);
     auto& InheritSubSec = SubSec_Default["  INHERIT_SUBSEC__"];
     InheritSubSec.Name = "  INHERIT_SUBSEC__";
@@ -157,24 +157,25 @@ bool IBB_DefaultTypeAlt::Load(const std::vector<std::string>& FromCSV)
 bool IBB_DefaultTypeAltList::Load(JsonObject FromJson)
 {
     auto V = FromJson.ItemArrayObjectOr("IniLine");
-    List.resize(V.size());
+    auto Sz = List.size();
+    List.resize(Sz + V.size());
     for (size_t i = 0; i < V.size(); i++)
-        List[i].Load(V[i]);
+        List[Sz + i].Load(V[i]);
     return true;
 }
 
-bool IBB_DefaultTypeAltList::LoadFromJsonFile(const char* Name)
+bool IBB_DefaultTypeAltList::LoadFromJsonFile(const wchar_t* Name)
 {
-    std::string FileName(const std::string & ss);
+    std::wstring FileName(const std::wstring & ss);
     JsonFile F;
-    auto V = UTF8toUnicode(FileName(Name));
-    IBR_PopupManager::AddJsonParseErrorPopup(F.ParseFromFileChecked(Name, loc("Error_JsonParseErrorPos"), nullptr),
+    auto V = FileName(Name);
+    IBR_PopupManager::AddJsonParseErrorPopup(F.ParseFromFileChecked(UnicodetoUTF8(Name).c_str(), loc("Error_JsonParseErrorPos"), nullptr),
         UnicodetoUTF8(std::vformat(locw("Error_JsonSyntaxError"), std::make_wformat_args(V))));
     if (!F.Available())return false;
     Load(F);
 
     ExtFileClass Et;
-    Et.Open(".\\Global\\TypeAlt.csv", "w");
+    Et.Open((Name + std::wstring(L".csv")).c_str(), L"w");
     for (auto& L : List)
     {
         Et.PutStr(L.Name); Et.PutChr(',');
@@ -189,16 +190,17 @@ bool IBB_DefaultTypeAltList::LoadFromJsonFile(const char* Name)
     return true;
 }
 
-bool IBB_DefaultTypeAltList::LoadFromCSVFile(const char* Name)
+bool IBB_DefaultTypeAltList::LoadFromCSVFile(const wchar_t* Name)
 {
     CSVReader Reader;
     Reader.ReadFromFile(Name);
     auto& D = Reader.GetData();
     if (D.size() <= 1)return false;
-    List.resize(D.size());
+    auto Sz = List.size();
+    List.resize(Sz + D.size());
     bool Ret = true;
     for (size_t i = 1; i < D.size(); i++)
-        Ret &= List[i].Load(D[i]);
+        Ret &= List[Sz + i - 1].Load(D[i]);
     return Ret;
 }
 

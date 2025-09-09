@@ -19,7 +19,8 @@ std::string IBB_RegType::GetNoName(const std::string& Reg)
     return NewName;
 }
 
-std::string FileName(const std::string& ss);
+std::wstring FileName(const std::wstring& ss);
+std::vector<std::wstring> FindFileVec(const std::wstring& pattern);
 
 namespace IBB_DefaultRegType
 {
@@ -156,19 +157,24 @@ namespace IBB_DefaultRegType
 
         return true;
     }
-    bool LoadFromFile(const char* FileName)
+    bool LoadFromFile(const wchar_t* FileName)
     {
         if (EnableLog)
         {
             GlobalLogB.AddLog_CurTime(false);
             GlobalLogB.AddLog((u8"IBB_DefaultRegType::LoadFromFile £º " + loc("Log_LoadRegType")).c_str());
         }
-        JsonFile F;
-        auto WFN = UTF8toUnicode(::FileName(FileName));
-        IBR_PopupManager::AddJsonParseErrorPopup(F.ParseFromFileChecked(FileName, loc("Error_JsonParseErrorPos"), nullptr),
-            UnicodetoUTF8(std::vformat(locw("Error_JsonSyntaxError"), std::make_wformat_args(WFN))));
-        if (!F.Available())return false;
-        return Load(F);
+        bool Available = true;
+        for(auto&& File : FindFileVec(FileName))
+        {
+            JsonFile F;
+            auto WFN = ::FileName(File);
+            IBR_PopupManager::AddJsonParseErrorPopup(F.ParseFromFileChecked(UnicodetoUTF8(File).c_str(), loc("Error_JsonParseErrorPos"), nullptr),
+                UnicodetoUTF8(std::vformat(locw("Error_JsonSyntaxError"), std::make_wformat_args(WFN))));
+            if (!F.Available())Available = false;
+            else Available &= Load(F);
+        }
+        return Available;
     }
     IBB_RegType& GetRegType(const _TEXT_UTF8 std::string& Type)
     {

@@ -61,8 +61,8 @@ IDI_ICON1               ICON                    "icon1.ico"
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,0,0,0
- PRODUCTVERSION 1,0,0,0
+ FILEVERSION 1,0,2,0
+ PRODUCTVERSION 1,0,2,0
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -79,12 +79,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "by 钢铁之锤 2022-2025"
             VALUE "FileDescription", "INI织网者"
-            VALUE "FileVersion", "1.0.0.0"
+            VALUE "FileVersion", "1.0.2.0"
             VALUE "InternalName", "INIWeaver.exe"
             VALUE "LegalCopyright", "Copyright (C) 2025"
             VALUE "OriginalFilename", "INIWeaver.exe"
-            VALUE "ProductName", "INI织网者 V0.2"
-            VALUE "ProductVersion", "1.0.0.0"
+            VALUE "ProductName", "INI织网者 V1.0"
+            VALUE "ProductVersion", "1.0.2.0"
         END
     END
     BLOCK "VarFileInfo"

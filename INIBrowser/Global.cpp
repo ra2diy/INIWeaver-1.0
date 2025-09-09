@@ -2,13 +2,13 @@
 #include "Global.h"
 
 //所有版本号相关数据
-const std::string Version = u8"1.0";
-const std::wstring VersionW = L"1.0";
+const std::string Version = u8"1.0.4";
+const std::wstring VersionW = L"1.0.4";
 const int VersionMajor = 1;
 const int VersionMinor = 0;
-const int VersionRelease = 0;
+const int VersionRelease = 4;
 const int VersionN = VersionMajor * 10000 + VersionMinor * 100 + VersionRelease;
-const std::string VersionNStr = u8"010000";
+const std::string VersionNStr = u8"010004";
 
 std::string GetVersionStr(int Ver)
 {
@@ -17,9 +17,14 @@ std::string GetVersionStr(int Ver)
         if (Ver % 100)return loc("Back_OldVer1") + u8" b" + std::to_string(Ver % 100);
         else return loc("Back_OldVer1");
     }
-    else
+    else if(Ver < 10000)
     {
         if (Ver % 100)return std::to_string(Ver / 10000) + "." + std::to_string((Ver / 100) % 100) + "b" + std::to_string(Ver % 100);
+        else return std::to_string(Ver / 10000) + "." + std::to_string((Ver / 100) % 100);
+    }
+    else
+    {
+        if (Ver % 100)return std::to_string(Ver / 10000) + "." + std::to_string((Ver / 100) % 100) + "." + std::to_string(Ver % 100);
         else return std::to_string(Ver / 10000) + "." + std::to_string((Ver / 100) % 100);
     }
 }

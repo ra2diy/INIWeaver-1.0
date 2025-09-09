@@ -331,6 +331,21 @@ namespace IBR_EditFrame
     {
         //TODO
     }
+
+    void UpdateLine(const std::string& Line, const std::string& NewValue)
+    {
+        if (Empty)return;
+        if (OnTextEdit)return;
+        auto it = EditLines.find(Line);
+        if (it != EditLines.end())
+        {
+            it->second.Buffer = NewValue;
+            auto& L = it->second;
+            if (L.Edit.Input && L.Edit.Input->Input)
+                strcpy(L.Edit.Input->Input.get(), NewValue.c_str());
+        }
+    }
+
     void AFTER_INTERRUPT_F Modify(const std::string& s, BufferedLine& L)
     {
         auto back = CurSection.GetBack();

@@ -174,7 +174,8 @@ namespace IBR_WorkSpace
     std::vector<IBR_Project::id_t> MassTarget;
     bool LastOperateOnText{ false };
     bool OperateOnText{ false };
-
+    IBR_Section MouseOverSection{ &IBR_Inst_Project, UINT64_MAX };
+    IBR_SectionData* MouseOverSecData{ nullptr };
     
     void RenderRightClickTable()
     {
@@ -469,6 +470,12 @@ namespace IBR_WorkSpace
                     Paste();
                     IBR_PopupManager::ClearRightClickMenu();
                 }
+                RightClickTextHelper(locc("GUI_RefreshAllRegName"));
+                if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+                {
+                    Paste();
+                    IBR_Inst_Project.RenameAll();
+                }
                 ImGui::Text(locc("GUI_CreateCommentBlock"));
                 if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
                 {
@@ -670,6 +677,7 @@ namespace IBR_WorkSpace
         }
         else if (IsHotKeyPressed(Refresh))
         {
+            //IBR_Inst_Project.RenameAll();
             IBR_Inst_Project.UpdateAll();
         }
         else if (IsHotKeyPressed(DeleteAll))
@@ -853,10 +861,80 @@ namespace IBR_WorkSpace
                     IsMassAfter = false;
                     IsBgDragging = false;
                 }
-                else if (!OnWindow && ImGui::IsMouseDown(ImGuiMouseButton_Right))
+                else if (ImGui::IsMouseDown(ImGuiMouseButton_Right))
                 {
+                    auto F = []() {
+                        {
+                            IsMassAfter = false;
+                            HasRightDownToWait = true;
+                            IBR_Inst_Project.CopyTransform.clear();
+                            //MessageBoxA(NULL, std::to_string(MassTarget.size()).c_str(), "!", MB_OK);
+                            std::set<IBB_Section_Desc>DS;
+                            for (auto& v : MassTarget)
+                            {
+                                auto sc = IBR_Inst_Project.GetSectionFromID(v);
+                                auto pd = sc.GetDesc();
+                                if (pd)DS.insert(*pd);
+                            }
+                            for (auto& ini : IBF_Inst_Project.Project.Inis)
+                            {
+                                if (ini.Secs_ByName.empty())continue;
+                                for (auto& sec : ini.Secs)
+                                {
+                                    IBB_Section_Desc DescOrig = { ini.Name,sec.second.Name };
+                                    if (DS.count(DescOrig))
+                                        IBR_Inst_Project.CopyTransform[sec.second.Name] = GenerateModuleTag();
+                                }
+                                for (auto& sec : ini.Secs)
+                                {
+                                    IBB_Section_Desc DescOrig = { ini.Name,sec.second.Name };
+                                    if (DS.count(DescOrig))
+                                        IBRF_CoreBump.SendToR({ [=]()
+                                            {
+                                                IBB_Section_Desc desc = { ini.Name,IBR_Inst_Project.CopyTransform[sec.second.Name]};
+                                                IBR_Inst_Project.GetSection(DescOrig).DuplicateSection(desc);
+                                                auto rsc = IBR_Inst_Project.GetSection(desc);
+                                                auto rsc_orig = IBR_Inst_Project.GetSection(DescOrig);
+                                                auto& rsd = *rsc.GetSectionData();
+                                                auto& rsd_orig = *rsc_orig.GetSectionData();
+                                                rsd.RenameDisplayImpl(rsd_orig.DisplayName);
+                                                rsd.EqPos = rsd_orig.EqPos + dImVec2{2.0 * FontHeight, 2.0 * FontHeight};
+                                                rsd.EqSize = rsd_orig.EqSize;
+                                                rsd.Ignore = rsd_orig.Ignore;
+                                                rsd.IsComment = rsd_orig.IsComment;
+                                                if (rsd.IsComment)
+                                                {
+                                                    rsd.CommentEdit = std::make_shared<BufString>();
+                                                    strcpy(rsd.CommentEdit.get(), rsd_orig.CommentEdit.get());
+                                                }
+                                                rsd.Dragging = true;
+                                            },nullptr });
+                                    //见V0.2.0任务清单（四）第75条“涉及字段数目变化的指令应借由IBF_SendToR等提至主循环开头”
+                                }
+                            }
+                            IBRF_CoreBump.SendToR({ [=]() {IBF_Inst_Project.UpdateAll(); IBR_WorkSpace::HoldingModules = true;  },nullptr });
+                        }
+                        };
                     IBR_PopupManager::SetRightClickMenu(std::move(
-                        IBR_PopupManager::Popup{}.Create(RandStr(8)).PushMsgBack([]() {
+                        IBR_PopupManager::Popup{}.Create(RandStr(8)).PushMsgBack([F, CreateOnWindow = OnWindow]() {
+
+                            if (CreateOnWindow)
+                            {
+                                auto sd = MouseOverSection.GetSectionData();
+                                if (sd)
+                                {
+                                    if (ImGui::SmallButtonAlignLeft(locc("GUI_Rename"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
+                                    {
+                                        sd->RenameDisplay();
+                                        IBR_PopupManager::ClearRightClickMenu();
+                                    }
+                                    if (ImGui::SmallButtonAlignLeft(locc("GUI_RegRename"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
+                                    {
+                                        sd->RenameRegister();
+                                        IBR_PopupManager::ClearRightClickMenu();
+                                    }
+                                }
+                            }
                             if (ImGui::SmallButtonAlignLeft(locc("GUI_Copy"), ImVec2{FontHeight * 7.0f, ImGui::GetTextLineHeight()}))
                             {
                                 CopySelected();
@@ -897,6 +975,12 @@ namespace IBR_WorkSpace
                                 IBR_PopupManager::ClearRightClickMenu();
                             }
 
+                            if (ImGui::SmallButtonAlignLeft(locc("GUI_CreateCopy"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
+                            {
+                                F();
+                                IBR_PopupManager::ClearRightClickMenu();
+                            }
+
                             if (ImGui::SmallButtonAlignLeft(locc("GUI_Delete"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
                             {
                                 IsMassAfter = false;
@@ -904,62 +988,13 @@ namespace IBR_WorkSpace
                                 DeleteSelected();
                                 IBR_PopupManager::ClearRightClickMenu();
                             }
+
+
                             })), ImGui::GetMousePos());
                 }
                 else if (OnWindow && Cont)
                 {
-                    if (ImGui::IsMouseDown(ImGuiMouseButton_Right))
-                    {
-                        IsMassAfter = false;
-                        HasRightDownToWait = true;
-                        IBR_Inst_Project.CopyTransform.clear();
-                        //MessageBoxA(NULL, std::to_string(MassTarget.size()).c_str(), "!", MB_OK);
-                        std::set<IBB_Section_Desc>DS;
-                        for (auto& v : MassTarget)
-                        {
-                            auto sc = IBR_Inst_Project.GetSectionFromID(v);
-                            auto pd = sc.GetDesc();
-                            if (pd)DS.insert(*pd);
-                        }
-                        for (auto& ini : IBF_Inst_Project.Project.Inis)
-                        {
-                            if (ini.Secs_ByName.empty())continue;
-                            for (auto& sec : ini.Secs)
-                            {
-                                IBB_Section_Desc DescOrig = { ini.Name,sec.second.Name };
-                                if (DS.count(DescOrig))
-                                    IBR_Inst_Project.CopyTransform[sec.second.Name] = GenerateModuleTag();
-                            }
-                            for (auto& sec : ini.Secs)
-                            {
-                                IBB_Section_Desc DescOrig = { ini.Name,sec.second.Name };
-                                if (DS.count(DescOrig))
-                                    IBRF_CoreBump.SendToR({ [=]()
-                                        {
-                                            IBB_Section_Desc desc = { ini.Name,IBR_Inst_Project.CopyTransform[sec.second.Name]};
-                                            IBR_Inst_Project.GetSection(DescOrig).DuplicateSection(desc);
-                                            auto rsc = IBR_Inst_Project.GetSection(desc);
-                                            auto rsc_orig = IBR_Inst_Project.GetSection(DescOrig);
-                                            auto& rsd = *rsc.GetSectionData();
-                                            auto& rsd_orig = *rsc_orig.GetSectionData();
-                                            rsd.RenameDisplayImpl(rsd_orig.DisplayName);
-                                            rsd.EqPos = rsd_orig.EqPos + dImVec2{2.0 * FontHeight, 2.0 * FontHeight};
-                                            rsd.EqSize = rsd_orig.EqSize;
-                                            rsd.Ignore = rsd_orig.Ignore;
-                                            rsd.IsComment = rsd_orig.IsComment;
-                                            if (rsd.IsComment)
-                                            {
-                                                rsd.CommentEdit = std::make_shared<BufString>();
-                                                strcpy(rsd.CommentEdit.get(), rsd_orig.CommentEdit.get());
-                                            }
-                                            rsd.Dragging = true;
-                                        },nullptr });
-                                //见V0.2.0任务清单（四）第75条“涉及字段数目变化的指令应借由IBF_SendToR等提至主循环开头”
-                            }
-                        }
-                        IBRF_CoreBump.SendToR({ [=]() {IBF_Inst_Project.UpdateAll(); IBR_WorkSpace::HoldingModules = true;  },nullptr });
-                    }
-                    else if (ImGui::IsMouseDown(ImGuiMouseButton_Left))
+                    if (ImGui::IsMouseDown(ImGuiMouseButton_Left))
                     {
                         for (auto& v : MassTarget)
                         {
@@ -1066,6 +1101,7 @@ namespace IBR_WorkSpace
     IBR_SectionData* CurOnRender;
     ImVec4 TempWbg;
     struct PosHelper { ImVec2 eq, re; };
+    ImGuiWindow* LastFocused{ nullptr };
     void RenderUI()
     {
         IBB_Section_Desc _RenderUI_OnRender;
@@ -1153,11 +1189,20 @@ namespace IBR_WorkSpace
 
             if (sd.Dragging && !IBR_PopupManager::HasPopup)ImGui::PushOrderFront(ImGui::GetCurrentWindow());
 
-            if (ImGui::IsWindowFocused() && !sd.IsComment)
+            /*
+            if (ImGui::IsWindowFocused() && LastFocused != ImGui::GetCurrentWindow() && !sd.IsComment && !IBR_PopupManager::HasPopup)
             {
                 IBR_EditFrame::SetActive(sp.first);
                 IBR_Inst_Menu.ChooseMenu(MenuItemID_EDIT);
             }
+            if (ImGui::IsWindowFocused())LastFocused = ImGui::GetCurrentWindow();
+            */
+            if (ImGui::IsWindowClicked(ImGuiMouseButton_Left) && !sd.IsComment && !IBR_PopupManager::HasPopup)
+            {
+                IBR_EditFrame::SetActive(sp.first);
+                IBR_Inst_Menu.ChooseMenu(MenuItemID_EDIT);
+            }
+
             auto PCopy = ImGui::GetWindowPos();
             auto SCopy = ImGui::GetWindowSize();
             sd.Hovered = ImGui::IsWindowHovered();
@@ -1262,6 +1307,11 @@ namespace IBR_WorkSpace
 
             sd.RenderUI();
 
+            if(ImGui::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows))
+            {
+                MouseOverSection = IBR_Inst_Project.GetSectionFromID(sp.first);
+                MouseOverSecData = &sd;
+            }
             if (sd.First)sd.First = false;
             if (sp.first == IBR_EditFrame::CurSection.ID)
             {

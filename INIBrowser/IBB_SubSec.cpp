@@ -35,8 +35,8 @@ void MergeList(std::vector<std::string>& Value, const std::string& Str)
     Value.reserve(Value.size() + S.size());
     for (auto&& V : S)
         Value.push_back(std::move(V));
-    std::set<std::string> SS;
-    Value.erase(std::remove_if(Value.begin(), Value.end(), [&](const std::string& s)->bool {return !SS.insert(s).second; }), Value.end());
+    //std::set<std::string> SS;
+    //Value.erase(std::remove_if(Value.begin(), Value.end(), [&](const std::string& s)->bool {return !SS.insert(s).second; }), Value.end());
 }
 
 std::string DecodeListForExport(const std::string& Val)
@@ -52,14 +52,17 @@ std::string DecodeListForExport(const std::string& Val)
             auto pp = V.To.GetSec(IBF_Inst_Project.Project);
             if (pp)
             {
-                R += pp->Name;//TODO: µÝ¹é²éÕÒ
+                R += pp->Name;
                 R += ',';
             }
         }
         if (!R.empty())R.pop_back();
         return R;
     }
-    else return Val;
+    else
+    {
+        return Val;
+    }
 }
 
 LineData IBB_IniLine_DataList::Duplicate() const
@@ -133,6 +136,10 @@ void IBB_IniLine_DataList::RemoveValue(const std::string& Val)
 {
     Value.erase(std::remove_if(Value.begin(), Value.end(), [&](const std::string& V)->bool {return V == Val; }), Value.end());
 }
+void IBB_IniLine_DataList::RemoveValue(size_t Idx)
+{
+    Value.erase(Value.begin() + Idx);
+}
 void IBB_IniLine_DataList::InsertValue(const std::string& Val, size_t Idx)
 {
     Value.insert(Value.begin() + Idx, Val);
@@ -150,7 +157,7 @@ IBB_SubSec::IBB_SubSec(IBB_SubSec&& A) :
     Root(A.Root), Default(A.Default), Lines_ByName(std::move(A.Lines_ByName)), Lines(std::move(A.Lines)), LinkTo(std::move(A.LinkTo))
 {}
 
-bool IBB_SubSec::Merge(const IBB_SubSec& Another, const IBB_VariableList& MergeType, bool IsDuplicate)
+bool IBB_SubSec::Merge(const IBB_SubSec& Another, const std::unordered_map<std::string, IBB_IniMergeMode>& MergeType, bool IsDuplicate)
 {
     bool Ret = true;
     for (auto p : Another.Lines)
@@ -168,8 +175,8 @@ bool IBB_SubSec::Merge(const IBB_SubSec& Another, const IBB_VariableList& MergeT
         }
         else
         {
-            const auto& Mode = MergeType.GetVariable(p.first);
-            if (!it->second.Merge(p.second, Mode.empty() ? "Replace" : Mode))Ret = false;
+            const auto& Mode = MergeType.find(p.first);
+            if (!it->second.Merge(p.second, Mode == MergeType.end() ? IBB_IniMergeMode::Replace : Mode->second))Ret = false;
         }
     }
     if (Root != nullptr)
@@ -184,7 +191,7 @@ bool IBB_SubSec::Merge(const IBB_SubSec& Another, const IBB_VariableList& MergeT
     }
     return Ret;
 }
-bool IBB_SubSec::Merge(const IBB_SubSec& Another, const std::string& Mode, bool IsDuplicate)
+bool IBB_SubSec::Merge(const IBB_SubSec& Another, IBB_IniMergeMode Mode, bool IsDuplicate)
 {
     bool Ret = true;
     for (auto p : Another.Lines)
@@ -236,7 +243,7 @@ bool IBB_SubSec::AddLine(const std::pair<std::string, std::string>& Line)
     }
     else
     {
-        return it->second.Merge(Line.second, "Merge");
+        return it->second.Merge(Line.second, IBB_IniMergeMode::Merge);
     }
 }
 
@@ -271,7 +278,7 @@ std::string IBB_SubSec::GetText(bool PrintExtraData, bool FromExport) const
         auto& L = It->second;
         if (FromExport)
         {
-            auto ex = L.Data->GetStringForExport();
+            auto ex = L.Data->GetStringForExport(/*Root->Root->Name*/);
             if (ex.empty())continue;
             if (sn == "__INHERIT__")continue;
             Text += sn;
@@ -290,7 +297,7 @@ std::string IBB_SubSec::GetText(bool PrintExtraData, bool FromExport) const
     }
     if (PrintExtraData)
     {
-        Text += ";Extra Data - Link To\n";
+        //Text += ";Extra Data - Link To\n";
         //for (const auto& to : LinkTo)
         //    Text += to.GetText(*(Root->Root->Root));//SubSec->Sec->Ini->Project
 
@@ -388,7 +395,10 @@ bool IBB_SubSec::UpdateAll()
     //auto pproj = Root->Root->Root;
     for (auto& L : Lines)
     {
-        GlobalLogB.AddLog_CurTime(false); GlobalLogB.AddLog("IBB_SubSec::UpdateAll Line : ", false); GlobalLogB.AddLog(L.first.c_str());//BREAKPOINT
+        if (EnableLogEx)
+        {
+            GlobalLogB.AddLog_CurTime(false); GlobalLogB.AddLog("IBB_SubSec::UpdateAll Line : ", false); GlobalLogB.AddLog(L.first.c_str());//BREAKPOINT
+        }
         auto def = L.second.Default;
         if (def == nullptr)Ret = false;
         else
