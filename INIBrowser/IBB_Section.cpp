@@ -616,6 +616,7 @@ bool IBB_Section::Merge(const IBB_Section& Another, IBB_IniMergeMode MergeType, 
             }
             else It->Merge(ss, MergeType, IsDuplicate);
         }
+
         return true;
     }
     //LinkedBy : Refresh from Update !
