@@ -239,7 +239,10 @@ namespace IBR_ProjectManager
             //MessageBoxA(NULL, Idx.GetIni(Proj)->Name.c_str(), std::to_string(Idx.Ini.Index).c_str(), MB_OK);
             std::string V;
             V += '[';V += N;V += "]\n";
-            for (auto& v : R){ V += v; V += '='; V += v; V += '\n'; }
+            for (auto& v : R)
+            {
+                V += v; V += '='; V += v; V += '\n';
+            }
             TextPieces[Idx.Ini.Index].push_back(std::move(V));
         }
     }
@@ -263,6 +266,9 @@ namespace IBR_ProjectManager
         size_t N = TargetIniPath.size();
         std::vector<std::vector<std::string>>TextPieces;
         TextPieces.resize(N);
+        std::map<IBB_Section_Desc, std::string> RemapNames;
+
+
 
         OutputRegister(TextPieces);
         for (size_t I = 0; I < N; I++)
@@ -270,6 +276,8 @@ namespace IBR_ProjectManager
             //MessageBoxW(NULL, TargetIniPath[I].c_str(), L"dsfsd", MB_OK);
             for (auto& [SN, Sec] : Inis[I].Secs)
             {
+                for (auto& Sub : Sec.SubSecs)for (auto& L : Sub.Lines)
+                    if (L.first == "__INHERIT__")Sec.Inherit = L.second.Data->GetString();
                 IBB_Section_Desc Desc = { Inis[I].Name, Sec.Name };
                 std::string V;
                 V += ';'; V += DisplayRev[Desc];  V += '\n';
@@ -521,9 +529,9 @@ namespace IBR_ProjectManager
                     Inis[i].Ignore = false;
                     continue;
                 }
-                for (auto& [N, S] : IBF_Inst_Project.Project.Inis[i].Secs)
+                for (auto& [N, Q] : IBF_Inst_Project.Project.Inis[i].Secs)
                 {
-                    const auto& ity = IBB_DefaultRegType::GetRegType(S.Register).IniType;
+                    const auto& ity = IBB_DefaultRegType::GetRegType(Q.Register).IniType;
                     IBB_Project_Index idx = { ity, "" };
                     if (idx.GetIni(IBF_Inst_Project.Project) != nullptr)
                     {

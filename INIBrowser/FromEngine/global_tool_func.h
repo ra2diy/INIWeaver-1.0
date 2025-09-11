@@ -90,6 +90,7 @@ class CSVReader
 public:
     const std::vector<std::vector<std::string>>& GetData() const;
     void ReadFromFile(const char* FileName);
+    void ReadFromFile(const wchar_t* FileName);
 };
 
 class JsonObject

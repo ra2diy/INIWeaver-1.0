@@ -14,6 +14,13 @@ struct ModuleClipData;
 struct IBB_IniLine_Data_Base;
 using LineData = std::shared_ptr<IBB_IniLine_Data_Base>;
 
+enum class IBB_IniMergeMode
+{
+    Replace,
+    Merge,
+    Reserve
+};
+
 struct IBB_IniLine_Default
 {
     struct _Limit//按照什么匹配
@@ -97,6 +104,7 @@ struct IBB_IniLine_DataList : public IBB_IniLine_Data_Base
     virtual std::string GetStringForExport() const;
 
     void RemoveValue(const std::string& Val);
+    void RemoveValue(size_t Idx);
     void InsertValue(const std::string& Val, size_t Idx);
     void ReplaceValue(const std::string& Old, const std::string& New);
 
@@ -116,8 +124,8 @@ struct IBB_IniLine
 
     template<typename T> T* GetData() const { return dynamic_cast<T*>(Data.get()); }
 
-    bool Merge(const IBB_IniLine& Another, const std::string& Mode);
-    bool Merge(const std::string& Another, const std::string& Mode);
+    bool Merge(const IBB_IniLine& Another, IBB_IniMergeMode Mode);
+    bool Merge(const std::string& Another, IBB_IniMergeMode Mode);
 
     bool Generate(const std::string& Value, IBB_IniLine_Default* Def = nullptr);//don't change Default if Def == nullptr 
 
@@ -147,8 +155,8 @@ struct IBB_SubSec
     IBB_SubSec(const IBB_SubSec&) = default;
     IBB_SubSec(IBB_SubSec&& A);
 
-    bool Merge(const IBB_SubSec& Another, const IBB_VariableList& MergeType, bool IsDuplicate);
-    bool Merge(const IBB_SubSec& Another, const std::string& Mode, bool IsDuplicate);
+    bool Merge(const IBB_SubSec& Another, const std::unordered_map<std::string, IBB_IniMergeMode>& MergeType, bool IsDuplicate);
+    bool Merge(const IBB_SubSec& Another, IBB_IniMergeMode Mode, bool IsDuplicate);
 
     std::string GetText(bool PrintExtraData, bool FromExport = false) const;//RARELY USED 这个GetText自带换行符
     std::vector<std::string> GetKeys(bool PrintExtraData) const;//RARELY USED
@@ -178,6 +186,7 @@ struct IBB_Section_NameType
 };
 
 
+
 struct IBB_Section
 {
     IBB_Ini* Root{ nullptr };
@@ -185,6 +194,7 @@ struct IBB_Section
 
     std::string Name;
     std::vector<IBB_SubSec> SubSecs;
+    std::vector<size_t> SubSecOrder;
     std::vector<IBB_Link> LinkedBy;
     IBB_VariableList VarList;
     IBB_VariableList UnknownLines;//不归属于任一SubSec
@@ -206,8 +216,9 @@ struct IBB_Section
     //增删改时相应修改移动构造函数
 
     // MergeType is unused to a LinkGroup
-    bool Merge(const IBB_Section& Another, const IBB_VariableList& MergeType, bool IsDuplicate);
-    bool Merge(const IBB_Section& Another, const std::string& MergeType, bool IsDuplicate);//they share the same merge type
+    bool Merge(const IBB_Section& Another, const std::unordered_map<std::string, IBB_IniMergeMode>& MergeType, bool IsDuplicate);
+    bool Merge(const IBB_Section& Another, IBB_IniMergeMode MergeType, bool IsDuplicate);//they share the same merge type
+    bool MergeLine(const std::string& Key, const std::string& Value, IBB_IniMergeMode Mode);
     bool Generate(const IBB_Section_NameType& Paragraph);
     bool GenerateLines(const IBB_VariableList& Lines);
     bool GenerateAsDuplicate(const IBB_Section& Src);
@@ -216,7 +227,7 @@ struct IBB_Section
     bool UpdateAll();
 
     IBB_Section() {}
-    IBB_Section(const std::string& N, IBB_Ini* R) : Name(N), Root(R), IsLinkGroup(false) {}
+    IBB_Section(const std::string& N, IBB_Ini* R);
     IBB_Section(const IBB_Section_NameType& Paragraph, IBB_Ini* R) : Root(R) { Generate(Paragraph); }
     IBB_Section(const IBB_Section&) = default;
     IBB_Section(IBB_Section&&);

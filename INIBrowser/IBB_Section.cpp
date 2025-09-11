@@ -104,9 +104,9 @@ void IBB_Section::GetClipData(ModuleClipData& Clip)
         Clip.IsComment = false;
         Clip.Desc.A = Root->Name;
         Clip.Desc.B = Name;
-        IBB_VariableList DD;
-        DefaultLinkKey.Flatten(DD);
-        for (auto& [A, B] : DD.Value)
+        //IBB_VariableList DD;
+        //DefaultLinkKey.Flatten(DD);
+        for (auto& [A, B] : DefaultLinkKey.Value)
             Clip.DefaultLinkKey.push_back({ A, B });
         for (auto& L : LinkGroup_LinkTo)
             Clip.LinkGroup_LinkTo.push_back({ L.To.Ini.GetText(), L.To.Section.GetText() });
@@ -183,9 +183,9 @@ void IBB_Section::GetClipData(ModuleClipData& Clip)
                 Tok.Value = val;
                 Tok.Desc = OnShow[key];
             }
-            IBB_VariableList DD;
-            DefaultLinkKey.Flatten(DD);
-            for (auto& [A, B] : DD.Value)
+            //IBB_VariableList DD;
+            //DefaultLinkKey.Flatten(DD);
+            for (auto& [A, B] : DefaultLinkKey.Value)
                 Clip.DefaultLinkKey.push_back({ A, B });
             for (auto& [A, B] : VarList.Value)
                 Clip.VarList.push_back({ A, B });
@@ -389,7 +389,7 @@ std::string IBB_Section::GetText(bool PrintExtraData, bool FromExport) const
         for (const auto& Sub : SubSecs)
             Text += Sub.GetText(PrintExtraData, FromExport);
         //Text.push_back('\n');
-        Text += UnknownLines.GetText(false, FromExport);
+        Text += UnknownLines.GetText(false, FromExport/*, Root->Name*/);
         if (PrintExtraData)
         {
             Text += "\n;ExtraData - Name\n";
@@ -523,8 +523,9 @@ bool IBB_Section::GenerateLines(const IBB_VariableList& Par)
             auto It = SubSecList.find(ptr);
             if (It == SubSecList.end())
             {
+               
                 It = SubSecList.insert({ ptr,SubSecs.size() }).first;
-                SubSecs.emplace_back(ptr, this);
+                 SubSecs.emplace_back(ptr, this);
             }
             auto& Sub = SubSecs.at(It->second);
             if (!Sub.AddLine(L))Ret = false;
@@ -557,7 +558,7 @@ bool IBB_Section::Generate(const IBB_Section_NameType& Par)
     }
 }
 
-bool IBB_Section::Merge(const IBB_Section& Another, const IBB_VariableList& MergeType, bool IsDuplicate)
+bool IBB_Section::Merge(const IBB_Section& Another, const std::unordered_map<std::string, IBB_IniMergeMode>& MergeType, bool IsDuplicate)
 {
     auto pproj = Root->Root; (void)pproj;
     if (IsLinkGroup)
@@ -588,7 +589,7 @@ bool IBB_Section::Merge(const IBB_Section& Another, const IBB_VariableList& Merg
     }
     //LinkedBy : Refresh from Update !
 }
-bool IBB_Section::Merge(const IBB_Section& Another, const std::string& MergeType, bool IsDuplicate)
+bool IBB_Section::Merge(const IBB_Section& Another, IBB_IniMergeMode MergeType, bool IsDuplicate)
 {
     auto pproj = Root->Root; (void)pproj;
     if (IsLinkGroup)
@@ -615,21 +616,63 @@ bool IBB_Section::Merge(const IBB_Section& Another, const std::string& MergeType
             }
             else It->Merge(ss, MergeType, IsDuplicate);
         }
+
         return true;
     }
     //LinkedBy : Refresh from Update !
 }
 
+bool IBB_Section::MergeLine(const std::string& Key, const std::string& Value, IBB_IniMergeMode Mode)
+{
+    auto K = GetLineFromSubSecs(Key);
+    if (K)
+    {
+        auto R = K->Merge(Value, Mode);
+        IBRF_CoreBump.SendToR({ [=] {IBR_EditFrame::UpdateLine(Key, K->Data->GetString()); } });
+        return R;
+    }
+    auto ptr = IBF_Inst_DefaultTypeList.List.KeyBelongToSubSec(Key);
+    if (ptr == nullptr)
+    {
+        UnknownLines.Value[Key] = Value;
+        IBRF_CoreBump.SendToR({ [=] {IBR_EditFrame::UpdateLine(Key, Value); } });
+        return true;
+    }
+    else
+    {
+        auto It = std::find_if(SubSecs.begin(), SubSecs.end(), [&](const IBB_SubSec& su) {return su.Default == ptr; });
+        if (It == SubSecs.end())
+        {
+            SubSecs.emplace_back(ptr, this);
+            It = std::prev(SubSecs.end());
+        } 
+        auto& Sub = *It;
+        IBRF_CoreBump.SendToR({ [=] {IBR_EditFrame::UpdateLine(Key, Value); } });
+        return Sub.AddLine({ Key, Value });
+    }
+}
+
+
 bool IBB_Section::GenerateAsDuplicate(const IBB_Section& Src)
 {
     auto pproj = Root->Root;
-    Merge(Src, "Replace", true);
+    Merge(Src, IBB_IniMergeMode::Replace, true);
     for (auto s : Src.GetRegisteredPosition())
     {
         pproj->RegisterSection(s, *this);
     }
     return true;
 }
+
+
+IBB_Section::IBB_Section(const std::string& N, IBB_Ini* R) :
+    Name(N),
+    Root(R),
+    IsLinkGroup(false)
+{
+    this->VarList.Value["_InitialSecName"] = N;
+}
+
 
 IBB_Section::IBB_Section(IBB_Section&& S) :
     Root(S.Root),

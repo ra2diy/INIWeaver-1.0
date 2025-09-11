@@ -725,6 +725,12 @@ bool IBB_ModuleAlt::SaveToFile()
             E.PutStr(D.A + "#DefaultLink = " + D.B); E.Ln();
         }
 
+        for (auto& D : M.VarList)
+        {
+            if (D.A == "_Local_AtFile")continue;
+            E.PutStr(D.A + "#Var = " + D.B); E.Ln();
+        }
+
         for (auto& L : M.Lines)
         {
             std::string l;
@@ -832,8 +838,23 @@ void IBB_ModuleAlt::LoadFromString(std::wstring_view FileName, std::string&& Fil
                     //TODO : ensure type หฦมห
                     //IBF_Inst_DefaultTypeList.EnsureType(sec[i].Value, sec[i].Desc);
                 }
-                else if (sec[i].Key == "ImportDeltaX")M.EqDelta.x = RFontHeight * (float)atof(sec[i].Value.c_str());
-                else if (sec[i].Key == "ImportDeltaY")M.EqDelta.y = RFontHeight * (float)atof(sec[i].Value.c_str());
+                else if (sec[i].Key == "Var")
+                {
+                    //Type#Var=Key
+                    M.VarList.push_back({ sec[i].Desc, sec[i].Value });//Type,Key
+                }
+                else if (sec[i].Key == "ImportDeltaX")
+                {
+                    M.EqDelta.x = FontHeight * (float)std::strtod(sec[i].Value.c_str(), nullptr);
+                    GlobalLogB.AddLog(sec[i].Value.c_str());
+                    GlobalLogB.AddLog((int)M.EqDelta.x);
+                    //Sleep(100);
+                }
+                else if (sec[i].Key == "ImportDeltaY")
+                {
+                    M.EqDelta.y = FontHeight * (float)std::strtod(sec[i].Value.c_str(), nullptr);
+                    //Sleep(10);
+                }
                 else
                 {
                     M.Lines.push_back(sec[i]);
@@ -1274,6 +1295,11 @@ const std::vector<std::vector<std::string>>& CSVReader::GetData() const
 }
 
 void CSVReader::ReadFromFile(const char* FileName)
+{
+    Data = ParseCSVText(GetLines(GetStringFromFile(FileName)));
+}
+
+void CSVReader::ReadFromFile(const wchar_t* FileName)
 {
     Data = ParseCSVText(GetLines(GetStringFromFile(FileName)));
 }

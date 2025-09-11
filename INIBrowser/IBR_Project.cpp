@@ -136,6 +136,32 @@ _TEXT_UTF8 std::string _PROJ_CMD_READ IBR_Project::GetText(bool PrintExtraData)
     return IBF_Inst_Project.GetText(PrintExtraData);
 }
 
+bool _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE IBR_Project::RenameAll()
+{
+    bool R = true;
+    for (auto& [k, v] : IBR_SectionMap)
+    {
+        auto rs = GetSectionFromID(k);
+        auto bk = rs.GetBack();
+        if (bk)
+        {
+            bool P = false;
+            auto Tag = GenerateModuleTag();
+            {
+                IBD_RInterruptF(x);
+                auto& W = bk->VarList.GetVariable("_InitialSecName");
+                auto& Q = bk->VarList.GetVariable("UseOwnName");
+                if (W == bk->Name && !IsTrueString(Q))
+                    P = true;
+                if (W == bk->Name)bk->VarList.Value["_InitialSecName"] = Tag;
+            }
+            if (P)R &= rs.Rename(Tag);
+        }
+        
+    }
+    return R;
+}
+
 IBR_Section _PROJ_CMD_READ IBR_Project::GetSection(const IBB_Section_Desc& Desc)
 {
     if (EnableLogEx)

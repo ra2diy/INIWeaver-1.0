@@ -208,8 +208,8 @@ namespace Initialize
     void CallInitializeDatabase()
     {
         IBRF_CoreBump.SendToF([] {
-            IBB_DefaultRegType::LoadFromFile(u8".\\Global\\RegisterTypes.json");//FIRST !
-            IBF_Inst_DefaultTypeList.ReadAltSetting(u8".\\Global\\TypeAlt");//SECOND ! DEPENDENT
+            IBB_DefaultRegType::LoadFromFile(L".\\Global\\RegisterTypes*.json");//FIRST !
+            IBF_Inst_DefaultTypeList.ReadAltSetting(L".\\Global\\TypeAlt*");//SECOND ! DEPENDENT
             IBB_ModuleAltDefault::Load(L".\\Global\\Modules\\*.*", L".\\Global\\ImageModules\\*.*", L"\\Global\\Modules\\");//THIRD ! DEPENDENT
             IBR_Inst_Debug.DebugLoad();
             LoadDatabaseComplete = true;
@@ -351,6 +351,8 @@ namespace Initialize
 
         TEMPLOG("glfwSetDropCallback(PreLink::window, IBR_ProjectManager::OnDropFile);");
         glfwSetDropCallback(PreLink::window, IBR_ProjectManager::OnDropFile);
+
+        while (!LoadDatabaseComplete);
 
         TEMPLOG("IBR_ProjectManager::CreateAction();");
         IBR_ProjectManager::CreateAction();

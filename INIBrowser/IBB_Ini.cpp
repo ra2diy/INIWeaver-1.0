@@ -409,13 +409,13 @@ bool IBB_Ini::Merge(const IBB_Ini& Another, bool IsDuplicate)
 
 
 
-bool IBB_IniLine::Merge(const IBB_IniLine& Another, const std::string& Mode)
+bool IBB_IniLine::Merge(const IBB_IniLine& Another, IBB_IniMergeMode Mode)
 {
     if (Another.Default == nullptr)return false;
     if (!Another.Data)return false;
     return Merge(Another.Data->GetString(), Mode);
 }
-bool IBB_IniLine::Merge(const std::string& Another, const std::string& Mode)
+bool IBB_IniLine::Merge(const std::string& Another, IBB_IniMergeMode Mode)
 {
     if (Default == nullptr)return false;
     if (!Data)
@@ -435,13 +435,13 @@ bool IBB_IniLine::Merge(const std::string& Another, const std::string& Mode)
         }
         return Data->SetValue(Another);
     }
-    if (Mode == u8"Reserve")
+    if (Mode == IBB_IniMergeMode::Reserve)
     {
         if (Data->Empty())return Data->SetValue(Another);
         else return true;
     }
-    else if (Mode == u8"Replace")return Data->SetValue(Another);
-    else if (Mode == u8"Merge")
+    else if (Mode == IBB_IniMergeMode::Replace)return Data->SetValue(Another);
+    else if (Mode == IBB_IniMergeMode::Merge)
     {
         if (Data->Empty())return Data->SetValue(Another);
         else return Data->MergeValue(Another);
@@ -452,7 +452,7 @@ bool IBB_IniLine::Merge(const std::string& Another, const std::string& Mode)
         {
             GlobalLogB.AddLog_CurTime(false);
             auto K = UTF8toUnicode(Default->Name);
-            auto LT = UTF8toUnicode(Mode);
+            auto LT = std::to_wstring(static_cast<int>(Mode));
             GlobalLogB.AddLog(std::vformat(L"IBB_IniLine::Merge ： " + locw("Error_MergeTypeNotExist"),
                 std::make_wformat_args(K, LT)).c_str());
         }
@@ -548,7 +548,7 @@ bool IBB_Ini::AddSection(const IBB_Section& Section, bool IsDuplicate)
     }
     else
     {
-        return Is->second.Merge(Section, "Merge", IsDuplicate);
+        return Is->second.Merge(Section, IBB_IniMergeMode::Merge, IsDuplicate);
     }
 }
 //TODO:刷新Link，不过不着急，毕竟AddSection实际只会在AddModule时调用，而不会导致原有Link的改动

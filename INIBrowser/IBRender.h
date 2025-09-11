@@ -269,6 +269,8 @@ struct IBR_Project
     //这个东西没啥开销，除了复制一份Desc ； 不保证是否存在
     IBR_Section _PROJ_CMD_NOINTERRUPT _PROJ_CMD_READ GetSection(const IBB_Section_Desc& Desc) _PROJ_CMD_BACK_CONST;
 
+    bool _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE RenameAll();
+
     //不建议，会缺少模板里面约定的一部分Variable（包括类型标记）
     bool _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE CreateSection(const IBB_Section_Desc& Desc);
     IBR_Section _PROJ_CMD_READ _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE CreateSectionAndBack(const IBB_Section_Desc& Desc);
@@ -420,6 +422,8 @@ namespace IBR_WorkSpace
     extern std::vector<IBR_Project::id_t> MassTarget;
     extern ImVec4 TempWbg;
     extern bool LastOperateOnText, OperateOnText;
+    extern IBR_Section MouseOverSection;
+    extern IBR_SectionData* MouseOverSecData;
 
     void UpdatePrev();
     void  _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE UpdatePrevII();
@@ -497,6 +501,7 @@ namespace IBR_EditFrame
     extern std::unordered_map<std::string, BufferedLine> EditLines;
     void SetActive(IBR_Project::id_t id);
     void UpdateSection();
+    void UpdateLine(const std::string& Line, const std::string& NewValue);
     void RenderUI();
     void Clear();
     void SwitchToText();
