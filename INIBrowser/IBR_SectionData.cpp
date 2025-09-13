@@ -1,4 +1,4 @@
-#include "IBRender.h"
+ï»¿#include "IBRender.h"
 #include "IBFront.h"
 #include "Global.h"
 #include "FromEngine/RFBump.h"
@@ -11,18 +11,18 @@
 void DrawNoEntrySymbol(ImVec2 pos, float size, ImU32 col) {
     ImDrawList* drawList = ImGui::GetWindowDrawList();
 
-    // ¼ÆËãÖÐÐÄµãºÍ°ë¾¶
+    // è®¡ç®—ä¸­å¿ƒç‚¹å’ŒåŠå¾„
     ImVec2 center = ImVec2(pos.x + size / 2, pos.y + size / 2);
 
     size *= 0.9F;
 
     float radius = size / 2;
 
-    // »æÖÆÔ²È¦
+    // ç»˜åˆ¶åœ†åœˆ
     drawList->AddCircle(center, radius, col, 0, 2.0f);
 
-    // »æÖÆÐ±Ïß
-    float offset = radius * 0.7071f; // 45¶ÈÐ±ÏßµÄÆ«ÒÆÁ¿
+    // ç»˜åˆ¶æ–œçº¿
+    float offset = radius * 0.7071f; // 45åº¦æ–œçº¿çš„åç§»é‡
     drawList->AddLine(
         ImVec2(center.x - offset, center.y - offset),
         ImVec2(center.x + offset, center.y + offset),
@@ -30,36 +30,33 @@ void DrawNoEntrySymbol(ImVec2 pos, float size, ImU32 col) {
         2.0f
     );
 }
-
 void DrawCross(ImVec2 pos, float size, ImU32 col) {
     ImDrawList* drawList = ImGui::GetWindowDrawList();
 
-    // ¼ÆËãÏßÌõµÄÆðµãºÍÖÕµã
+    // è®¡ç®—çº¿æ¡çš„èµ·ç‚¹å’Œç»ˆç‚¹
     ImVec2 p1 = ImVec2(pos.x + size * 0.15f, pos.y + size * 0.15f);
     ImVec2 p2 = ImVec2(pos.x + size * 0.85f, pos.y + size * 0.85f);
     ImVec2 p3 = ImVec2(pos.x + size * 0.15f, pos.y + size * 0.85f);
     ImVec2 p4 = ImVec2(pos.x + size * 0.85f, pos.y + size * 0.15f);
 
-    // »æÖÆµÚÒ»ÌõÏß
+    // ç»˜åˆ¶ç¬¬ä¸€æ¡çº¿
     drawList->AddLine(p1, p2, col, 2.0f);
 
-    // »æÖÆµÚ¶þÌõÏß
+    // ç»˜åˆ¶ç¬¬äºŒæ¡çº¿
     drawList->AddLine(p3, p4, col, 2.0f);
 }
-
-
 void DrawCheckmark(ImVec2 pos, float size, ImU32 col) {
     ImDrawList* drawList = ImGui::GetWindowDrawList();
 
-    // ¼ÆËãÏßÌõµÄÆðµãºÍÖÕµã
-    ImVec2 p1 = ImVec2(pos.x + size * 0.2f, pos.y + size * 0.5f); // µÚÒ»ÌõÏßµÄÆðµã
-    ImVec2 p2 = ImVec2(pos.x + size * 0.4f, pos.y + size * 0.7f); // µÚÒ»ÌõÏßµÄÖÕµã
-    ImVec2 p3 = ImVec2(pos.x + size * 0.8f, pos.y + size * 0.3f); // µÚ¶þÌõÏßµÄÖÕµã
+    // è®¡ç®—çº¿æ¡çš„èµ·ç‚¹å’Œç»ˆç‚¹
+    ImVec2 p1 = ImVec2(pos.x + size * 0.2f, pos.y + size * 0.5f); // ç¬¬ä¸€æ¡çº¿çš„èµ·ç‚¹
+    ImVec2 p2 = ImVec2(pos.x + size * 0.4f, pos.y + size * 0.7f); // ç¬¬ä¸€æ¡çº¿çš„ç»ˆç‚¹
+    ImVec2 p3 = ImVec2(pos.x + size * 0.8f, pos.y + size * 0.3f); // ç¬¬äºŒæ¡çº¿çš„ç»ˆç‚¹
 
-    // »æÖÆµÚÒ»ÌõÏß
+    // ç»˜åˆ¶ç¬¬ä¸€æ¡çº¿
     drawList->AddLine(p1, p2, col, 2.0f);
 
-    // »æÖÆµÚ¶þÌõÏß
+    // ç»˜åˆ¶ç¬¬äºŒæ¡çº¿
     drawList->AddLine(p2, p3, col, 2.0f);
 }
 
@@ -74,6 +71,25 @@ extern wchar_t CurrentDirW[];
 extern const char* DefaultAltPropType;
 extern const char* LinkAltPropType;
 extern int RFontHeight;
+
+
+
+IBB_Section* IBR_SectionData::GetBack_Inl()
+{
+    if (!BackPtr_Cached)
+    {
+        BackPtr_Cached = IBR_Inst_Project.GetSection(Desc).GetBack();
+    }
+    return BackPtr_Cached;
+}
+
+bool IBR_SectionData::IsVirtualBlock() const
+{
+    return !IncludingModules.empty();
+}
+
+
+
 
 void IBR_SectionData::RenameDisplay()
 {
@@ -184,6 +200,7 @@ void IBR_SectionData::RenameRegisterImpl(const std::string& Name)
     auto RSec = IBR_Inst_Project.GetSection(Desc);
     if (!RSec.Rename(Name))
         IBR_HintManager::SetHint(locc("GUI_RegRenameFailed"), HintStayTimeMillis);
+    BackPtr_Cached = nullptr;
 }
 
 bool IBR_SectionData::OnLineEdit(const std::string& Name, bool OnLink)
@@ -192,8 +209,7 @@ bool IBR_SectionData::OnLineEdit(const std::string& Name, bool OnLink)
     auto& Line = ActiveLines[Name];
     bool HasInput{ false };
     if (Line.Edit.Input)HasInput = true;
-    auto sec = IBR_Inst_Project.GetSection(Desc);
-    auto back = sec.GetBack();
+    auto back = GetBack_Inl();
     auto line = back->GetLineFromSubSecs(Name);
     if (!line)
     {
@@ -201,7 +217,7 @@ bool IBR_SectionData::OnLineEdit(const std::string& Name, bool OnLink)
         {
             GlobalLog.AddLog_CurTime(false);
             auto W = UTF8toUnicode(Desc.GetText() + u8" : " + Name);
-            GlobalLog.AddLog(std::vformat(L"IBR_SectionData::OnLineEdit £º "+locw("Log_INILineNotExist"),
+            GlobalLog.AddLog(std::vformat(L"IBR_SectionData::OnLineEdit ï¼š "+locw("Log_INILineNotExist"),
                 std::make_wformat_args(W)));
         }
         return true;
@@ -243,7 +259,7 @@ bool IBR_SectionData::OnLineEdit(const std::string& Name, bool OnLink)
                         IBR_EditFrame::EditLines[Name].Buffer = S;
                     }
                 } };
-        if (Name == "__INHERIT__")
+        if (Name == InheritKeyName)
         {
             auto Q = line->Data->GetString();
             auto w = IBR_WorkSpace::ShowRegName ? UTF8toUnicode(Q) :
@@ -257,7 +273,7 @@ bool IBR_SectionData::OnLineEdit(const std::string& Name, bool OnLink)
     }
     else
     {
-        if (Name == "__INHERIT__")
+        if (Name == InheritKeyName)
         {
             auto Q = line->Data->GetString();
             auto w = IBR_WorkSpace::ShowRegName ? UTF8toUnicode(Q) :
@@ -281,6 +297,35 @@ void IBR_SectionData::CopyToClipBoard()
     ImGui::SetClipboardText(ClipData.GetString().c_str());
     auto c = 1;
     IBR_HintManager::SetHint(UnicodetoUTF8(std::vformat(locw("GUI_CopySuccess"), std::make_wformat_args(c))), HintStayTimeMillis);
+}
+
+bool IBR_SectionData::Decomposable() const
+{
+    return !IncludingModules.empty();
+}
+
+void IBR_SectionData::Decompose()
+{
+    if (!Decomposable())return;
+    IBRF_CoreBump.SendToR({ [Desc = this->Desc]()
+    {
+        auto Res = IBR_Inst_Project.DecomposeSection(Desc);
+        if (Res)
+        {
+            IBR_WorkSpace::MassSelect(*Res);
+            auto c = Res->size();
+            IBR_HintManager::SetHint(UnicodetoUTF8(std::vformat(locw("GUI_DecomposeSuccess"), std::make_wformat_args(c))), HintStayTimeMillis);
+        }
+        else
+        {
+            IBR_HintManager::SetHint(locc("GUI_DecomposeFailed"), HintStayTimeMillis);
+        }
+    } });
+}
+
+bool IBR_SectionData::IsIncluded() const
+{
+    return IncludedByModule != INVALID_MODULE_ID && IBR_Inst_Project.HasSection(IncludedByModule);
 }
 
 void DrawDragPreviewIcon()
@@ -322,8 +367,7 @@ void IBR_SectionData::RenderUI_TitleBar(bool &TriggeredRightMenu)
             {
                 std::string s = (char*)payload->Data;
                 const auto& desc = IBR_Inst_Project.IBR_SecDragMap[s].Desc;
-                auto sec = IBR_Inst_Project.GetSection(Desc);
-                auto back = sec.GetBack();
+                auto back = GetBack_Inl();
                 auto srcsec = IBR_Inst_Project.GetSection(desc);
                 auto srcback = srcsec.GetBack();
 
@@ -360,7 +404,7 @@ void IBR_SectionData::RenderUI_TitleBar(bool &TriggeredRightMenu)
             ImGui::EndDragDropTarget();
         }
         else if ((payload = ImGui::AcceptDragDropPayload("IBR_LineDrag", ImGuiDragDropFlags_AcceptBeforeDelivery)))
-            //Èç¹ûÊÇ¹ÊÒâ¸³Öµ£¬Ôò¿ÉÒÔ½«ÆäÀ¨ÔÚÀ¨ºÅÖÐ "(e1 = e2)"£¬ÒÔÏû³ý´Ë¾¯¸æ
+            //å¦‚æžœæ˜¯æ•…æ„èµ‹å€¼ï¼Œåˆ™å¯ä»¥å°†å…¶æ‹¬åœ¨æ‹¬å·ä¸­ "(e1 = e2)"ï¼Œä»¥æ¶ˆé™¤æ­¤è­¦å‘Š
         {
             if (payload->IsPreview() || payload->IsDelivery())
             {
@@ -368,8 +412,7 @@ void IBR_SectionData::RenderUI_TitleBar(bool &TriggeredRightMenu)
                 const auto& lin = IBR_Inst_Project.IBR_LineDragMap[s];
                 auto sec = IBR_Inst_Project.GetSection(lin.Desc);
                 auto back = sec.GetBack();
-                auto tgsec = IBR_Inst_Project.GetSection(Desc);
-                auto tgback = tgsec.GetBack();
+                auto tgback = GetBack_Inl();
                 auto Line = back->GetLineFromSubSecs(lin.Line);
 
                 if (back && tgback)
@@ -453,11 +496,15 @@ void IBR_SectionData::RenderUI_TitleBar(bool &TriggeredRightMenu)
                         RenameDisplay();
                         IBR_PopupManager::ClearRightClickMenu();
                     }
+                    //DO NOT CHANGE THE REGISTER NAME OF COMMENT BLOCK
+                    //OK BUT UNNECESSARY
+                    /*
                     if (ImGui::SmallButtonAlignLeft(locc("GUI_RegRename"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
                     {
                         RenameRegister();
                         IBR_PopupManager::ClearRightClickMenu();
                     }
+                    */
                     if (ImGui::SmallButtonAlignLeft(locc("GUI_Copy"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
                     {
                         CopyToClipBoard();
@@ -502,11 +549,17 @@ void IBR_SectionData::RenderUI_TitleBar(bool &TriggeredRightMenu)
                     CopyToClipBoard();
                     IBR_PopupManager::ClearRightClickMenu();
                 }
+                if (Decomposable())
+                {
+                    if (ImGui::SmallButtonAlignLeft(locc("GUI_Decompose"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
+                    {
+                        Decompose();
+                        IBR_PopupManager::ClearRightClickMenu();
+                    }
+                }
                 if (ImGui::SmallButtonAlignLeft(locc("GUI_EditText"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
                 {
-                    IBR_EditFrame::SetActive(IBR_Inst_Project.IBR_Rev_SectionMap[Desc]);
-                    IBR_EditFrame::SwitchToText();
-                    IBR_Inst_Menu.ChooseMenu(MenuItemID_EDIT);
+                    IBR_EditFrame::ActivateAndEdit(IBR_Inst_Project.IBR_Rev_SectionMap[Desc], true);
                     IBR_PopupManager::ClearRightClickMenu();
                 }
                 if (ImGui::SmallButtonAlignLeft(locc("GUI_Delete"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
@@ -528,8 +581,8 @@ void IBR_SectionData::RenderUI_TitleBar(bool &TriggeredRightMenu)
     if (!IsComment)
     {
         if (Ignore)ImGui::PushStyleColor(ImGuiCol_CheckMark, IBR_WorkSpace::TempWbg);
-        Rsec.SetReOffset(ImGui::GetCursorPos() + ImVec2{ FontHeight * 0.7f, HalfLine });
-        ImGui::RadioButton("##MODULE", true);
+        Rsec.SetReOffset(ImVec2{ FontHeight * 0.7f, HalfLine });
+        ImGui::RadioButton(("##MODULE" + ModuleStrID).c_str(), true, GlobalNodeStyle);
         if (Ignore)ImGui::PopStyleColor();
         if (ImGui::BeginDragDropSource())
         {
@@ -548,7 +601,11 @@ void IBR_SectionData::RenderUI_TitleBar(bool &TriggeredRightMenu)
             IBD_RInterruptF(x);
             auto Bsec = Rsec.GetBack();
             if (Bsec)ImGui::Text(Bsec->Name.c_str());
-            else ImGui::TextColored(IBR_Color::ErrorTextColor, locc("Back_GunMu"));
+            else
+            {
+                ImGui::TextColored(IBR_Color::ErrorTextColor, locc("Back_GunMu"));
+                BackPtr_Cached = nullptr;
+            }
         }
         else ImGui::Text(DisplayName.c_str());
 
@@ -558,9 +615,7 @@ void IBR_SectionData::RenderUI_TitleBar(bool &TriggeredRightMenu)
         ImGui::SetCursorPos(UPos);
         if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
         {
-            IBR_EditFrame::SetActive(IBR_Inst_Project.IBR_Rev_SectionMap[Desc]);
-            IBR_EditFrame::SwitchToText();
-            IBR_Inst_Menu.ChooseMenu(MenuItemID_EDIT);
+            IBR_EditFrame::ActivateAndEdit(IBR_Inst_Project.IBR_Rev_SectionMap[Desc], true);
         }
     }
     else
@@ -571,6 +626,7 @@ void IBR_SectionData::RenderUI_TitleBar(bool &TriggeredRightMenu)
 
 void IBR_SectionData::RenderUI()
 {
+    ReWindowUL = ImGui::GetCursorScreenPos();
     auto HalfLine = ImGui::GetTextLineHeightWithSpacing() * 0.5F;
     FinalY = ImGui::GetCursorPosY();
     WidthFix = 0.0f;
@@ -582,7 +638,7 @@ void IBR_SectionData::RenderUI()
     ImVec2 HeadLineRN = ImGui::GetLineEndPos() - ImVec2{ FontHeight * 1.5f, HalfLine };
     {
         IBD_RInterruptF(x);
-        auto Bsec = Rsec.GetBack();
+        auto Bsec = GetBack_Inl();
         if (Bsec == nullptr)
         {
             ImGui::TextColored(IBR_Color::ErrorTextColor, locc("GUI_MissingSectionLink"));
@@ -596,7 +652,7 @@ void IBR_SectionData::RenderUI()
                 TSize.x = std::max(TSize.x + FontHeight * 1.2f , FontHeight * 14.6f);
                 TSize.y = std::max(TSize.y + FontHeight, FontHeight * 8.0f);
                 //IBR_HintManager::SetHint(std::to_string(TSize.x) + ","+ std::to_string(TSize.y),HintStayTimeMillis);
-                if (ImGui::InputTextMultiline("##COMMENT", CommentEdit.get(), MAX_STRING_LENGTH,
+                if (ImGui::InputTextMultiline(("##COMMENT" + ModuleStrID).c_str(), CommentEdit.get(), MAX_STRING_LENGTH, 
                     TSize,
                     ImGuiInputTextFlags_NoHorizontalScroll | ImGuiInputTextFlags_WrappedText))
                 {
@@ -608,6 +664,7 @@ void IBR_SectionData::RenderUI()
         }
         else
         {
+            //GlobalLog.AddLog(( Desc.GetText() + ":" + DisplayName).c_str());
             if (Bsec->SubSecOrder.size() != Bsec->SubSecs.size())
             {
                 Bsec->SubSecOrder.clear();
@@ -622,6 +679,10 @@ void IBR_SectionData::RenderUI()
                 std::string Last{};
                 std::unordered_set<std::string> Used;
                 bool IsInheritSubSec = (sub.Default->Name == "  INHERIT_SUBSEC__");
+
+                if (IsInheritSubSec && Bsec->Inherit.empty())
+                    continue;
+
                 for (const auto& lt : sub.LinkTo)
                 {
                     Used.insert(lt.FromKey);
@@ -663,9 +724,10 @@ void IBR_SectionData::RenderUI()
                         auto rsc = IBR_Inst_Project.GetSection(IBB_Section_Desc{ lt.To.Ini.GetText(),lt.To.Section.GetText() });
 
                         ImColor BtnColor{ LineCol };
+                        ImU32 BtnColorW = (LineCol >> IM_COL32_A_SHIFT) & 0xFF;
 
                         bool Illegal = !rsc.HasBack();
-                        bool HasBtnCol = BtnColor.Value.w > 0.0001f;
+                        bool HasBtnCol = BtnColorW > 0;
                         if (Ignore)ImGui::PushStyleColor(ImGuiCol_CheckMark, IBR_WorkSpace::TempWbg);
                         else if (Illegal)
                         {
@@ -675,7 +737,8 @@ void IBR_SectionData::RenderUI()
                         else if(HasBtnCol)ImGui::PushStyleColor(ImGuiCol_CheckMark, BtnColor.Value);
 
                         if (IsInheritSubSec)ImGui::SetCursorPosY(FinalY);
-                        bool _K = ImGui::RadioButton(("##" + lt.FromKey).c_str(), true, IsInheritSubSec);
+                        bool _K = ImGui::RadioButton(("##" + lt.FromKey).c_str(), true,
+                            IsInheritSubSec ? ImGuiRadioButtonFlags_RoundedSquare : GlobalNodeStyle );
                         if (_K)
                         {
                             auto sec = IBR_Inst_Project.GetSection(Desc);
@@ -745,7 +808,7 @@ void IBR_SectionData::RenderUI()
                                         for (size_t i = 0; i < V.size(); i++)
                                         {
                                             if (Dis[i].empty())ImGui::PushStyleColor(ImGuiCol_CheckMark, IBR_Color::IllegalLineColor.Value);
-                                            if (ImGui::RadioButton(("##POP_RIGHT_" + std::to_string(i)).c_str(), Res[i]))
+                                            if (ImGui::RadioButton(("##POP_RIGHT_" + std::to_string(i)).c_str(), Res[i], GlobalNodeStyle))
                                             {
                                                 if (Res[i])
                                                 {
@@ -789,7 +852,7 @@ void IBR_SectionData::RenderUI()
                         }
                         if (ImGui::BeginDragDropSource())
                         {
-                            if (lt.FromKey == "__INHERIT__")
+                            if (lt.FromKey == InheritKeyName)
                             {
                                 auto w = UTF8toUnicode((Desc.Ini + " -> " + DisplayName));
                                 ImGui::Text(UnicodetoUTF8(std::vformat(locw("GUI_InheritTo"), std::make_wformat_args(w))).c_str());
@@ -805,20 +868,6 @@ void IBR_SectionData::RenderUI()
 
                         ImGui::SetCursorPos(NewLineCursor);
                     }
-
-                    //REMOVED 25/01/22
-                    /*
-                    if (ImGui::ArrowButton((lt.FromKey + u8"_WTF_" + lt.To.Section.GetText()).c_str(), ImGuiDir_Right))
-                    {
-                        auto dat = rsc.GetSectionData();
-                        if (dat != nullptr)
-                        {
-                            IBR_EditFrame::SetActive(rsc.ID);
-                            IBRF_CoreBump.SendToR({ [=]() {IBR_FullView::EqCenter = dat->EqPos + (dat->EqSize / 2.0); } });
-                        }
-                    }
-                    */
-
                     Last = lt.FromKey;
                 }
                 for (const auto& [k, l] : sub.Lines)
@@ -839,10 +888,11 @@ void IBR_SectionData::RenderUI()
                             else ImGui::PushStyleColor(ImGuiCol_CheckMark, IBR_Color::IllegalLineColor.Value);
                         }
                         if (IsInheritSubSec)ImGui::SetCursorPosY(FinalY);
-                        ImGui::RadioButton(("##" + k).c_str(), true, IsInheritSubSec);
+                        ImGui::RadioButton(("##" + k).c_str(), true,
+                            IsInheritSubSec ? ImGuiRadioButtonFlags_RoundedSquare : GlobalNodeStyle);
                         if (ImGui::BeginDragDropSource())
                         {
-                            if (k == "__INHERIT__")
+                            if (k == InheritKeyName)
                             {
                                 auto w = UTF8toUnicode((Desc.Ini + " -> " + DisplayName));
                                 ImGui::Text(UnicodetoUTF8(std::vformat(locw("GUI_InheritTo"), std::make_wformat_args(w))).c_str());
@@ -861,12 +911,13 @@ void IBR_SectionData::RenderUI()
             }
             for (const auto& [k, l] : Bsec->UnknownLines.Value)
             {
+
                 auto _F = Bsec->OnShow.find(k);
                 if (_F == Bsec->OnShow.end() || _F->second.empty())continue;
                 auto& Line = ActiveLines[k];
                 auto& V = Bsec->UnknownLines.Value[k];
                 Line.Buffer = V;
-                auto K2 = k + " = " + V;
+                //auto K2 = k + " = " + V;
                 if (V == "yes" || V == "no" || V == "true" || V == "false")
                 {
                     bool X = (V == "yes" || V == "true");

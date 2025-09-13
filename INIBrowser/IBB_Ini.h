@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #include "FromEngine/Include.h"
 #include "cjson/cJSON.h"
 #include "IBB_Components.h"
@@ -23,13 +23,13 @@ enum class IBB_IniMergeMode
 
 struct IBB_IniLine_Default
 {
-    struct _Limit//°´ÕÕÊ²Ã´Æ¥Åä
+    struct _Limit//æŒ‰ç…§ä»€ä¹ˆåŒ¹é…
     {
         std::string Type;
         std::string Lim;
     };
 
-    struct _Property//´æ´¢µÄÊÇÊ²Ã´
+    struct _Property//å­˜å‚¨çš„æ˜¯ä»€ä¹ˆ
     {
         std::string Type;
         JsonObject Lim;
@@ -132,7 +132,7 @@ struct IBB_IniLine
     IBB_IniLine(const IBB_IniLine& F) { Default = F.Default; Data = F.Data; }
     IBB_IniLine(IBB_IniLine&& F);
 
-    IBB_IniLine Duplicate() const;//Õâ¸ö²ÅÊÇÉî¸´ÖÆ£¬¼øÓÚÉî¸´ÖÆÓÃ´¦Ô¶µÍÇ³¸´ÖÆ£¬¹ÊÄ¬ÈÏÇ³¸´ÖÆ
+    IBB_IniLine Duplicate() const;//è¿™ä¸ªæ‰æ˜¯æ·±å¤åˆ¶ï¼Œé‰´äºæ·±å¤åˆ¶ç”¨å¤„è¿œä½æµ…å¤åˆ¶ï¼Œæ•…é»˜è®¤æµ…å¤åˆ¶
 
     ~IBB_IniLine() = default;
 };
@@ -146,7 +146,7 @@ struct IBB_SubSec
     std::vector<std::string> Lines_ByName;//KeyName
     std::unordered_map<std::string, IBB_IniLine> Lines;//<KeyName,LineData>
     std::vector<IBB_Link> LinkTo;
-    //Key¸´ÖÆÁË2±é£ºLines_ByName / Lines.find(x)->first
+    //Keyå¤åˆ¶äº†2éï¼šLines_ByName / Lines.find(x)->first
 
     IBB_SubSec() {}
     IBB_SubSec(IBB_SubSec_Default* D, IBB_Section* R) : Default(D), Root(R) {}
@@ -156,12 +156,12 @@ struct IBB_SubSec
     bool Merge(const IBB_SubSec& Another, const std::unordered_map<std::string, IBB_IniMergeMode>& MergeType, bool IsDuplicate);
     bool Merge(const IBB_SubSec& Another, IBB_IniMergeMode Mode, bool IsDuplicate);
 
-    std::string GetText(bool PrintExtraData, bool FromExport = false) const;//RARELY USED Õâ¸öGetText×Ô´ø»»ĞĞ·û
+    std::string GetText(bool PrintExtraData, bool FromExport = false) const;//RARELY USED è¿™ä¸ªGetTextè‡ªå¸¦æ¢è¡Œç¬¦
     std::vector<std::string> GetKeys(bool PrintExtraData) const;//RARELY USED
     IBB_VariableList GetLineList(bool PrintExtraData) const;//RARELY USED
     std::string GetFullVariable(const std::string& Name) const;
-    IBB_SubSec Duplicate() const;//Õâ¸ö²ÅÊÇÉî¸´ÖÆ£¬¼øÓÚÉî¸´ÖÆÓÃ´¦Ô¶µÍÇ³¸´ÖÆ£¬¹ÊÄ¬ÈÏÇ³¸´ÖÆ
-    void GenerateAsDuplicate(const IBB_SubSec& Src);//´ÓSrcÉî¸´ÖÆ
+    IBB_SubSec Duplicate() const;//è¿™ä¸ªæ‰æ˜¯æ·±å¤åˆ¶ï¼Œé‰´äºæ·±å¤åˆ¶ç”¨å¤„è¿œä½æµ…å¤åˆ¶ï¼Œæ•…é»˜è®¤æµ…å¤åˆ¶
+    void GenerateAsDuplicate(const IBB_SubSec& Src);//ä»Srcæ·±å¤åˆ¶
 
     bool UpdateAll();
 
@@ -195,7 +195,7 @@ struct IBB_Section
     std::vector<size_t> SubSecOrder;
     std::vector<IBB_Link> LinkedBy;
     IBB_VariableList VarList;
-    IBB_VariableList UnknownLines;//²»¹éÊôÓÚÈÎÒ»SubSec
+    IBB_VariableList UnknownLines;//ä¸å½’å±äºä»»ä¸€SubSec
 
     bool IsLinkGroup{ false };//no subsec varlist unklines
     std::vector<IBB_Link> LinkGroup_LinkTo;
@@ -211,7 +211,7 @@ struct IBB_Section
         bool Selected{ false };
     }Dynamic;
 
-    //ÔöÉ¾¸ÄÊ±ÏàÓ¦ĞŞ¸ÄÒÆ¶¯¹¹Ôìº¯Êı
+    //å¢åˆ æ”¹æ—¶ç›¸åº”ä¿®æ”¹ç§»åŠ¨æ„é€ å‡½æ•°
 
     // MergeType is unused to a LinkGroup
     bool Merge(const IBB_Section& Another, const std::unordered_map<std::string, IBB_IniMergeMode>& MergeType, bool IsDuplicate);
@@ -232,9 +232,9 @@ struct IBB_Section
 
     bool ChangeRoot(const IBB_Ini* NewRoot);
     IBB_Section& ChangeRootAndBack(const IBB_Ini* R) { ChangeRoot(R); return *this; }
-    bool Rename(const std::string& NewName);//ÎŞĞ§»¯Ö¸ÏòËüµÄËùÓĞIBB_Section_Desc
-    bool ChangeAddress();//ÓÃÓÚ²»¸Ä±äÄÚÈİµ«ÊÇ¸Ä±ä´æ´¢Î»ÖÃÊ±,¹©ÒÆ¶¯¹¹Ôì
-    bool Isolate();//ÇĞ¶ÏËùÓĞLink
+    bool Rename(const std::string& NewName);//æ— æ•ˆåŒ–æŒ‡å‘å®ƒçš„æ‰€æœ‰IBB_Section_Desc
+    bool ChangeAddress();//ç”¨äºä¸æ”¹å˜å†…å®¹ä½†æ˜¯æ”¹å˜å­˜å‚¨ä½ç½®æ—¶,ä¾›ç§»åŠ¨æ„é€ 
+    bool Isolate();//åˆ‡æ–­æ‰€æœ‰Link
     void RedirectLinkAsDupicate();
 
     IBB_IniLine* GetLineFromSubSecs(const std::string& Name) const;
@@ -244,10 +244,11 @@ struct IBB_Section
     std::vector<std::string> GetKeys(bool PrintExtraData) const;//RARELY USED
     IBB_VariableList GetLineList(bool PrintExtraData) const;//RARELY USED
     IBB_VariableList GetSimpleLines() const;//RARELY USED
-    std::string GetText(bool PrintExtraData, bool FromExport = false) const;//RARELY USED
-    std::string GetFullVariable(const std::string& Name) const;//Èç¹û¶ÔÆäÊ¹ÓÃ_SECTION_NAMEÔò·µ»Ø×Ö¶ÎÃû
-    std::vector<size_t> GetRegisteredPosition() const;//ProjectµÄRegListĞòºÅ
-    std::vector<std::pair<size_t, size_t>> GetRegisteredPositionAlt() const;//pair<ProjectµÄRegListĞòºÅ,RegListµÄSec*ĞòºÅ>
+    std::string GetText(bool PrintExtraData, bool FromExport = false) const;
+    std::string GetTextForEdit() const;
+    std::string GetFullVariable(const std::string& Name) const;//å¦‚æœå¯¹å…¶ä½¿ç”¨_SECTION_NAMEåˆ™è¿”å›å­—æ®µå
+    std::vector<size_t> GetRegisteredPosition() const;//Projectçš„RegListåºå·
+    std::vector<std::pair<size_t, size_t>> GetRegisteredPositionAlt() const;//pair<Projectçš„RegListåºå·,RegListçš„Sec*åºå·>
     IBB_Section_NameType GetNameType() const;
     bool SetText(char* Text);//mess Text up
     bool SetText(const std::vector<IniToken>& Tokens);//do not consider section&inherit
@@ -272,7 +273,7 @@ struct IBB_Ini
     bool Merge(const IBB_Ini& Another, bool IsDuplicate);
     bool CreateSection(const _TEXT_ANSI std::string& _Name);
     bool AddSection(const IBB_Section& Section, bool IsDuplicate);
-    bool DeleteSection(const _TEXT_ANSI std::string& Tg);//°üº¬Update
+    bool DeleteSection(const _TEXT_ANSI std::string& Tg);//åŒ…å«Update
 
     std::string GetText(bool PrintExtraData) const;
 
@@ -289,7 +290,7 @@ struct IBB_Link_Default
         LinkFromForbidden,
         LinkToRequired,
         LinkToForbidden;
-    std::string Name;//Á´½ÓÃ»ÓĞDesc
+    std::string Name;//é“¾æ¥æ²¡æœ‰Desc
     bool NameOnlyAsRegister{ false };
 
     bool Load(JsonObject FromJson);
@@ -307,7 +308,7 @@ struct IBB_Link_NameType
     void Write(const ExtFileClass& File)const;
 };
 
-//TODO:ËüµÄÎö¹¹ËÆºõÓĞÄªÃûµÄÎÊÌâ£¬¿ÉÄÜµ¼ÖÂ±ÀÀ£,µ«ÊÇÖÁ½ñÎ´Ôø¸´ÏÖ¡£¡£
+//TODO:å®ƒçš„ææ„ä¼¼ä¹æœ‰è«åçš„é—®é¢˜ï¼Œå¯èƒ½å¯¼è‡´å´©æºƒ,ä½†æ˜¯è‡³ä»Šæœªæ›¾å¤ç°ã€‚ã€‚
 struct IBB_Link
 {
     IBB_Link_Default* Default{ nullptr };
@@ -330,8 +331,8 @@ struct IBB_Link
         }Legal;
     }Dynamic;
 
-    IBB_Link() {}
-    IBB_Link(IBB_Link_Default* D, const IBB_Project_Index& F, const IBB_Project_Index& T) :Default(D), From(F), To(T) {}
+    IBB_Link() = default;
+    IBB_Link(IBB_Link_Default* D, const IBB_Project_Index& F, const IBB_Project_Index& T) :Default(D), From(F), To(T), Dynamic({_Dynamic::Incomplete}) {}
 
     void FillData(IBB_Link* a, const std::string& s) { Another = a; FromKey = s; }
 
@@ -339,6 +340,6 @@ struct IBB_Link
     void DynamicCheck_UpdateNewLink(const IBB_Project& Proj);
     bool ChangeAddress();
 
-    std::string GetText(const IBB_Project& Proj) const;//Õâ¸öGetText×Ô´ø»»ĞĞ·û
+    std::string GetText(const IBB_Project& Proj) const;//è¿™ä¸ªGetTextè‡ªå¸¦æ¢è¡Œç¬¦
     IBB_Link_NameType GetNameType() const;
 };

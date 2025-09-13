@@ -1,4 +1,4 @@
-#include "IBRender.h"
+ï»¿#include "IBRender.h"
 #include "IBFront.h"
 #include "Global.h"
 #include "FromEngine/RFBump.h"
@@ -6,7 +6,7 @@
 #include "IBB_RegType.h"
 #include<imgui_internal.h>
 
-extern const char* LinkGroup_IniName;
+extern const char* Internal_IniName;
 
 std::string CutSpace(const std::string& ss)//REPLACE ORIG
 {
@@ -42,7 +42,7 @@ void MergeList(std::vector<std::string>& Value, const std::string& Str)
 std::string DecodeListForExport(const std::string& Val)
 {
     if (Val.empty())return "";
-    IBB_Section_Desc Desc{ LinkGroup_IniName, Val };
+    IBB_Section_Desc Desc{ Internal_IniName, Val };
     auto pSec = IBF_Inst_Project.Project.GetSec(Desc);
     if (pSec && pSec->IsLinkGroup)
     {
@@ -273,14 +273,14 @@ std::string IBB_SubSec::GetText(bool PrintExtraData, bool FromExport) const
             {
                 GlobalLogB.AddLog_CurTime(false);
                 auto sl = UTF8toUnicode(sn);
-                GlobalLogB.AddLog(std::vformat(L"IBB_SubSec::GetText £º" + locw("Log_SubSecNotExist"), std::make_wformat_args(sl)));
+                GlobalLogB.AddLog(std::vformat(L"IBB_SubSec::GetText ï¼š" + locw("Log_SubSecNotExist"), std::make_wformat_args(sl)));
             }
         auto& L = It->second;
         if (FromExport)
         {
             auto ex = L.Data->GetStringForExport(/*Root->Root->Name*/);
             if (ex.empty())continue;
-            if (sn == "__INHERIT__")continue;
+            if (sn == InheritKeyName)continue;
             Text += sn;
             Text += '=';
             Text += ex;
@@ -288,7 +288,7 @@ std::string IBB_SubSec::GetText(bool PrintExtraData, bool FromExport) const
         }
         else
         {
-            if (sn == "__INHERIT__")continue;
+            if (sn == InheritKeyName)continue;
             Text += sn;
             Text += '=';
             Text += L.Data->GetString();
@@ -315,7 +315,7 @@ std::vector<std::string> IBB_SubSec::GetKeys(bool PrintExtraData) const
             {
                 GlobalLogB.AddLog_CurTime(false);
                 auto sl = UTF8toUnicode(sn);
-                GlobalLogB.AddLog(std::vformat(L"IBB_SubSec::GetKeys £º" + locw("Log_SubSecNotExist"), std::make_wformat_args(sl)));
+                GlobalLogB.AddLog(std::vformat(L"IBB_SubSec::GetKeys ï¼š" + locw("Log_SubSecNotExist"), std::make_wformat_args(sl)));
             }
         Ret.push_back(sn);
     }
@@ -338,7 +338,7 @@ IBB_VariableList IBB_SubSec::GetLineList(bool PrintExtraData) const
             {
                 GlobalLogB.AddLog_CurTime(false);
                 auto sl = UTF8toUnicode(sn);
-                GlobalLogB.AddLog(std::vformat(L"IBB_SubSec::GetLineList £º" + locw("Log_SubSecNotExist"), std::make_wformat_args(sl)));
+                GlobalLogB.AddLog(std::vformat(L"IBB_SubSec::GetLineList ï¼š" + locw("Log_SubSecNotExist"), std::make_wformat_args(sl)));
             }
         auto& L = It->second;
         if (L.Default == nullptr)Ret.Value[sn] = "MISSING Line Default";
@@ -410,11 +410,11 @@ bool IBB_SubSec::UpdateAll()
                 if (pList)
                 {
                     auto& pV = pList->GetValue();
-                    //ÁôÏÂÎÞÐ§µÄÄÚÈÝ£¨
+                    //ç•™ä¸‹æ— æ•ˆçš„å†…å®¹ï¼ˆ
                     //pV.erase(std::remove_if(pV.begin(), pV.end(), [](const std::string& v)->bool {return IBB_Project_Index{ DefaultIniName ,v }.GetSec(IBF_Inst_Project.Project) == nullptr; }), pV.end());
                     auto Limit = reinterpret_cast<int>(def->Property.Lim.GetRaw());
 
-                    //¸Ä³ÉÁËÈÓµô×îÐÂµÄÁ´½Ó×÷¡°Á¬²»ÉÏ¡±×´
+                    //æ”¹æˆäº†æ‰”æŽ‰æœ€æ–°çš„é“¾æŽ¥ä½œâ€œè¿žä¸ä¸Šâ€çŠ¶
                     if (Limit > 1)while ((int)pV.size() > Limit)pV.pop_back();
                     if (Limit == 1 && (int)pV.size() > Limit)pV.erase(pV.begin());
                     //if (Limit > 0 && (int)pV.size() > Limit)pV.erase(pV.begin(), pV.begin() + pV.size() - Limit);

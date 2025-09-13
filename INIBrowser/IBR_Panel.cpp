@@ -1,4 +1,4 @@
-#include "IBRender.h"
+Ôªø#include "IBRender.h"
 #include "IBFront.h"
 #include "Global.h"
 #include "FromEngine/RFBump.h"
@@ -67,32 +67,32 @@ void ControlPanel_File()
     else if (ImGui::Button(locc("GUI_Output")))IBR_ProjectManager::OutputAction();//
 
     ImGui::NewLine();
-    if (ImGui::Button(locc("GUI_CloseProject")))IBR_ProjectManager::ProjOpen_CreateAction(); //Õıµ¬∑¢ƒ„≤¬Œ™ ≤√¥ «CreateAction
+    if (ImGui::Button(locc("GUI_CloseProject")))IBR_ProjectManager::ProjOpen_CreateAction(); //ÁéãÂæ∑Âèë‰Ω†Áåú‰∏∫‰ªÄ‰πàÊòØCreateAction
     if (ImGui::Button(locc("GUI_OpenProject")))IBR_ProjectManager::ProjOpen_OpenAction();//
     ImGui::NewLine();
     IBR_RecentManager::RenderUI();//
     /*
     if (!IsProjectOpen)
     {
-        if (ImGui::Button(u8"–¬Ω®"))IBR_ProjectManager::CreateAction();//
-        if (ImGui::Button(u8"¥Úø™"))IBR_ProjectManager::OpenAction();//
+        if (ImGui::Button(u8"Êñ∞Âª∫"))IBR_ProjectManager::CreateAction();//
+        if (ImGui::Button(u8"ÊâìÂºÄ"))IBR_ProjectManager::OpenAction();//
         ImGui::NewLine();
         IBR_RecentManager::RenderUI();//
     }
     else
     {
-        if (ImGui::Button(u8"±£¥Ê"))IBR_ProjectManager::SaveOptAction();//
-        if (ImGui::Button(u8"¡Ì¥ÊŒ™"))IBR_ProjectManager::SaveAsAction();//
-        if (IBR_Inst_Project.IBR_SectionMap.empty())ImGui::TextDisabled(u8"µº≥ˆ");
-        else if (ImGui::Button(u8"µº≥ˆ"))IBR_ProjectManager::OutputAction();//
+        if (ImGui::Button(u8"‰øùÂ≠ò"))IBR_ProjectManager::SaveOptAction();//
+        if (ImGui::Button(u8"Âè¶Â≠ò‰∏∫"))IBR_ProjectManager::SaveAsAction();//
+        if (IBR_Inst_Project.IBR_SectionMap.empty())ImGui::TextDisabled(u8"ÂØºÂá∫");
+        else if (ImGui::Button(u8"ÂØºÂá∫"))IBR_ProjectManager::OutputAction();//
 
         ImGui::NewLine();
-        if (ImGui::Button(u8"πÿ±’"))IBR_ProjectManager::ProjOpen_CreateAction(); //Õıµ¬∑¢ƒ„≤¬Œ™ ≤√¥ «CreateAction
+        if (ImGui::Button(u8"ÂÖ≥Èó≠"))IBR_ProjectManager::ProjOpen_CreateAction(); //ÁéãÂæ∑Âèë‰Ω†Áåú‰∏∫‰ªÄ‰πàÊòØCreateAction
         //IBR_ProjectManager::CloseAction();//
 
         ImGui::NewLine();
-        //if (ImGui::Button(u8"–¬Ω®"))IBR_ProjectManager::ProjOpen_CreateAction();//
-        if (ImGui::Button(u8"¥Úø™"))IBR_ProjectManager::ProjOpen_OpenAction();//
+        //if (ImGui::Button(u8"Êñ∞Âª∫"))IBR_ProjectManager::ProjOpen_CreateAction();//
+        if (ImGui::Button(u8"ÊâìÂºÄ"))IBR_ProjectManager::ProjOpen_OpenAction();//
         ImGui::NewLine();
         IBR_RecentManager::RenderUI();//
     }
@@ -120,6 +120,7 @@ void ControlPanel_ListView()
     }
     {
         int SelectN = 0;
+        int TotalSections = 0;
         bool FullSelected = true;
 
         IBD_RInterruptF(x);
@@ -129,6 +130,7 @@ void ControlPanel_ListView()
             if (ini.Secs_ByName.empty())continue;
             for (auto& sec : ini.Secs)
             {
+                TotalSections++;
                 if (sec.second.Dynamic.Selected)++SelectN;
                 else FullSelected = false;
             }
@@ -152,6 +154,14 @@ void ControlPanel_ListView()
             if (ImGui::Button(locc("GUI_Delete")))Delete = true; ImGui::SameLine();
             if (ImGui::Button(locc("GUI_Duplicate")))Duplicate = true;
         }
+
+        if (TotalSections)
+        {
+            ImGui::Text(locc("GUI_SelectedCount"));
+            ImGui::SameLine();
+            ImGui::Text(u8" %d/%d ", SelectN, TotalSections);
+        }
+        
 
         if (SelectAll || SelectNone || Delete || Duplicate)
         {
@@ -193,7 +203,7 @@ void ControlPanel_ListView()
                                     strcpy(rsd.CommentEdit.get(), rsd_orig.CommentEdit.get());
                                 }
                             },nullptr });
-                    //º˚V0.2.0»ŒŒÒ«Âµ•£®Àƒ£©µ⁄75Ãı°∞…Êº∞◊÷∂Œ ˝ƒø±‰ªØµƒ÷∏¡Ó”¶ΩË”…IBF_SendToRµ»Ã·÷¡÷˜—≠ª∑ø™Õ∑°±
+                    //ËßÅV0.2.0‰ªªÂä°Ê∏ÖÂçïÔºàÂõõÔºâÁ¨¨75Êù°‚ÄúÊ∂âÂèäÂ≠óÊÆµÊï∞ÁõÆÂèòÂåñÁöÑÊåá‰ª§Â∫îÂÄüÁî±IBF_SendToRÁ≠âÊèêËá≥‰∏ªÂæ™ÁéØÂºÄÂ§¥‚Äù
                 }
             }
             if (Duplicate)
@@ -207,8 +217,8 @@ void ControlPanel_ListView()
 
         for (auto& ini : IBF_Inst_Project.Project.Inis)
         {
-            if (ini.Secs_ByName.empty())continue;//∆¡±Œø’INI
-            //if (ImGui::TreeNode(ini.Name == LinkGroup_IniName ? u8"¡¥Ω”◊È" : (MBCStoUTF8(ini.Name).c_str())))
+            if (ini.Secs_ByName.empty())continue;//Â±èËîΩÁ©∫INI
+            //if (ImGui::TreeNode(ini.Name == Internal_IniName ? u8"ÈìæÊé•ÁªÑ" : (MBCStoUTF8(ini.Name).c_str())))
             {
                 for (auto& sec : ini.Secs)
                 {
@@ -217,15 +227,13 @@ void ControlPanel_ListView()
                     ImGui::SameLine();
                     ImGui::Text(rsc.GetSectionData()->DisplayName.c_str());
                     ImGui::SameLine();
-                    ImGui::SetCursorPosX(std::max(ImGui::GetCursorPosX(), ImGui::GetWindowWidth() - FontHeight * 2.0f));//4.5∏ˆ◊÷∑˚ «”“≤‡ƒ⁄»›µƒ‘§¡Ùø’º‰
+                    ImGui::SetCursorPosX(std::max(ImGui::GetCursorPosX(), ImGui::GetWindowWidth() - FontHeight * 2.0f));//4.5‰∏™Â≠óÁ¨¶ÊòØÂè≥‰æßÂÜÖÂÆπÁöÑÈ¢ÑÁïôÁ©∫Èó¥
                     if (ImGui::ArrowButton((sec.second.Name + "_ub_arr").c_str(), ImGuiDir_Right))
                     {
-                        //auto rsc = IBR_Inst_Project.GetSection(IBB_Section_Desc{ ini.Name,sec.second.Name });
                         auto dat = rsc.GetSectionData();
                         if (dat != nullptr)
                         {
-                            IBR_EditFrame::SetActive(rsc.ID);
-                            //IBR_Inst_Menu.ChooseMenu(MenuItemID_EDIT);
+                            IBR_EditFrame::ActivateAndEdit(rsc.ID, false);
                             IBR_FullView::EqCenter = dat->EqPos + (dat->EqSize / 2.0);
                         }
                     }
@@ -282,7 +290,7 @@ IBR_MainMenu IBR_Inst_Menu
     {[]() {return ImGui::SmallButton(locc("GUI_MenuItem_File")); },ControlPanel_File},
     {[]() {ImGui::NewLine(); ImGui::SameLine(); return SmallButton_Disabled_Helper(IBR_ProjectManager::IsOpen(), locc("GUI_MenuItem_View")); },ControlPanel_View},
     {[]() {ImGui::NewLine(); ImGui::SameLine(); return SmallButton_Disabled_Helper(IBR_ProjectManager::IsOpen(), locc("GUI_MenuItem_List")); },ControlPanel_ListView},
-    //{[]() {return false;/*SmallButton_Disabled_Helper(IsProjectOpen, u8"‘§…Ë");*/ },ControlPanel_Module},
+    //{[]() {return false;/*SmallButton_Disabled_Helper(IsProjectOpen, u8"È¢ÑËÆæ");*/ },ControlPanel_Module},
 
     //{[]() {return SmallButton_Disabled_Helper(IBR_ProjectManager::IsOpen(), locc("GUI_MenuItem_Edit")); },ControlPanel_Edit},
     {[]() {ImGui::NewLine(); return false; },ControlPanel_Edit},
@@ -299,106 +307,64 @@ void ControlPanel_About()
     ImGui::TextWrapped(locc("GUI_About1"), _AppName, Version.c_str());
     ImGui::TextWrapped(u8"GLFW/Dear ImGui", Version.c_str());
     ImGui::Separator();
-    ImGui::TextWrapped((loc("GUI_About5") + u8"£∫∏÷Ã˙÷Æ¥∏").c_str());
-    ImGui::TextWrapped(u8"QQ£∫2482911962");
-    ImGui::TextWrapped(u8"Ã˘∞…£∫±ø030504");
-    ImGui::TextWrapped(u8"GitHub£∫IronHammer Std");
+    ImGui::TextWrapped((loc("GUI_About5") + u8"ÔºöÈí¢ÈìÅ‰πãÈî§").c_str());
+    ImGui::TextWrapped(u8"QQÔºö2482911962");
+    ImGui::TextWrapped(u8"Ë¥¥ÂêßÔºöÁ¨®030504");
+    ImGui::TextWrapped(u8"GitHubÔºöIronhammer Std");
     ImGui::NewLine();
-    ImGui::TextWrapped((loc("GUI_About6") + u8"£∫").c_str());
+    ImGui::TextWrapped((loc("GUI_About6") + u8"Ôºö").c_str());
     ImGui::TextWrapped(u8"      Kenosis");
     ImGui::Separator();
     ImGui::TextWrapped(locc("GUI_About2"));
 
+    const char* Document_CN = "https://inibrowser-02-chinese.readthedocs.io/zh-cn/latest/Info.html";
+    const char* Document_EN = "https://inibrowser-02-chinese.readthedocs.io/en/latest/Info.html";
+    const char* BugReportURL = "https://docs.qq.com/form/page/DWXdKYUFRV1dHSnNE";
+    const char* RepositoryURL = "https://github.com/ra2diy/INIWeaver-1.0";
+
+    auto DocLang = loc("DocLang");
+    //ÁõÆÂâçÂèØÁî® ÔºöZH-CN EN
+    const char* DocumentURL;
+    if (DocLang == "ZH-CN")DocumentURL = Document_CN;
+    else if(DocLang == "EN")DocumentURL = Document_EN;
+    else DocumentURL = Document_CN;
 
     ImGui::TextWrapped(locc("GUI_About7")); //ImGui::SameLine();
     if (ImGui::Button((loc("GUI_CopyLinkToClipboard") + u8"##C").c_str()))
     {
         ImGui::LogToClipboard();
-        ImGui::LogText("https://inibrowser-02-chinese.readthedocs.io/zh-cn/latest/documentation.html");
+        ImGui::LogText(Document_CN);
         ImGui::LogFinish();
     }
     ImGui::SameLine();
     if (ImGui::Button((loc("GUI_OpenLink") + u8"##C").c_str()))
     {
-        ::ShellExecuteA(nullptr, "open", "https://inibrowser-02-chinese.readthedocs.io/zh-cn/latest/documentation.html", NULL, NULL, SW_SHOWNORMAL);
+        ::ShellExecuteA(nullptr, "open", Document_CN, NULL, NULL, SW_SHOWNORMAL);
     }
 
     ImGui::TextWrapped(locc("GUI_About3")); //ImGui::SameLine();
     if (ImGui::Button((loc("GUI_CopyLinkToClipboard") + u8"##A").c_str()))
     {
         ImGui::LogToClipboard();
-        ImGui::LogText("https://docs.qq.com/form/page/DWXdKYUFRV1dHSnNE");
+        ImGui::LogText(BugReportURL);
         ImGui::LogFinish();
     }
     ImGui::SameLine();
     if (ImGui::Button((loc("GUI_OpenLink") + u8"##A").c_str()))
     {
-        ::ShellExecuteA(nullptr, "open", "https://docs.qq.com/form/page/DWXdKYUFRV1dHSnNE", NULL, NULL, SW_SHOWNORMAL);
+        ::ShellExecuteA(nullptr, "open", BugReportURL, NULL, NULL, SW_SHOWNORMAL);
     }
 
     ImGui::TextWrapped(locc("GUI_About4"));
     if (ImGui::Button((loc("GUI_CopyLinkToClipboard") + u8"##B").c_str()))
     {
         ImGui::LogToClipboard();
-        ImGui::LogText("https://github.com/IronHammer-Std/INIBrowser-0.2");
+        ImGui::LogText(RepositoryURL);
         ImGui::LogFinish();
     }
     ImGui::SameLine();
     if (ImGui::Button((loc("GUI_OpenLink") + u8"##B").c_str()))
     {
-        ::ShellExecuteA(nullptr, "open", "https://github.com/IronHammer-Std/INIBrowser-0.2", NULL, NULL, SW_SHOWNORMAL);
+        ::ShellExecuteA(nullptr, "open", RepositoryURL, NULL, NULL, SW_SHOWNORMAL);
     }
-    //
-    /*
-
-    ImGui::Separator();
-    ImGui::TextWrapped(u8"∏¸–¬¡¥Ω”£∫");
-    ImGui::TextWrapped(u8"∏¸–¬Ã˚£®∫Ï…´æØΩ‰∞…£©"); //ImGui::SameLine();
-    if (ImGui::Button(u8"∏¥÷∆¡¥Ω”##A"))
-    {
-        ImGui::LogToClipboard();
-        ImGui::LogText("https://tieba.baidu.com/p/8005920823");
-        ImGui::LogFinish();
-    }ImGui::SameLine();
-    if (ImGui::Button(u8"¥Úø™¡¥Ω”##A"))
-    {
-        ::ShellExecuteA(nullptr, "open", "https://tieba.baidu.com/p/8005920823", NULL, NULL, SW_SHOWNORMAL);
-    }
-    ImGui::TextWrapped(u8"∏¸–¬Ã˚£®–ƒ¡È÷’Ω·∞…£©"); //ImGui::SameLine();
-    if (ImGui::Button(u8"∏¥÷∆¡¥Ω”##B"))
-    {
-        ImGui::LogToClipboard();
-        ImGui::LogText("https://tieba.baidu.com/p/8005924464");
-        ImGui::LogFinish();
-    }ImGui::SameLine();
-    if (ImGui::Button(u8"¥Úø™¡¥Ω”##B"))
-    {
-        ::ShellExecuteA(nullptr, "open", "https://tieba.baidu.com/p/8005924464", NULL, NULL, SW_SHOWNORMAL);
-    }
-    ImGui::TextWrapped(u8"∏¸–¬Ã˚£®–ƒ¡È÷’Ω·3ini∞…£©"); //ImGui::SameLine();
-    if (ImGui::Button(u8"∏¥÷∆¡¥Ω”##C"))
-    {
-        ImGui::LogToClipboard();
-        ImGui::LogText("https://tieba.baidu.com/p/8133473361");
-        ImGui::LogFinish();
-    }ImGui::SameLine();
-    if (ImGui::Button(u8"¥Úø™¡¥Ω”##C"))
-    {
-        ::ShellExecuteA(nullptr, "open", "https://tieba.baidu.com/p/8133473361", NULL, NULL, SW_SHOWNORMAL);
-    }
-    ImGui::TextWrapped(u8"◊¢£∫»˝∏ˆ∏¸–¬Ã˚Õ¨≤Ω∏¸–¬");
-    ImGui::TextWrapped(u8"»´≤ø∞Ê±æœ¬‘ÿ£®∞Ÿ∂»Õ¯≈Ã£©"); //ImGui::SameLine();
-    if (ImGui::Button(u8"∏¥÷∆¡¥Ω”##D"))
-    {
-        ImGui::LogToClipboard();
-        ImGui::LogText("https://pan.baidu.com/s/1EpzAuIQfbU1-7sjb2YJocg?pwd=EASB");
-        ImGui::LogFinish();
-    }ImGui::SameLine();
-    if (ImGui::Button(u8"¥Úø™¡¥Ω”##D"))
-    {
-        ::ShellExecuteA(nullptr, "open", "https://pan.baidu.com/s/1EpzAuIQfbU1-7sjb2YJocg?pwd=EASB", NULL, NULL, SW_SHOWNORMAL);
-    }
-    ImGui::TextWrapped(u8"Ã·»°¬Î£∫EASB");
-
-    */
 }

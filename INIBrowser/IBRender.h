@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #include "IBFront.h"
 #include "FromEngine/RFBump.h"
 #include "IBSave.h"
@@ -105,12 +105,12 @@ struct IBR_Debug
 #define _PROJ_CMD_CAN_UNDO
 #define _PROJ_CMD_WRITE
 #define _PROJ_CMD_READ
-#define _PROJ_CMD_NOINTERRUPT //´Ë²Ù×÷²»¹ÒÆğºó¶ËÏß³Ì
+#define _PROJ_CMD_NOINTERRUPT //æ­¤æ“ä½œä¸æŒ‚èµ·åç«¯çº¿ç¨‹
 #define _PROJ_CMD_BACK_CONST
 
 #define _CALL_CMD
 
-#define _RETURN_BACK_DATA //Ê¹ÓÃÏàÓ¦·µ»ØÖµÊ±ÇëÏÈRInterruptFËø×¡ºó¶ËÏß³ÌÔÙ¶ÁĞ´
+#define _RETURN_BACK_DATA //ä½¿ç”¨ç›¸åº”è¿”å›å€¼æ—¶è¯·å…ˆRInterruptFé”ä½åç«¯çº¿ç¨‹å†è¯»å†™
 
 
 
@@ -118,6 +118,8 @@ struct IBR_Section;
 struct IBR_Project;
 struct IBB_Section_Desc;
 extern const IBB_Section_Desc IBB_Section_DescNull;
+
+#define INVALID_MODULE_ID UINT64_MAX
 
 struct IBR_SectionData
 {
@@ -131,17 +133,26 @@ struct IBR_SectionData
     bool Dragging{ false };
     bool Ignore{ false };
     bool IsComment{ false };
+    bool CollapsedInComposed{ false };
     float FinalY{ 0.0f };
     float WidthFix{ 0.0f };
     std::unordered_map<std::string, ActiveLine> ActiveLines;
     std::shared_ptr<BufString> CommentEdit;
-    ImVec2 ReOffset;
-    //int UpdateResult;
+    ImVec2 ReWindowUL, ReOffset;
+    IBB_Section* BackPtr_Cached;
 
+    std::string ModuleStrID;
+    uint64_t IncludedByModule{ INVALID_MODULE_ID };
+    std::vector<uint64_t> IncludingModules;
+    IBB_Section_Desc IncludedByModule_TmpDesc;
+    std::vector<IBB_Section_Desc> IncludingModules_TmpDesc;
+    bool IsVirtualBlock() const;
 
+    ~IBR_SectionData();
     IBR_SectionData();
     IBR_SectionData(const IBB_Section_Desc& D);
     IBR_SectionData(const IBB_Section_Desc& D, std::string&& Name);
+    IBR_SectionData(IBR_SectionData&&) noexcept;
 
     void RenameDisplayImpl(const std::string& Name);
     void RenameRegisterImpl(const std::string& Name);
@@ -151,6 +162,11 @@ struct IBR_SectionData
     void RenderUI();
     void RenderUI_TitleBar(bool& TriggeredRightMenu);
     void CopyToClipBoard();
+    bool Decomposable() const;
+    void Decompose();
+    bool IsIncluded() const;
+private:
+    IBB_Section* GetBack_Inl();
 };
 
 struct ModuleClipData;
@@ -159,14 +175,14 @@ struct IBR_Section
 {
     IBR_Project* Root;
     uint64_t ID;
-    //¸Ä¶¯ÆäÖĞ´æ´¢ÄÚÈİÓ¦ĞŞ¸ÄIBR_Project::GetSection
+    //æ”¹åŠ¨å…¶ä¸­å­˜å‚¨å†…å®¹åº”ä¿®æ”¹IBR_Project::GetSection
 
     
     _RETURN_BACK_DATA IBB_Section* _PROJ_CMD_READ GetBack() ;
     _RETURN_BACK_DATA const IBB_Section* _PROJ_CMD_READ GetBack() _PROJ_CMD_BACK_CONST const;
     _RETURN_BACK_DATA const IBB_Section* _PROJ_CMD_NOINTERRUPT _PROJ_CMD_READ GetBack_Unsafe() const;
 
-    //ÈôSec²»´æÔÚ¸øFunction´«Èënullptr
+    //è‹¥Secä¸å­˜åœ¨ç»™Functionä¼ å…¥nullptr
     template<typename T>
     T _PROJ_CMD_READ _PROJ_CMD_WRITE OperateBackData(const std::function<T(IBB_Section*)>& Function);
     /*template<typename T>
@@ -176,7 +192,7 @@ struct IBR_Section
 
     const IBB_Section_Desc& _PROJ_CMD_NOINTERRUPT GetSectionDesc() _PROJ_CMD_BACK_CONST const;
 
-    //´ËSecÊÇ·ñ´æÔÚ
+    //æ­¤Secæ˜¯å¦å­˜åœ¨
     bool _PROJ_CMD_READ HasBack() const;
 
     _RETURN_BACK_DATA IBB_VariableList* _PROJ_CMD_READ GetVarList() _PROJ_CMD_BACK_CONST const;
@@ -187,16 +203,16 @@ struct IBR_Section
 
     bool _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE SetVarList(const IBB_VariableList& NewList);
 
-    //²»½¨Òé¿çINIÀàĞÍ¸´ÖÆ£¬³ı·ÇÄãÈ·¶¨ÄãÔÚ×öÊ²Ã´£¬²¢ÇÒÎª×Ö¶ÎÉèÖÃÕıÈ·µÄ±äÁ¿±í£¬ÒÔ·ûºÏÄ£°åµÄÕûÌåÔ¼¶¨
+    //ä¸å»ºè®®è·¨INIç±»å‹å¤åˆ¶ï¼Œé™¤éä½ ç¡®å®šä½ åœ¨åšä»€ä¹ˆï¼Œå¹¶ä¸”ä¸ºå­—æ®µè®¾ç½®æ­£ç¡®çš„å˜é‡è¡¨ï¼Œä»¥ç¬¦åˆæ¨¡æ¿çš„æ•´ä½“çº¦å®š
     bool _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE DuplicateSection(const IBB_Section_Desc& NewDesc) _PROJ_CMD_BACK_CONST const;
     IBR_Section  _PROJ_CMD_READ _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE DuplicateSectionAndBack(const IBB_Section_Desc& NewDesc) _PROJ_CMD_BACK_CONST const;
 
-    //Èç¹ûÃû×Ö³åÍ»ÔòÉ¶Ò²²»¸É²¢·µ»Øfalse
+    //å¦‚æœåå­—å†²çªåˆ™å•¥ä¹Ÿä¸å¹²å¹¶è¿”å›false
     bool _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE Rename(const std::string& NewName);
 
     bool _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO Register(const std::string& Name, const std::string& IniName) _PROJ_CMD_BACK_CONST const;
 
-    IBR_SectionData* _PROJ_CMD_READ _PROJ_CMD_NOINTERRUPT GetSectionData() const;//¿ÉÄÜÎª¿Õ
+    IBR_SectionData* _PROJ_CMD_READ _PROJ_CMD_NOINTERRUPT GetSectionData() const;//å¯èƒ½ä¸ºç©º
 
     _TEXT_UTF8 std::string _PROJ_CMD_NOINTERRUPT GetDisplayName() const;
 
@@ -225,15 +241,6 @@ struct IBB_ModuleAlt;
 struct IBR_Project
 {
     typedef uint64_t id_t;
-    id_t MaxID{ 0 };//TODO:Äã»¹ÄÜÊ¹ÓÃ³¬¹ıULL_MAX¸öID£¿ÒªÊÇÕæµÄÈç´ËÄÇ¾ÍĞŞÒ»ĞŞ
-    std::map<id_t, IBR_SectionData> IBR_SectionMap;
-    std::map<IBB_Section_Desc, id_t> IBR_Rev_SectionMap;
-    std::unordered_map<std::string, SectionDragData> IBR_SecDragMap;
-    std::unordered_map<std::string, LineDragData> IBR_LineDragMap;
-    std::unordered_map<std::string, std::string> CopyTransform;
-    std::string DragConditionText;
-    std::string DragConditionTextAlt;
-
     struct _Plink
     {
         ImVec2 BeginR;
@@ -242,11 +249,29 @@ struct IBR_Project
         bool IsSelfLinked;
         bool IsSrcDragging;
     };
+
+    id_t MaxID{ 0 };//TODO:ä½ è¿˜èƒ½ä½¿ç”¨è¶…è¿‡ULL_MAXä¸ªIDï¼Ÿè¦æ˜¯çœŸçš„å¦‚æ­¤é‚£å°±ä¿®ä¸€ä¿®
+    std::map<id_t, IBR_SectionData> IBR_SectionMap;
+    std::map<IBB_Section_Desc, id_t> IBR_Rev_SectionMap;
+    std::unordered_map<std::string, SectionDragData> IBR_SecDragMap;
+    std::unordered_map<std::string, LineDragData> IBR_LineDragMap;
+    std::unordered_map<std::string, std::string> CopyTransform;
+    std::string DragConditionText;
+    std::string DragConditionTextAlt;
     std::vector<_Plink> LinkList;
 
-    std::optional<std::vector<id_t>> _PROJ_CMD_WRITE  _PROJ_CMD_UPDATE AddModule(const IBB_ModuleAlt& Module, const std::string& Argument, bool UseMouseCenter = true);
-    std::optional<std::vector<id_t>> _PROJ_CMD_WRITE  _PROJ_CMD_UPDATE AddModule(const std::vector<ModuleClipData>& Modules, bool UseMouseCenter = true);
+    std::pair<bool, std::vector<id_t>> _PROJ_CMD_WRITE  _PROJ_CMD_UPDATE AddModule(const IBB_ModuleAlt& Module, const std::string& Argument, bool UseMouseCenter = true);
+    std::pair<bool, std::vector<id_t>> _PROJ_CMD_WRITE  _PROJ_CMD_UPDATE AddModule(const std::vector<ModuleClipData>& Modules, bool UseMouseCenter = true);
     std::optional<id_t> _PROJ_CMD_WRITE  _PROJ_CMD_UPDATE AddModule(const ModuleClipData& Modules, bool UseMouseCenter = true);
+
+    bool _PROJ_CMD_WRITE SetModuleIncludeLink(id_t ID);
+    bool _PROJ_CMD_WRITE SetModuleIncludeLink(const std::vector<id_t>& IDs);
+
+    //Assume IDs are checked
+    std::optional<id_t> _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE ComposeSections(const std::vector<id_t>& IDs);
+    //Assume IDs are checked
+    std::optional<std::vector<id_t>> _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE DecomposeSection(id_t ID);
+    std::optional<std::vector<id_t>> _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE DecomposeSection(IBB_Section_Desc Desc);
 
     bool _PROJ_CMD_WRITE _PROJ_CMD_UPDATE UpdateAll();
 
@@ -259,23 +284,23 @@ struct IBR_Project
 
     //bool _PROJ_CMD_READ WriteTextToFolder();
 
-    //ËüÊÇUTF8´¿´âÊÇÒòÎª·½±ãÍ³Ò»INI´æ´¢¸ñÊ½
+    //å®ƒæ˜¯UTF8çº¯ç²¹æ˜¯å› ä¸ºæ–¹ä¾¿ç»Ÿä¸€INIå­˜å‚¨æ ¼å¼
     _TEXT_UTF8 std::string _PROJ_CMD_READ GetText(bool PrintExtraData) _PROJ_CMD_BACK_CONST;
 
-    //Õâ¸ö¶«Î÷Ã»É¶¿ªÏú£¬³ıÁË¸´ÖÆÒ»·İDesc £» ²»±£Ö¤ÊÇ·ñ´æÔÚ
+    //è¿™ä¸ªä¸œè¥¿æ²¡å•¥å¼€é”€ï¼Œé™¤äº†å¤åˆ¶ä¸€ä»½Desc ï¼› ä¸ä¿è¯æ˜¯å¦å­˜åœ¨
     IBR_Section _PROJ_CMD_NOINTERRUPT _PROJ_CMD_READ GetSection(const IBB_Section_Desc& Desc) _PROJ_CMD_BACK_CONST;
 
     bool _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE RenameAll();
 
-    //²»½¨Òé£¬»áÈ±ÉÙÄ£°åÀïÃæÔ¼¶¨µÄÒ»²¿·ÖVariable£¨°üÀ¨ÀàĞÍ±ê¼Ç£©
+    //ä¸å»ºè®®ï¼Œä¼šç¼ºå°‘æ¨¡æ¿é‡Œé¢çº¦å®šçš„ä¸€éƒ¨åˆ†Variableï¼ˆåŒ…æ‹¬ç±»å‹æ ‡è®°ï¼‰
     bool _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE CreateSection(const IBB_Section_Desc& Desc);
-    IBR_Section _PROJ_CMD_READ _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE CreateSectionAndBack(const IBB_Section_Desc& Desc);
+    IBR_Section _PROJ_CMD_READ _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE CreateSectionAndBack(const IBB_Section_Desc& Desc, _TEXT_UTF8 const std::string& DisplayName);
     IBR_Section _PROJ_CMD_READ _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE CreateCommentBlock(ImVec2 InitialEqPos, std::string_view InitialText = "", ImVec2 InitialEqSize = {0.0F,0.0F});
 
-    //Í¬GetSectionµÄHasBack
+    //åŒGetSectionçš„HasBack
     bool _PROJ_CMD_READ HasSection(const IBB_Section_Desc& Desc) _PROJ_CMD_BACK_CONST;
 
-    //Í¬GetSectionµÄHasBack
+    //åŒGetSectionçš„HasBack
     bool _PROJ_CMD_READ HasSection(id_t id) _PROJ_CMD_BACK_CONST;
 
     bool _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE DeleteSection(const std::vector<IBB_Section_Desc>& Descs);
@@ -286,7 +311,7 @@ struct IBR_Project
 
     bool _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE DeleteSection(const std::vector <IBR_Project::id_t>& ids);
 
-    //²»±£Ö¤IDÓĞĞ§
+    //ä¸ä¿è¯IDæœ‰æ•ˆ
     inline IBR_Section _PROJ_CMD_NOINTERRUPT _PROJ_CMD_READ GetSectionFromID(id_t id) _PROJ_CMD_BACK_CONST { return { this,id }; }
 
     std::optional<id_t> _PROJ_CMD_NOINTERRUPT _PROJ_CMD_READ GetSectionID(const IBB_Section_Desc& Desc) _PROJ_CMD_BACK_CONST;
@@ -296,6 +321,7 @@ struct IBR_Project
 
     void Load(const IBS_Project&);
     void Save(IBS_Project&);
+    void Clear();
 private:
     std::optional<id_t> _PROJ_CMD_WRITE _PROJ_CMD_UPDATE AddModule_Impl(const ModuleClipData& Modules, bool UseMouseCenter = true);
 };
@@ -317,7 +343,7 @@ namespace IBR_UICondition
     bool UpdateWindowTitle();
 }
 
-//°´Å¥ÓĞÌØ±ğµÄÑùÊ½
+//æŒ‰é’®æœ‰ç‰¹åˆ«çš„æ ·å¼
 struct IBR_MainMenu
 {
     struct _Item
@@ -332,7 +358,7 @@ struct IBR_MainMenu
     void RenderUIMenu();
     void ChooseMenu(size_t S);
 private:
-    size_t Choice;
+    size_t Choice{ 0 };
 public:
     size_t GetMenuItem() { return Choice; }
 };
@@ -356,7 +382,7 @@ struct IBG_UndoStack
         std::function<std::any()> Extra;
     };
     std::vector<_Item> Stack;
-    //Ö±½Ó¸³ÖµµÃÍ¬Ê±¸ÄCursor
+    //ç›´æ¥èµ‹å€¼å¾—åŒæ—¶æ”¹Cursor
     int Cursor{ -1 };
     bool Undo();
     bool Redo();
@@ -449,6 +475,9 @@ namespace IBR_WorkSpace
     void OpenRightClick();
     void OutputSelectedImpl(const char* IPath, const char* IDescShort, const char* IDescLong);
     void OutputSelected();
+    void ComposeSelected();
+
+    dImVec2 GetMassCenter(const std::vector<IBR_Project::id_t>& Target);
 }
 namespace IBR_SelectMode
 {
@@ -496,6 +525,7 @@ namespace IBR_EditFrame
     extern bool Empty;
     extern std::unordered_map<std::string, BufferedLine> EditLines;
     void SetActive(IBR_Project::id_t id);
+    void ActivateAndEdit(IBR_Project::id_t id, bool TextMode);
     void UpdateSection();
     void UpdateLine(const std::string& Line, const std::string& NewValue);
     void RenderUI();
@@ -573,6 +603,7 @@ namespace IBR_PopupManager
     void ClearPopupDelayed();
     bool IsMouseOnPopup();
     void AddJsonParseErrorPopup(std::string&& ErrorStr, const std::string& Info);
+    void AddModuleParseErrorPopup(std::string&& ErrorStr, const std::string& Info);
 }
 
 
@@ -603,7 +634,7 @@ namespace IBR_HintManager
     void Clear();
     void RenderUI();
     void SetHint(const _TEXT_UTF8 std::string& Str, int TimeLimitMillis = -1);
-    void SetHintCustom(const std::function<bool(_TEXT_UTF8 std::string&)>& Fn);//·µ»Øtrue¼ÌĞø£¬falseÍ£Ö¹²¢Clear
+    void SetHintCustom(const std::function<bool(_TEXT_UTF8 std::string&)>& Fn);//è¿”å›trueç»§ç»­ï¼Œfalseåœæ­¢å¹¶Clear
     const std::string& GetHint();
     void Load();
 }

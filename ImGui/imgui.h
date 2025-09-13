@@ -1,4 +1,4 @@
-// dear imgui, v1.88 WIP
+﻿// dear imgui, v1.88 WIP
 // (headers)
 
 // Help:
@@ -201,6 +201,7 @@ typedef int ImGuiTableRowFlags;     // -> enum ImGuiTableRowFlags_   // Flags: F
 typedef int ImGuiTreeNodeFlags;     // -> enum ImGuiTreeNodeFlags_   // Flags: for TreeNode(), TreeNodeEx(), CollapsingHeader()
 typedef int ImGuiViewportFlags;     // -> enum ImGuiViewportFlags_   // Flags: for ImGuiViewport
 typedef int ImGuiWindowFlags;       // -> enum ImGuiWindowFlags_     // Flags: for Begin(), BeginChild()
+typedef int ImGuiRadioButtonFlags;  // -> enum ImGuiRadioButtonFlags_// Flags: for RadioButton()
 
 // ImTexture: user data for renderer backend to identify a texture [Compile-time configurable type]
 // - To use something else than an opaque void* pointer: override with e.g. '#define ImTextureID MyTextureType*' in your imconfig.h file.
@@ -534,7 +535,7 @@ namespace ImGui
     IMGUI_API bool          Checkbox(const char* label, bool* v);
     IMGUI_API bool          CheckboxFlags(const char* label, int* flags, int flags_value);
     IMGUI_API bool          CheckboxFlags(const char* label, unsigned int* flags, unsigned int flags_value);
-    IMGUI_API bool          RadioButton(const char* label, bool active, bool square = false);                    // use with e.g. if (RadioButton("one", my_value==1)) { my_value = 1; }
+    IMGUI_API bool          RadioButton(const char* label, bool active, ImGuiRadioButtonFlags flag = 0);                    // use with e.g. if (RadioButton("one", my_value==1)) { my_value = 1; }
     IMGUI_API bool          RadioButton(const char* label, int* v, int v_button);           // shortcut to handle the above pattern when value is an integer
     IMGUI_API void          ProgressBar(float fraction, const ImVec2& size_arg = ImVec2(-FLT_MIN, 0), const char* overlay = NULL);
     IMGUI_API void          Bullet();                                                       // draw a small circle + keep the cursor on the same line. advance cursor x position by GetTreeNodeToLabelSpacing(), same distance that TreeNode() uses
@@ -1368,6 +1369,15 @@ enum ImGuiDir_
     ImGuiDir_Up      = 2,
     ImGuiDir_Down    = 3,
     ImGuiDir_COUNT
+};
+
+// For radio buttons
+enum ImGuiRadioButtonFlags_
+{
+    ImGuiRadioButtonFlags_Circle = 0,
+    ImGuiRadioButtonFlags_Square = 1,
+    ImGuiRadioButtonFlags_RoundedSquare = 2,
+    ImGuiRadioButtonFlags_COUNT
 };
 
 // A sorting direction

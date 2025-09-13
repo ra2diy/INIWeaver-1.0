@@ -1,4 +1,4 @@
-#include "IBRender.h"
+ï»¿#include "IBRender.h"
 #include "IBFront.h"
 #include "Global.h"
 #include "FromEngine/RFBump.h"
@@ -13,13 +13,13 @@
 extern wchar_t CurrentDirW[];
 extern bool ShouldCloseShellLoop;
 extern bool GotoCloseShellLoop;
-extern const char* LinkGroup_IniName;
+extern const char* Internal_IniName;
 extern std::atomic_bool LoadDatabaseComplete;
 
-std::string ExtName(const std::string& ss);//ÍØÕ¹Ãû£¬ÎŞ'.' 
-std::string FileNameNoExt(const std::string& ss);//ÎÄ¼şÃû£¬ÎŞ'.' 
-std::string FileName(const std::string& ss);//ÎÄ¼şÃû
-std::wstring FileName(const std::wstring& ss);//ÎÄ¼şÃû
+std::string ExtName(const std::string& ss);//æ‹“å±•åï¼Œæ— '.' 
+std::string FileNameNoExt(const std::string& ss);//æ–‡ä»¶åï¼Œæ— '.' 
+std::string FileName(const std::string& ss);//æ–‡ä»¶å
+std::wstring FileName(const std::wstring& ss);//æ–‡ä»¶å
 bool IsExistingDir(const wchar_t* Path);
 extern bool RefreshLangBuffer2;
 
@@ -41,7 +41,7 @@ namespace IBR_ProjectManager
 #define _IN_RENDER_THREAD
 #define _IN_ANY_THREAD
 
-    //ClearCurrentPopupµÄµ÷ÓÃÆğÊ¼µãÃ»ÓĞÏß³ÌÒªÇó
+    //ClearCurrentPopupçš„è°ƒç”¨èµ·å§‹ç‚¹æ²¡æœ‰çº¿ç¨‹è¦æ±‚
     inline void _IN_RENDER_THREAD SetWaitingPopup()
     {
         IBR_PopupManager::SetCurrentPopup(
@@ -81,13 +81,8 @@ namespace IBR_ProjectManager
         IBB_DefaultRegType::ClearModuleCount();
         {
             IBD_RInterruptF(x);
-            IBF_Inst_Project.CurrentProjectRID = 0;
-            auto& proj = IBF_Inst_Project.Project;
-            proj.Clear();
-
-            IBR_Inst_Project.MaxID = 0;
-            IBR_Inst_Project.IBR_SectionMap.clear();
-            IBR_Inst_Project.IBR_Rev_SectionMap.clear();
+            IBF_Inst_Project.Clear();
+            IBR_Inst_Project.Clear();
             IBG_Undo.Clear();
             IBR_WorkSpace::Close();
             IBR_SelectMode::CancelSelectMode();
@@ -266,7 +261,6 @@ namespace IBR_ProjectManager
         size_t N = TargetIniPath.size();
         std::vector<std::vector<std::string>>TextPieces;
         TextPieces.resize(N);
-        std::map<IBB_Section_Desc, std::string> RemapNames;
 
 
 
@@ -277,7 +271,7 @@ namespace IBR_ProjectManager
             for (auto& [SN, Sec] : Inis[I].Secs)
             {
                 for (auto& Sub : Sec.SubSecs)for (auto& L : Sub.Lines)
-                    if (L.first == "__INHERIT__")Sec.Inherit = L.second.Data->GetString();
+                    if (L.first == InheritKeyName)Sec.Inherit = L.second.Data->GetString();
                 IBB_Section_Desc Desc = { Inis[I].Name, Sec.Name };
                 std::string V;
                 V += ';'; V += DisplayRev[Desc];  V += '\n';
@@ -293,7 +287,7 @@ namespace IBR_ProjectManager
 
         for (size_t I = 0; I < N; I++)
         {
-            if (Inis[I].Name == LinkGroup_IniName)continue;//²»µ¼³öÕâ¸ö
+            if (Inis[I].Name == Internal_IniName)continue;//ä¸å¯¼å‡ºè¿™ä¸ª
             if (TextPieces[I].empty())continue;
 
             ExtFileClass F;
@@ -575,7 +569,7 @@ namespace IBR_ProjectManager
 
                     for (auto& I : Inis)
                     {
-                        if (I.Name == LinkGroup_IniName)continue; //²»ÏÔÊ¾Õâ¸ö£¬ÒòÎª²»µ¼³ö
+                        if (I.Name == Internal_IniName)continue; //ä¸æ˜¾ç¤ºè¿™ä¸ªï¼Œå› ä¸ºä¸å¯¼å‡º
                         if (I.Ignore)continue;
 
                         ImGui::InputText(("##" + I.Name).c_str(), I.Buf.get(), MAX_STRING_LENGTH);
@@ -650,7 +644,7 @@ namespace IBR_ProjectManager
         OutputComplete = false;
         for (auto& I : IBF_Inst_Project.Project.Inis)
         {
-            if (I.Name == LinkGroup_IniName)continue; //²»µ¼³öÕâ¸ö
+            if (I.Name == Internal_IniName)continue; //ä¸å¯¼å‡ºè¿™ä¸ª
             auto& U = IBF_Inst_Project.Project.LastOutputIniName[I.Name];
             if (U.empty())TgPath.push_back(WP + L"\\" + IBF_Inst_Project.Project.ProjName + L"_" + UTF8toUnicode(I.Name) + L".ini");
             else TgPath.push_back(WP + L"\\" + U);
@@ -781,13 +775,13 @@ namespace IBR_ProjectManager
                     {
                         auto& S = SHP[Index];
                         ImGui::Text(S.Name.c_str());
-                        if (ImGui::RadioButton((loc("GUI_LoadImage_Anim")+std::format(u8"##{}", Index)).c_str(), S.Type == 0))S.Type = 0;
+                        if (ImGui::RadioButton((loc("GUI_LoadImage_Anim")+std::format(u8"##{}", Index)).c_str(), S.Type == 0, GlobalNodeStyle))S.Type = 0;
                         ImGui::SameLine();
-                        if (ImGui::RadioButton((loc("GUI_LoadImage_Building") + std::format(u8"##{}", Index)).c_str(), S.Type == 1))S.Type = 1;
+                        if (ImGui::RadioButton((loc("GUI_LoadImage_Building") + std::format(u8"##{}", Index)).c_str(), S.Type == 1, GlobalNodeStyle))S.Type = 1;
                         ImGui::SameLine();
-                        if (ImGui::RadioButton((loc("GUI_LoadImage_Infantry") + std::format(u8"##{}", Index)).c_str(), S.Type == 2))S.Type = 2;
+                        if (ImGui::RadioButton((loc("GUI_LoadImage_Infantry") + std::format(u8"##{}", Index)).c_str(), S.Type == 2, GlobalNodeStyle))S.Type = 2;
                         ImGui::SameLine();
-                        if (ImGui::RadioButton((loc("GUI_LoadImage_Vehicle") + std::format(u8"##{}", Index)).c_str(), S.Type == 3))S.Type = 3;
+                        if (ImGui::RadioButton((loc("GUI_LoadImage_Vehicle") + std::format(u8"##{}", Index)).c_str(), S.Type == 3, GlobalNodeStyle))S.Type = 3;
                     }
 
                     if (ImGui::Button(locc("GUI_OK")))

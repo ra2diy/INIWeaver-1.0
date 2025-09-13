@@ -1,18 +1,24 @@
-
+ï»¿
 #include "Global.h"
 
-//ËùÓĞ°æ±¾ºÅÏà¹ØÊı¾İ
-const std::string Version = u8"1.0.4";
-const std::wstring VersionW = L"1.0.4";
+//æ‰€æœ‰ç‰ˆæœ¬å·ç›¸å…³æ•°æ®
+const std::string Version = u8"1.0.6";
+const std::wstring VersionW = L"1.0.6";
 const int VersionMajor = 1;
 const int VersionMinor = 0;
-const int VersionRelease = 4;
+const int VersionRelease = 6;
 const int VersionN = VersionMajor * 10000 + VersionMinor * 100 + VersionRelease;
-const std::string VersionNStr = u8"010004";
+const std::string VersionNStr = u8"010006";
+//å‰ªè´´æ¿æ ¼å¼ä¸æ›´æ–°å°±ä¸è¦åŠ¨äº†
+const std::string ClipDataFormatVersion = u8"1.0.6";
 
 std::string GetVersionStr(int Ver)
 {
-    if (Ver < 200)
+    if (Ver <= 0)
+    {
+        return loc("Error_UnknownVersion");
+    }
+    else if (Ver < 200)
     {
         if (Ver % 100)return loc("Back_OldVer1") + u8" b" + std::to_string(Ver % 100);
         else return loc("Back_OldVer1");
@@ -29,50 +35,51 @@ std::string GetVersionStr(int Ver)
     }
 }
 
-//Í³Ò»µÄÎÄ¼şÍ·
+//ç»Ÿä¸€çš„æ–‡ä»¶å¤´
 const int32_t SaveFileHeaderSign = 0x00114514;
 const char* EmptyOnShowDesc = "\r\n\r\n\r\n";
 
-//ÉèÖÃµÄÊµÀı
+//è®¾ç½®çš„å®ä¾‹
 IBF_Setting IBF_Inst_Setting;
 IBR_Setting IBR_Inst_Setting;
 
-//ÉèÖÃµÄ±êÊ¶
+//è®¾ç½®çš„æ ‡è¯†
 std::atomic<bool> SettingLoadComplete{ false };
 std::atomic<bool> SettingSaveComplete{ false };
 const wchar_t* SettingFileName = L"./Resources/setting.dat";
 const char* DefaultIniName = "Rules";
+const char* InheritKeyName = "AresInherit";
 
-//ÈÕÖ¾
+//æ—¥å¿—
 LogClass GlobalLog{ "browser.log" };
 LogClass GlobalLogB{ "backend.log" };
 BufString LogBuf, LogBufB;
 bool EnableLog = true;
 bool EnableLogEx = false;
 
-//Ïß³ÌĞÅÏ¢½»»»
+//çº¿ç¨‹ä¿¡æ¯äº¤æ¢
 IBRF_Bump IBRF_CoreBump;
 uint64_t ShellLoopLastTime;
 DWORD BackThreadID{ INT_MAX };
 
-//ÉèÖÃÄÚÈİ
+//è®¾ç½®å†…å®¹
 int KeyPerPage = 10;
 int FontHeight = 24;
 int WindowSizeAdjustX = 15, WindowSizeAdjustY = 0;
-bool IsProjectOpen = false;//TODO:´ò¿ªÏîÄ¿
+bool IsProjectOpen = false;//TODO:æ‰“å¼€é¡¹ç›®
 HWND MainWindowHandle = 0;
 int RScrX, RScrY, ScrX, ScrY;
 
-//¸ñÊ½ÀàĞÍ±í
+//æ ¼å¼ç±»å‹è¡¨
 IBF_DefaultTypeList IBF_Inst_DefaultTypeList;
 IBF_Project IBF_Inst_Project;
 IBR_Project IBR_Inst_Project;
 IBS_Project IBS_Inst_Project;
 
-//µ÷ÊÔ
+//è°ƒè¯•
 IBR_Debug IBR_Inst_Debug;
 
-//Ëæ»úÖÖ×Ó
+//éšæœºç§å­
 std::default_random_engine GlobalRnd;
 const int ModuleRandomParameterLength = 16;
 
@@ -83,3 +90,5 @@ namespace PreLink
     HINSTANCE hInst;
     ImFont* font;
 }
+
+ImGuiRadioButtonFlags GlobalNodeStyle = ImGuiRadioButtonFlags_Circle;

@@ -1,11 +1,11 @@
-
+Ôªø
 #include "FromEngine/Include.h"
 #include "FromEngine/global_tool_func.h"
 #include "IBB_Index.h"
 #include "Global.h"
 #include "IBB_RegType.h"
 
-const char* LinkGroup_IniName = "_LINKGROUP_INI_FILE";
+const char* Internal_IniName = "_LINKGROUP_INI_FILE";
 extern const char* LinkAltPropType;
 
 
@@ -36,7 +36,7 @@ struct IBB_IniLine_Data_Int : public IBB_IniLine_Data_Base
             if (EnableLog)
             {
                 GlobalLogB.AddLog_CurTime(false);
-                GlobalLogB.AddLog("IBB_IniLine_Data_Int::SetValue £∫ std::stoi : invalid_argument");
+                GlobalLogB.AddLog("IBB_IniLine_Data_Int::SetValue Ôºö std::stoi : invalid_argument");
             }
             _Empty = true;
             return false;
@@ -47,7 +47,7 @@ struct IBB_IniLine_Data_Int : public IBB_IniLine_Data_Base
             if (EnableLog)
             {
                 GlobalLogB.AddLog_CurTime(false);
-                GlobalLogB.AddLog("IBB_IniLine_Data_Int::SetValue £∫ std::stoi : out_of_range");
+                GlobalLogB.AddLog("IBB_IniLine_Data_Int::SetValue Ôºö std::stoi : out_of_range");
             }
             _Empty = true;
             return false;
@@ -165,7 +165,7 @@ struct IBB_IniLine_Data_Double : public IBB_IniLine_Data_Base
             if (EnableLog)
             {
                 GlobalLogB.AddLog_CurTime(false);
-                GlobalLogB.AddLog("IBB_IniLine_Data_Double::SetValue £∫ std::stod : invalid_argument");
+                GlobalLogB.AddLog("IBB_IniLine_Data_Double::SetValue Ôºö std::stod : invalid_argument");
             }
             _Empty = true;
             return false;
@@ -176,7 +176,7 @@ struct IBB_IniLine_Data_Double : public IBB_IniLine_Data_Base
             if (EnableLog)
             {
                 GlobalLogB.AddLog_CurTime(false);
-                GlobalLogB.AddLog("IBB_IniLine_Data_Double::SetValue £∫ std::stod : out_of_range");
+                GlobalLogB.AddLog("IBB_IniLine_Data_Double::SetValue Ôºö std::stod : out_of_range");
             }
             _Empty = true;
             return false;
@@ -236,7 +236,7 @@ bool IBB_IniLine_Default::Load(JsonObject FromJson)
         if (EnableLog)
         {
             GlobalLogB.AddLog_CurTime(false);
-            sprintf_s(LogBufB, "IBB_IniLine_Default::Load £∫ IniLine \"%s\" µƒProperty.Type π”√¡À≤ª¥Ê‘⁄µƒ¿‡–Õ \"%s\"°£"
+            sprintf_s(LogBufB, "IBB_IniLine_Default::Load Ôºö IniLine \"%s\" ÁöÑProperty.Type‰ΩøÁî®‰∫Ü‰∏çÂ≠òÂú®ÁöÑÁ±ªÂûã \"%s\"„ÄÇ"
                 , Name.c_str(), Property.Type.c_str());
             GlobalLogB.AddLog(LogBufB);
         }
@@ -358,7 +358,7 @@ std::string IBB_RegisterList::GetText(bool PrintExtraData) const
     int i = 1;
     for (auto ptr : List)
     {
-        //if(ptr==nullptr) ‘›≤ª–ËºÏ≤È
+        //if(ptr==nullptr) ÊöÇ‰∏çÈúÄÊ£ÄÊü•
         Text += std::to_string(i) + "=" + ptr->Name; Text.push_back('\n');
         i++;
     }
@@ -395,7 +395,7 @@ bool IBB_Ini::Merge(const IBB_Ini& Another, bool IsDuplicate)
             {
                 GlobalLogB.AddLog_CurTime(false);
                 auto gt = UTF8toUnicode(Another.Name + "->" + fs);
-                GlobalLogB.AddLog(std::vformat(L"IBB_Ini::Merge £∫" + locw("Log_SectionNotExist"), std::make_wformat_args(gt)));
+                GlobalLogB.AddLog(std::vformat(L"IBB_Ini::Merge Ôºö" + locw("Log_SectionNotExist"), std::make_wformat_args(gt)));
             }
             Ret = false;
         }
@@ -429,7 +429,7 @@ bool IBB_IniLine::Merge(const std::string& Another, IBB_IniMergeMode Mode)
                 GlobalLogB.AddLog_CurTime(false);
                 auto K = UTF8toUnicode(Default->Name);
                 auto LT = UTF8toUnicode(Default->Property.Type);
-                GlobalLogB.AddLog(std::vformat(L"IBB_DefaultTypeList::Merge £∫ " + locw("Error_DataTypeNotExist"),
+                GlobalLogB.AddLog(std::vformat(L"IBB_DefaultTypeList::Merge Ôºö " + locw("Error_DataTypeNotExist"),
                     std::make_wformat_args(K, LT)).c_str());
             }
             return false;
@@ -454,7 +454,7 @@ bool IBB_IniLine::Merge(const std::string& Another, IBB_IniMergeMode Mode)
             GlobalLogB.AddLog_CurTime(false);
             auto K = UTF8toUnicode(Default->Name);
             auto LT = std::to_wstring(static_cast<int>(Mode));
-            GlobalLogB.AddLog(std::vformat(L"IBB_IniLine::Merge £∫ " + locw("Error_MergeTypeNotExist"),
+            GlobalLogB.AddLog(std::vformat(L"IBB_IniLine::Merge Ôºö " + locw("Error_MergeTypeNotExist"),
                 std::make_wformat_args(K, LT)).c_str());
         }
         return false;
@@ -479,7 +479,7 @@ bool IBB_IniLine::Generate(const std::string& Value, IBB_IniLine_Default* Def)
             GlobalLogB.AddLog_CurTime(false);
             auto K = UTF8toUnicode(Default->Name);
             auto LT = UTF8toUnicode(Default->Property.Type);
-            GlobalLogB.AddLog(std::vformat(L"IBB_IniLine::Generate £∫ " + locw("Error_DataTypeNotExist"),
+            GlobalLogB.AddLog(std::vformat(L"IBB_IniLine::Generate Ôºö " + locw("Error_DataTypeNotExist"),
                 std::make_wformat_args(K, LT)).c_str());
         }
         return false;
@@ -524,7 +524,7 @@ bool IBB_Ini::CreateSection(const std::string& _Name)
         if (EnableLog)
         {
             GlobalLogB.AddLog_CurTime(false);
-            GlobalLogB.AddLog((u8"IBB_Ini::CreateSection £∫" + loc("Log_EmptySectionName")).c_str());
+            GlobalLogB.AddLog((u8"IBB_Ini::CreateSection Ôºö" + loc("Log_EmptySectionName")).c_str());
         }
         return false;
     }
@@ -552,7 +552,7 @@ bool IBB_Ini::AddSection(const IBB_Section& Section, bool IsDuplicate)
         return Is->second.Merge(Section, IBB_IniMergeMode::Merge, IsDuplicate);
     }
 }
-//TODO:À¢–¬Link£¨≤ªπ˝≤ª◊≈º±£¨±œæπAddSection µº ÷ªª·‘⁄AddModule ±µ˜”√£¨∂¯≤ªª·µº÷¬‘≠”–Linkµƒ∏ƒ∂Ø
+//TODO:Âà∑Êñ∞LinkÔºå‰∏çËøá‰∏çÁùÄÊÄ•ÔºåÊØïÁ´üAddSectionÂÆûÈôÖÂè™‰ºöÂú®AddModuleÊó∂Ë∞ÉÁî®ÔºåËÄå‰∏ç‰ºöÂØºËá¥ÂéüÊúâLinkÁöÑÊîπÂä®
 
 /*
 bool IBB_Ini::DeleteSection(const std::string& Tg)
@@ -615,7 +615,7 @@ std::string IBB_Ini::GetText(bool PrintExtraData) const
             {
                 GlobalLogB.AddLog_CurTime(false);
                 auto gt = UTF8toUnicode(Name + "->" + sn);
-                GlobalLogB.AddLog(std::vformat(L"IBB_Ini::GetText £∫" + locw("Log_SectionNotExist"), std::make_wformat_args(gt)));
+                GlobalLogB.AddLog(std::vformat(L"IBB_Ini::GetText Ôºö" + locw("Log_SectionNotExist"), std::make_wformat_args(gt)));
             }
         auto& Sec = It->second;
         Text += "[" + Sec.Name + "]\n" + Sec.GetText(PrintExtraData);
@@ -653,7 +653,7 @@ void IBB_Link::DynamicCheck_Legal(const IBB_Project& Proj)
         IBB_Link* pl;
         while (pt == nullptr && it != pt->LinkGroup_LinkTo.end()) { pl = &(*it); pt = Proj.GetSec(it->To); ++it; }
         if(pt == nullptr) { Dynamic.Legal = IBB_Link::_Dynamic::Incomplete; return; }
-        //‘›«“’‚√¥∏…
+        //ÊöÇ‰∏îËøô‰πàÂπ≤
         ToChange.push_back(pl);
         for (auto l : pt->LinkedBy)if (l == *pl)ToChange.push_back(&l);
     }
@@ -664,7 +664,7 @@ void IBB_Link::DynamicCheck_Legal(const IBB_Project& Proj)
         IBB_Link* pl;
         while (pf == nullptr && it != pf->LinkedBy.end()) { pl = &(*it); pf = Proj.GetSec(it->From); ++it; }
         if (pf == nullptr) { Dynamic.Legal = IBB_Link::_Dynamic::Incomplete; return; }
-        //‘›«“’‚√¥∏…
+        //ÊöÇ‰∏îËøô‰πàÂπ≤
         ToChange.push_back(pl);
         for (auto l : pt->GetLinkTo())if (l == *pl)ToChange.push_back(&l);
     }
@@ -839,7 +839,7 @@ void IBB_Link_NameType::Write(const ExtFileClass& File)const
 
 IBB_DefaultTypeList::_Query::_Query()
 {
-    IniLine_Default_Special_FunctionList = {};//”– ≤√¥Special¿‡–Õ‘ŸÃÌº”°£
+    IniLine_Default_Special_FunctionList = {};//Êúâ‰ªÄ‰πàSpecialÁ±ªÂûãÂÜçÊ∑ªÂä†„ÄÇ
 }
 
 bool IBB_DefaultTypeList::BuildQuery()
@@ -860,7 +860,7 @@ bool IBB_DefaultTypeList::BuildQuery()
                 GlobalLogB.AddLog_CurTime(false);
                 auto K = UTF8toUnicode(p.second.Name);
                 auto LT = UTF8toUnicode(p.second.Limit.Type);
-                GlobalLogB.AddLog(std::vformat(L"IBB_DefaultTypeList::EnsureType £∫ " + locw("Error_LimitTypeNotExist"),
+                GlobalLogB.AddLog(std::vformat(L"IBB_DefaultTypeList::EnsureType Ôºö " + locw("Error_LimitTypeNotExist"),
                     std::make_wformat_args(K, LT)).c_str());
 
             }

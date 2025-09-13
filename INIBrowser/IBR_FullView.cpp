@@ -1,4 +1,4 @@
-#include "IBRender.h"
+ï»¿#include "IBRender.h"
 #include "IBFront.h"
 #include "Global.h"
 #include "FromEngine/RFBump.h"
@@ -51,7 +51,7 @@ namespace IBR_FullView
         ImVec2 CPos = Pos + (ViewSize * 0.5);
         dImVec2 VOffset = dImVec2(IBR_FullView::EqCenter) / ViewScale;
         dl->AddRectFilled(Pos, Pos + ViewSize, IBR_Color::BackgroundColor);
-        dImVec2 CC = Pos + (ViewSize / 2);//ÖÐÐÄ
+        dImVec2 CC = Pos + (ViewSize / 2);//ä¸­å¿ƒ
         /*
         for (int i = 0; i < CurrentNSec; i++)
         {
@@ -73,6 +73,7 @@ namespace IBR_FullView
         {
             if (!IBR_Inst_Project.GetSectionFromID(sp.first).HasBack())continue;
             auto& sd = sp.second;
+            if (sd.IsIncluded())continue;
             if (sp.first == IBR_EditFrame::CurSection.ID)
             {
                 psd = &sp.second; continue;

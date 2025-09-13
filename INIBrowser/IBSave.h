@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "FromEngine/Include.h"
 #include "FromEngine/RFBump.h"
 
@@ -68,6 +68,7 @@ struct IBS_Project
     bool Load();
     bool Save(const std::wstring& _Path);
     bool Load(const std::wstring& _Path);
+    int GetCreateVersionN() const;
 };
 
 

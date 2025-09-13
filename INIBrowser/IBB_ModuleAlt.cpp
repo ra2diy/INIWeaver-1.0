@@ -1,54 +1,82 @@
-#include "IBB_ModuleAlt.h"
+ï»¿#include "IBB_ModuleAlt.h"
 #include <wincrypt.h>
-#include <ranges>
 #include "IBFront.h"
 #include "Global.h"
 #include "Shlwapi.h"
 #include <imgui_internal.h>
+#include <minwindef.h>
+#include <fileapi.h>
+#include <handleapi.h>
+#include <minwinbase.h>
+#include <Windows.h>
+#include <winscard.h>
+#include <cctype>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <exception>
+#include <format>
+#include <map>
+#include <memory>
+#include <stdexcept>
+#include <string>
+#include <type_traits>
+#include <unordered_map>
+#include <vector>
+#include <__msvc_string_view.hpp>
+#include <imgui.h>
+#include "FromEngine/external_file.h"
+#include "FromEngine/global_tool_func.h"
+#include "FromEngine/RFBump.h"
+#include "FromEngine/types.h"
+#include "IBB_Components.h"
+#include "IBG_Ini.h"
+#include "IBRender.h"
+#include "IBR_Localization.h"
 
 #pragma comment(lib, "crypt32.lib")
 
-// ½«¶ş½øÖÆÊı¾İ×ª»»Îª Base64 ×Ö·û´®
+// å°†äºŒè¿›åˆ¶æ•°æ®è½¬æ¢ä¸º Base64 å­—ç¬¦ä¸²
 std::string DataToBase64(const std::vector<BYTE>& Data) {
     DWORD dwLength = 0;
 
-    // ¼ÆËã Base64 ×Ö·û´®µÄ³¤¶È
+    // è®¡ç®— Base64 å­—ç¬¦ä¸²çš„é•¿åº¦
     if (!CryptBinaryToStringA(Data.data(), Data.size(), CRYPT_STRING_BASE64 | CRYPT_STRING_NOCRLF, nullptr, &dwLength)) {
         throw std::runtime_error("Failed to calculate Base64 length.");
     }
 
-    // ·ÖÅä×ã¹»µÄÄÚ´æÀ´´æ´¢ Base64 ×Ö·û´®
+    // åˆ†é…è¶³å¤Ÿçš„å†…å­˜æ¥å­˜å‚¨ Base64 å­—ç¬¦ä¸²
     std::string base64Str(dwLength, '\0');
 
-    // ½«¶ş½øÖÆÊı¾İ×ª»»Îª Base64 ×Ö·û´®
+    // å°†äºŒè¿›åˆ¶æ•°æ®è½¬æ¢ä¸º Base64 å­—ç¬¦ä¸²
     if (!CryptBinaryToStringA(Data.data(), Data.size(), CRYPT_STRING_BASE64 | CRYPT_STRING_NOCRLF, &base64Str[0], &dwLength)) {
         throw std::runtime_error("Failed to convert data to Base64.");
     }
 
-    // È¥µôÄ©Î²µÄ¿Õ×Ö·û
+    // å»æ‰æœ«å°¾çš„ç©ºå­—ç¬¦
     base64Str.pop_back();
 
     return base64Str;
 }
 
-// ½« Base64 ×Ö·û´®×ª»»Îª¶ş½øÖÆÊı¾İ
+// å°† Base64 å­—ç¬¦ä¸²è½¬æ¢ä¸ºäºŒè¿›åˆ¶æ•°æ®
 std::vector<BYTE> Base64ToData(const std::string_view Str) {
     DWORD dwLength = 0;
 
-    // ¼ÆËã¶ş½øÖÆÊı¾İµÄ³¤¶È
+    // è®¡ç®—äºŒè¿›åˆ¶æ•°æ®çš„é•¿åº¦
     if (!CryptStringToBinaryA(Str.data(), Str.size(), CRYPT_STRING_BASE64, nullptr, &dwLength, nullptr, nullptr)) {
         throw std::runtime_error("Failed to calculate binary data length.");
     }
 
-    // ·ÖÅä×ã¹»µÄÄÚ´æÀ´´æ´¢¶ş½øÖÆÊı¾İ
+    // åˆ†é…è¶³å¤Ÿçš„å†…å­˜æ¥å­˜å‚¨äºŒè¿›åˆ¶æ•°æ®
     std::vector<BYTE> data(dwLength);
 
-    // ½« Base64 ×Ö·û´®×ª»»Îª¶ş½øÖÆÊı¾İ
+    // å°† Base64 å­—ç¬¦ä¸²è½¬æ¢ä¸ºäºŒè¿›åˆ¶æ•°æ®
     if (!CryptStringToBinaryA(Str.data(), Str.size(), CRYPT_STRING_BASE64, data.data(), &dwLength, nullptr, nullptr)) {
         throw std::runtime_error("Failed to convert Base64 to data.");
     }
 
-    // µ÷Õû´óĞ¡ÒÔÆ¥ÅäÊµ¼ÊÊı¾İ³¤¶È
+    // è°ƒæ•´å¤§å°ä»¥åŒ¹é…å®é™…æ•°æ®é•¿åº¦
     data.resize(dwLength);
 
     return data;
@@ -58,12 +86,12 @@ void DrawFolderIcon(ImVec2 Pos, float Size)
 {
     ImDrawList* draw_list = ImGui::GetWindowDrawList();
 
-    // ÎÄ¼ş¼ĞÖ÷Ìå£¨»ÆÉ«²¿·Ö£©
+    // æ–‡ä»¶å¤¹ä¸»ä½“ï¼ˆé»„è‰²éƒ¨åˆ†ï¼‰
     ImVec2 folder_body_top_left(Pos.x, Pos.y + Size * 0.05f);
     ImVec2 folder_body_bottom_right(Pos.x + Size, Pos.y + Size * 0.8f);
     draw_list->AddRectFilled(folder_body_top_left, folder_body_bottom_right, IM_COL32(255, 215, 0, 255), Size * 0.05f);
 
-    // ÎÄ¼ş¼Ğ¶¥²¿ÇúÏß
+    // æ–‡ä»¶å¤¹é¡¶éƒ¨æ›²çº¿
     ImVec2 c1(Pos.x, Pos.y + Size * 0.15f);
     ImVec2 c2(Pos.x + Size * 0.3f, Pos.y + Size * 0.15f);
     ImVec2 c3(Pos.x + Size * 0.5f, Pos.y);
@@ -76,12 +104,12 @@ void DrawOpenFolderIcon(ImVec2 Pos, float Size)
 {
     ImDrawList* draw_list = ImGui::GetWindowDrawList();
 
-    // ÎÄ¼ş¼ĞÖ÷Ìå£¨»ÆÉ«²¿·Ö£©
+    // æ–‡ä»¶å¤¹ä¸»ä½“ï¼ˆé»„è‰²éƒ¨åˆ†ï¼‰
     ImVec2 folder_body_top_left(Pos.x, Pos.y + Size * 0.05f);
     ImVec2 folder_body_bottom_right(Pos.x + Size, Pos.y + Size * 0.8f);
     draw_list->AddRectFilled(folder_body_top_left, folder_body_bottom_right, IM_COL32(255, 215, 0, 255), Size * 0.05f);
 
-    // ÎÄ¼ş¼Ğ¶¥²¿ÇúÏß
+    // æ–‡ä»¶å¤¹é¡¶éƒ¨æ›²çº¿
     ImVec2 c0(Pos.x, Pos.y + Size * 0.65f);
     ImVec2 c1(Pos.x + Size * 0.05f, Pos.y + Size * 0.15f);
     ImVec2 c2(Pos.x + Size * 0.35f, Pos.y + Size * 0.15f);
@@ -281,81 +309,81 @@ std::unordered_map<std::string, std::string> GetVarList(const std::vector<IniTok
     return s;
 }
 
-// ÎÄ¼şĞÅÏ¢½á¹¹Ìå
+// æ–‡ä»¶ä¿¡æ¯ç»“æ„ä½“
 struct FileInfo {
-    std::wstring Name;    // ÎÄ¼şÃû
-    std::wstring FullPath; // ÍêÕûÂ·¾¶
+    std::wstring Name;    // æ–‡ä»¶å
+    std::wstring FullPath; // å®Œæ•´è·¯å¾„
 };
 
-// ÎÄ¼ş±éÀúÆ÷Àà
+// æ–‡ä»¶éå†å™¨ç±»
 class FindFileRange {
 public:
-    // ¹¹Ôìº¯Êı£¬½ÓÊÜÍ¨Åä·û£¨Èç L"*.txt"£©
+    // æ„é€ å‡½æ•°ï¼Œæ¥å—é€šé…ç¬¦ï¼ˆå¦‚ L"*.txt"ï¼‰
     FindFileRange(const std::wstring& pattern) : pattern(pattern) {
-        // ¿ªÊ¼²éÕÒÎÄ¼ş
+        // å¼€å§‹æŸ¥æ‰¾æ–‡ä»¶
         hFind = FindFirstFileW(pattern.c_str(), &findData);
     }
     FindFileRange(const _TEXT_UTF8 std::string& Pattern) : pattern(UTF8toUnicode(Pattern)) {
-        // ¿ªÊ¼²éÕÒÎÄ¼ş
+        // å¼€å§‹æŸ¥æ‰¾æ–‡ä»¶
         hFind = FindFirstFileW(pattern.c_str(), &findData);
     }
 
-    // Îö¹¹º¯Êı£¬ÊÍ·Å×ÊÔ´
+    // ææ„å‡½æ•°ï¼Œé‡Šæ”¾èµ„æº
     ~FindFileRange() {
         if (hFind != INVALID_HANDLE_VALUE) {
             FindClose(hFind);
         }
     }
 
-    // µü´úÆ÷Àà
+    // è¿­ä»£å™¨ç±»
     class Iterator {
     public:
         Iterator(HANDLE hFind, WIN32_FIND_DATAW* findData, const std::wstring& pattern)
             : hFind(hFind), findData(findData), pattern(pattern) {
             if (hFind != INVALID_HANDLE_VALUE) {
-                // ³õÊ¼»¯µ±Ç°ÎÄ¼şĞÅÏ¢
+                // åˆå§‹åŒ–å½“å‰æ–‡ä»¶ä¿¡æ¯
                 currentFile.Name = findData->cFileName;
                 currentFile.FullPath = pattern.substr(0, pattern.find_last_of(L'\\') + 1) + findData->cFileName;
             }
         }
 
-        // ½âÒıÓÃ²Ù×÷·û
+        // è§£å¼•ç”¨æ“ä½œç¬¦
         FileInfo& operator*() {
             return currentFile;
         }
 
-        // Ç°ÖÃµİÔö²Ù×÷·û
+        // å‰ç½®é€’å¢æ“ä½œç¬¦
         Iterator& operator++() {
             if (FindNextFileW(hFind, findData) != 0) {
-                // ¸üĞÂµ±Ç°ÎÄ¼şĞÅÏ¢
+                // æ›´æ–°å½“å‰æ–‡ä»¶ä¿¡æ¯
                 currentFile.Name = findData->cFileName;
                 currentFile.FullPath = pattern.substr(0, pattern.find_last_of(L'\\') + 1) + findData->cFileName;
             }
             else {
-                // Ã»ÓĞ¸ü¶àÎÄ¼ş£¬±ê¼ÇÎª½áÊø
+                // æ²¡æœ‰æ›´å¤šæ–‡ä»¶ï¼Œæ ‡è®°ä¸ºç»“æŸ
                 hFind = INVALID_HANDLE_VALUE;
             }
             return *this;
         }
 
-        // ²»µÈ²Ù×÷·û
+        // ä¸ç­‰æ“ä½œç¬¦
         bool operator!=(const Iterator& other) const {
             return hFind != other.hFind;
         }
 
     private:
-        HANDLE hFind;                // ²éÕÒ¾ä±ú
-        WIN32_FIND_DATAW* findData;  // ÎÄ¼şÊı¾İ
-        std::wstring pattern;        // Í¨Åä·û
-        FileInfo currentFile;        // µ±Ç°ÎÄ¼şĞÅÏ¢
+        HANDLE hFind;                // æŸ¥æ‰¾å¥æŸ„
+        WIN32_FIND_DATAW* findData;  // æ–‡ä»¶æ•°æ®
+        std::wstring pattern;        // é€šé…ç¬¦
+        FileInfo currentFile;        // å½“å‰æ–‡ä»¶ä¿¡æ¯
     };
 
-    // ·µ»ØÆğÊ¼µü´úÆ÷
+    // è¿”å›èµ·å§‹è¿­ä»£å™¨
     Iterator begin() {
         return Iterator(hFind, &findData, pattern);
     }
 
-    // ·µ»Ø½áÊøµü´úÆ÷
+    // è¿”å›ç»“æŸè¿­ä»£å™¨
     Iterator end() {
         return Iterator(INVALID_HANDLE_VALUE, nullptr, pattern);
     }
@@ -366,9 +394,9 @@ public:
     }
 
 private:
-    std::wstring pattern;    // Í¨Åä·û
-    HANDLE hFind;            // ²éÕÒ¾ä±ú
-    WIN32_FIND_DATAW findData; // ÎÄ¼şÊı¾İ
+    std::wstring pattern;    // é€šé…ç¬¦
+    HANDLE hFind;            // æŸ¥æ‰¾å¥æŸ„
+    WIN32_FIND_DATAW findData; // æ–‡ä»¶æ•°æ®
 };
 
 std::vector<std::wstring> FindFileVec(const std::wstring& pattern)
@@ -521,6 +549,11 @@ ClipWriteStream& operator<<(ClipWriteStream& stm, const ModuleClipData& v)
     {
         stm << v.IsLinkGroup << v.Desc << v.DefaultLinkKey << v.EqSize << v.EqDelta << v.VarList << v.LinkGroup_LinkTo;
     }
+    /*
+    IncludedBySection
+    IncludingSections
+    */
+    stm << v.IncludedBySection << v.IncludingSections;
     return stm;
 }
 ClipReadStream& operator>>(ClipReadStream& stm, ModuleClipData& v)
@@ -574,6 +607,20 @@ ClipReadStream& operator>>(ClipReadStream& stm, ModuleClipData& v)
     {
         stm >> v.Desc >> v.DefaultLinkKey >> v.EqSize >> v.EqDelta >> v.VarList >> v.LinkGroup_LinkTo;
     }
+
+    /*
+    IncludedBySection
+    IncludingSections
+    */
+    if (stm.VersionAtLeast(10006))
+    {
+        stm >> v.IncludedBySection >> v.IncludingSections;
+    }
+    else
+    {
+        v.IncludedBySection = { "","" };
+        v.IncludingSections.clear();
+    }
     return stm;
 }
 
@@ -581,7 +628,7 @@ ClipReadStream& operator>>(ClipReadStream& stm, ModuleClipData& v)
 void subreplace(std::string& dst_str, const std::string& sub_str, const std::string& new_str)
 {
     std::string::size_type pos = 0;
-    while ((pos = dst_str.find(sub_str)) != std::string::npos)   //Ìæ»»ËùÓĞÖ¸¶¨×Ó´®
+    while ((pos = dst_str.find(sub_str)) != std::string::npos)   //æ›¿æ¢æ‰€æœ‰æŒ‡å®šå­ä¸²
     {
         dst_str.replace(pos, sub_str.length(), new_str);
     }
@@ -595,6 +642,8 @@ void ModuleClipData::Replace(const std::string& Parameter, const std::string& Ar
     //X(Comment);
     X(Inherit);
     X(Register);
+    X(IncludedBySection.A);
+    X(IncludedBySection.B);
     for (auto& Tk : Lines)
     {
         X(Tk.Desc);
@@ -611,12 +660,18 @@ void ModuleClipData::Replace(const std::string& Parameter, const std::string& Ar
         X(lt.B);
         X(lt.A);
     }
+    for (auto& lt : IncludingSections)
+    {
+        X(lt.B);
+        X(lt.A);
+    }
 #undef X
 }
 
-void ModuleClipData::Load(const std::string_view Str)
+void ModuleClipData::Load(const std::string_view Str, int ClipFormatVersion)
 {
     ClipReadStream stm;
+    stm.SetVersion(ClipFormatVersion);
     stm.Set(Str);
     stm >> *this;
     FromClipBoard = true;
@@ -649,9 +704,12 @@ namespace OldClipMagic
 {
     const std::string ClipMagic201 = "IniBrowserClipDataFormat_0.2b1";
     const std::string ClipMagic202 = "IniBrowserClipDataFormat_0.2b2";
+    const std::string ClipMagic10000 = "IniBrowserClipDataFormat_1.0";
+    const std::string ClipMagic10004 = "IniBrowserClipDataFormat_1.0.4";
 }
 
-const std::string ClipMagic = "IniBrowserClipDataFormat_" + Version;
+const char* ClipMagicPrefix = "IniBrowserClipDataFormat_";
+const std::string ClipMagic = ClipMagicPrefix + ClipDataFormatVersion;
 const std::string ClipMagicEnd = "EndOfClipData";
 std::string TimeNowU8();
 extern int RFontHeight;
@@ -760,6 +818,25 @@ std::unordered_map<std::string, std::unordered_map<std::string, std::string>> In
     return Ret;
 }
 
+int GetClipFormatVersion(const std::string& Magic)
+{
+    if (Magic.starts_with(ClipMagic))return VersionN;
+    if (Magic.starts_with(OldClipMagic::ClipMagic10000)                   ||
+        Magic.starts_with(OldClipMagic::ClipMagic201)  ||
+        Magic.starts_with(OldClipMagic::ClipMagic202)  ||
+        Magic.starts_with(OldClipMagic::ClipMagic10004)
+    ) return 10000;
+    return 0;
+}
+
+int GetClipFormatVersion(int AppVersion)
+{
+    if (AppVersion > VersionN)return AppVersion;
+    if (AppVersion >= 10006)return 10006;
+    if (AppVersion >= 200)return 10000;
+    return 0;
+}
+
 void IBB_ModuleAlt::LoadFromString(std::wstring_view FileName, std::string&& FileStr)
 {
     Available = false;
@@ -793,18 +870,22 @@ void IBB_ModuleAlt::LoadFromString(std::wstring_view FileName, std::string&& Fil
             ParamDescLong = L["ParamDescLong"];
             Parameter = "****";
 
-            //°æ±¾ÖØÔØ¾öÒé
-            if (
-                L["Data"].starts_with(ClipMagic) ||
-                L["Data"].starts_with(OldClipMagic::ClipMagic201)||
-                L["Data"].starts_with(OldClipMagic::ClipMagic202)
-                )
+            //ç‰ˆæœ¬é‡è½½å†³è®®
+            if (!L["Data"].empty())
             {
+                auto Ver = GetClipFormatVersion(L["Data"]);
                 IBB_ClipBoardData ClipData;
-                if (ClipData.SetString(L["Data"]))
+                IBB_ClipBoardData::ErrorContext.ModuleName = Name;
+                IBB_ClipBoardData::ErrorContext.ModulePath = Path;
+                if (ClipData.SetString(L["Data"], Ver))
                 {
                     FromClip = true;
                     Modules.insert(Modules.end(), ClipData.Modules.begin(), ClipData.Modules.end());
+                }
+                else
+                {
+                    FromClip = false;
+                    Modules.clear();
                 }
             }
 
@@ -835,7 +916,7 @@ void IBB_ModuleAlt::LoadFromString(std::wstring_view FileName, std::string&& Fil
                     //Type#DefaultLink=Key
                     M.DefaultLinkKey.push_back({ sec[i].Desc, sec[i].Value });//Type,Key
 
-                    //TODO : ensure type ËÆÁË
+                    //TODO : ensure type ä¼¼äº†
                     //IBF_Inst_DefaultTypeList.EnsureType(sec[i].Value, sec[i].Desc);
                 }
                 else if (sec[i].Key == "Var")
@@ -875,6 +956,7 @@ void IBB_ModuleAlt::LoadFromString(std::wstring_view FileName, std::string&& Fil
         M.VarList.push_back({ "_Local_Category", M.Register });
     }
 
+    FromClipBoard = FromClip;
     Available = FromClip || (HasReg && HasInfo && !Modules.empty());
 }
 
@@ -915,15 +997,44 @@ void IBB_ModuleAlt::LoadFromFile(const char* FileName)
     LoadFromString(UTF8toUnicode(FileName), GetStringFromFile(FileName));
 }
 
-void IBB_ClipBoardData::Mangle()
+//æ­¤å¤„å…³è”äº†IBR_Project::RenameAll()
+//è®°å¾—åŒæ—¶ä¿®æ”¹
+bool ModuleClipData::NeedtoMangle() const
+{
+    bool P = false;
+    std::string W{}, Q{};
+    for (auto& v : VarList)
+    {
+        if (v.A == "_InitialSecName")W = v.B;
+        else if (v.A == "UseOwnName")Q = v.B;
+    }
+    if (W == Desc.B && !IsTrueString(Q))
+    {
+        P = true;
+    }
+    if (W.empty())P = true;
+    return P;
+}
+
+void MangleModules(std::vector<ModuleClipData>& Modules)
 {
     for (auto& m : Modules)
     {
+        if (!m.NeedtoMangle())continue;
+
         auto S = m.Desc.B;
         auto W = GenerateModuleTag();
+
+        for (auto& v : m.VarList)
+            if (v.A == "_InitialSecName")v.B = W;
         for (auto& n : Modules)
             n.Replace(S, W);
     }
+}
+
+void IBB_ClipBoardData::Mangle()
+{
+    MangleModules(Modules);
 }
 
 inline auto trim(std::string_view string) noexcept {
@@ -963,6 +1074,9 @@ inline std::vector<std::string> SplitView_ToSV(const std::string_view Text)//ORI
     return ret;
 }
 
+
+IBB_ClipBoardData::ErrorCtx IBB_ClipBoardData::ErrorContext{};
+
 std::vector<BYTE> IBB_ClipBoardData::GetStream() const
 {
     ClipWriteStream Stm;
@@ -970,13 +1084,7 @@ std::vector<BYTE> IBB_ClipBoardData::GetStream() const
     return Stm.Buffer;
 }
 
-bool IBB_ClipBoardData::SetStream(const std::vector<BYTE>& Vec)
-{
-    ClipReadStream Stm;
-    Stm.Set(Vec);
-    Stm >> ProjectRID >> Modules;
-    return true;
-}
+
 
 std::string IBB_ClipBoardData::GetString() const
 {
@@ -992,19 +1100,60 @@ std::string IBB_ClipBoardData::GetString() const
     Result += ClipMagicEnd;
     return Result;
 }
-bool IBB_ClipBoardData::SetString(const std::string_view Str)
+
+bool CheckClipVersion(int ClipFormatVersion, const std::string& Ver_Prefix)
 {
+    if (ClipFormatVersion > VersionN || ClipFormatVersion < 10000)
+    {
+        auto VersionStr = UTF8toUnicode(GetVersionStr(ClipFormatVersion));
+        if (ClipFormatVersion <= 0)
+        {
+            if (Ver_Prefix.starts_with(ClipMagicPrefix) && Ver_Prefix != ClipMagicPrefix)
+                VersionStr = UTF8toUnicode(Ver_Prefix.substr(strlen(ClipMagicPrefix)));
+            else VersionStr = UTF8toUnicode(Ver_Prefix);
+        }
+        auto ModuleNameW = UTF8toUnicode(IBB_ClipBoardData::ErrorContext.ModuleName);
+        //ModulePath ModuleName VersionName VersionID
+        auto ErrorStr = UnicodetoUTF8(
+            std::vformat(locw("Error_ModuleIncompatible"), std::make_wformat_args(
+                IBB_ClipBoardData::ErrorContext.ModulePath,
+                ModuleNameW,
+                VersionStr,
+                ClipFormatVersion
+        )));
+        IBR_PopupManager::AddModuleParseErrorPopup(std::move(ErrorStr), loc("Error_ModuleParseError"));
+        return false;
+    }
+    return true;
+}
+
+bool IBB_ClipBoardData::SetStream(const std::vector<BYTE>& Vec, int ClipFormatVersion)
+{
+    if (!CheckClipVersion(ClipFormatVersion, ""))return false;
+    ClipReadStream Stm;
+    Stm.SetVersion(ClipFormatVersion);
+    Stm.Set(Vec);
+    Stm >> ProjectRID >> Modules;
+    return true;
+}
+
+bool IBB_ClipBoardData::SetString(const std::string_view Str, int ClipFormatVersion)
+{
+    
     auto View = SplitView_ToSV(Str);
     if (View.size() <= 3)return false;
-    if (View.back() != ClipMagicEnd && View[0] != ClipMagic)return false;
+
+    if (ClipFormatVersion == INT_MAX)
+        ClipFormatVersion = GetClipFormatVersion(View[0]);
+    if (!CheckClipVersion(ClipFormatVersion, View[0]))return false;
+
+    if (View.back() != ClipMagicEnd)return false;
     sscanf(View[1].c_str(), "%u", &ProjectRID);
     Modules.resize(View.size() - 3);
     try
     {
         for (size_t i = 2; i < View.size() - 1; i++)
-        {
-            Modules[i - 2].Load(View[i]);
-        }
+            Modules[i - 2].Load(View[i], ClipFormatVersion);
     }
     catch(std::exception& e)
     {
@@ -1012,7 +1161,7 @@ bool IBB_ClipBoardData::SetString(const std::string_view Str)
         {
             GlobalLogB.AddLog_CurTime(false);
             auto w1 = UTF8toUnicode(e.what());
-            GlobalLogB.AddLog(std::vformat(L"IBB_ClipBoardData::SetString £º" + locw("Error_CannotCopyToClipboard"), std::make_wformat_args(w1)));
+            GlobalLogB.AddLog(std::vformat(L"IBB_ClipBoardData::SetString ï¼š" + locw("Error_CannotCopyToClipboard"), std::make_wformat_args(w1)));
         }
         return false;
     }

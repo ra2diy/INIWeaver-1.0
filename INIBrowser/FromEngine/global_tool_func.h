@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include"types.h"
 #include"..\cjson\cJSON.h"
@@ -31,17 +31,17 @@ T lcm(T a, T b)
 }
 
 
-// ANSI×Ö·û¼¯×ª»»³ÉUnicode
+// ANSIå­—ç¬¦é›†è½¬æ¢æˆUnicode
 std::wstring MBCStoUnicode(const std::string& MBCS);
-// UTF-8×Ö·û¼¯×ª»»³ÉUnicode
+// UTF-8å­—ç¬¦é›†è½¬æ¢æˆUnicode
 std::wstring UTF8toUnicode(const std::string& UTF8);
-// Unicode×Ö·û¼¯×ª»»³ÉUTF-8
+// Unicodeå­—ç¬¦é›†è½¬æ¢æˆUTF-8
 std::string UnicodetoUTF8(const std::wstring& Unicode);
-// Unicode×Ö·û¼¯×ª»»³ÉANSI
+// Unicodeå­—ç¬¦é›†è½¬æ¢æˆANSI
 std::string UnicodetoMBCS(const std::wstring& Unicode);
-// ANSI×Ö·û¼¯×ª»»³ÉUTF-8
+// ANSIå­—ç¬¦é›†è½¬æ¢æˆUTF-8
 std::string MBCStoUTF8(const std::string& MBCS);
-// UTF-8×Ö·û¼¯×ª»»³ÉANSI
+// UTF-8å­—ç¬¦é›†è½¬æ¢æˆANSI
 std::string UTF8toMBCS(const std::string& MBCS);
 
 uint64_t GetSysTimeMicros();
@@ -76,6 +76,8 @@ std::string RandStr(int Length);
 std::wstring RandWStr(int Length);
 std::string GenerateModuleTag();
 
+class ExtFileClass;
+std::string GetStringFromFile(ExtFileClass& File);
 std::string GetStringFromFile(const char* FileName);
 std::string GetStringFromFile(const wchar_t* FileName);
 
