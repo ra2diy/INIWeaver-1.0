@@ -111,6 +111,7 @@ std::optional<IBR_Project::id_t> _PROJ_CMD_WRITE _PROJ_CMD_UPDATE IBR_Project::A
         sd->EqSize = Module.EqSize;
         sd->Ignore = Module.Ignore;
         sd->EqPos = InitEqPos;
+        sd->CollapsedInComposed = Module.CollapsedInComposed;
         sd->IncludedByModule_TmpDesc = { Module.IncludedBySection.A, Module.IncludedBySection.B };
         for (auto& lt : Module.IncludingSections)
             sd->IncludingModules_TmpDesc.push_back({ lt.A,lt.B });
@@ -154,6 +155,14 @@ std::optional<IBR_Project::id_t> _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UP
 
     BSec->Register = loc("Back_ComposeBlockName");
     RD->IncludingModules = IDs;
+
+    //剔除被缩合的模块
+    std::erase_if(RD->IncludingModules, [this](auto id) {
+        auto Data = GetSectionFromID(id).GetSectionData();
+        if (!Data)return true;
+        return Data->IsIncluded();
+    });
+
     sort(RD->IncludingModules, [this](id_t l, id_t r)
         {
             auto pDataL = GetSectionFromID(l).GetSectionData();

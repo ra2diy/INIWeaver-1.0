@@ -116,6 +116,7 @@ struct ModuleClipData
     bool IsComment;
     bool Ignore;
     bool FromClipBoard;
+    bool CollapsedInComposed;
     ImVec2 EqSize;
     ImVec2 EqDelta;
     PairClipString Desc;
@@ -134,6 +135,7 @@ struct ModuleClipData
     void Load(const std::string_view Str, int ClipFormatVersion);
     bool NeedtoMangle() const;
     std::string Save() const;
+    JsonFile ToJson() const;
 };
 
 ClipWriteStream& operator<<(ClipWriteStream& stm, bool v);
@@ -181,6 +183,7 @@ struct IBB_Section;
 struct IBB_Section_Desc;
 
 void MangleModules(std::vector<ModuleClipData>& Modules);
+JsonFile ModulesToJson(const std::vector<ModuleClipData>& Modules);
 
 struct IBB_ClipBoardData
 {
@@ -196,6 +199,7 @@ struct IBB_ClipBoardData
     bool SetString(const std::string_view Str, int ClipFormatVersion = INT_MAX);
     //Fill ErrorContext Before Calling
     bool SetStream(const std::vector<BYTE>& Vec, int ClipFormatVersion);
+    JsonFile ToJson() const;
 
     struct ErrorCtx
     {

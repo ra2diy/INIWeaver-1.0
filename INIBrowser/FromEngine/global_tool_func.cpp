@@ -423,6 +423,270 @@ std::string JsonObject::PrintData() const
     return r;
 }
 
+void cJson_SwapData(cJSON* A, cJSON* B)
+{
+    if (A == nullptr || B == nullptr)return;
+    std::swap(*A, *B);
+    std::swap(A->next, B->next);
+}
+
+const char* const StrBool_TrueList[]
+{
+    "true","True","TRUE",
+    "yes","Yes","YES",
+    "t","T","y","Y","1"
+};
+const char* const StrBool_FalseList[]
+{
+    "false","False","FALSE",
+    "no","No","NO",
+    "f","F","n","N","0"
+};
+
+std::string StrBoolImpl(bool Val, StrBoolType Type)
+{
+    return std::string{ CStrBoolImpl(Val, Type) };
+}
+const char* CStrBoolImpl(bool Val, StrBoolType Type)
+{
+    return (Val ? StrBool_TrueList : StrBool_FalseList)[(size_t)Type];
+}
+
+JsonObject JsonObject::CreateObjectItem(const std::string& Str) const
+{
+    auto ObjPtr = cJSON_CreateNull();
+    cJSON_AddItemToObject(Object, Str.c_str(), ObjPtr);
+    return JsonObject(ObjPtr);
+}
+void JsonObject::AddObjectItem(const std::string& Str, JsonObject Child, bool NeedsCopy) const
+{
+    cJSON_AddItemToObject(Object, Str.c_str(), (NeedsCopy ? cJSON_Duplicate(Child.GetRaw(), true) : Child.GetRaw()));
+}
+void JsonObject::AddObjectItem(const std::string& Str, JsonFile&& File) const
+{
+    cJSON_AddItemToObject(Object, Str.c_str(), File.Release());
+}
+void JsonObject::AddNull(const std::string& Str) const
+{
+    cJSON_AddNullToObject(Object, Str.c_str());
+}
+void JsonObject::AddInt(const std::string& Str, int Val) const
+{
+    cJSON_AddIntegerToObject(Object, Str.c_str(), Val);
+}
+void JsonObject::AddDouble(const std::string& Str, double Val) const
+{
+    cJSON_AddNumberToObject(Object, Str.c_str(), Val);
+}
+void JsonObject::AddString(const std::string& Str, const std::string& Val) const
+{
+    cJSON_AddStringToObject(Object, Str.c_str(), Val.c_str());
+}
+void JsonObject::AddBool(const std::string& Str, bool Val) const
+{
+    cJSON_AddBoolToObject(Object, Str.c_str(), Val);
+}
+void JsonObject::AddStrBool(const std::string& Str, bool Val, StrBoolType Type) const
+{
+    cJSON_AddStringToObject(Object, Str.c_str(), CStrBoolImpl(Val, Type));
+}
+JsonFile JsonObject::SwapNull() const
+{
+    JsonFile F(cJSON_CreateNull());
+    cJson_SwapData(F.GetRaw(), Object);
+    return F;
+}
+JsonFile JsonObject::SwapInt(int Val) const
+{
+    JsonFile F(cJSON_CreateInteger(Val));
+    cJson_SwapData(F.GetRaw(), Object);
+    return F;
+}
+JsonFile JsonObject::SwapDouble(double Val) const
+{
+    JsonFile F(cJSON_CreateNumber(Val));
+    cJson_SwapData(F.GetRaw(), Object);
+    return F;
+}
+JsonFile JsonObject::SwapString(const std::string& Val) const
+{
+    JsonFile F(cJSON_CreateString(Val.c_str()));
+    cJson_SwapData(F.GetRaw(), Object);
+    return F;
+}
+JsonFile JsonObject::SwapBool(bool Val) const
+{
+    JsonFile F(cJSON_CreateBool(Val));
+    cJson_SwapData(F.GetRaw(), Object);
+    return F;
+}
+JsonFile JsonObject::SwapStrBool(bool Val, StrBoolType Type) const
+{
+    JsonFile F(cJSON_CreateString(CStrBoolImpl(Val, Type)));
+    cJson_SwapData(F.GetRaw(), Object);
+    return F;
+}
+JsonFile JsonObject::CopyAndSwap(JsonObject Obj, bool Recurse) const
+{
+    JsonFile F(cJSON_Duplicate(Obj.GetRaw(), Recurse));
+    cJson_SwapData(F.GetRaw(), Object);
+    return F;
+}
+JsonFile JsonObject::RedirectAndSwap(JsonObject Obj)
+{
+    JsonFile F(this->GetRaw());
+    Object = Obj.GetRaw();
+    return F;
+}
+void JsonObject::SwapObject(JsonObject Obj) const
+{
+    cJson_SwapData(Obj.GetRaw(), Object);
+}
+void JsonObject::SetNull() const
+{
+    SwapNull();
+}
+void JsonObject::SetInt(int Val) const
+{
+    SwapInt(Val);
+}
+void JsonObject::SetDouble(double Val) const
+{
+    SwapDouble(Val);
+}
+void JsonObject::SetString(const std::string& Val) const
+{
+    SwapString(Val);
+}
+void JsonObject::SetBool(bool Val) const
+{
+    SwapBool(Val);
+}
+void JsonObject::SetStrBool(bool Val, StrBoolType Type) const
+{
+    SwapStrBool(Val, Type);
+}
+void JsonObject::CopyObject(JsonObject Obj, bool Recurse) const
+{
+    CopyAndSwap(Obj, Recurse);
+}
+void JsonObject::RedirectObject(JsonObject Obj)
+{
+    RedirectAndSwap(Obj);
+}
+void JsonObject::SetObject()
+{
+    JsonFile F(cJSON_CreateObject());
+    cJson_SwapData(F.GetRaw(), Object);
+}
+
+
+//给空节点的非const函数
+void JsonObject::CreateNull()
+{
+    Object = cJSON_CreateNull();
+}
+void JsonObject::CreateInt(int Val)
+{
+    Object = cJSON_CreateInteger(Val);
+}
+void JsonObject::CreateDouble(double Val)
+{
+    Object = cJSON_CreateNumber(Val);
+}
+void JsonObject::CreateString(const std::string& Val)
+{
+    Object = cJSON_CreateString(Val.c_str());
+}
+void JsonObject::CreateBool(bool Val)
+{
+    Object = cJSON_CreateBool(Val);
+}
+void JsonObject::CreateStrBool(bool Val, StrBoolType Type)
+{
+    Object = cJSON_CreateString(CStrBoolImpl(Val, Type));
+}
+void JsonObject::CreateCopy(JsonObject Obj, bool Recurse)
+{
+    Object = cJSON_Duplicate(Obj.GetRaw(), Recurse);
+}
+void JsonObject::CreateObject()
+{
+    Object = cJSON_CreateObject();
+}
+
+// 不知道是否为空的函数 
+void JsonObject::SetOrCreateNull()
+{
+    if (Available())SetNull();
+    else CreateNull();
+}
+void JsonObject::SetOrCreateInt(int Val)
+{
+    if (Available())SetInt(Val);
+    else CreateInt(Val);
+}
+void JsonObject::SetOrCreateDouble(double Val)
+{
+    if (Available())SetDouble(Val);
+    else CreateDouble(Val);
+}
+void JsonObject::SetOrCreateString(const std::string& Val)
+{
+    if (Available())SetString(Val);
+    else CreateString(Val);
+}
+void JsonObject::SetOrCreateBool(bool Val)
+{
+    if (Available())SetBool(Val);
+    else CreateBool(Val);
+}
+void JsonObject::SetOrCreateStrBool(bool Val, StrBoolType Type)
+{
+    if (Available())SetStrBool(Val, Type);
+    else CreateStrBool(Val, Type);
+}
+void JsonObject::SetOrCreateCopy(JsonObject Obj, bool Recurse)
+{
+    if (Available())CopyObject(Obj, Recurse);
+    else CreateCopy(Obj, Recurse);
+}
+void JsonObject::SetOrCreateObject()
+{
+    if (Available())SetObject();
+    else CreateObject();
+}
+
+JsonFile JsonObject::DetachObjectItem(const std::string& Str) { return cJSON_DetachItemFromObject(Object, Str.c_str()); }
+JsonFile JsonObject::DetachArrayItem(int Index) { return cJSON_DetachItemFromArray(Object, Index); }
+
+
+void JsonObject::Merge(JsonObject Obj)
+{
+    if (!Obj.Available())return;
+    if (!Available())
+    {
+        CreateCopy(Obj, true);
+        return;
+    }
+    if (!Obj.IsTypeObject())
+    {
+        CopyObject(Obj, true);
+    }
+    else
+    {
+        JsonObject Node = Obj.GetChildItem();
+        while (Node.Available())
+        {
+            auto Item = GetObjectItem(Node.GetName());
+            bool PrevAvailable = Item.Available();
+            Item.Merge(Node);
+            if (!PrevAvailable)AddObjectItem(Node.GetName(), Item, false);
+            Node = Node.GetNextItem();
+        }
+    }
+}
+
 std::string GetStringFromFile(ExtFileClass& File)
 {
     auto Pos = File.GetSize();
@@ -641,6 +905,17 @@ bool RegexNotNone_Throw(const std::string& Str, const std::string& Regex)
     catch (std::exception& e) { throw(e); }
 }
 
+
+JsonFile GetArrayOfObjects(std::vector<JsonFile>&& Arr)
+{
+    auto pObj = cJSON_CreateArray();
+    for (auto& i : Arr)
+    {
+        cJSON_AddItemToArray(pObj, i.Release());
+    }
+    Arr.clear();
+    return JsonFile(pObj);
+}
 
 bool IBG_SuspendThread(_FAKE_DWORD ThreadID)
 {

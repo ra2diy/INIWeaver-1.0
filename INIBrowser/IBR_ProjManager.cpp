@@ -328,7 +328,10 @@ namespace IBR_ProjectManager
     {
         std::set<IBB_Section_Desc> Result;
         for (auto& [id, sd] : IBR_Inst_Project.IBR_SectionMap)
-            if (sd.Ignore)Result.insert(sd.Desc);
+        {
+             if(sd.Ignore)Result.insert(sd.Desc);
+             if (sd.IsVirtualBlock())Result.insert(sd.Desc);
+        }
         return Result;
     }
 

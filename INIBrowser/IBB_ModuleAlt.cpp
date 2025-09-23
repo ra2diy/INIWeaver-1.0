@@ -534,6 +534,7 @@ ClipWriteStream& operator<<(ClipWriteStream& stm, const ModuleClipData& v)
     */
     else if (!v.IsLinkGroup)
     {
+        MessageBoxW(NULL, UTF8toUnicode(v.Comment).c_str(), L"COMMENT_WRITE", MB_OK);
         stm << v.IsLinkGroup << v.IsComment << v.Desc << v.EqSize << v.EqDelta << v.Comment;
     }
     /*
@@ -553,7 +554,7 @@ ClipWriteStream& operator<<(ClipWriteStream& stm, const ModuleClipData& v)
     IncludedBySection
     IncludingSections
     */
-    stm << v.IncludedBySection << v.IncludingSections;
+    stm << v.IncludedBySection << v.IncludingSections << v.CollapsedInComposed;
     return stm;
 }
 ClipReadStream& operator>>(ClipReadStream& stm, ModuleClipData& v)
@@ -592,6 +593,7 @@ ClipReadStream& operator>>(ClipReadStream& stm, ModuleClipData& v)
         else
         {
             stm >> v.Desc >> v.EqSize >> v.EqDelta >> v.Comment;
+            MessageBoxW(NULL, UTF8toUnicode(v.Comment).c_str(), L"COMMENT", MB_OK);
         }
     }
     /*
@@ -614,7 +616,7 @@ ClipReadStream& operator>>(ClipReadStream& stm, ModuleClipData& v)
     */
     if (stm.VersionAtLeast(10006))
     {
-        stm >> v.IncludedBySection >> v.IncludingSections;
+        stm >> v.IncludedBySection >> v.IncludingSections >> v.CollapsedInComposed;
     }
     else
     {
@@ -681,6 +683,86 @@ std::string ModuleClipData::Save() const
     ClipWriteStream stm;
     stm << *this;
     return stm.Get();
+}
+
+JsonFile ClipStringToJson(const PairClipString& p)
+{
+    std::vector<JsonFile> vf;
+    vf.resize(2);
+    vf[0].GetObj().SetOrCreateString(p.A);
+    vf[1].GetObj().SetOrCreateString(p.B);
+    return GetArrayOfObjects(std::move(vf));
+}
+JsonFile VectorClipStringToJson(const std::vector<PairClipString>& vec)
+{
+    std::vector<JsonFile> vf;
+    for (auto& p : vec)
+    {
+        vf.push_back(ClipStringToJson(p));
+    }
+    return GetArrayOfObjects(std::move(vf));
+}
+
+JsonFile ModuleClipData::ToJson() const
+{
+    /*
+        bool IsLinkGroup;
+    bool IsComment;
+    bool Ignore;
+    bool FromClipBoard;
+    ImVec2 EqSize;
+    ImVec2 EqDelta;
+    PairClipString Desc;
+    std::string Comment;
+    std::string Inherit;
+    std::string Register;
+    std::vector<PairClipString> DefaultLinkKey;
+    std::string DisplayName;
+    std::vector<IniToken> Lines;//STD Module Line
+    std::vector<PairClipString> LinkGroup_LinkTo;
+    std::vector<PairClipString> VarList;
+    PairClipString IncludedBySection;
+    std::vector<PairClipString> IncludingSections;
+    */
+    JsonFile F;
+    auto Obj = F.GetObj();
+    Obj.SetOrCreateObject();
+    Obj.AddBool("IsLinkGroup", IsLinkGroup);
+    Obj.AddBool("IsComment", IsComment);
+    Obj.AddBool("Ignore", Ignore);
+    Obj.AddBool("FromClipBoard", FromClipBoard);
+    Obj.AddBool("CollapsedInComposed", CollapsedInComposed);
+    Obj.AddDouble("EqSizeX", EqSize.x);
+    Obj.AddDouble("EqSizeY", EqSize.y);
+    Obj.AddDouble("EqDeltaX", EqDelta.x);
+    Obj.AddDouble("EqDeltaY", EqDelta.y);
+    Obj.AddObjectItem("Desc", ClipStringToJson(Desc));
+    Obj.AddString("Comment", Comment);
+    Obj.AddString("Inherit", Inherit);
+    Obj.AddString("Register", Register);
+    Obj.AddObjectItem("DefaultLinkKey", VectorClipStringToJson(DefaultLinkKey));
+    Obj.AddString("DisplayName", DisplayName);
+    {
+        std::vector<JsonFile> vf;
+        for (auto& t : Lines)
+        {
+            vf.emplace_back();
+            auto o = vf.back().GetObj();
+            o.SetOrCreateObject();
+            o.AddBool("Empty", t.Empty);
+            o.AddBool("IsSection", t.IsSection);
+            o.AddBool("HasDesc", t.HasDesc);
+            o.AddString("Desc", t.Desc);
+            o.AddString("Key", t.Key);
+            o.AddString("Value", t.Value);
+        }
+        Obj.AddObjectItem("Lines", GetArrayOfObjects(std::move(vf)));
+    }
+    Obj.AddObjectItem("LinkGroup_LinkTo", VectorClipStringToJson(LinkGroup_LinkTo));
+    Obj.AddObjectItem("VarList", VectorClipStringToJson(VarList));
+    Obj.AddObjectItem("IncludedBySection", ClipStringToJson(IncludedBySection));
+    Obj.AddObjectItem("IncludingSections", VectorClipStringToJson(IncludingSections));
+    return F;
 }
 
 std::string IBB_ModuleAlt::GetFirstINI() const
@@ -1135,6 +1217,26 @@ bool IBB_ClipBoardData::SetStream(const std::vector<BYTE>& Vec, int ClipFormatVe
     Stm.Set(Vec);
     Stm >> ProjectRID >> Modules;
     return true;
+}
+
+JsonFile ModulesToJson(const std::vector<ModuleClipData>& Modules)
+{
+    std::vector<JsonFile> vf;
+    for (auto& Clip : Modules)
+    {
+        vf.push_back(Clip.ToJson());
+    }
+    return GetArrayOfObjects(std::move(vf));
+}
+
+JsonFile IBB_ClipBoardData::ToJson() const
+{
+    JsonFile F;
+    auto Obj = F.GetObj();
+    Obj.SetOrCreateObject();
+    Obj.AddInt("ProjectRID", ProjectRID);
+    Obj.AddObjectItem("Modules", ModulesToJson(Modules));
+    return F;
 }
 
 bool IBB_ClipBoardData::SetString(const std::string_view Str, int ClipFormatVersion)

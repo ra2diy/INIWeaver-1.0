@@ -160,7 +160,7 @@ struct IBR_SectionData
     void RenameRegister();
     bool OnLineEdit(const std::string& Name, bool OnLink);
     void RenderUI();
-    void RenderUI_TitleBar(bool& TriggeredRightMenu);
+    void RenderUI_TitleBar(bool& TriggeredRightMenu, float LastFinalY);
     void CopyToClipBoard();
     bool Decomposable() const;
     void Decompose();
@@ -433,6 +433,7 @@ namespace IBR_FullView
     ImVec2 GetEqMax();
 }
 
+struct IBB_ClipBoardData;
 namespace IBR_WorkSpace
 {
     extern ImVec2 EqCenterPrev, ReCenterPrev, DragStartEqMouse, DragCurEqMouse, InitialMassCenter;
@@ -442,10 +443,14 @@ namespace IBR_WorkSpace
     extern bool NeedChangeRatio, InitHolding, ShowRegName;
     extern bool IsBgDragging, HoldingModules, IsMassSelecting;
     extern std::vector<IBR_Project::id_t> MassTarget;
+    //包含了被缩合的块
+    extern std::vector<IBR_Project::id_t> MassTargetExtended;
     extern ImVec4 TempWbg;
     extern bool LastOperateOnText, OperateOnText;
     extern IBR_Section MouseOverSection;
     extern IBR_SectionData* MouseOverSecData;
+    extern bool CurOnRender_Clicked;
+    extern IBR_Project::id_t CurOnRender_ID;
 
     void UpdatePrev();
     void  _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE UpdatePrevII();
@@ -470,6 +475,7 @@ namespace IBR_WorkSpace
     void CopySelected();
     void CutSelected();
     void Paste();
+    void GenerateClipDataFromIDs(IBB_ClipBoardData& ClipData, const std::vector<IBR_Project::id_t>& IDs);
     void MassSelect(const std::vector<IBR_Project::id_t>& Target);
     void SelectAll();
     void OpenRightClick();

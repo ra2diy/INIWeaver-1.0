@@ -172,6 +172,8 @@ namespace IBR_WorkSpace
     bool HasLefttDownToWait{ false };
     bool MoveAfterMass{ false };
     std::vector<IBR_Project::id_t> MassTarget;
+    //包含了被缩合的块
+    std::vector<IBR_Project::id_t> MassTargetExtended;
     bool LastOperateOnText{ false };
     bool OperateOnText{ false };
     IBR_Section MouseOverSection{ &IBR_Inst_Project, UINT64_MAX };
@@ -361,12 +363,12 @@ namespace IBR_WorkSpace
         TSum /= Sum;
         return TSum;
     }
-    void GenerateClipDataFromMassSelect(IBB_ClipBoardData& ClipData)
+    void GenerateClipDataFromIDs(IBB_ClipBoardData& ClipData, const std::vector<IBR_Project::id_t>& IDs)
     {
         std::vector<IBB_Section_Desc> Sel;
         dImVec2 TSum{};
         double Sum{};
-        for (auto& v : MassTarget)
+        for (auto& v : IDs)
         {
             auto sc = IBR_Inst_Project.GetSectionFromID(v);
             auto Data = sc.GetSectionData();
@@ -378,7 +380,7 @@ namespace IBR_WorkSpace
             }
         }
         TSum /= Sum;
-        for (auto& v : MassTarget)
+        for (auto& v : IDs)
         {
             auto sc = IBR_Inst_Project.GetSectionFromID(v);
             auto Data = sc.GetSectionData();
@@ -388,6 +390,10 @@ namespace IBR_WorkSpace
             }
         }
         ClipData.Generate(Sel);
+    }
+    void GenerateClipDataFromMassSelect(IBB_ClipBoardData& ClipData)
+    {
+        GenerateClipDataFromIDs(ClipData, MassTargetExtended);
     }
     void CopySelected()
     {
@@ -424,6 +430,19 @@ namespace IBR_WorkSpace
         }
         else IBR_HintManager::SetHint(loc("GUI_PasteFailed"), HintStayTimeMillis);
     }
+    void ExtendMassSelect()
+    {
+        std::unordered_set<IBR_Project::id_t> Visited;
+        for (auto id : MassTarget)
+        {
+            auto Data = IBR_Inst_Project.GetSectionFromID(id).GetSectionData();
+            if (Data)
+                for (auto& v : Data->IncludingModules)
+                    Visited.insert(v);
+            Visited.insert(id);
+        }
+        MassTargetExtended = std::ranges::to<std::vector<IBR_Project::id_t>>(Visited);
+    }
     void MassSelect(const std::vector<IBR_Project::id_t>& Target)
     {
         IsBgDragging = true;
@@ -432,6 +451,7 @@ namespace IBR_WorkSpace
         DragStartEqMouse = IBR_FullView::GetEqMin();
         DragCurEqMouse = IBR_FullView::GetEqMax();
         MassTarget = Target;
+        ExtendMassSelect();
         IBR_PopupManager::ClearRightClickMenu();
     }
     void SelectAll()
@@ -850,6 +870,7 @@ namespace IBR_WorkSpace
                     if (abs((DragCurMouse - DragStartMouse).max()) > 2.0f)
                     {
                         MassTarget = IBR_SelectMode::GetMassSelected();
+                        ExtendMassSelect();
                         if (MassTarget.empty())
                         {
                             IsMassAfter = false;
@@ -1041,7 +1062,9 @@ namespace IBR_WorkSpace
                         //MessageBoxA(NULL, "!!", "!!!", MB_OK);
                     }
                 }
-                else UpdateScrollGeneral(MousePos);
+                //在有选中的块的时候鼠标移动到画布边缘就会移动视野，这个能不能去掉
+                //Kenosis 25/09/14
+                //else UpdateScrollGeneral(MousePos);
             }
             else//BgDragging
             {
@@ -1131,6 +1154,8 @@ namespace IBR_WorkSpace
 
     InfoStack<StdMessage> ExtSetPos;
     IBR_SectionData* CurOnRender;
+    bool CurOnRender_Clicked{ false };
+    IBR_Project::id_t CurOnRender_ID{ 0 };
     ImVec4 TempWbg;
     struct PosHelper { ImVec2 eq, re; };
     ImGuiWindow* LastFocused{ nullptr };
@@ -1158,6 +1183,7 @@ namespace IBR_WorkSpace
 
             //sd.BackPtr_Cached = RSec.GetBack();
             CurOnRender = &sd;
+            CurOnRender_ID = sp.first;
             _RenderUI_OnRender = sd.Desc;
             auto TA = EqPosToRePos(sd.EqPos);
 
@@ -1226,17 +1252,7 @@ namespace IBR_WorkSpace
 
             if (sd.Dragging && !IBR_PopupManager::HasPopup)ImGui::PushOrderFront(ImGui::GetCurrentWindow());
 
-            /*
-            if (ImGui::IsWindowFocused() && LastFocused != ImGui::GetCurrentWindow() && !sd.IsComment && !IBR_PopupManager::HasPopup)
-            {
-                IBR_EditFrame::ActivateAndEdit(sp.first, false);
-            }
-            if (ImGui::IsWindowFocused())LastFocused = ImGui::GetCurrentWindow();
-            */
-            if (ImGui::IsWindowClicked(ImGuiMouseButton_Left) && !sd.IsComment && !IBR_PopupManager::HasPopup)
-            {
-                IBR_EditFrame::ActivateAndEdit(sp.first, false);
-            }
+            CurOnRender_Clicked = ImGui::IsWindowClicked(ImGuiMouseButton_Left) && !sd.IsComment && !IBR_PopupManager::HasPopup;
 
             auto PCopy = ImGui::GetWindowPos();
             auto SCopy = ImGui::GetWindowSize();
@@ -1341,17 +1357,6 @@ namespace IBR_WorkSpace
             }
 
             sd.RenderUI();
-            if (sd.IsVirtualBlock())
-            {
-                sd.FinalY += std::ranges::fold_left(sd.IncludingModules, 0.0F,[](float f, auto id) {
-                    if (auto Data = IBR_Inst_Project.GetSectionFromID(id).GetSectionData(); Data)
-                    {
-                        Data->RenderUI();
-                        return f + Data->FinalY;
-                    }
-                    else return f;
-                });
-            }
 
             if(ImGui::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows))
             {
