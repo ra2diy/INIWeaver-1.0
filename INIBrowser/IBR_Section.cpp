@@ -63,6 +63,10 @@ const IBB_Section* _PROJ_CMD_READ IBR_Section::GetBack() const
     IBD_RInterruptF(x);
     return GetBack_Inl();
 }
+IBB_Section* _PROJ_CMD_NOINTERRUPT _PROJ_CMD_READ IBR_Section::GetBack_Unsafe()
+{
+    return GetBack_Inl();
+}
 const IBB_Section* _PROJ_CMD_NOINTERRUPT _PROJ_CMD_READ IBR_Section::GetBack_Unsafe() const
 {
     return GetBack_Inl();
@@ -130,6 +134,8 @@ bool _PROJ_CMD_READ IBR_Section::GetClipData(ModuleClipData& Clip, bool UsePosAs
     Clip.EqDelta = UsePosAsDelta ? dt->EqPos : dt->EqDelta;
     Clip.Ignore = dt->Ignore;
     Clip.CollapsedInComposed = dt->CollapsedInComposed;
+    Clip.Frozen = dt->Frozen;
+    Clip.Hidden = dt->Hidden;
     if (dt->IsIncluded())
     {
         auto D = Root->GetSectionFromID(dt->IncludedByModule).GetDesc();
@@ -157,6 +163,14 @@ ImColor _PROJ_CMD_READ IBR_Section::GetRegTypeColor() _PROJ_CMD_BACK_CONST const
     auto bk = GetBack_Inl();
     if (!bk)return IBB_DefaultRegType::DefaultColor;
     else return IBB_DefaultRegType::GetRegType(bk->Register).FrameColor;
+}
+const std::string& _PROJ_CMD_READ IBR_Section::GetRegTypeName() _PROJ_CMD_BACK_CONST const
+{
+    IBD_RInterruptF(x);
+    auto bk = GetBack_Inl();
+    const static std::string def = "";
+    if (!bk)return def;
+    else return IBB_DefaultRegType::GetRegType(bk->Register).Name;
 }
 bool _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE IBR_Section::DuplicateSection(const IBB_Section_Desc& NewDesc) const
 {

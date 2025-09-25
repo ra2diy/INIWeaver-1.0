@@ -1,14 +1,13 @@
-#include "IBB_Index.h"
+ï»¿#include "IBB_Index.h"
 #include "IBB_Components.h"
 #include "Global.h"
+#include "IBB_ModuleAlt.h"
 
 
 std::string IBB_DIndex::GetText() const
 {
-    return UseIndex ? ("<IDX:" + std::to_string(Index) + ">") : Name;
+    return (UseIndex && Name.empty()) ? ("<IDX:" + std::to_string(Index) + ">") : Name;
 }
-
-
 
 
 bool IBB_Project_Index::SameTarget(const IBB_Project& Proj, const IBB_Project_Index& A) const
@@ -20,17 +19,36 @@ std::string IBB_Project_Index::GetText() const
     return Ini.GetText() + "->" + Section.GetText();
 }
 
+bool operator<(const IBB_Project_Index& A, const IBB_Project_Index& B)
+{
+    if (A.Ini.Name < B.Ini.Name)return true;
+    else if (A.Ini.Name > B.Ini.Name)return false;
+    return (A.Section.Name < B.Section.Name);
+}
 
 IBB_Project_Index::IBB_Project_Index(const IBB_Section_Desc& Desc) : Ini(Desc.Ini), Section(Desc.Sec) {}
+
+IBB_Section_Desc IBB_Project_Index::ToDesc() const
+{
+    return { Ini.GetText(),Section.GetText() };
+}
+PairClipString IBB_Project_Index::ToClipPair() const
+{
+    return { Ini.GetText(),Section.GetText() };
+}
+
+IBB_Project_Index::operator IBB_Section_Desc() const { return ToDesc(); }
+IBB_Project_Index::operator PairClipString() const { return ToClipPair(); }
+
 IBB_Ini* IBB_Project_Index::GetIni(IBB_Project& Proj)
 {
-    if (EnableLogEx) { GlobalLogB.AddLog_CurTime(false); GlobalLogB.AddLog("IBB_Project_Index::GetIni £ºFunc I Idx=", false); GlobalLogB.AddLog(GetText().c_str()); }
+    if (EnableLogEx) { GlobalLogB.AddLog_CurTime(false); GlobalLogB.AddLog("IBB_Project_Index::GetIni ï¼šFunc I Idx=", false); GlobalLogB.AddLog(GetText().c_str()); }
     auto Iter = Ini.Search<IBB_Ini>(Proj.Inis, true, true, [](const IBB_Ini& F) {return F.Name; });
     return (Iter == Proj.Inis.end()) ? nullptr : std::addressof(*Iter);
 }
 IBB_Section* IBB_Project_Index::GetSec(IBB_Project& Proj)
 {
-    if (EnableLogEx) { GlobalLogB.AddLog_CurTime(false); GlobalLogB.AddLog("IBB_Project_Index::GetSec £ºFunc I Idx=", false); GlobalLogB.AddLog(GetText().c_str()); }
+    if (EnableLogEx) { GlobalLogB.AddLog_CurTime(false); GlobalLogB.AddLog("IBB_Project_Index::GetSec ï¼šFunc I Idx=", false); GlobalLogB.AddLog(GetText().c_str()); }
     auto Iter = Ini.Search<IBB_Ini>(Proj.Inis, true, true, [](const IBB_Ini& F) {return F.Name; });
     if (Iter == Proj.Inis.end())return nullptr;
     auto Iter1 = Section.Search(Iter->Secs, true, false);
@@ -38,13 +56,13 @@ IBB_Section* IBB_Project_Index::GetSec(IBB_Project& Proj)
 }
 IBB_Ini* IBB_Project_Index::GetIni(IBB_Project& Proj) const
 {
-    if (EnableLogEx) { GlobalLogB.AddLog_CurTime(false); GlobalLogB.AddLog("IBB_Project_Index::GetIni £ºFunc II Idx=", false); GlobalLogB.AddLog(GetText().c_str()); }
+    if (EnableLogEx) { GlobalLogB.AddLog_CurTime(false); GlobalLogB.AddLog("IBB_Project_Index::GetIni ï¼šFunc II Idx=", false); GlobalLogB.AddLog(GetText().c_str()); }
     auto Iter = Ini.Search<IBB_Ini>(Proj.Inis, true, [](const IBB_Ini& F) {return F.Name; });
     return (Iter == Proj.Inis.end()) ? nullptr : std::addressof(*Iter);
 }
 IBB_Section* IBB_Project_Index::GetSec(IBB_Project& Proj) const
 {
-    if (EnableLogEx) { GlobalLogB.AddLog_CurTime(false); GlobalLogB.AddLog("IBB_Project_Index::GetSec £ºFunc II Idx=", false); GlobalLogB.AddLog(GetText().c_str()); }
+    if (EnableLogEx) { GlobalLogB.AddLog_CurTime(false); GlobalLogB.AddLog("IBB_Project_Index::GetSec ï¼šFunc II Idx=", false); GlobalLogB.AddLog(GetText().c_str()); }
     auto Iter = Ini.Search<IBB_Ini>(Proj.Inis, true, [](const IBB_Ini& F) {return F.Name; });
     if (Iter == Proj.Inis.end())return nullptr;
     auto Iter1 = Section.Search(Iter->Secs, true);
@@ -52,13 +70,13 @@ IBB_Section* IBB_Project_Index::GetSec(IBB_Project& Proj) const
 }
 const IBB_Ini* IBB_Project_Index::GetIni(const IBB_Project& Proj)
 {
-    if (EnableLogEx) { GlobalLogB.AddLog_CurTime(false); GlobalLogB.AddLog("IBB_Project_Index::GetIni £ºFunc III Idx=", false); GlobalLogB.AddLog(GetText().c_str()); }
+    if (EnableLogEx) { GlobalLogB.AddLog_CurTime(false); GlobalLogB.AddLog("IBB_Project_Index::GetIni ï¼šFunc III Idx=", false); GlobalLogB.AddLog(GetText().c_str()); }
     auto Iter = Ini.Search<IBB_Ini>(Proj.Inis, true, true, [](const IBB_Ini& F) {return F.Name; });
     return (Iter == Proj.Inis.end()) ? nullptr : std::addressof(*Iter);
 }
 const IBB_Section* IBB_Project_Index::GetSec(const IBB_Project& Proj)
 {
-    if (EnableLogEx) { GlobalLogB.AddLog_CurTime(false); GlobalLogB.AddLog("IBB_Project_Index::GetSec £ºFunc III Idx=", false); GlobalLogB.AddLog(GetText().c_str()); }
+    if (EnableLogEx) { GlobalLogB.AddLog_CurTime(false); GlobalLogB.AddLog("IBB_Project_Index::GetSec ï¼šFunc III Idx=", false); GlobalLogB.AddLog(GetText().c_str()); }
     auto Iter = Ini.Search<IBB_Ini>(Proj.Inis, true, true, [](const IBB_Ini& F) {return F.Name; });
     if (Iter == Proj.Inis.end())return nullptr;
     auto Iter1 = Section.Search(Iter->Secs, true, false);
@@ -66,13 +84,13 @@ const IBB_Section* IBB_Project_Index::GetSec(const IBB_Project& Proj)
 }
 const IBB_Ini* IBB_Project_Index::GetIni(const IBB_Project& Proj) const
 {
-    if (EnableLogEx) { GlobalLogB.AddLog_CurTime(false); GlobalLogB.AddLog("IBB_Project_Index::GetIni £ºFunc IV Idx=", false); GlobalLogB.AddLog(GetText().c_str()); }
+    if (EnableLogEx) { GlobalLogB.AddLog_CurTime(false); GlobalLogB.AddLog("IBB_Project_Index::GetIni ï¼šFunc IV Idx=", false); GlobalLogB.AddLog(GetText().c_str()); }
     auto Iter = Ini.Search<IBB_Ini>(Proj.Inis, true, [](const IBB_Ini& F) {return F.Name; });
     return (Iter == Proj.Inis.end()) ? nullptr : std::addressof(*Iter);
 }
 const IBB_Section* IBB_Project_Index::GetSec(const IBB_Project& Proj) const
 {
-    if (EnableLogEx) { GlobalLogB.AddLog_CurTime(false); GlobalLogB.AddLog("IBB_Project_Index::GetSec £ºFunc IV Idx=", false); GlobalLogB.AddLog(GetText().c_str()); }
+    if (EnableLogEx) { GlobalLogB.AddLog_CurTime(false); GlobalLogB.AddLog("IBB_Project_Index::GetSec ï¼šFunc IV Idx=", false); GlobalLogB.AddLog(GetText().c_str()); }
     auto Iter = Ini.Search<IBB_Ini>(Proj.Inis, true, [](const IBB_Ini& F) {return F.Name; });
     if (Iter == Proj.Inis.end())return nullptr;
     auto Iter1 = Section.Search(Iter->Secs, true);

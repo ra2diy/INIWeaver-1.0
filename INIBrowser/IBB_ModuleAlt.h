@@ -117,6 +117,8 @@ struct ModuleClipData
     bool Ignore;
     bool FromClipBoard;
     bool CollapsedInComposed;
+    bool Frozen;
+    bool Hidden;
     ImVec2 EqSize;
     ImVec2 EqDelta;
     PairClipString Desc;

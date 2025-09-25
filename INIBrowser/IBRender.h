@@ -134,6 +134,8 @@ struct IBR_SectionData
     bool Ignore{ false };
     bool IsComment{ false };
     bool CollapsedInComposed{ false };
+    bool Frozen{ false };
+    bool Hidden{ false };
     float FinalY{ 0.0f };
     float WidthFix{ 0.0f };
     std::unordered_map<std::string, ActiveLine> ActiveLines;
@@ -180,6 +182,7 @@ struct IBR_Section
     
     _RETURN_BACK_DATA IBB_Section* _PROJ_CMD_READ GetBack() ;
     _RETURN_BACK_DATA const IBB_Section* _PROJ_CMD_READ GetBack() _PROJ_CMD_BACK_CONST const;
+    _RETURN_BACK_DATA IBB_Section* _PROJ_CMD_NOINTERRUPT _PROJ_CMD_READ GetBack_Unsafe();
     _RETURN_BACK_DATA const IBB_Section* _PROJ_CMD_NOINTERRUPT _PROJ_CMD_READ GetBack_Unsafe() const;
 
     //若Sec不存在给Function传入nullptr
@@ -200,6 +203,7 @@ struct IBR_Section
     IBB_VariableList _PROJ_CMD_READ GetVarListFullCopy(bool PrintExtraData) _PROJ_CMD_BACK_CONST const;
     bool _PROJ_CMD_READ GetClipData(ModuleClipData& Data, bool UsePosAsDelta) _PROJ_CMD_BACK_CONST;
     ImColor _PROJ_CMD_READ GetRegTypeColor() _PROJ_CMD_BACK_CONST const;
+    const std::string& _PROJ_CMD_READ GetRegTypeName() _PROJ_CMD_BACK_CONST const;
 
     bool _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE SetVarList(const IBB_VariableList& NewList);
 
@@ -556,6 +560,9 @@ namespace IBR_Color
     extern ImColor IllegalLineColor;
     extern ImColor ErrorTextColor;
     extern ImColor FocusLineColor;
+    extern ImColor FrozenSecColor;
+    extern ImColor HiddenSecColor;
+    extern ImColor FrozenMaskColor;
 
     void StyleLight();
     void StyleDark();

@@ -1,4 +1,4 @@
-#include "IBB_Components.h"
+﻿#include "IBB_Components.h"
 
 
 std::string IBB_Section_Desc::GetText() const

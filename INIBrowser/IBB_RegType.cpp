@@ -1,4 +1,4 @@
-#include "IBB_RegType.h"
+Ôªø#include "IBB_RegType.h"
 #include "Global.h"
 #include "IBB_ModuleAlt.h"
 #include "IBB_Index.h"
@@ -29,7 +29,12 @@ namespace IBB_DefaultRegType
     std::unordered_map<_TEXT_UTF8 std::string, IBB_RegType>RegisterTypes;
     const ImColor DefaultColor{ ImColor(255, 255, 255, 0) };
     const ImColor DefaultColorD{ ImColor(153, 153, 153, 0) };
-    IBB_RegType __Default{ DefaultIniName, DefaultColor, DefaultColor, DefaultColorD, false, false, false, u8"ƒ£øÈ", 0};
+    IBB_RegType __Default{
+        DefaultIniName,
+        DefaultColor, DefaultColor, DefaultColor, DefaultColor,
+        DefaultColor, DefaultColor, DefaultColor, DefaultColor,
+        DefaultColorD, DefaultColorD, DefaultColorD, DefaultColorD,
+        false, false, false, u8"Ê®°Âùó", 0};
 
     void ClearModuleCount()
     {
@@ -39,12 +44,22 @@ namespace IBB_DefaultRegType
     void SwitchDarkColor()
     {
         for (auto& [S, V] : RegisterTypes)
+        {
             V.FrameColor = V.FrameColorD;
+            V.FrameColorPlus1 = V.FrameColorDPlus1;
+            V.FrameColorPlus2 = V.FrameColorDPlus2;
+            V.FrameColorH = V.FrameColorDH;
+        }
     }
     void SwitchLightColor()
     {
         for (auto& [S, V] : RegisterTypes)
+        {
             V.FrameColor = V.FrameColorL;
+            V.FrameColorPlus1 = V.FrameColorLPlus1;
+            V.FrameColorPlus2 = V.FrameColorLPlus2;
+            V.FrameColorH = V.FrameColorLH;
+        }
     }
     void LoadReg(IBB_RegType& Reg, JsonObject Obj)
     {
@@ -75,13 +90,50 @@ namespace IBB_DefaultRegType
 
 
         Reg.FrameColorD = Reg.FrameColorL;
+        Reg.FrameColorLPlus1 = Reg.FrameColorL;
+        Reg.FrameColorLPlus2 = Reg.FrameColorL;
+        Reg.FrameColorLH = Reg.FrameColorL;
+        Reg.FrameColorDPlus1 = Reg.FrameColorD;
+        Reg.FrameColorDPlus2 = Reg.FrameColorD;
+        Reg.FrameColorDH = Reg.FrameColorD;
+
         ImVec4 X;
         ImGui::ColorConvertRGBtoHSV(
             Reg.FrameColorL.Value.x, Reg.FrameColorL.Value.y, Reg.FrameColorL.Value.z, X.x, X.y, X.z);
+        ImVec4 LightBaseHSV = X;
         X.z *= 0.7f; X.y *= 0.7f;
+        ImVec4 DarkBaseHSV = X;
         ImGui::ColorConvertHSVtoRGB(X.x, X.y, X.z, Reg.FrameColorD.Value.x, Reg.FrameColorD.Value.y, Reg.FrameColorD.Value.z);
-        if (IBF_Inst_Setting.IsDarkMode())Reg.FrameColor = Reg.FrameColorD;
-        else Reg.FrameColor = Reg.FrameColorL;
+
+        LightBaseHSV.z *= 1.2f;
+        ImGui::ColorConvertHSVtoRGB(LightBaseHSV.x, LightBaseHSV.y, LightBaseHSV.z, Reg.FrameColorLPlus1.Value.x, Reg.FrameColorLPlus1.Value.y, Reg.FrameColorLPlus1.Value.z);
+        LightBaseHSV.z *= 1.2f;
+        ImGui::ColorConvertHSVtoRGB(LightBaseHSV.x, LightBaseHSV.y, LightBaseHSV.z, Reg.FrameColorLPlus2.Value.x, Reg.FrameColorLPlus2.Value.y, Reg.FrameColorLPlus2.Value.z);
+        LightBaseHSV.y *= 0.5f;
+        ImGui::ColorConvertHSVtoRGB(LightBaseHSV.x, LightBaseHSV.y, LightBaseHSV.z, Reg.FrameColorLH.Value.x, Reg.FrameColorLH.Value.y, Reg.FrameColorLH.Value.z);
+
+        DarkBaseHSV.z *= 1.2f;
+        ImGui::ColorConvertHSVtoRGB(DarkBaseHSV.x, DarkBaseHSV.y, DarkBaseHSV.z, Reg.FrameColorDPlus1.Value.x, Reg.FrameColorDPlus1.Value.y, Reg.FrameColorDPlus1.Value.z);
+        DarkBaseHSV.z *= 1.2f;
+        ImGui::ColorConvertHSVtoRGB(DarkBaseHSV.x, DarkBaseHSV.y, DarkBaseHSV.z, Reg.FrameColorDPlus2.Value.x, Reg.FrameColorDPlus2.Value.y, Reg.FrameColorDPlus2.Value.z);
+        DarkBaseHSV.y *= 0.5f;
+        ImGui::ColorConvertHSVtoRGB(DarkBaseHSV.x, DarkBaseHSV.y, DarkBaseHSV.z, Reg.FrameColorDH.Value.x, Reg.FrameColorDH.Value.y, Reg.FrameColorDH.Value.z);
+
+
+        if (IBF_Inst_Setting.IsDarkMode())
+        {
+            Reg.FrameColor = Reg.FrameColorD;
+            Reg.FrameColorPlus1 = Reg.FrameColorDPlus1;
+            Reg.FrameColorPlus2 = Reg.FrameColorDPlus2;
+            Reg.FrameColorH = Reg.FrameColorDH;
+        }
+        else
+        {
+            Reg.FrameColor = Reg.FrameColorL;
+            Reg.FrameColorPlus1 = Reg.FrameColorLPlus1;
+            Reg.FrameColorPlus2 = Reg.FrameColorLPlus2;
+            Reg.FrameColorH = Reg.FrameColorLH;
+        }
     }
     void RegisterCompoundType(IBB_CompoundRegType&& Com)
     {
@@ -162,7 +214,7 @@ namespace IBB_DefaultRegType
         if (EnableLog)
         {
             GlobalLogB.AddLog_CurTime(false);
-            GlobalLogB.AddLog((u8"IBB_DefaultRegType::LoadFromFile £∫ " + loc("Log_LoadRegType")).c_str());
+            GlobalLogB.AddLog((u8"IBB_DefaultRegType::LoadFromFile Ôºö " + loc("Log_LoadRegType")).c_str());
         }
         bool Available = true;
         for(auto&& File : FindFileVec(FileName))
@@ -176,13 +228,17 @@ namespace IBB_DefaultRegType
         }
         return Available;
     }
+    bool HasRegType(const _TEXT_UTF8 std::string& Type)
+    {
+        return RegisterTypes.find(Type) != RegisterTypes.end();
+    }
     IBB_RegType& GetRegType(const _TEXT_UTF8 std::string& Type)
     {
         auto it = RegisterTypes.find(Type);
         if (it == RegisterTypes.end())return __Default;
         else return it->second;
     }
-    //A  Ù”⁄ B
+    //A Â±û‰∫é B
     const bool ContainType(const _TEXT_UTF8 std::string& TypeA, const _TEXT_UTF8 std::string& TypeB)
     {
         auto it = CompoundTypeIndex.find(TypeA);

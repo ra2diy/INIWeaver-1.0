@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "FromEngine/Include.h"
 #include "IBB_Components.h"
@@ -6,9 +6,18 @@
 struct IBB_RegType
 {
     std::string IniType;
-    ImColor FrameColor;
+    ImColor FrameColor;         //Base Color
+    ImColor FrameColorPlus1;    //Lightness  +
+    ImColor FrameColorPlus2;    //Lightness  ++
+    ImColor FrameColorH;        //Saturation -
     ImColor FrameColorL;
+    ImColor FrameColorLPlus1;
+    ImColor FrameColorLPlus2;
+    ImColor FrameColorLH;
     ImColor FrameColorD;
+    ImColor FrameColorDPlus1;
+    ImColor FrameColorDPlus2;
+    ImColor FrameColorDH;
     bool Export;
     bool RegNameAsDisplay;
     bool UseOwnName;
@@ -37,6 +46,7 @@ namespace IBB_DefaultRegType
     void EnsureRegType(const _TEXT_UTF8 std::string& Type);
     bool Load(JsonObject Obj);
     bool LoadFromFile(const wchar_t* FileName);
+    bool HasRegType(const _TEXT_UTF8 std::string& Type);
     IBB_RegType& GetRegType(const _TEXT_UTF8 std::string& Type);
     const bool MatchType(const _TEXT_UTF8 std::string& TypeA, const _TEXT_UTF8 std::string& TypeB);
     void GenerateDLK(const std::vector<PairClipString>& DLK1, const std::string& Register, IBB_VariableList& DefaultLinkKey);

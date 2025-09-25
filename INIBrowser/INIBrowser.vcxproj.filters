@@ -129,6 +129,9 @@
     <ClInclude Include="IBB_Project.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="IBR_ListView.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="INIBrowser.cpp">
@@ -254,6 +257,9 @@
     <ClCompile Include="Initialize.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="IBR_ListView.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Image Include="icon1.ico">
@@ -273,6 +279,9 @@
       <Filter>资源文件</Filter>
     </None>
     <None Include="..\Release\Resources\language.ini">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="..\Release\Resources\config.json">
       <Filter>资源文件</Filter>
     </None>
   </ItemGroup>

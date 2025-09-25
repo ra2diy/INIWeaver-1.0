@@ -113,6 +113,8 @@ std::optional<IBR_Project::id_t> _PROJ_CMD_WRITE _PROJ_CMD_UPDATE IBR_Project::A
         sd->EqPos = InitEqPos;
         sd->CollapsedInComposed = Module.CollapsedInComposed;
         sd->IncludedByModule_TmpDesc = { Module.IncludedBySection.A, Module.IncludedBySection.B };
+        sd->Hidden = Module.Hidden;
+        sd->Frozen = Module.Frozen;
         for (auto& lt : Module.IncludingSections)
             sd->IncludingModules_TmpDesc.push_back({ lt.A,lt.B });
         IBRF_CoreBump.SendToR({ [sd, eq = sd->EqPos]() {sd->EqPos = eq; } });
@@ -200,9 +202,9 @@ std::optional<std::vector<IBR_Project::id_t>> _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO
     if (!pData->Decomposable())return std::nullopt;
 
     //unlink
-    std::ranges::for_each(pData->IncludingModules, [this](auto id) {
+    std::ranges::for_each(pData->IncludingModules, [this, ID](auto id) {
         auto pData = GetSectionFromID(id).GetSectionData();
-        if (pData)
+        if (pData && pData->IncludedByModule == ID)
         {
             pData->IncludedByModule = INVALID_MODULE_ID;
             pData->IncludedByModule_TmpDesc = {};

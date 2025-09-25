@@ -9,6 +9,7 @@
 #include <shlwapi.h>
 #include <format>
 #include "IBR_HotKey.h"
+#include "IBR_ListView.h"
 
 extern wchar_t CurrentDirW[];
 extern bool ShouldCloseShellLoop;
@@ -88,6 +89,7 @@ namespace IBR_ProjectManager
             IBR_SelectMode::CancelSelectMode();
             IBR_EditFrame::Clear();
             IBR_PopupManager::ClearRightClickMenu();
+            IBR_ListView::ClearSort();
         }
         if (GotoCloseShellLoop)
         {

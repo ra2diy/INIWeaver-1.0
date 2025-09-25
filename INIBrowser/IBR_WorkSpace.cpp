@@ -128,7 +128,9 @@ namespace SearchModuleAlt
             if (ImGui::Checkbox(locc("GUI_Search_Desc"), &ConsiderDesc))ToUpdate = true;
             ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.9f, 0.9f, 0.9f, 1.0f));
             ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.0f, 0.0f, 0.0f, 1.0f));
-            if (ImGui::InputText(u8"##SEARCH", InputBuf, sizeof(InputBuf), ImGuiInputTextFlags_EnterReturnsTrue))
+            if (ImGui::InputText(u8"##SEARCH", InputBuf, sizeof(InputBuf),
+                ImGuiInputTextFlags_EnterReturnsTrue |
+                ImGuiInputTextFlags_SearchIconBg))
             {
                 ToUpdate = true;
             }
@@ -172,7 +174,7 @@ namespace IBR_WorkSpace
     bool HasLefttDownToWait{ false };
     bool MoveAfterMass{ false };
     std::vector<IBR_Project::id_t> MassTarget;
-    //包含了被缩合的块
+    //包含了被编组的块
     std::vector<IBR_Project::id_t> MassTargetExtended;
     bool LastOperateOnText{ false };
     bool OperateOnText{ false };
@@ -442,6 +444,18 @@ namespace IBR_WorkSpace
             Visited.insert(id);
         }
         MassTargetExtended = std::ranges::to<std::vector<IBR_Project::id_t>>(Visited);
+
+        {
+            IBD_RInterruptF(x);
+            for (auto& ini : IBF_Inst_Project.Project.Inis)
+                for (auto& sec : ini.Secs)
+                    sec.second.Dynamic.Selected = false;
+            for (auto id : MassTargetExtended)
+            {
+                auto pBack = IBR_Inst_Project.GetSectionFromID(id).GetBack_Unsafe();
+                if (pBack)pBack->Dynamic.Selected = true;
+            }
+        }
     }
     void MassSelect(const std::vector<IBR_Project::id_t>& Target)
     {
@@ -663,12 +677,35 @@ namespace IBR_WorkSpace
      BgDragging -> Normal
      HoldingModules -> Normal
      MassSelecting -> MassAfter Normal
-     MassAfter -> HoldingModules Normal
+     MassAfter -> HoldingModules Normal MassSelecting
     */
     //画布上的键鼠动作
     void ProcessBackgroundOpr()
     {
         if (IsResizingWindow())return;
+
+        if (IsMassAfter)
+        {
+            bool AllHidden = true;
+            for (auto& v : MassTarget)
+            {
+                auto sc = IBR_Inst_Project.GetSectionFromID(v);
+                auto Data = sc.GetSectionData();
+                if (Data && !(Data->Hidden || Data->IsIncluded()) )
+                {
+                    AllHidden = false;
+                    break;
+                }
+            }
+            if (AllHidden)
+            {
+                IsMassAfter = false;
+                IsBgDragging = false;
+                MassTarget.clear();
+                MassTargetExtended.clear();
+            }
+        }
+
         auto MousePos = ImGui::GetMousePos();
         bool OnWindow = false;
         Cont = IBR_RealCenter::GetWorkSpaceRect().Contains(MousePos);
@@ -1159,6 +1196,129 @@ namespace IBR_WorkSpace
     ImVec4 TempWbg;
     struct PosHelper { ImVec2 eq, re; };
     ImGuiWindow* LastFocused{ nullptr };
+
+    void RenderUI_Links()
+    {
+        for (auto& Link : IBR_Inst_Project.LinkList)
+        {
+
+            auto Rsec = IBR_Inst_Project.GetSection(Link.Dest);
+            auto RSD = Rsec.GetSectionData();
+            if (RSD != nullptr && Rsec.HasBack())
+            {
+                if (RSD->Hidden)continue;
+
+                //auto KList = ImGui::GetForegroundDrawList();
+                auto KList = (!RSD->Dragging || IBR_PopupManager::HasPopup) ? ImGui::GetBackgroundDrawList() : ImGui::GetForegroundDrawList();
+                //auto KList = IBR_PopupManager::HasPopup ? ImGui::GetBackgroundDrawList() : ImGui::GetForegroundDrawList();
+                KList->PushClipRect(IBR_RealCenter::WorkSpaceUL, IBR_RealCenter::WorkSpaceDR, true);
+                ImColor Col;
+                if (IBR_EditFrame::CurSection.ID == Rsec.ID
+                    && !ImGui::GetCurrentContext()->OpenPopupStack.Size)
+                {
+                    Col = IBR_Color::FocusLineColor;
+                }
+                else
+                {
+                    ImU32 LinkColW = (Link.Color >> IM_COL32_A_SHIFT) & 0xFF;
+                    Col = LinkColW > 0 ? ImColor(Link.Color) : IBR_Color::LegalLineColor;
+                }
+                if (RSD->Dragging || Link.IsSrcDragging)
+                    Col.Value.w *= IBF_Inst_Setting.TransparencyBase() * 0.625f;
+                {
+                    ImVec2 pa = Link.BeginR;
+                    ImVec2 pb = RSD->ReWindowUL + RSD->ReOffset;
+                    float LineWidth = FontHeight / 5.0f;
+                    ImVec2 Mid = (pa + pb) / 2.0F;
+                    bool Straight = (pb.x - pa.x >= FontHeight * 5.0F);
+
+                    if (Straight)KList->AddBezierCubic(
+                        pa,
+                        { (pa.x + 4 * pb.x) / 5,pa.y },
+                        { (4 * pa.x + pb.x) / 5,pb.y },
+                        pb,
+                        Col,
+                        LineWidth);
+                    else
+                        if (Link.IsSelfLinked)
+                        {
+                            KList->AddBezierCubic(
+                                pa,
+                                { (7 * pa.x - 2 * pb.x) / 5,(3 * pb.y - pa.y) / 2 },
+                                { pa.x ,(3 * pb.y - pa.y) / 2 },
+                                Mid,
+                                Col,
+                                LineWidth);
+                            KList->AddBezierCubic(
+                                Mid,
+                                { pb.x ,(3 * pa.y - pb.y) / 2 },
+                                { (7 * pb.x - 2 * pa.x) / 5,(3 * pa.y - pb.y) / 2 },
+                                pb,
+                                Col,
+                                LineWidth);
+                            //KList->AddCircleFilled({ (7 * pa.x - 2 * pb.x) / 5,(5 * pb.y - pa.y) / 4 }, LineWidth * 2.0F, Col);
+                            //KList->AddCircleFilled({ pb.x ,(5 * pa.y - pb.y) / 4 }, LineWidth * 2.0F, Col);
+                            //KList->AddCircleFilled({ Mid }, LineWidth * 2.0F, Col);
+                            //KList->AddCircleFilled({ pa.x ,(5 * pb.y - pa.y) / 4 }, LineWidth * 2.0F, Col);
+                            //KList->AddCircleFilled({ (7 * pb.x - 2 * pa.x) / 5,(5 * pa.y - pb.y) / 4 }, LineWidth * 2.0F, Col);
+                        }
+                        else
+                        {
+                            //auto V = pa.x - pb.x;
+                            //auto ExOfs = V < FontHeight * 12.5F;
+                            KList->AddBezierCubic(
+                                pa,
+                                { pa.x + FontHeight * 5.0F ,pa.y },
+                                { pa.x + FontHeight * 5.0F ,(3 * pa.y + pb.y) / 4 },
+                                Mid,
+                                Col,
+                                LineWidth);
+                            KList->AddBezierCubic(
+                                Mid,
+                                { pb.x - FontHeight * 5.0F ,(3 * pb.y + pa.y) / 4 },
+                                { pb.x - FontHeight * 5.0F ,pb.y },
+                                pb,
+                                Col,
+                                LineWidth);
+                            /*
+                            if (ExOfs)
+                            {
+                                //KList->AddCircleFilled({ pa.x + FontHeight * 5.0F ,pa.y }, LineWidth * 2.0F, Col);
+                                //KList->AddCircleFilled({ pb.x - FontHeight * 5.0F ,pb.y }, LineWidth * 2.0F, Col);
+                                //KList->AddCircleFilled(Mid, LineWidth * 2.0F, Col);
+                                //KList->AddCircleFilled({ pb.x - FontHeight * 5.0F ,(3 * pb.y + pa.y) / 4 }, LineWidth * 2.0F, Col);
+                                //KList->AddCircleFilled({ pa.x + FontHeight * 5.0F ,(3 * pa.y + pb.y) / 4 }, LineWidth * 2.0F, Col);
+                            }
+                            else {
+                                KList->AddBezierCubic(
+                                    pa,
+                                    { (7 * pa.x - 2 * pb.x) / 5 ,pa.y },
+                                    { (7 * pa.x - 2 * pb.x) / 5 ,(3 * pa.y + pb.y) / 4 },
+                                    Mid,
+                                    Col,
+                                    LineWidth);
+                                KList->AddBezierCubic(
+                                    Mid,
+                                    { (7 * pb.x - 2 * pa.x) / 5,(3 * pb.y + pa.y) / 4 },
+                                    { (7 * pb.x - 2 * pa.x) / 5,pb.y },
+                                    pb,
+                                    Col,
+                                    LineWidth);
+                                //KList->AddCircleFilled({ (7 * pa.x - 2 * pb.x) / 5 ,pa.y }, LineWidth * 1.0F, Col);
+                                //KList->AddCircleFilled({ (7 * pb.x - 2 * pa.x) / 5 ,pb.y }, LineWidth * 1.0F, Col);
+                                //KList->AddCircleFilled({ (7 * pa.x - 2 * pb.x) / 5 ,(3 * pa.y + pb.y) / 4 }, LineWidth * 1.0F, Col);
+                                //KList->AddCircleFilled({ (7 * pb.x - 2 * pa.x) / 5,(3 * pb.y + pa.y) / 4 }, LineWidth * 1.0F, Col);
+                                //KList->AddCircleFilled(Mid, LineWidth * 2.0F, Col);
+                            }
+                            */
+                        }
+
+                }
+                KList->PopClipRect();
+            }
+        }
+    }
+
     void RenderUI()
     {
         IBB_Section_Desc _RenderUI_OnRender;
@@ -1236,296 +1396,182 @@ namespace IBR_WorkSpace
             }
 
 
-            bool NoMouseInput = IBR_SelectMode::IsWindowMassSelected(sd.Desc) || HoldingModules;
+            bool NoMouseInput = IBR_SelectMode::IsWindowMassSelected(sd.Desc) || HoldingModules || sd.Frozen;
             if (NoMouseInput)ImGui::CaptureMouseFromApp(false);
 
-            //ImGuiWindowFlags_NoClamping 是非标的私货，小朋友们不要学坏哦~
-            ImGui::Begin((sd.Desc.Ini + u8" - " + sd.Desc.Sec).c_str(), &sd.IsOpen,
-                ImGuiWindowFlags_NoClamping |
-                ImGuiWindowFlags_NoTitleBar |
-                ImGuiWindowFlags_NoScrollbar |
-                ImGuiWindowFlags_NoResize |
-                ImGuiWindowFlags_NoScrollWithMouse |
-                (NoMouseInput ? ImGuiWindowFlags_NoMove : 0));
-            ImGui::SetWindowFontScale(IBR_FullView::Ratio);
-            ImGui::PushClipRect(IBR_RealCenter::WorkSpaceUL, IBR_RealCenter::WorkSpaceDR, true);
-
-            if (sd.Dragging && !IBR_PopupManager::HasPopup)ImGui::PushOrderFront(ImGui::GetCurrentWindow());
-
-            CurOnRender_Clicked = ImGui::IsWindowClicked(ImGuiMouseButton_Left) && !sd.IsComment && !IBR_PopupManager::HasPopup;
-
-            auto PCopy = ImGui::GetWindowPos();
-            auto SCopy = ImGui::GetWindowSize();
-            sd.Hovered = ImGui::IsWindowHovered();
-
-            if (UpdatePrevResult & _UpdatePrev_EqCenter)
+            if (!sd.Hidden || sd.First)
             {
-                ImGui::SetWindowPos(TA);
-                //RePos
-            }
-            else if (sd.Dragging)
-            {
-                ImGui::SetWindowPos(TA);
-                //RePos
-            }
-            else if (UpdatePrevResult & _UpdatePrev_Ratio)
-            {
-                ImGui::SetWindowSize(sd.EqSize * IBR_FullView::Ratio);
-                ImGui::SetWindowPos(TA);
-                //ReSize|RePos
-            }
-            else if (abs(IBR_WorkSpace::ReCenterPrev - IBR_RealCenter::Center).max() >= 1.0)
-            {
-                ImGui::SetWindowPos(TA);
-                //RePos
-            }
-            else if (abs(PCopy - TA).max() >= 1.0)
-            {
-                ImVec2 NP = sd.EqPos + (PCopy - TA) / IBR_FullView::Ratio;
-                PosHelper un = { sd.EqPos,TA }, re = { NP,PCopy };
-                sd.EqPos = NP;
+                //ImGuiWindowFlags_NoClamping 是非标的私货，小朋友们不要学坏哦~
+                ImGui::Begin((sd.Desc.Ini + u8" - " + sd.Desc.Sec).c_str(), &sd.IsOpen,
+                    ImGuiWindowFlags_NoClamping |
+                    ImGuiWindowFlags_NoTitleBar |
+                    ImGuiWindowFlags_NoScrollbar |
+                    ImGuiWindowFlags_NoResize |
+                    ImGuiWindowFlags_NoScrollWithMouse |
+                    (sd.Frozen ? ImGuiWindowFlags_NoInputs : 0)|
+                    (NoMouseInput ? ImGuiWindowFlags_NoMove : 0));
+                ImGui::SetWindowFontScale(IBR_FullView::Ratio);
+                ImGui::PushClipRect(IBR_RealCenter::WorkSpaceUL, IBR_RealCenter::WorkSpaceDR, true);
 
-                IBG_Undo.Release();
-                auto top = IBG_Undo.Top();
-                auto sn = sd.Desc.Ini + "[" + sd.Desc.Sec + "].EqPos";
-                if (top != nullptr && top->Id == sn)//MERGE
+                if (sd.Dragging && !IBR_PopupManager::HasPopup)ImGui::PushOrderFront(ImGui::GetCurrentWindow());
+
+                CurOnRender_Clicked = ImGui::IsWindowClicked(ImGuiMouseButton_Left) && !sd.IsComment && !IBR_PopupManager::HasPopup;
+
+                auto PCopy = ImGui::GetWindowPos();
+                auto SCopy = ImGui::GetWindowSize();
+                sd.Hovered = ImGui::IsWindowHovered();
+
+                if (UpdatePrevResult & _UpdatePrev_EqCenter)
                 {
-                    un = std::any_cast<std::pair<PosHelper, PosHelper>>(top->Extra()).first;
-                    top->UndoAction = [=]() {IBRF_CoreBump.SendToR({ [=]() {
-                        if (_RenderUI_OnRender == CurOnRender->Desc) { CurOnRender->EqPos = un.eq; ImGui::SetNextWindowPos(un.re); }},
-                        &ExtSetPos }); };
-                    top->RedoAction = [=]() {IBRF_CoreBump.SendToR({ [=]() {
-                        if (_RenderUI_OnRender == CurOnRender->Desc) { CurOnRender->EqPos = re.eq; ImGui::SetNextWindowPos(re.re); }},
-                        &ExtSetPos }); };
-                    top->Extra = [=]()->std::any {return std::any{ std::make_pair(un,re) }; };
+                    ImGui::SetWindowPos(TA);
+                    //RePos
                 }
-                else
+                else if (sd.Dragging)
                 {
-                    IBG_UndoStack::_Item it;
-                    it.Id = sn;
-                    it.UndoAction = [=]() {IBRF_CoreBump.SendToR({ [=]() {
-                        if (_RenderUI_OnRender == CurOnRender->Desc) { CurOnRender->EqPos = un.eq; ImGui::SetNextWindowPos(un.re); }},
-                        &ExtSetPos }); };
-                    it.RedoAction = [=]() {IBRF_CoreBump.SendToR({ [=]() {
-                        if (_RenderUI_OnRender == CurOnRender->Desc) { CurOnRender->EqPos = re.eq; ImGui::SetNextWindowPos(re.re); }},
-                        &ExtSetPos }); };
-                    it.Extra = [=]()->std::any {return std::any{ std::make_pair(un,re) }; };
-                    IBG_Undo.Push(it);
+                    ImGui::SetWindowPos(TA);
+                    //RePos
                 }
-                //EqPos
-            }
-            else if (abs(SCopy - sd.EqSize * IBR_FullView::Ratio).max() >= 1.0)
-            {
-                ImVec2 NP = SCopy / IBR_FullView::Ratio;
-                PosHelper un = { sd.EqSize,sd.EqSize * IBR_FullView::Ratio }, re = { NP,SCopy };
-                sd.EqSize = NP;
-
-                IBG_Undo.Release();
-                auto top = IBG_Undo.Top();
-                auto sn = sd.Desc.Ini + "[" + sd.Desc.Sec + "].EqSize";
-                if (top != nullptr && top->Id == sn)//MERGE
+                else if (UpdatePrevResult & _UpdatePrev_Ratio)
                 {
-                    un = std::any_cast<std::pair<PosHelper, PosHelper>>(top->Extra()).first;
-                    top->UndoAction = [=]() {IBRF_CoreBump.SendToR({ [=]() {
-                        if (_RenderUI_OnRender == CurOnRender->Desc) { CurOnRender->EqSize = un.eq; ImGui::SetNextWindowSize(un.re); }},
-                        &ExtSetPos }); };
-                    top->RedoAction = [=]() {IBRF_CoreBump.SendToR({ [=]() {
-                        if (_RenderUI_OnRender == CurOnRender->Desc) { CurOnRender->EqSize = re.eq; ImGui::SetNextWindowSize(re.re); }},
-                        &ExtSetPos }); };
-                    top->Extra = [=]()->std::any {return std::any{ std::make_pair(un,re) }; };
+                    ImGui::SetWindowSize(sd.EqSize * IBR_FullView::Ratio);
+                    ImGui::SetWindowPos(TA);
+                    //ReSize|RePos
                 }
-                else
+                else if (abs(IBR_WorkSpace::ReCenterPrev - IBR_RealCenter::Center).max() >= 1.0)
                 {
-                    IBG_UndoStack::_Item it;
-                    it.Id = sn;
-                    it.UndoAction = [=]() {IBRF_CoreBump.SendToR({ [=]() {
-                        if (_RenderUI_OnRender == CurOnRender->Desc) { CurOnRender->EqSize = un.eq; ImGui::SetNextWindowSize(un.re); }},
-                        &ExtSetPos }); };
-                    it.RedoAction = [=]() {IBRF_CoreBump.SendToR({ [=]() {
-                        if (_RenderUI_OnRender == CurOnRender->Desc) { CurOnRender->EqSize = re.eq; ImGui::SetNextWindowSize(re.re); }},
-                        &ExtSetPos }); };
-                    it.Extra = [=]()->std::any {return std::any{ std::make_pair(un,re) }; };
-                    IBG_Undo.Push(it);
+                    ImGui::SetWindowPos(TA);
+                    //RePos
                 }
-                //EqSize
-            }
-            {
-                auto sz = ImGui::GetWindowSize();
-                if (sd.FinalY < 1.0F)sd.FinalY = FontHeight * 8.0F;
-                if (sd.WidthFix > FontHeight * 15.0f)ImGui::SetWindowSize({ sd.WidthFix, sd.FinalY + FontHeight * 2.0F });
-                else ImGui::SetWindowSize({ FontHeight * 15.0f, sd.FinalY + FontHeight * 2.0F });
-            }
+                else if (abs(PCopy - TA).max() >= 1.0)
+                {
+                    ImVec2 NP = sd.EqPos + (PCopy - TA) / IBR_FullView::Ratio;
+                    PosHelper un = { sd.EqPos,TA }, re = { NP,PCopy };
+                    sd.EqPos = NP;
 
-            sd.RenderUI();
+                    IBG_Undo.Release();
+                    auto top = IBG_Undo.Top();
+                    auto sn = sd.Desc.Ini + "[" + sd.Desc.Sec + "].EqPos";
+                    if (top != nullptr && top->Id == sn)//MERGE
+                    {
+                        un = std::any_cast<std::pair<PosHelper, PosHelper>>(top->Extra()).first;
+                        top->UndoAction = [=]() {IBRF_CoreBump.SendToR({ [=]() {
+                            if (_RenderUI_OnRender == CurOnRender->Desc) { CurOnRender->EqPos = un.eq; ImGui::SetNextWindowPos(un.re); }},
+                            &ExtSetPos }); };
+                        top->RedoAction = [=]() {IBRF_CoreBump.SendToR({ [=]() {
+                            if (_RenderUI_OnRender == CurOnRender->Desc) { CurOnRender->EqPos = re.eq; ImGui::SetNextWindowPos(re.re); }},
+                            &ExtSetPos }); };
+                        top->Extra = [=]()->std::any {return std::any{ std::make_pair(un,re) }; };
+                    }
+                    else
+                    {
+                        IBG_UndoStack::_Item it;
+                        it.Id = sn;
+                        it.UndoAction = [=]() {IBRF_CoreBump.SendToR({ [=]() {
+                            if (_RenderUI_OnRender == CurOnRender->Desc) { CurOnRender->EqPos = un.eq; ImGui::SetNextWindowPos(un.re); }},
+                            &ExtSetPos }); };
+                        it.RedoAction = [=]() {IBRF_CoreBump.SendToR({ [=]() {
+                            if (_RenderUI_OnRender == CurOnRender->Desc) { CurOnRender->EqPos = re.eq; ImGui::SetNextWindowPos(re.re); }},
+                            &ExtSetPos }); };
+                        it.Extra = [=]()->std::any {return std::any{ std::make_pair(un,re) }; };
+                        IBG_Undo.Push(it);
+                    }
+                    //EqPos
+                }
+                else if (abs(SCopy - sd.EqSize * IBR_FullView::Ratio).max() >= 1.0)
+                {
+                    ImVec2 NP = SCopy / IBR_FullView::Ratio;
+                    PosHelper un = { sd.EqSize,sd.EqSize * IBR_FullView::Ratio }, re = { NP,SCopy };
+                    sd.EqSize = NP;
 
-            if(ImGui::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows))
-            {
-                MouseOverSection = IBR_Inst_Project.GetSectionFromID(sp.first);
-                MouseOverSecData = &sd;
-            }
-            if (sd.First)sd.First = false;
-            if (sp.first == IBR_EditFrame::CurSection.ID)
-            {
+                    IBG_Undo.Release();
+                    auto top = IBG_Undo.Top();
+                    auto sn = sd.Desc.Ini + "[" + sd.Desc.Sec + "].EqSize";
+                    if (top != nullptr && top->Id == sn)//MERGE
+                    {
+                        un = std::any_cast<std::pair<PosHelper, PosHelper>>(top->Extra()).first;
+                        top->UndoAction = [=]() {IBRF_CoreBump.SendToR({ [=]() {
+                            if (_RenderUI_OnRender == CurOnRender->Desc) { CurOnRender->EqSize = un.eq; ImGui::SetNextWindowSize(un.re); }},
+                            &ExtSetPos }); };
+                        top->RedoAction = [=]() {IBRF_CoreBump.SendToR({ [=]() {
+                            if (_RenderUI_OnRender == CurOnRender->Desc) { CurOnRender->EqSize = re.eq; ImGui::SetNextWindowSize(re.re); }},
+                            &ExtSetPos }); };
+                        top->Extra = [=]()->std::any {return std::any{ std::make_pair(un,re) }; };
+                    }
+                    else
+                    {
+                        IBG_UndoStack::_Item it;
+                        it.Id = sn;
+                        it.UndoAction = [=]() {IBRF_CoreBump.SendToR({ [=]() {
+                            if (_RenderUI_OnRender == CurOnRender->Desc) { CurOnRender->EqSize = un.eq; ImGui::SetNextWindowSize(un.re); }},
+                            &ExtSetPos }); };
+                        it.RedoAction = [=]() {IBRF_CoreBump.SendToR({ [=]() {
+                            if (_RenderUI_OnRender == CurOnRender->Desc) { CurOnRender->EqSize = re.eq; ImGui::SetNextWindowSize(re.re); }},
+                            &ExtSetPos }); };
+                        it.Extra = [=]()->std::any {return std::any{ std::make_pair(un,re) }; };
+                        IBG_Undo.Push(it);
+                    }
+                    //EqSize
+                }
+                {
+                    auto sz = ImGui::GetWindowSize();
+                    if (sd.FinalY < 1.0F)sd.FinalY = FontHeight * 8.0F;
+                    if (sd.WidthFix > FontHeight * 15.0f)ImGui::SetWindowSize({ sd.WidthFix, sd.FinalY + FontHeight * 2.0F });
+                    else ImGui::SetWindowSize({ FontHeight * 15.0f, sd.FinalY + FontHeight * 2.0F });
+                }
+
+                sd.RenderUI();
+
+                if (ImGui::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows))
+                {
+                    MouseOverSection = IBR_Inst_Project.GetSectionFromID(sp.first);
+                    MouseOverSecData = &sd;
+                }
+                if (sd.First)sd.First = false;
+                if (sd.Frozen && !sd.Hidden)
+                {
+                    auto FL = ImGui::GetWindowDrawList();
+                    FL->AddRectFilled(ImGui::GetWindowPos(), ImGui::GetWindowPos() + ImGui::GetWindowSize(), IBR_Color::FrozenMaskColor, 5.0F);
+                }
                 if (!ImGui::GetCurrentContext()->OpenPopupStack.Size)
                 {
-                    auto FL = ImGui::GetForegroundDrawList();
-                    FL->PushClipRect(IBR_RealCenter::WorkSpaceUL, IBR_RealCenter::WorkSpaceDR, true);
-                    FL->AddRect(ImGui::GetWindowPos(), ImGui::GetWindowPos() + ImGui::GetWindowSize(), IBR_Color::FocusWindowColor, 5.0F, 0, 5.0F);
-                    FL->PopClipRect();
+                    if (sp.first == IBR_EditFrame::CurSection.ID)
+                    {
+                        auto FL = ImGui::GetForegroundDrawList();
+                        FL->PushClipRect(IBR_RealCenter::WorkSpaceUL, IBR_RealCenter::WorkSpaceDR, true);
+                        FL->AddRect(ImGui::GetWindowPos(), ImGui::GetWindowPos() + ImGui::GetWindowSize(), IBR_Color::FocusWindowColor, 5.0F, 0, 5.0F);
+                        FL->PopClipRect();
+                    }
                 }
-            }
-            if (sp.first == IBR_EditFrame::CurSection.ID && !IsMassSelecting && !IsMassAfter && LastCont)
-            {
-                HasFocusedModule = true;
-                if (IsHotKeyPressed(Delete))
-                    IBRF_CoreBump.SendToR({ [desc = sd.Desc]() { IBG_Undo.SomethingShouldBeHere(); IBR_Inst_Project.DeleteSection(desc); } });
-                else if (IsHotKeyPressed(RenameModule))
+                if (sp.first == IBR_EditFrame::CurSection.ID && !IsMassSelecting && !IsMassAfter && LastCont)
                 {
-                    sd.RenameDisplay();
-                    //IBR_PopupManager::ClearRightClickMenu();
+                    HasFocusedModule = true;
+                    if (IsHotKeyPressed(Delete))
+                        IBRF_CoreBump.SendToR({ [desc = sd.Desc]() { IBG_Undo.SomethingShouldBeHere(); IBR_Inst_Project.DeleteSection(desc); } });
+                    else if (IsHotKeyPressed(RenameModule))
+                    {
+                        sd.RenameDisplay();
+                        //IBR_PopupManager::ClearRightClickMenu();
+                    }
+                    else if (IsHotKeyPressed(RenameRegister))
+                    {
+                        sd.RenameRegister();
+                        //IBR_PopupManager::ClearRightClickMenu();
+                    }
+                    else if (IsHotKeyPressed(Copy))sd.CopyToClipBoard();
                 }
-                else if (IsHotKeyPressed(RenameRegister))
-                {
-                    sd.RenameRegister();
-                    //IBR_PopupManager::ClearRightClickMenu();
-                }
-                else if (IsHotKeyPressed(Copy))sd.CopyToClipBoard();
+
+                ImGui::PopClipRect();
+
+                ImGui::End();
             }
+            else sd.RenderUI();
 
-            ImGui::PopClipRect();
-
-            ImGui::End();
             if (NoMouseInput)ImGui::CaptureMouseFromApp(true);
             ImGui::PopStyleColor();
 
             if (!sd.IsOpen)IBRF_CoreBump.SendToR({ [D = sd.Desc]() {IBR_Inst_Project.DeleteSection(D); },nullptr });
         }
 
-        /*
-        if (!HasFocusedModule && IBR_Inst_Project.IBR_SectionMap.size())
-        {
-            //IBR_EditFrame::Clear();
-            if (IBR_Inst_Menu.GetMenuItem() == MenuItemID_EDIT)
-            {
-                IBR_UICondition::MenuCollapse = true;
-            }
-        }
-        */
-        for (auto& Link : IBR_Inst_Project.LinkList)
-        {
-
-            auto Rsec = IBR_Inst_Project.GetSection(Link.Dest);
-            auto RSD = Rsec.GetSectionData();
-            if(RSD != nullptr && Rsec.HasBack())
-            {
-                //auto KList = ImGui::GetForegroundDrawList();
-                auto KList = (!RSD->Dragging || IBR_PopupManager::HasPopup) ? ImGui::GetBackgroundDrawList() : ImGui::GetForegroundDrawList();
-                //auto KList = IBR_PopupManager::HasPopup ? ImGui::GetBackgroundDrawList() : ImGui::GetForegroundDrawList();
-                KList->PushClipRect(IBR_RealCenter::WorkSpaceUL, IBR_RealCenter::WorkSpaceDR, true);
-                ImColor Col;
-                if (IBR_EditFrame::CurSection.ID == Rsec.ID
-                    && !ImGui::GetCurrentContext()->OpenPopupStack.Size)
-                {
-                    Col = IBR_Color::FocusLineColor;
-                }
-                else
-                {
-                    ImU32 LinkColW = (Link.Color >> IM_COL32_A_SHIFT) & 0xFF;
-                    Col = LinkColW > 0 ? ImColor(Link.Color) : IBR_Color::LegalLineColor;
-                }
-                if (RSD->Dragging || Link.IsSrcDragging)
-                    Col.Value.w *= IBF_Inst_Setting.TransparencyBase() * 0.625f;
-                {
-                    ImVec2 pa = Link.BeginR;
-                    ImVec2 pb = RSD->ReWindowUL + RSD->ReOffset;
-                    float LineWidth = FontHeight / 5.0f;
-                    ImVec2 Mid = (pa + pb) / 2.0F;
-                    bool Straight = (pb.x - pa.x >= FontHeight * 5.0F);
-
-                    if(Straight)KList->AddBezierCubic(
-                        pa,
-                        { (pa.x + 4 * pb.x) / 5,pa.y },
-                        { (4 * pa.x + pb.x) / 5,pb.y },
-                        pb,
-                        Col,
-                        LineWidth);
-                    else
-                    if (Link.IsSelfLinked)
-                    {
-                        KList->AddBezierCubic(
-                            pa,
-                            { (7 * pa.x - 2 * pb.x) / 5,(3 * pb.y - pa.y) / 2 },
-                            { pa.x ,(3 * pb.y - pa.y) / 2 } ,
-                            Mid,
-                            Col,
-                            LineWidth);
-                        KList->AddBezierCubic(
-                            Mid,
-                            { pb.x ,(3 * pa.y - pb.y) / 2 },
-                            { (7 * pb.x - 2 * pa.x) / 5,(3 * pa.y - pb.y) / 2 },
-                            pb,
-                            Col,
-                            LineWidth);
-                        //KList->AddCircleFilled({ (7 * pa.x - 2 * pb.x) / 5,(5 * pb.y - pa.y) / 4 }, LineWidth * 2.0F, Col);
-                        //KList->AddCircleFilled({ pb.x ,(5 * pa.y - pb.y) / 4 }, LineWidth * 2.0F, Col);
-                        //KList->AddCircleFilled({ Mid }, LineWidth * 2.0F, Col);
-                        //KList->AddCircleFilled({ pa.x ,(5 * pb.y - pa.y) / 4 }, LineWidth * 2.0F, Col);
-                        //KList->AddCircleFilled({ (7 * pb.x - 2 * pa.x) / 5,(5 * pa.y - pb.y) / 4 }, LineWidth * 2.0F, Col);
-                    }
-                    else
-                    {
-                        //auto V = pa.x - pb.x;
-                        //auto ExOfs = V < FontHeight * 12.5F;
-                        KList->AddBezierCubic(
-                            pa,
-                            { pa.x + FontHeight * 5.0F ,pa.y },
-                            { pa.x + FontHeight * 5.0F ,(3 * pa.y + pb.y) / 4 },
-                            Mid,
-                            Col,
-                            LineWidth);
-                        KList->AddBezierCubic(
-                            Mid,
-                            { pb.x - FontHeight * 5.0F ,(3 * pb.y + pa.y) / 4 },
-                            { pb.x - FontHeight * 5.0F ,pb.y },
-                            pb,
-                            Col,
-                            LineWidth);
-                        /*
-                        if (ExOfs)
-                        {
-                            //KList->AddCircleFilled({ pa.x + FontHeight * 5.0F ,pa.y }, LineWidth * 2.0F, Col);
-                            //KList->AddCircleFilled({ pb.x - FontHeight * 5.0F ,pb.y }, LineWidth * 2.0F, Col);
-                            //KList->AddCircleFilled(Mid, LineWidth * 2.0F, Col);
-                            //KList->AddCircleFilled({ pb.x - FontHeight * 5.0F ,(3 * pb.y + pa.y) / 4 }, LineWidth * 2.0F, Col);
-                            //KList->AddCircleFilled({ pa.x + FontHeight * 5.0F ,(3 * pa.y + pb.y) / 4 }, LineWidth * 2.0F, Col);
-                        }
-                        else {
-                            KList->AddBezierCubic(
-                                pa,
-                                { (7 * pa.x - 2 * pb.x) / 5 ,pa.y },
-                                { (7 * pa.x - 2 * pb.x) / 5 ,(3 * pa.y + pb.y) / 4 },
-                                Mid,
-                                Col,
-                                LineWidth);
-                            KList->AddBezierCubic(
-                                Mid,
-                                { (7 * pb.x - 2 * pa.x) / 5,(3 * pb.y + pa.y) / 4 },
-                                { (7 * pb.x - 2 * pa.x) / 5,pb.y },
-                                pb,
-                                Col,
-                                LineWidth);
-                            //KList->AddCircleFilled({ (7 * pa.x - 2 * pb.x) / 5 ,pa.y }, LineWidth * 1.0F, Col);
-                            //KList->AddCircleFilled({ (7 * pb.x - 2 * pa.x) / 5 ,pb.y }, LineWidth * 1.0F, Col);
-                            //KList->AddCircleFilled({ (7 * pa.x - 2 * pb.x) / 5 ,(3 * pa.y + pb.y) / 4 }, LineWidth * 1.0F, Col);
-                            //KList->AddCircleFilled({ (7 * pb.x - 2 * pa.x) / 5,(3 * pb.y + pa.y) / 4 }, LineWidth * 1.0F, Col);
-                            //KList->AddCircleFilled(Mid, LineWidth * 2.0F, Col);
-                        }
-                        */
-                    }
-
-                }
-                KList->PopClipRect();
-            }
-        }
+        RenderUI_Links();
     }
 }

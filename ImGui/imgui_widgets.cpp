@@ -4025,6 +4025,7 @@ bool ImGui::InputTextEx(const char* label, const char* hint, char* buf, int buf_
     const bool is_password = (flags & ImGuiInputTextFlags_Password) != 0;
     const bool is_undoable = (flags & ImGuiInputTextFlags_NoUndoRedo) == 0;
     const bool is_resizable = (flags & ImGuiInputTextFlags_CallbackResize) != 0;
+    const bool is_search_bg = (flags & ImGuiInputTextFlags_SearchIconBg) != 0;
     if (is_resizable)
         IM_ASSERT(callback != NULL); // Must provide a callback if you set the ImGuiInputTextFlags_CallbackResize flag!
 
@@ -4638,6 +4639,21 @@ bool ImGui::InputTextEx(const char* label, const char* hint, char* buf, int buf_
     {
         RenderNavHighlight(frame_bb, id);
         RenderFrame(frame_bb.Min, frame_bb.Max, GetColorU32(ImGuiCol_FrameBg), true, style.FrameRounding);
+        if (is_search_bg)
+        {
+            ImVec2 Pos = frame_bb.Max;
+            Pos.x -= GetTextLineHeightWithSpacing();
+            Pos.y -= GetTextLineHeightWithSpacing();
+            float rad = GetTextLineHeight() * 0.3F;
+            float thickness = GetTextLineHeight() * 0.15F;
+            ImVec2 Center = { Pos.x + rad + thickness , Pos.y + rad + thickness };
+            ImU32 Col = GetColorU32(ImGuiCol_FrameBgHovered);
+            draw_window->DrawList->AddCircle(Center, rad, Col, 0, thickness);
+            draw_window->DrawList->AddLine(
+                ImVec2(Center.x + rad * 0.72f, Center.y + rad * 0.72f),
+                ImVec2(Center.x + rad * 1.5f, Center.y + rad * 1.5f),
+                Col, thickness);
+        }
     }
 
     const ImVec4 clip_rect = ImVec4(frame_bb.Min.x, frame_bb.Min.y, frame_bb.Min.x + inner_size.x, frame_bb.Min.y + inner_size.y); // Not using frame_bb.Max because we have adjusted size
@@ -4789,7 +4805,9 @@ bool ImGui::InputTextEx(const char* label, const char* hint, char* buf, int buf_
                     ImRect rect(rect_pos + ImVec2(0.0f, bg_offy_up - g.FontSize), rect_pos + ImVec2(rect_size.x, bg_offy_dn));
                     rect.ClipWith(clip_rect);
                     if (rect.Overlaps(clip_rect))
+                    {
                         draw_window->DrawList->AddRectFilled(rect.Min, rect.Max, bg_color);
+                    }
                 }
                 rect_pos.x = draw_pos.x - draw_scroll.x;
                 rect_pos.y += g.FontSize;

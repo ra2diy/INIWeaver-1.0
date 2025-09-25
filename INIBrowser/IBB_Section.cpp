@@ -109,7 +109,7 @@ void IBB_Section::GetClipData(ModuleClipData& Clip)
         for (auto& [A, B] : DefaultLinkKey.Value)
             Clip.DefaultLinkKey.push_back({ A, B });
         for (auto& L : LinkGroup_LinkTo)
-            Clip.LinkGroup_LinkTo.push_back({ L.To.Ini.GetText(), L.To.Section.GetText() });
+            Clip.LinkGroup_LinkTo.push_back(L.To);
         for (auto& [A, B] : VarList.Value)
             Clip.VarList.push_back({ A, B });
     }

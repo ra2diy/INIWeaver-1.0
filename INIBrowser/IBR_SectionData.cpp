@@ -373,6 +373,7 @@ void IBR_SectionData::RenderUI_TitleBar(bool &TriggeredRightMenu, float LastFina
     auto Virtual = IsVirtualBlock();
     auto Included = IsIncluded();
     ImGui::SetCursorPos({ 0.0f, FinalY });
+
     ImGui::Dummy({ ImGui::GetWindowWidth(), Included ? LastFinalY : ImGui::GetWindowHeight()});
     if (!Virtual && ImGui::BeginDragDropTarget())
     {
@@ -585,6 +586,7 @@ void IBR_SectionData::RenderUI_TitleBar(bool &TriggeredRightMenu, float LastFina
                 })
         ), ImGui::GetMousePos());
     }
+
     {
         auto Col = Rsec.GetRegTypeColor();
         auto PPos = ImGui::GetWindowPos();
@@ -645,6 +647,12 @@ extern bool EnableDebugList;
 
 void IBR_SectionData::RenderUI()
 {
+    if (!First && Hidden)
+    {
+        FinalY = 0;
+        return;
+    }
+
     ReWindowUL = ImGui::GetCursorScreenPos();
     auto HalfLine = ImGui::GetTextLineHeightWithSpacing() * 0.5F;
     auto LastFinalY = FinalY;
@@ -690,7 +698,7 @@ void IBR_SectionData::RenderUI()
                 const auto& sub = Bsec->SubSecs[i];
                 for (const auto& lt : sub.LinkTo)
                 {
-                    IBB_Section_Desc _Desc = { lt.To.Ini.GetText(),lt.To.Section.GetText() };
+                    IBB_Section_Desc _Desc = lt.To;
                     auto TypeAlt = IBF_Inst_DefaultTypeList.GetDefault(lt.FromKey);
                     ImU32 LineCol = TypeAlt ? TypeAlt->Color : 0;
                     ImU32 LineColII = (IBR_EditFrame::CurSection.ID == Rsec.ID
@@ -761,7 +769,7 @@ void IBR_SectionData::RenderUI()
                 {
                     Used.insert(lt.FromKey);
                     auto _F = Bsec->OnShow.find(lt.FromKey);
-                    IBB_Section_Desc _Desc = { lt.To.Ini.GetText(),lt.To.Section.GetText() };
+                    IBB_Section_Desc _Desc = lt.To;
                     bool IsLinkingToSelf = (Bsec->GetThisDesc() == _Desc);
                     auto TypeAlt = IBF_Inst_DefaultTypeList.GetDefault(lt.FromKey);
                     ImU32 LineCol = TypeAlt ? TypeAlt->Color : 0;
@@ -795,7 +803,7 @@ void IBR_SectionData::RenderUI()
                         ImGui::SameLine();
                         ImGui::SetCursorPosX(ImGui::GetWindowWidth() - FontHeight * 2.0f);
 
-                        auto rsc = IBR_Inst_Project.GetSection(IBB_Section_Desc{ lt.To.Ini.GetText(),lt.To.Section.GetText() });
+                        auto rsc = IBR_Inst_Project.GetSection(lt.To);
 
                         ImColor BtnColor{ LineCol };
                         ImU32 BtnColorW = (LineCol >> IM_COL32_A_SHIFT) & 0xFF;
@@ -1051,10 +1059,12 @@ void IBR_SectionData::RenderUI()
     //TODO
 
     FinalY = ImGui::GetCursorPosY() - FinalY;
+    
 
     if (IsVirtualBlock())
     {
-        FinalY += std::ranges::fold_left(IncludingModules, 0.0F, [](float f, auto id) {
+        int HiddenCount = 0;
+        FinalY += std::ranges::fold_left(IncludingModules, 0.0F, [&HiddenCount](float f, auto id) {
             if (auto Data = IBR_Inst_Project.GetSectionFromID(id).GetSectionData(); Data)
             {
                 auto PosUL = ImGui::GetCursorScreenPos();
@@ -1064,6 +1074,7 @@ void IBR_SectionData::RenderUI()
                 if (Data->First)Data->First = false;
                 auto PosDR = ImVec2{ PosUL.x + ImGui::GetWindowWidth(), PosUL.y + Data->FinalY };
                 ImRect rc{ PosUL,PosDR };
+                if (Data->Hidden)++HiddenCount;
                 //For debug
                 /*
                 if (rc.Contains(ImGui::GetMousePos()))
@@ -1073,14 +1084,23 @@ void IBR_SectionData::RenderUI()
                     ImGui::GetForegroundDrawList()->AddRect(rc.Min, rc.Max, ImGui::
                         GetColorU32(ImGuiCol_Border, 0.7F), 0.0F, 0, 3.0F);
                 */
-                if (id == IBR_EditFrame::CurSection.ID && !ImGui::GetCurrentContext()->OpenPopupStack.Size)
+                if (Data->Frozen && !Data->Hidden)
                 {
-                    auto FL = ImGui::GetForegroundDrawList();
-                    FL->PushClipRect(IBR_RealCenter::WorkSpaceUL, IBR_RealCenter::WorkSpaceDR, true);
-                    //FL->AddRect(ImGui::GetWindowPos(), ImGui::GetWindowPos() + ImGui::GetWindowSize(), IBR_Color::FocusWindowColor, 5.0F, 0, 5.0F);
-                    FL->AddRect(PosUL, PosDR, IBR_Color::FocusWindowColor, 5.0F, 0, 5.0F);
-                    FL->PopClipRect();
+                    auto FL = ImGui::GetWindowDrawList();
+                    FL->AddRectFilled(PosUL, PosDR, IBR_Color::FrozenMaskColor, 5.0F);
                 }
+                if (!ImGui::GetCurrentContext()->OpenPopupStack.Size)
+                {
+                    if (id == IBR_EditFrame::CurSection.ID)
+                    {
+                        auto FL = ImGui::GetForegroundDrawList();
+                        FL->PushClipRect(IBR_RealCenter::WorkSpaceUL, IBR_RealCenter::WorkSpaceDR, true);
+                        //FL->AddRect(ImGui::GetWindowPos(), ImGui::GetWindowPos() + ImGui::GetWindowSize(), IBR_Color::FocusWindowColor, 5.0F, 0, 5.0F);
+                        FL->AddRect(PosUL, PosDR, IBR_Color::FocusWindowColor, 5.0F, 0, 5.0F);
+                        FL->PopClipRect();
+                    }
+                }
+                
                 if (IBR_WorkSpace::CurOnRender_Clicked && rc.Contains(ImGui::GetMousePos()))
                 {
                     IBR_EditFrame::ActivateAndEdit(id, false);
@@ -1090,6 +1110,17 @@ void IBR_SectionData::RenderUI()
             }
             else return f;
             });
+
+        if (HiddenCount > 0)
+        {
+            auto BtnText = UnicodetoUTF8(std::vformat(locw("GUI_ShowAllIncludingBlocks"), std::make_wformat_args(HiddenCount)));
+            if (ImGui::SmallButton(BtnText.c_str()))
+            {
+                std::ranges::for_each(IncludingModules, [](auto id) {
+                    if (auto Data = IBR_Inst_Project.GetSectionFromID(id).GetSectionData(); Data)Data->Hidden = false;
+                });
+            }
+        }
     }
     else if(IBR_WorkSpace::CurOnRender_Clicked && !Included)
     {

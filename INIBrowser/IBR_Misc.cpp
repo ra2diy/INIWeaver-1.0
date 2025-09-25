@@ -326,10 +326,14 @@ namespace IBR_EditFrame
         TextEditError = false;
         TextEditReset = false;
         EditingLine.clear();
+        for (auto& ini : IBF_Inst_Project.Project.Inis)
+            for (auto& sec : ini.Secs)
+                sec.second.Dynamic.Selected = false;
         {
             auto rsc = CurSection.GetBack();
             IBD_RInterruptF(x);
             ResetEdit(rsc);
+            rsc->Dynamic.Selected = true;
         }
     }
 
@@ -543,6 +547,9 @@ namespace IBR_Color
     ImColor IllegalLineColor;
     ImColor ErrorTextColor;
     ImColor FocusLineColor;
+    ImColor FrozenSecColor;
+    ImColor HiddenSecColor;
+    ImColor FrozenMaskColor;
 
     namespace Light
     {
@@ -570,6 +577,10 @@ namespace IBR_Color
         ImColor CenterCrossColor(255, 5, 5, 255);
 
         ImColor FocusLineColor(255, 255, 255, 255);
+
+        ImColor FrozenSecColor(37, 127, 224, 255);
+        ImColor HiddenSecColor(255, 255, 224, 255);
+        ImColor FrozenMaskColor(37, 127, 224, 60);
     }
 
     namespace Dark
@@ -601,6 +612,10 @@ namespace IBR_Color
         ImColor CenterCrossColor(255, 5, 5, 255);
 
         ImColor FocusLineColor(255, 255, 255, 255);
+
+        ImColor FrozenSecColor(37, 127, 224, 255);
+        ImColor HiddenSecColor(254, 180, 100, 255);
+        ImColor FrozenMaskColor(37, 127, 224, 60);
     }
 
     void LoadCol(JsonObject Obj, const char* ColName,ImColor& I)
@@ -628,6 +643,9 @@ namespace IBR_Color
         LoadLightCol(IllegalLineColor);
         LoadLightCol(ErrorTextColor);
         LoadLightCol(FocusLineColor);
+        LoadLightCol(FrozenSecColor);
+        LoadLightCol(HiddenSecColor);
+        LoadLightCol(FrozenMaskColor);
     }
     void LoadDark(JsonObject Obj)
     {
@@ -646,6 +664,9 @@ namespace IBR_Color
         LoadDarkCol(IllegalLineColor);
         LoadDarkCol(ErrorTextColor);
         LoadDarkCol(FocusLineColor);
+        LoadDarkCol(FrozenSecColor);
+        LoadDarkCol(HiddenSecColor);
+        LoadDarkCol(FrozenMaskColor);
     }
 
     void StyleLight()
@@ -667,6 +688,9 @@ namespace IBR_Color
         IllegalLineColor = Light::IllegalLineColor;
         ErrorTextColor = Light::ErrorTextColor;
         FocusLineColor = Light::FocusLineColor;
+        FrozenSecColor = Light::FrozenSecColor;
+        HiddenSecColor = Light::HiddenSecColor;
+        FrozenMaskColor = Light::FrozenMaskColor;
 
         IBB_DefaultRegType::SwitchLightColor();
     }
@@ -689,6 +713,9 @@ namespace IBR_Color
         IllegalLineColor = Dark::IllegalLineColor;
         ErrorTextColor = Dark::ErrorTextColor;
         FocusLineColor = Dark::FocusLineColor;
+        FrozenSecColor = Dark::FrozenSecColor;
+        HiddenSecColor = Dark::HiddenSecColor;
+        FrozenMaskColor = Dark::FrozenMaskColor;
 
         IBB_DefaultRegType::SwitchDarkColor();
     }

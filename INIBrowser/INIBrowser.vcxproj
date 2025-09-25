@@ -179,6 +179,7 @@
     <ClInclude Include="IBRender.h" />
     <ClInclude Include="IBR_Font.h" />
     <ClInclude Include="IBR_HotKey.h" />
+    <ClInclude Include="IBR_ListView.h" />
     <ClInclude Include="IBR_Localization.h" />
     <ClInclude Include="IBSave.h" />
     <ClInclude Include="MainStage.h" />
@@ -213,6 +214,7 @@
     <ClCompile Include="IBFront.cpp" />
     <ClCompile Include="IBR_Font.cpp" />
     <ClCompile Include="IBR_HotKey.cpp" />
+    <ClCompile Include="IBR_ListView.cpp" />
     <ClCompile Include="IBR_Localization.cpp" />
     <ClCompile Include="IBR_Misc.cpp" />
     <ClCompile Include="IBR_Components.cpp" />
@@ -239,6 +241,7 @@
   <ItemGroup>
     <None Include="..\Release\Global\RegisterTypes.json" />
     <None Include="..\Release\Global\TypeAlt.csv" />
+    <None Include="..\Release\Resources\config.json" />
     <None Include="..\Release\Resources\language.ini" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

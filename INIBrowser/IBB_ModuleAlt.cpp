@@ -554,7 +554,7 @@ ClipWriteStream& operator<<(ClipWriteStream& stm, const ModuleClipData& v)
     IncludedBySection
     IncludingSections
     */
-    stm << v.IncludedBySection << v.IncludingSections << v.CollapsedInComposed;
+    stm << v.IncludedBySection << v.IncludingSections << v.CollapsedInComposed << v.Frozen << v.Hidden;
     return stm;
 }
 ClipReadStream& operator>>(ClipReadStream& stm, ModuleClipData& v)
@@ -616,12 +616,15 @@ ClipReadStream& operator>>(ClipReadStream& stm, ModuleClipData& v)
     */
     if (stm.VersionAtLeast(10006))
     {
-        stm >> v.IncludedBySection >> v.IncludingSections >> v.CollapsedInComposed;
+        stm >> v.IncludedBySection >> v.IncludingSections >> v.CollapsedInComposed >> v.Frozen >> v.Hidden;
     }
     else
     {
         v.IncludedBySection = { "","" };
         v.IncludingSections.clear();
+        v.CollapsedInComposed = false;
+        v.Frozen = false;
+        v.Hidden = false;
     }
     return stm;
 }

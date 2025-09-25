@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "FromEngine/Include.h"
 #include "cjson/cJSON.h"
@@ -21,6 +21,8 @@ struct IBB_Module_Default;
 struct IBB_Module;
 struct IBB_Module_ParagraphList;
 
+struct PairClipString;
+
 template<typename Str>
 struct IBB_TDIndex
 {
@@ -35,7 +37,7 @@ struct IBB_TDIndex
         else return Name == A.Name;
     }
 
-    IBB_TDIndex() :UseIndex(true), Index(0), Name() {}
+    IBB_TDIndex() :UseIndex(false), Index(0), Name("") {}
     IBB_TDIndex(int _Index) :UseIndex(true), Index(_Index), Name() {}
     IBB_TDIndex(const Str& _Name) :UseIndex(false), Index(0), Name(_Name) {}
     IBB_TDIndex<Str>& Assign(int _Index) { UseIndex = true; Index = _Index; return *this; }
@@ -81,6 +83,11 @@ struct IBB_Project_Index
     IBB_Project_Index() {}
     IBB_Project_Index(const std::string& _Ini, const std::string& _Sec = "") :Ini(_Ini), Section(_Sec) {}
     IBB_Project_Index(const IBB_Section_Desc& Desc);
+    IBB_Section_Desc ToDesc() const;
+    PairClipString ToClipPair() const;
+
+    operator IBB_Section_Desc() const;
+    operator PairClipString() const;
 
     const IBB_Ini* GetIni(const IBB_Project& Proj);
     const IBB_Section* GetSec(const IBB_Project& Proj);
@@ -99,7 +106,7 @@ struct IBB_Project_Index
 
     std::string GetText() const;
 };
-
+bool operator<(const IBB_Project_Index& A, const IBB_Project_Index& B);
 
 
 
