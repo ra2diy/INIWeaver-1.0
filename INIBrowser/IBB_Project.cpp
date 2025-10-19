@@ -22,30 +22,42 @@ void IBB_DefaultTypeList::EnsureType(const IBB_DefaultTypeAlt& D, std::set<std::
     L.DescShort = D.DescShort;
     L.DescLong = D.DescLong;
     L.Color = D.Color;
-    if (D.LinkType.empty() || D.LinkLimit == 0 || D.LinkType == "bool")
+    if (D.LinkType == "enum")
     {
         L.Property.Type = DefaultAltPropType;
-        L.Property.Lim = JsonObject(nullptr);
+        L.Property.Lim = JsonObject(reinterpret_cast<cJSON*>(D.LinkLimit));
         L.Property.TypeAlt = D.LinkType;
+        L.Property.Enum = D.EnumVector;
+        L.Property.EnumValue = D.EnumValue;
     }
     else
     {
-        L.Property.Type = LinkAltPropType;
-        L.Property.Lim = JsonObject(reinterpret_cast<cJSON*>(D.LinkLimit));
-        L.Property.TypeAlt = D.LinkType;
-        if (UsedStrings)
-            UsedStrings->insert(D.LinkType);
+        if (D.LinkType.empty() || D.LinkLimit == 0 || D.LinkType == "bool")
+        {
+            L.Property.Type = DefaultAltPropType;
+            L.Property.Lim = JsonObject(nullptr);
+            L.Property.TypeAlt = D.LinkType;
+        }
         else
         {
-            auto& TheOnlySubSec = SubSec_Default[DefaultSubSecName];
-            TheOnlySubSec.Lines_ByName.push_back(D.Name);
-            TheOnlySubSec.Lines[D.Name] = L;
+            L.Property.Type = LinkAltPropType;
+            L.Property.Lim = JsonObject(reinterpret_cast<cJSON*>(D.LinkLimit));
+            L.Property.TypeAlt = D.LinkType;
+            if (UsedStrings)
+                UsedStrings->insert(D.LinkType);
+            else
+            {
+                auto& TheOnlySubSec = SubSec_Default[DefaultSubSecName];
+                TheOnlySubSec.Lines_ByName.push_back(D.Name);
+                TheOnlySubSec.Lines[D.Name] = L;
 
-            auto& K = Link_Default[D.LinkType];
-            K.Name = D.LinkType;
-            K.NameOnlyAsRegister = true;
-            IBB_DefaultRegType::EnsureRegType(D.LinkType);
+                auto& K = Link_Default[D.LinkType];
+                K.Name = D.LinkType;
+                K.NameOnlyAsRegister = true;
+                IBB_DefaultRegType::EnsureRegType(D.LinkType);
 
+            }
+        
         }
     }
 }
@@ -130,6 +142,18 @@ ImU32 StrToCol(const std::string& Str)
     }
 }
 
+std::vector<std::string> IBB_DefaultTypeAlt::EnumSplit(const std::string& s, char delimiter) {
+    std::vector<std::string> tokens;
+    std::string token;
+    std::istringstream tokenStream(s);
+
+    while (getline(tokenStream, token, delimiter)) {
+        tokens.push_back(token);
+    }
+
+    return tokens;
+}
+
 bool IBB_DefaultTypeAlt::Load(JsonObject FromJson)
 {
     Name = FromJson.ItemStringOr("Name");
@@ -151,6 +175,8 @@ bool IBB_DefaultTypeAlt::Load(const std::vector<std::string>& FromCSV)
     DescShort = FromCSV[3];
     DescLong = FromCSV[4];
     Color = StrToCol(FromCSV.size() > 5 ? FromCSV[5].c_str() : "00000000");
+    EnumVector = FromCSV.size() > 6 ? EnumSplit(FromCSV[6], ',') : std::vector<std::string>{};
+    EnumValue = FromCSV.size() > 7 ? EnumSplit(FromCSV[7], ',') : std::vector<std::string>{};
     return true;
 }
 
