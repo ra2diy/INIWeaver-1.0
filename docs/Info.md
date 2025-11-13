@@ -176,3 +176,8 @@ RegisterTypes.json declares all valid categories in the system. The "LinkCategor
 - **Relocation of inheritance linkage points.**
 - **Expanded module categories**: Support for AI, Sound, and other types.
 - **INI file parsing**: Import and visualize entire INI files as connection diagrams.
+
+## The Last
+```{seealso}
+[Basic Operation Teaching Video](https://www.bilibili.com/video/BV1b5EuzzEzT/)
+```
