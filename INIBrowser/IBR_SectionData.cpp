@@ -203,6 +203,9 @@ void IBR_SectionData::RenameRegisterImpl(const std::string& Name)
     BackPtr_Cached = nullptr;
 }
 
+bool IsEnumHovered = false;
+bool HasScrolled = false;
+
 bool IBR_SectionData::OnLineEdit(const std::string& Name, bool OnLink)
 {
 
@@ -243,6 +246,80 @@ bool IBR_SectionData::OnLineEdit(const std::string& Name, bool OnLink)
                 {
                     IBR_EditFrame::EditLines[Name].Buffer = !X ? "yes" : "no";
                 }
+            }
+            return true;
+        }
+        if (line->Default->Property.TypeAlt == "enum")
+        {
+            bool Redefine = line->Default->Property.EnumValue.size() > 0;
+            Line.Buffer = line->Data->GetString();
+            int X=-1;
+            if (Redefine)
+            {
+                for (int i = 0; i < line->Default->Property.EnumValue.size(); i++)
+                {
+                    if (Line.Buffer == line->Default->Property.EnumValue[i]) { X = i; break; }
+                }
+            }
+            else
+            {
+                for (int i = 0; i < line->Default->Property.Enum.size(); i++)
+                {
+                    if (Line.Buffer == line->Default->Property.Enum[i]) { X = i; break; }
+                }
+            }
+            bool EnumExist = !(X < 0);
+            if (!IBR_WorkSpace::ShowRegName) ImGui::Text(line->Default->DescShort.c_str());
+            else ImGui::Text(Name.c_str());
+            if (!line->Default->DescLong.empty() && ImGui::IsItemHovered())
+            {
+                ImGui::BeginTooltip();
+                ImGui::Text(line->Default->DescLong.c_str());
+                ImGui::EndTooltip();
+            }
+            ImGui::SameLine();
+            ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+            ImGui::SetNextWindowSizeConstraints(ImVec2(0, 0), ImVec2(FLT_MAX, IBR_FullView::Ratio*150));
+            if (ImGui::BeginCombo(("##" + Name + sec.GetSectionData()->DisplayName).c_str(), EnumExist ? line->Default->Property.Enum[X].c_str() : Line.Buffer.c_str()))
+            {
+                ImGuiListClipper Clipper;
+                Clipper.Begin(line->Default->Property.Enum.size());
+                bool EnumHovered = false;
+                for (int i = 0; i < line->Default->Property.Enum.size(); i++)
+                {
+                    bool IsSelected = i == X;
+                    if (ImGui::Selectable(line->Default->Property.Enum[i].c_str(), IsSelected))
+                    {
+                        X = i;
+                        line->Data->SetValue(Redefine ? line->Default->Property.EnumValue[X] : line->Default->Property.Enum[X]);
+                        if (IBR_Inst_Project.IBR_Rev_SectionMap[Desc] == IBR_EditFrame::CurSection.ID)
+                        {
+                            IBR_EditFrame::EditLines[Name].Buffer = Redefine ? line->Default->Property.EnumValue[X] : line->Default->Property.Enum[X];
+                        }
+                        EnumHovered = false;
+                        HasScrolled = false;
+                    }
+                    else if (ImGui::IsItemHovered()) EnumHovered = true;
+                    if (Redefine && ImGui::IsItemHovered())
+                    {
+                        ImGui::BeginTooltip();
+                        ImGui::Text(line->Default->Property.EnumValue[i].c_str());
+                        ImGui::EndTooltip();
+                    }
+                    if (IsSelected)
+                    {
+                        if (!HasScrolled) { ImGui::SetScrollHereY(0.0f); HasScrolled = true; }
+                        ImGui::SetItemDefaultFocus();
+                    }
+                }
+                IsEnumHovered = EnumHovered;
+                ImGui::EndCombo();
+            }
+            if (!line->Default->DescLong.empty() && ImGui::IsItemHovered())
+            {
+                    ImGui::BeginTooltip();
+                    ImGui::Text(line->Default->DescLong.c_str());
+                    ImGui::EndTooltip();
             }
             return true;
         }
