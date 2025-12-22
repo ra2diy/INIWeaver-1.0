@@ -1,4 +1,4 @@
-#include "IBRender.h"
+ï»¿#include "IBRender.h"
 #include "IBFront.h"
 #include "Global.h"
 #include "FromEngine/RFBump.h"
@@ -100,7 +100,7 @@ bool IBB_DefaultTypeList::LoadFromAlt(const IBB_DefaultTypeAltList& AltList)
     TheOnlySubSec.Require.ForbiddenValues.clear();
 
     IBB_DefaultTypeAlt b;
-    b.Name = "__INHERIT__";
+    b.Name = InheritKeyName;
     b.LinkLimit = 1;
     b.LinkType = "_AnyType";
     b.DescShort = "__INHERIT_SHORT__";
@@ -112,8 +112,8 @@ bool IBB_DefaultTypeList::LoadFromAlt(const IBB_DefaultTypeAltList& AltList)
     InheritSubSec.DescShort = "";
     InheritSubSec.DescLong = "";
     InheritSubSec.Platform = { "" };
-    InheritSubSec.Lines_ByName = { "__INHERIT__" };
-    InheritSubSec.Lines["__INHERIT__"] = IniLine_Default["__INHERIT__"];
+    InheritSubSec.Lines_ByName = { InheritKeyName };
+    InheritSubSec.Lines[InheritKeyName] = IniLine_Default[InheritKeyName];
     InheritSubSec.Require.RequiredValues.clear();
     InheritSubSec.Require.ForbiddenValues.clear();
 
@@ -340,7 +340,7 @@ IBB_Section* IBB_Project::AddNewSectionEx(const IBB_Section_NameType& Paragraph)
         if (EnableLog)
         {
             GlobalLogB.AddLog_CurTime(false);
-            GlobalLogB.AddLog((u8"IBB_Project::AddNewSection £º" + loc("Log_NoEmptyArgument")).c_str());
+            GlobalLogB.AddLog((u8"IBB_Project::AddNewSection ï¼š" + loc("Log_NoEmptyArgument")).c_str());
         }
         return nullptr;
     }
@@ -356,7 +356,7 @@ IBB_Section* IBB_Project::AddNewSectionEx(const IBB_Section_NameType& Paragraph)
             if (EnableLog)
             {
                 GlobalLogB.AddLog_CurTime(false);
-                GlobalLogB.AddLog((u8"IBB_Project::AddNewSection £º" + loc("Log_CannotCreateINI")).c_str());
+                GlobalLogB.AddLog((u8"IBB_Project::AddNewSection ï¼š" + loc("Log_CannotCreateINI")).c_str());
             }
             return nullptr;
         }
@@ -366,7 +366,7 @@ IBB_Section* IBB_Project::AddNewSectionEx(const IBB_Section_NameType& Paragraph)
         if (EnableLog)
         {
             GlobalLogB.AddLog_CurTime(false);
-            GlobalLogB.AddLog((u8"IBB_Project::AddNewSection £º" + loc("Log_CreateSectionFailed")).c_str());
+            GlobalLogB.AddLog((u8"IBB_Project::AddNewSection ï¼š" + loc("Log_CreateSectionFailed")).c_str());
         }
         return nullptr;
     }
@@ -377,7 +377,7 @@ IBB_Section* IBB_Project::AddNewSectionEx(const IBB_Section_NameType& Paragraph)
         if (EnableLog)
         {
             GlobalLogB.AddLog_CurTime(false);
-            GlobalLogB.AddLog((u8"IBB_Project::AddNewSection £º" + loc("Log_CannotCreateSection")).c_str());
+            GlobalLogB.AddLog((u8"IBB_Project::AddNewSection ï¼š" + loc("Log_CannotCreateSection")).c_str());
         }
         return nullptr;
     }
@@ -399,7 +399,7 @@ IBB_Section* IBB_Project::CreateNewSection(const IBB_Section_Desc& Desc)
             if (EnableLog)
             {
                 GlobalLogB.AddLog_CurTime(false);
-                GlobalLogB.AddLog((u8"IBB_Project::CreateNewSection £º" + loc("Log_CannotCreateINI")).c_str());
+                GlobalLogB.AddLog((u8"IBB_Project::CreateNewSection ï¼š" + loc("Log_CannotCreateINI")).c_str());
             }
             return nullptr;
         }
@@ -409,7 +409,7 @@ IBB_Section* IBB_Project::CreateNewSection(const IBB_Section_Desc& Desc)
         if (EnableLog)
         {
             GlobalLogB.AddLog_CurTime(false);
-            GlobalLogB.AddLog((u8"IBB_Project::CreateNewSection £º" + loc("Log_CreateSectionFailed")).c_str());
+            GlobalLogB.AddLog((u8"IBB_Project::CreateNewSection ï¼š" + loc("Log_CreateSectionFailed")).c_str());
         }
         return nullptr;
     }
@@ -419,7 +419,7 @@ IBB_Section* IBB_Project::CreateNewSection(const IBB_Section_Desc& Desc)
         if (EnableLog)
         {
             GlobalLogB.AddLog_CurTime(false);
-            GlobalLogB.AddLog((u8"IBB_Project::CreateNewSection £º" + loc("Log_CannotCreateSection")).c_str());
+            GlobalLogB.AddLog((u8"IBB_Project::CreateNewSection ï¼š" + loc("Log_CannotCreateSection")).c_str());
         }
         return nullptr;
     }
@@ -438,7 +438,7 @@ bool IBB_Project::AddNewLinkToLinkGroup(const IBB_Section_Desc& From, const IBB_
             if (EnableLog)
             {
                 GlobalLogB.AddLog_CurTime(false);
-                GlobalLogB.AddLog((u8"IBB_Project::AddNewLinkToLinkGroup £º" + loc("Log_CannotCreateSection")).c_str());
+                GlobalLogB.AddLog((u8"IBB_Project::AddNewLinkToLinkGroup ï¼š" + loc("Log_CannotCreateSection")).c_str());
             }
             return false;
         }
@@ -453,7 +453,7 @@ bool IBB_Project::AddNewLinkToLinkGroup(const IBB_Section_Desc& From, const IBB_
             if (EnableLog)
             {
                 GlobalLogB.AddLog_CurTime(false);
-                GlobalLogB.AddLog((u8"IBB_Project::AddNewLinkToLinkGroup £º" + loc("Log_CannotCreateSection")).c_str());
+                GlobalLogB.AddLog((u8"IBB_Project::AddNewLinkToLinkGroup ï¼š" + loc("Log_CannotCreateSection")).c_str());
             }
             return false;
         }
@@ -514,7 +514,7 @@ bool IBB_Project::AddModule(const ModuleClipData& Module)
                 if (EnableLog)
                 {
                     GlobalLogB.AddLog_CurTime(false);
-                    GlobalLogB.AddLog((u8"IBB_Project::AddModule £º" + loc("Log_CannotCreateINI")).c_str());
+                    GlobalLogB.AddLog((u8"IBB_Project::AddModule ï¼š" + loc("Log_CannotCreateINI")).c_str());
                 }
                 return false;
             }
@@ -524,7 +524,7 @@ bool IBB_Project::AddModule(const ModuleClipData& Module)
             if (EnableLog)
             {
                 GlobalLogB.AddLog_CurTime(false);
-                GlobalLogB.AddLog((u8"IBB_Project::AddModule £º" + loc("Log_CreateSectionFailed")).c_str());
+                GlobalLogB.AddLog((u8"IBB_Project::AddModule ï¼š" + loc("Log_CreateSectionFailed")).c_str());
             }
             return false;
         }
@@ -535,7 +535,7 @@ bool IBB_Project::AddModule(const ModuleClipData& Module)
         if (EnableLog)
         {
             GlobalLogB.AddLog_CurTime(false);
-            GlobalLogB.AddLog("IBB_Project::AddNewSection £ºÎŞ·¨Ìí¼Ó×Ö¶Î¡£");
+            GlobalLogB.AddLog("IBB_Project::AddNewSection ï¼šæ— æ³•æ·»åŠ å­—æ®µã€‚");
         }
         return false;
     }
@@ -544,7 +544,7 @@ bool IBB_Project::AddModule(const ModuleClipData& Module)
     return Sc->Generate(Module);
 }
 
-//ÎÒÒ²²»Ì«È·¶¨¾ÍÕâÂğ
+//æˆ‘ä¹Ÿä¸å¤ªç¡®å®šå°±è¿™å—
 bool IBB_Project::UpdateAll()
 {
     if (EnableLogEx)
@@ -559,8 +559,8 @@ bool IBB_Project::UpdateAll()
         for (auto& ss : sp.second.SubSecs)ss.LinkTo.clear();
     }
     for (auto& Ini : Inis)if (!Ini.UpdateAll())Ret = false;
-    //GlobalLogB.AddLog_CurTime(false); GlobalLogB.AddLog("¡ª¡ªIBB_Project::UpdateAll¡ª¡ª");//BREAKPOINT
-    //GlobalLogB.AddLog_CurTime(false); GlobalLogB.AddLog("¡ª¡ª²âÊÔ£º´¥·¢Update¡ª¡ª");//BREAKPOINT
+    //GlobalLogB.AddLog_CurTime(false); GlobalLogB.AddLog("â€”â€”IBB_Project::UpdateAllâ€”â€”");//BREAKPOINT
+    //GlobalLogB.AddLog_CurTime(false); GlobalLogB.AddLog("â€”â€”æµ‹è¯•ï¼šè§¦å‘Updateâ€”â€”");//BREAKPOINT
     for (auto& Ini : Inis)for (auto& sp : Ini.Secs)
     {
         if (sp.second.IsLinkGroup)

@@ -1,4 +1,4 @@
-
+ï»¿
 #include "IBSave.h"
 #include "IBRender.h"
 #include "Global.h"
@@ -48,7 +48,7 @@ namespace InsertLoad
                 break;
             }
             //////////////////////////////////////////////////////////////////////////
-            //Èç¹ûÊÇ×ó±ßtoolbar·¢³öµÄWM_COMMONDÏûÏ¢£¨¼´µã»÷×ó±ßµÄtoolbar£©, ÔòÇå¿ÕOK°´Å¥ÅÔµÄ×éºÏ¿ò¡£
+            //å¦‚æœæ˜¯å·¦è¾¹toolbarå‘å‡ºçš„WM_COMMONDæ¶ˆæ¯ï¼ˆå³ç‚¹å‡»å·¦è¾¹çš„toolbarï¼‰, åˆ™æ¸…ç©ºOKæŒ‰é’®æ—çš„ç»„åˆæ¡†ã€‚
             HWND hCtrl = (HWND)lParam;
             if (hCtrl == NULL)
             {
@@ -71,7 +71,7 @@ namespace InsertLoad
     }
     UINT_PTR static __stdcall  MyFolderProc(HWND hdlg, UINT uiMsg, WPARAM wParam, LPARAM lParam)
     {
-        //²Î¿¼reactos¿ÉÖª£¬hdlg ÊÇÒ»¸öÒş²ØµÄ¶Ô»°¿ò£¬Æä¸¸´°¿ÚÎª´ò¿ªÎÄ¼ş¶Ô»°¿ò£¬ OK£¬CANCEL°´Å¥µÈ¿Ø¼şµÄÏûÏ¢ÔÚ¸¸´°¿Ú´¦Àí¡£
+        //å‚è€ƒreactoså¯çŸ¥ï¼Œhdlg æ˜¯ä¸€ä¸ªéšè—çš„å¯¹è¯æ¡†ï¼Œå…¶çˆ¶çª—å£ä¸ºæ‰“å¼€æ–‡ä»¶å¯¹è¯æ¡†ï¼Œ OKï¼ŒCANCELæŒ‰é’®ç­‰æ§ä»¶çš„æ¶ˆæ¯åœ¨çˆ¶çª—å£å¤„ç†ã€‚
         ((void)wParam);
         if (uiMsg == WM_NOTIFY)
         {
@@ -90,7 +90,7 @@ namespace InsertLoad
                 {
                     if (wcslen(wcDirPath))
                     {
-                        //È¥µôÎÄ¼ş¼Ğ¿ì½İ·½Ê½µÄºó×ºÃû¡£
+                        //å»æ‰æ–‡ä»¶å¤¹å¿«æ·æ–¹å¼çš„åç¼€åã€‚
                         int pathSize = wcslen(wcDirPath);
                         if (pathSize >= 4)
                         {
@@ -138,10 +138,10 @@ namespace InsertLoad
         memset(&ofn, 0, sizeof(ofn));
         ofn.lStructSize = sizeof(ofn);
         ofn.hwndOwner = Root;
-        ofn.lpstrFilter = Type.Filter; //"µ¼ÈëÊı¾İ(*_pack.dat)\0*_pack.dat\0ËùÓĞÎÄ¼ş (*.*)\0*.*\0\0"
+        ofn.lpstrFilter = Type.Filter; //"å¯¼å…¥æ•°æ®(*_pack.dat)\0*_pack.dat\0æ‰€æœ‰æ–‡ä»¶ (*.*)\0*.*\0\0"
         ofn.lpstrFile = szFile;
         ofn.nMaxFile = sizeof(szFile);
-        ofn.lpstrFileTitle = wptitle.data();//"Ñ¡ÔñÒªµ¼ÈëµÄÎÄ¼ş"
+        ofn.lpstrFileTitle = wptitle.data();//"é€‰æ‹©è¦å¯¼å…¥çš„æ–‡ä»¶"
         ofn.nMaxFileTitle = wptitle.size();
         ofn.lpstrInitialDir = Type.InitialPath.c_str();
         ofn.hInstance = (HMODULE)GetCurrentProcess();
@@ -183,25 +183,25 @@ std::atomic<bool> IBS_Suspended{ false };
 InfoStack<StdMessage> SStack;
 DWORD SThreadID;
 SaveFile ProjSL;//Save & Load of a project
-std::string ExtName(const std::string& ss)//ÍØÕ¹Ãû£¬ÎŞ'.' 
+std::string ExtName(const std::string& ss)//æ‹“å±•åï¼Œæ— '.' 
 {
     using namespace std;
     auto p = ss.find_last_of('.');
     return p == ss.npos ? "" : string(ss.begin() + min(p + 1, ss.length()), ss.end());
 }
-std::string FileNameNoExt(const std::string& ss)//ÎÄ¼şÃû£¬ÎŞ'.' 
+std::string FileNameNoExt(const std::string& ss)//æ–‡ä»¶åï¼Œæ— '.' 
 {
     using namespace std;
     auto p = ss.find_last_of('.');
     return p == ss.npos ? ss : string(ss.begin(), ss.begin() + min(p, ss.length()));
 }
-std::string FileName(const std::string& ss)//ÎÄ¼şÃû
+std::string FileName(const std::string& ss)//æ–‡ä»¶å
 {
     using namespace std;
     auto p = ss.find_last_of('\\');
     return p == ss.npos ? ss : string(ss.begin() + min(p + 1, ss.length()), ss.end());
 }
-std::wstring FileName(const std::wstring& ss)//ÎÄ¼şÃû
+std::wstring FileName(const std::wstring& ss)//æ–‡ä»¶å
 {
     using namespace std;
     auto p = ss.find_last_of(L'\\');
@@ -254,7 +254,7 @@ ReadFileHeader IBS_LoadProject
             if (EnableLog)
             {
                 GlobalLogB.AddLog_CurTime(false);
-                GlobalLogB.AddLog((u8"IBS_LoadProject.Action £º " + loc("Log_FileVersionTooHigh")).c_str());
+                GlobalLogB.AddLog((u8"IBS_LoadProject.Action ï¼š " + loc("Log_FileVersionTooHigh")).c_str());
             }
             {
                 auto VS = UTF8toUnicode(GetVersionStr(FVersion));
@@ -342,6 +342,11 @@ void IBS_Push(const StdMessage& Msg)
         IBS_Suspended.store(false);
         IBG_ResumeThread(SThreadID);
     }
+}
+
+int IBS_Project::GetCreateVersionN() const
+{
+    return CreateVersionMajor * 10000 + CreateVersionMinor * 100 + CreateVersionRelease;
 }
 
 bool IBS_Project::Save()

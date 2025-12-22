@@ -1,4 +1,4 @@
-#include "IBR_Localization.h"
+﻿#include "IBR_Localization.h"
 #include "IBRender.h"
 #include "FromEngine/Include.h"
 #include "Global.h"
@@ -21,8 +21,10 @@ bool RefreshLangBuffer5 = false;
 namespace IBR_L10n
 {
     std::string CurrentLanguage;
+    std::unordered_map<std::string, std::unordered_map<std::string, std::wstring>> LocalizationMapW;
     std::unordered_map<std::string, std::unordered_map<std::string, std::string>> LocalizationMap;
     std::unordered_map<std::string, std::string> CurrentMap;
+    std::unordered_map<std::string, std::wstring> CurrentMapW;
     std::wstring LanguageININame;
 
     bool RenderUI(std::string_view Title)
@@ -108,6 +110,19 @@ namespace IBR_L10n
             }
         }
     }
+
+    void GenerateMapW()
+    {
+        for (const auto& [k, v] : LocalizationMap)
+        {
+            auto& MapW = LocalizationMapW[k];
+            for (const auto& [s, t] : v)
+            {
+                MapW[s] = UTF8toUnicode(t);
+            }
+        }
+    }
+
     bool LoadFromINI(const std::wstring& FileName)
     {
         TEMPLOG("LanguageININame = CurrentDirW + FileName;")
@@ -116,10 +131,12 @@ namespace IBR_L10n
         LocalizationMap = IniToMap(SplitTokens(GetTokens(GetLines(GetStringFromFile(LanguageININame.c_str())), false)));
         TEMPLOG("ConvertLocMap();")
         ConvertLocMap();
+        GenerateMapW();
         TEMPLOG("CurrentLanguage = LocalizationMap[\"Basic\"][\"CurrentLanguage\"];")
         CurrentLanguage = LocalizationMap["Basic"]["CurrentLanguage"];
         TEMPLOG("CurrentMap = LocalizationMap[CurrentLanguage];")
         CurrentMap = LocalizationMap[CurrentLanguage];
+        CurrentMapW = LocalizationMapW[CurrentLanguage];
         TEMPLOG(" if (CurrentLanguage.empty() || CurrentMap.empty())")
         if (CurrentLanguage.empty() || CurrentMap.empty())
         {
@@ -137,20 +154,38 @@ namespace IBR_L10n
         TEMPLOG("return true;")
         return true;
     }
+    void LanguageKeyNotFound(const std::string& Key)
+    {
+        if (EnableLog)
+        {
+            auto W1 = UTF8toUnicode(CurrentLanguage);
+            auto W2 = UTF8toUnicode(Key);
+            GlobalLog.AddLog_CurTime(false);
+            if (Key != "Error_LanguageKeyNotFound")
+                GlobalLog.AddLog(std::vformat(locw("Error_LanguageKeyNotFound"),
+                    std::make_wformat_args(W1, W2)));
+            else
+                GlobalLog.AddLog(std::format(L"ERROR: KEY \"{}\" NOT FOUND IN LANGUAGE \"{}\".",
+                    W2, W1));
+        }
+    }
     const std::string& _TEXT_UTF8 GetString(const std::string& Key)
     {
         auto& W = CurrentMap[Key];
         if (W.empty())
         {
             W = "MISSING:" + Key;
-            if (EnableLog)
-            {
-                auto W1 = UTF8toUnicode(CurrentLanguage);
-                auto W2 = UTF8toUnicode(Key);
-                GlobalLog.AddLog_CurTime(false);
-                GlobalLog.AddLog(std::vformat(locw("Error_LanguageKeyNotFound"),
-                    std::make_wformat_args(W1, W2)));
-            }
+            LanguageKeyNotFound(Key);
+        }
+        return W;
+    }
+    const std::wstring& _TEXT_WIDE GetWString(const std::string& Key)
+    {
+        auto& W = CurrentMapW[Key];
+        if (W.empty())
+        {
+            W = L"MISSING:" + UTF8toUnicode(Key);
+            LanguageKeyNotFound(Key);
         }
         return W;
     }
@@ -159,6 +194,13 @@ namespace IBR_L10n
         auto W = GetString(Key);
         if ((int)W.size() < AlignMax)
             W.resize(AlignMax, ' ');
+        return W;
+    }
+    std::wstring _TEXT_WIDE GetWStringAligned(const std::string& Key, int AlignMax)
+    {
+        auto W = GetWString(Key);
+        if ((int)W.size() < AlignMax)
+            W.resize(AlignMax, L' ');
         return W;
     }
     void SetLanguage(const std::string& Language)
@@ -203,6 +245,7 @@ namespace IBR_L10n
 
         CurrentLanguage = Language;
         CurrentMap = LocalizationMap[CurrentLanguage];
+        CurrentMapW = LocalizationMapW[CurrentLanguage];
 
         RefreshSettingTypes();
         IBR_Inst_Setting.RefreshSetting();

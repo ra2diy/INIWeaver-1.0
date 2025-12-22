@@ -1,4 +1,4 @@
-#include "IBRender.h"
+ï»¿#include "IBRender.h"
 #include "IBFront.h"
 #include "Global.h"
 #include "FromEngine/RFBump.h"
@@ -23,7 +23,7 @@ namespace ImGui
     bool IsWindowClicked(ImGuiMouseButton Button);
     void PushOrderFront(ImGuiWindow* Window);
 }
-extern const char* LinkGroup_IniName;
+extern const char* Internal_IniName;
 extern wchar_t CurrentDirW[];
 extern int RFontHeight;
 
@@ -72,28 +72,28 @@ namespace SearchModuleAlt
         //ImGui::SameLine();
         //ImGui::SetCursorPosX(FontHeight * 8.0f);
         /*
-        if (ImGui::SmallButton((u8"ÊôĞÔ##" + pModule->Name).c_str()))
+        if (ImGui::SmallButton((u8"å±æ€§##" + pModule->Name).c_str()))
         {
             IBR_PopupManager::SetCurrentPopup(std::move(IBR_PopupManager::Popup{}.CreateModal(pModule->DescShort, true).SetFlag(ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize).PushMsgBack([pModule]()
                 {
                     ImGui::SetWindowSize({ RFontHeight * 20.0f,RFontHeight * 15.0f });
                     ImGui::Text(pModule->DescLong.c_str());
                     ImGui::NewLine();
-                    if (!pModule->ParamDescLong.empty() || !pModule->ParamDescShort.empty())ImGui::Text(u8"²ÎÊı£º%s", pModule->ParamDescShort.c_str());
+                    if (!pModule->ParamDescLong.empty() || !pModule->ParamDescShort.empty())ImGui::Text(u8"å‚æ•°ï¼š%s", pModule->ParamDescShort.c_str());
                     if(!pModule->ParamDescLong.empty())ImGui::Text(pModule->ParamDescLong.c_str());
 
-                    ImGui::Text(u8"ÎÄ¼şÂ·¾¶£º%s", UnicodetoUTF8(pModule->Path).c_str());
-                    if (ImGui::SmallButton(u8"¸´ÖÆÂ·¾¶"))
+                    ImGui::Text(u8"æ–‡ä»¶è·¯å¾„ï¼š%s", UnicodetoUTF8(pModule->Path).c_str());
+                    if (ImGui::SmallButton(u8"å¤åˆ¶è·¯å¾„"))
                     {
                         ImGui::SetClipboardText(UnicodetoUTF8(pModule->Path).c_str());
-                        IBR_HintManager::SetHint(u8"Â·¾¶¸´ÖÆ³É¹¦", HintStayTimeMillis);
+                        IBR_HintManager::SetHint(u8"è·¯å¾„å¤åˆ¶æˆåŠŸ", HintStayTimeMillis);
                     }
 
                 })));
         }
         */
         //ImGui::SameLine();
-        //ImGui::SmallButton((u8"Ìí¼Ó##" + pModule->Name).c_str());
+        //ImGui::SmallButton((u8"æ·»åŠ ##" + pModule->Name).c_str());
         if(R.Contains(ImGui::GetMousePos()) && ImGui::IsMouseDown(ImGuiMouseButton_Left))
             IBR_Inst_Project.AddModule(*pModule, GenerateModuleTag());
     }
@@ -172,6 +172,8 @@ namespace IBR_WorkSpace
     bool HasLefttDownToWait{ false };
     bool MoveAfterMass{ false };
     std::vector<IBR_Project::id_t> MassTarget;
+    //åŒ…å«äº†è¢«ç¼©åˆçš„å—
+    std::vector<IBR_Project::id_t> MassTargetExtended;
     bool LastOperateOnText{ false };
     bool OperateOnText{ false };
     IBR_Section MouseOverSection{ &IBR_Inst_Project, UINT64_MAX };
@@ -285,7 +287,7 @@ namespace IBR_WorkSpace
     {
         if (NeedChangeRatio)
         {
-            if (IBR_FullView::Ratio < NewRatio)//·Å´ó
+            if (IBR_FullView::Ratio < NewRatio)//æ”¾å¤§
             {
                 auto OrigSize = IBR_RealCenter::WorkSpaceDR - IBR_RealCenter::WorkSpaceUL;
                 auto NewSize = OrigSize * IBR_FullView::Ratio / NewRatio;
@@ -344,12 +346,29 @@ namespace IBR_WorkSpace
             IBR_Inst_Project.DeleteSection(MassTarget);
             },nullptr });
     }
-    void GenerateClipDataFromMassSelect(IBB_ClipBoardData& ClipData)
+    dImVec2 GetMassCenter(const std::vector<IBR_Project::id_t>& Target)
+    {
+        dImVec2 TSum{};
+        double Sum{};
+        for (auto& v : Target)
+        {
+            auto sc = IBR_Inst_Project.GetSectionFromID(v);
+            auto Data = sc.GetSectionData();
+            if (Data)
+            {
+                TSum += Data->EqPos * Data->EqSize.x * Data->EqSize.y;
+                Sum += Data->EqSize.x * Data->EqSize.y;
+            }
+        }
+        TSum /= Sum;
+        return TSum;
+    }
+    void GenerateClipDataFromIDs(IBB_ClipBoardData& ClipData, const std::vector<IBR_Project::id_t>& IDs)
     {
         std::vector<IBB_Section_Desc> Sel;
         dImVec2 TSum{};
         double Sum{};
-        for (auto& v : MassTarget)
+        for (auto& v : IDs)
         {
             auto sc = IBR_Inst_Project.GetSectionFromID(v);
             auto Data = sc.GetSectionData();
@@ -361,7 +380,7 @@ namespace IBR_WorkSpace
             }
         }
         TSum /= Sum;
-        for (auto& v : MassTarget)
+        for (auto& v : IDs)
         {
             auto sc = IBR_Inst_Project.GetSectionFromID(v);
             auto Data = sc.GetSectionData();
@@ -371,6 +390,10 @@ namespace IBR_WorkSpace
             }
         }
         ClipData.Generate(Sel);
+    }
+    void GenerateClipDataFromMassSelect(IBB_ClipBoardData& ClipData)
+    {
+        GenerateClipDataFromIDs(ClipData, MassTargetExtended);
     }
     void CopySelected()
     {
@@ -391,19 +414,34 @@ namespace IBR_WorkSpace
     {
         auto Str = ImGui::GetClipboardText();
         IBB_ClipBoardData ClipData;
+        IBB_ClipBoardData::ErrorContext.ModuleName = loc("GUI_Clipboard");
+        IBB_ClipBoardData::ErrorContext.ModulePath = locw("GUI_Clipboard");
         if (ClipData.SetString(Str))
         {
             //Check ClipData.ProjectRID
-            auto X = IBR_Inst_Project.AddModule(ClipData.Modules);
-            if (X)
+            auto [Success, X] = IBR_Inst_Project.AddModule(ClipData.Modules);
+            if (Success)
             {
-                auto c = X.value().size();
+                auto c = X.size();
                 IBR_HintManager::SetHint(UnicodetoUTF8(std::vformat(locw("GUI_PasteSuccess"), std::make_wformat_args(c))), HintStayTimeMillis);
-                MassSelect(X.value());
+                MassSelect(X);
             }
             else IBR_HintManager::SetHint(loc("GUI_PasteFailed"), HintStayTimeMillis);
         }
         else IBR_HintManager::SetHint(loc("GUI_PasteFailed"), HintStayTimeMillis);
+    }
+    void ExtendMassSelect()
+    {
+        std::unordered_set<IBR_Project::id_t> Visited;
+        for (auto id : MassTarget)
+        {
+            auto Data = IBR_Inst_Project.GetSectionFromID(id).GetSectionData();
+            if (Data)
+                for (auto& v : Data->IncludingModules)
+                    Visited.insert(v);
+            Visited.insert(id);
+        }
+        MassTargetExtended = std::ranges::to<std::vector<IBR_Project::id_t>>(Visited);
     }
     void MassSelect(const std::vector<IBR_Project::id_t>& Target)
     {
@@ -413,6 +451,7 @@ namespace IBR_WorkSpace
         DragStartEqMouse = IBR_FullView::GetEqMin();
         DragCurEqMouse = IBR_FullView::GetEqMax();
         MassTarget = Target;
+        ExtendMassSelect();
         IBR_PopupManager::ClearRightClickMenu();
     }
     void SelectAll()
@@ -443,14 +482,6 @@ namespace IBR_WorkSpace
             .SetFlag(ImGuiWindowFlags_NoFocusOnAppearing)
             .EnableInstantClose()
             .PushMsgBack([]() {
-
-                //ÎªÊ²Ã´ÕâÀï¼ì²âDrag£¬ÎÒ²»ÖªµÀ£¬ÎÒÒ²²»¸Ò¶¯£¬ËäÈ»ËµÕâ¶Î´úÂëĞ´ÏÂµÄÊ±¼ä¾àÀëÕâĞĞ×¢ÊÍĞ´ÏÂµÄÊ±¼äÖ»ÓĞ1Ğ¡Ê±
-                /*
-                if (abs((DragCurMouse - DragStartMouse).max()) > 2.0f)
-                {
-                    MassTarget = IBR_SelectMode::GetMassSelected();
-                }
-                */
                 if (IBR_Inst_Project.IBR_SectionMap.empty())
                 {
                     ImGui::TextDisabled(locc("GUI_SelectAll"));
@@ -473,8 +504,8 @@ namespace IBR_WorkSpace
                 RightClickTextHelper(locc("GUI_RefreshAllRegName"));
                 if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
                 {
-                    Paste();
                     IBR_Inst_Project.RenameAll();
+                    IBR_PopupManager::ClearRightClickMenu();
                 }
                 ImGui::Text(locc("GUI_CreateCommentBlock"));
                 if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
@@ -491,17 +522,10 @@ namespace IBR_WorkSpace
     void OutputSelectedImpl(const char* IPath, const char* IDescShort, const char* IDescLong)
     {
         IBB_ModuleAlt Alt;
+
         IBB_ClipBoardData ClipData;
-        /*
-        std::vector<IBB_Section_Desc> Sel;
-        for (auto& v : MassTarget)
-        {
-            auto Data = IBR_Inst_Project.GetSectionFromID(v).GetSectionData();
-            if (Data && !Data->Ignore)Sel.push_back(Data->Desc);
-        }
-        ClipData.Generate(Sel);
-        */
         GenerateClipDataFromMassSelect(ClipData);
+
         Alt.Available = true;
         Alt.Name = IDescShort;
         Alt.DescShort = IDescShort;
@@ -511,8 +535,30 @@ namespace IBR_WorkSpace
         Alt.Path = UTF8toUnicode(IPath);
         Alt.Modules = std::move(ClipData.Modules);
         Alt.SaveToFile();
+
         IBB_ModuleAltDefault::NewModule(std::move(Alt));
     }
+
+    void ComposeSelected()
+    {
+        if (auto res = IBR_Inst_Project.ComposeSections(MassTarget); res)
+        {
+            auto c = MassTarget.size();
+            IBR_HintManager::SetHint(UnicodetoUTF8(std::vformat(locw("GUI_ComposeSuccess"), std::make_wformat_args(c))), HintStayTimeMillis);
+
+            //Clear mass selection states
+            IsMassAfter = false;
+            IsBgDragging = false;
+
+            //Activate the new composed module
+            IBR_EditFrame::ActivateAndEdit(res.value(), false);
+        }
+        else
+        {
+            IBR_HintManager::SetHint(loc("GUI_ComposeFailed"), HintStayTimeMillis);
+        }
+    }
+
     void OutputSelected()
     {
         char* IDescShort = new BufString{};
@@ -612,14 +658,14 @@ namespace IBR_WorkSpace
     }
 
     /*
-     ×´Ì¬»ú:
+     çŠ¶æ€æœº:
      Normal -> BgDragging MassSelecting HoldingModules
      BgDragging -> Normal
      HoldingModules -> Normal
      MassSelecting -> MassAfter Normal
      MassAfter -> HoldingModules Normal
     */
-    //»­²¼ÉÏµÄ¼üÊó¶¯×÷
+    //ç”»å¸ƒä¸Šçš„é”®é¼ åŠ¨ä½œ
     void ProcessBackgroundOpr()
     {
         if (IsResizingWindow())return;
@@ -824,6 +870,7 @@ namespace IBR_WorkSpace
                     if (abs((DragCurMouse - DragStartMouse).max()) > 2.0f)
                     {
                         MassTarget = IBR_SelectMode::GetMassSelected();
+                        ExtendMassSelect();
                         if (MassTarget.empty())
                         {
                             IsMassAfter = false;
@@ -909,7 +956,7 @@ namespace IBR_WorkSpace
                                                 }
                                                 rsd.Dragging = true;
                                             },nullptr });
-                                    //¼ûV0.2.0ÈÎÎñÇåµ¥£¨ËÄ£©µÚ75Ìõ¡°Éæ¼°×Ö¶ÎÊıÄ¿±ä»¯µÄÖ¸ÁîÓ¦½èÓÉIBF_SendToRµÈÌáÖÁÖ÷Ñ­»·¿ªÍ·¡±
+                                    //è§V0.2.0ä»»åŠ¡æ¸…å•ï¼ˆå››ï¼‰ç¬¬75æ¡â€œæ¶‰åŠå­—æ®µæ•°ç›®å˜åŒ–çš„æŒ‡ä»¤åº”å€Ÿç”±IBF_SendToRç­‰æè‡³ä¸»å¾ªç¯å¼€å¤´â€
                                 }
                             }
                             IBRF_CoreBump.SendToR({ [=]() {IBF_Inst_Project.UpdateAll(); IBR_WorkSpace::HoldingModules = true;  },nullptr });
@@ -968,7 +1015,13 @@ namespace IBR_WorkSpace
                                     IBR_PopupManager::ClearRightClickMenu();
                                 }
                             }
-                            
+
+                            if (ImGui::SmallButtonAlignLeft(locc("GUI_Compose"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
+                            {
+                                ComposeSelected();
+                                IBR_PopupManager::ClearRightClickMenu();
+                            }
+
                             if (ImGui::SmallButtonAlignLeft(locc("GUI_ExportModule"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
                             {
                                 OutputSelected();
@@ -1009,7 +1062,9 @@ namespace IBR_WorkSpace
                         //MessageBoxA(NULL, "!!", "!!!", MB_OK);
                     }
                 }
-                else UpdateScrollGeneral(MousePos);
+                //åœ¨æœ‰é€‰ä¸­çš„å—çš„æ—¶å€™é¼ æ ‡ç§»åŠ¨åˆ°ç”»å¸ƒè¾¹ç¼˜å°±ä¼šç§»åŠ¨è§†é‡ï¼Œè¿™ä¸ªèƒ½ä¸èƒ½å»æ‰
+                //Kenosis 25/09/14
+                //else UpdateScrollGeneral(MousePos);
             }
             else//BgDragging
             {
@@ -1099,6 +1154,8 @@ namespace IBR_WorkSpace
 
     InfoStack<StdMessage> ExtSetPos;
     IBR_SectionData* CurOnRender;
+    bool CurOnRender_Clicked{ false };
+    IBR_Project::id_t CurOnRender_ID{ 0 };
     ImVec4 TempWbg;
     struct PosHelper { ImVec2 eq, re; };
     ImGuiWindow* LastFocused{ nullptr };
@@ -1120,7 +1177,13 @@ namespace IBR_WorkSpace
             //IBR_Inst_Debug.AddMsgCycle([=]() {ImGui::TextWrapped("Render Section %s", sp.second.Desc.GetText().c_str());});
 
             auto& sd = sp.second;
+            sd.ModuleStrID = std::to_string(sp.first);
+            if (sd.IsIncluded())continue;
+            
+
+            //sd.BackPtr_Cached = RSec.GetBack();
             CurOnRender = &sd;
+            CurOnRender_ID = sp.first;
             _RenderUI_OnRender = sd.Desc;
             auto TA = EqPosToRePos(sd.EqPos);
 
@@ -1129,7 +1192,7 @@ namespace IBR_WorkSpace
                 ImGui::SetNextWindowPos(TA);
                 ImGui::SetNextWindowSize(sd.EqSize * IBR_FullView::Ratio);
                 if (sp.first == IBR_EditFrame::CurSection.ID)ImGui::SetNextWindowFocus();
-                //sd.First = false;//ÑÓ³ÙÇåÀí
+                //sd.First = false;//å»¶è¿Ÿæ¸…ç†
             }
 
             for (auto& p : vu)p();//for Undo & Redo
@@ -1176,7 +1239,7 @@ namespace IBR_WorkSpace
             bool NoMouseInput = IBR_SelectMode::IsWindowMassSelected(sd.Desc) || HoldingModules;
             if (NoMouseInput)ImGui::CaptureMouseFromApp(false);
 
-            //ImGuiWindowFlags_NoClamping ÊÇ·Ç±êµÄË½»õ£¬Ğ¡ÅóÓÑÃÇ²»ÒªÑ§»µÅ¶~
+            //ImGuiWindowFlags_NoClamping æ˜¯éæ ‡çš„ç§è´§ï¼Œå°æœ‹å‹ä»¬ä¸è¦å­¦åå“¦~
             ImGui::Begin((sd.Desc.Ini + u8" - " + sd.Desc.Sec).c_str(), &sd.IsOpen,
                 ImGuiWindowFlags_NoClamping |
                 ImGuiWindowFlags_NoTitleBar |
@@ -1189,19 +1252,7 @@ namespace IBR_WorkSpace
 
             if (sd.Dragging && !IBR_PopupManager::HasPopup)ImGui::PushOrderFront(ImGui::GetCurrentWindow());
 
-            /*
-            if (ImGui::IsWindowFocused() && LastFocused != ImGui::GetCurrentWindow() && !sd.IsComment && !IBR_PopupManager::HasPopup)
-            {
-                IBR_EditFrame::SetActive(sp.first);
-                IBR_Inst_Menu.ChooseMenu(MenuItemID_EDIT);
-            }
-            if (ImGui::IsWindowFocused())LastFocused = ImGui::GetCurrentWindow();
-            */
-            if (ImGui::IsWindowClicked(ImGuiMouseButton_Left) && !sd.IsComment && !IBR_PopupManager::HasPopup)
-            {
-                IBR_EditFrame::SetActive(sp.first);
-                IBR_Inst_Menu.ChooseMenu(MenuItemID_EDIT);
-            }
+            CurOnRender_Clicked = ImGui::IsWindowClicked(ImGuiMouseButton_Left) && !sd.IsComment && !IBR_PopupManager::HasPopup;
 
             auto PCopy = ImGui::GetWindowPos();
             auto SCopy = ImGui::GetWindowSize();
@@ -1347,7 +1398,7 @@ namespace IBR_WorkSpace
             if (NoMouseInput)ImGui::CaptureMouseFromApp(true);
             ImGui::PopStyleColor();
 
-            if (!sd.IsOpen)IBRF_CoreBump.SendToR({ [=]() {IBR_Inst_Project.DeleteSection(sd.Desc); },nullptr });
+            if (!sd.IsOpen)IBRF_CoreBump.SendToR({ [D = sd.Desc]() {IBR_Inst_Project.DeleteSection(D); },nullptr });
         }
 
         /*
@@ -1379,14 +1430,14 @@ namespace IBR_WorkSpace
                 }
                 else
                 {
-                    ImColor LinkCol = Link.Color;
-                    Col = LinkCol.Value.w > 0.0001f ? LinkCol : IBR_Color::LegalLineColor;
+                    ImU32 LinkColW = (Link.Color >> IM_COL32_A_SHIFT) & 0xFF;
+                    Col = LinkColW > 0 ? ImColor(Link.Color) : IBR_Color::LegalLineColor;
                 }
                 if (RSD->Dragging || Link.IsSrcDragging)
                     Col.Value.w *= IBF_Inst_Setting.TransparencyBase() * 0.625f;
                 {
                     ImVec2 pa = Link.BeginR;
-                    ImVec2 pb = EqPosToRePos(RSD->EqPos) + RSD->ReOffset;
+                    ImVec2 pb = RSD->ReWindowUL + RSD->ReOffset;
                     float LineWidth = FontHeight / 5.0f;
                     ImVec2 Mid = (pa + pb) / 2.0F;
                     bool Straight = (pb.x - pa.x >= FontHeight * 5.0F);

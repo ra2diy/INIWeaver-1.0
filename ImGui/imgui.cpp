@@ -1,4 +1,4 @@
-// dear imgui, 1.88 WIP
+﻿// dear imgui, 1.88 WIP
 // (main code and documentation)
 
 // Help:
@@ -5917,6 +5917,7 @@ void ImGui::RenderWindowTitleBarContents(ImGuiWindow* window, const ImRect& titl
 
 void ImGui::UpdateWindowParentAndRootLinks(ImGuiWindow* window, ImGuiWindowFlags flags, ImGuiWindow* parent_window)
 {
+    if (!window)return;
     window->ParentWindow = parent_window;
     window->RootWindow = window->RootWindowPopupTree = window->RootWindowForTitleBarHighlight = window->RootWindowForNav = window;
     if (parent_window && (flags & ImGuiWindowFlags_ChildWindow) && !(flags & ImGuiWindowFlags_Tooltip))
@@ -6688,9 +6689,14 @@ void ImGui::BringWindowToFocusFront(ImGuiWindow* window)
     if (g.WindowsFocusOrder.back() == window)
         return;
 
+    if(window->FocusOrder < 0)
+        return; // This can happen when using FocusWindow() in the same frame as the window is created. FIXME: We should handle this better.
+
     const int new_order = g.WindowsFocusOrder.Size - 1;
     for (int n = cur_order; n < new_order; n++)
     {
+        IM_ASSERT(g.WindowsFocusOrder[n + 1] != nullptr);
+        if (!g.WindowsFocusOrder[n + 1])continue;
         g.WindowsFocusOrder[n] = g.WindowsFocusOrder[n + 1];
         g.WindowsFocusOrder[n]->FocusOrder--;
         IM_ASSERT(g.WindowsFocusOrder[n]->FocusOrder == n);

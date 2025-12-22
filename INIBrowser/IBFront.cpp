@@ -1,4 +1,4 @@
-
+Ôªø
 #include "FromEngine/Include.h"
 #include "IBFront.h"
 #include "FromEngine/RFBump.h"
@@ -23,7 +23,7 @@ void IBF_Thr_FrontLoop()
         if (SettingLoadComplete.load())FrameRateLim = IBG_GetSetting().FrameRateLimit;
         if (FrameRateLim != -1)
         {
-            int Uax = 1000000 / FrameRateLim;//µ•Œª£∫Œ¢√Î
+            int Uax = 1000000 / FrameRateLim;//Âçï‰ΩçÔºöÂæÆÁßí
             while (GetSysTimeMicros() < TimeWait)Sleep(Uax / 1000);
             if (Uax > 3000 && abs((int64_t)GetSysTimeMicros() - (int64_t)ShellLoopLastTime) < 1000ull)Sleep(Uax / 2000);
             TimeWait += Uax;
@@ -188,7 +188,7 @@ bool IBF_DefaultTypeList::ReadAltSetting(const wchar_t* Name)
     if (EnableLog)
     {
         GlobalLogB.AddLog_CurTime(false);
-        GlobalLogB.AddLog((u8"IBF_DefaultTypeList::ReadAltSetting £∫ " + loc("Log_ReadTypeAlt")).c_str());
+        GlobalLogB.AddLog((u8"IBF_DefaultTypeList::ReadAltSetting Ôºö " + loc("Log_ReadTypeAlt")).c_str());
     }
     bool Ret = true;
 
@@ -225,7 +225,7 @@ bool IBF_Project::UpdateCreateSection(const IBB_Section_Desc& Desc)
     {
         if (sp.second.IsLinkGroup)
         {
-            for(auto& l:sp.second.LinkGroup_LinkTo)//Index≤ªø…ƒ‹”√”⁄÷∏œÚ“ª∏ˆ…–Œ¥¥Ê‘⁄µƒSection
+            for(auto& l:sp.second.LinkGroup_LinkTo)//Index‰∏çÂèØËÉΩÁî®‰∫éÊåáÂêë‰∏Ä‰∏™Â∞öÊú™Â≠òÂú®ÁöÑSection
                 if ((!l.To.Ini.UseIndex && l.To.Ini.Name == Desc.Ini) && (!l.To.Section.UseIndex && l.To.Section.Name == Desc.Sec))
                 {
                     l.DynamicCheck_Legal(Project);
@@ -293,4 +293,11 @@ void IBF_Project::Save(IBS_Project& Proj)
         Proj.LastOutputIniName.push_back(l);
     Project.IsNewlyCreated = false;
     Project.ChangeAfterSave = false;
+}
+
+void IBF_Project::Clear()
+{
+    CurrentProjectRID = 0;
+    Project.Clear();
+    this->DisplayNames.clear();
 }

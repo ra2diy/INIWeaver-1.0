@@ -1,4 +1,4 @@
-#include "IBRender.h"
+ï»¿#include "IBRender.h"
 #include "IBFront.h"
 #include "Global.h"
 #include "FromEngine/RFBump.h"
@@ -17,7 +17,7 @@ int IBG_ExitProcess()
     if (EnableLog)
     {
         GlobalLog.AddLog_CurTime(false);
-        GlobalLog.AddLog("³ÌÐòÕýÔÚ½áÊøÔËÐÐ¡£");
+        GlobalLog.AddLog("ç¨‹åºæ­£åœ¨ç»“æŸè¿è¡Œã€‚");
     }
     //*/
 
@@ -30,14 +30,14 @@ int IBG_ExitProcess()
     if (EnableLog)
     {
         GlobalLog.AddLog_CurTime(false);
-        GlobalLog.AddLog("³ÌÐòÒÑ¾­½áÊøÔËÐÐ¡£");
+        GlobalLog.AddLog("ç¨‹åºå·²ç»ç»“æŸè¿è¡Œã€‚");
     }
     //*/
 
     return 0;
 }
 
-//ÐÞ¸´¹Ø±ÕÑÓÊ±µÄBug
+//ä¿®å¤å…³é—­å»¶æ—¶çš„Bug
 struct OnClose
 {
     ~OnClose()
@@ -80,6 +80,19 @@ void IBR_Debug::RenderUI()
         ImGui::LogToClipboard();
         ImGui::LogText(_CALL_CMD IBR_Inst_Project.GetText(Ext).c_str());
         ImGui::LogFinish();
+    }
+
+    if (ImGui::Button(u8"å‰ªè´´æ¿ -> JSON"))
+    {
+        auto Clip = ImGui::GetClipboardText();
+        IBB_ClipBoardData CB;
+        if (CB.SetString(Clip))
+        {
+            auto J = CB.ToJson();
+            ImGui::LogToClipboard();
+            ImGui::LogText(J.GetObj().PrintData().c_str());
+            ImGui::LogFinish();
+        }
     }
 
     ImGui::Text("IsBgDragging = %s", IBR_WorkSpace::IsBgDragging ? "true" : "false");
@@ -173,7 +186,7 @@ void IBR_Debug::RenderUIOnce()
     if (EnableLog)
     {
         GlobalLog.AddLog_CurTime(false);
-        GlobalLog.AddLog("µ¼³öÎÄ±¾£º\"");
+        GlobalLog.AddLog("å¯¼å‡ºæ–‡æœ¬ï¼š\"");
         GlobalLog.AddLog(UTF8toMBCS(s).c_str(),false);
         GlobalLog.AddLog("\"");
     }
@@ -187,7 +200,7 @@ void IBR_Debug::RenderUIOnce()
     if (EnableLog)
     {
         GlobalLog.AddLog_CurTime(false);
-        GlobalLog.AddLog("µ¼³öÎÄ±¾II£º\"");
+        GlobalLog.AddLog("å¯¼å‡ºæ–‡æœ¬IIï¼š\"");
         GlobalLog.AddLog(UTF8toMBCS(s).c_str(), false);
         GlobalLog.AddLog("\"");
     }
@@ -213,7 +226,7 @@ void IBR_Debug::DebugLoad()
         p.InOther = false;
         p.LastMoving = false;
         p.id = ++i;
-        p.ID = u8"²âÊÔ_" + RandStr(5);
+        p.ID = u8"æµ‹è¯•_" + RandStr(5);
     }
 }
 

@@ -1,4 +1,4 @@
-#pragma once
+Ôªø#pragma once
 
 #include "FromEngine/Include.h"
 #include "cjson/cJSON.h"
@@ -36,8 +36,8 @@ struct IBB_VariableList
     std::string GetText(bool ConsiderUpValue, bool FromExport) const;
     void Flatten(IBB_VariableList& Target) const;
 
-    void Read(const ExtFileClass& File);//≤ªπ‹UpValue
-    void Write(const ExtFileClass& File)const;//≤ªπ‹UpValue
+    void Read(const ExtFileClass& File);//‰∏çÁÆ°UpValue
+    void Write(const ExtFileClass& File)const;//‰∏çÁÆ°UpValue
 };
 
 struct IBB_Section_Desc
@@ -45,6 +45,9 @@ struct IBB_Section_Desc
     std::string Ini, Sec;
     bool operator==(const IBB_Section_Desc& Ano) const { return Ini == Ano.Ini && Sec == Ano.Sec; }
     IBB_Section_Desc() = default;
+    IBB_Section_Desc(const IBB_Section_Desc&) = default;
+    IBB_Section_Desc& operator=(const IBB_Section_Desc&) = default;
+    IBB_Section_Desc(IBB_Section_Desc&& r) noexcept : Ini(std::move(r.Ini)), Sec(std::move(r.Sec)) {}
     IBB_Section_Desc(const std::string& i, const std::string& s) : Ini(i), Sec(s) {};
     std::string GetText() const;
 };

@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "IBB_Setting.h"
 #include "IBB_Project.h"
@@ -63,6 +63,8 @@ struct IBF_Project
 
     void Load(const IBS_Project&);
     void Save(IBS_Project&);
+
+    void Clear();
 
     _TEXT_UTF8 std::string GetText(bool PrintExtraData) const;
 };

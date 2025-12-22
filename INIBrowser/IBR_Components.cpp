@@ -1,4 +1,4 @@
-#include "IBRender.h"
+Ôªø#include "IBRender.h"
 #include "IBFront.h"
 #include "Global.h"
 #include "FromEngine/RFBump.h"
@@ -57,7 +57,7 @@ namespace IBR_DynamicData
             }
             DynamicData.Close();
         }
-        else //»± °÷µ
+        else //Áº∫ÁúÅÂÄº
         {
             ScrX = DefaultResX;
             ScrY = DefaultResY;
@@ -200,6 +200,7 @@ namespace IBR_PopupManager
 
     struct JsonParseErrorPopup
     {
+        std::string Title;
         std::string ErrorStr;
         std::string Info;
     };
@@ -209,9 +210,10 @@ namespace IBR_PopupManager
     {
         if (JsonParseErrorListShown < JsonParseErrorList.size())
         {
+            auto& _W = JsonParseErrorList[JsonParseErrorListShown];
             SetCurrentPopup(
                 std::move(Popup{}
-                    .CreateModal(loc("GUI_JsonParseError"), true, []() { {
+                    .CreateModal(_W.Title, true, []() { {
                             JsonParseErrorListShown++;
                             IBRF_CoreBump.SendToR({ [] {ShowJsonParseErrorImpl(); } });
                         }})
@@ -226,10 +228,10 @@ namespace IBR_PopupManager
                         for (auto L : V)
                         {
                             auto R = std::string_view{ L.data(), L.size() };
-                            if (R.find(u8"°æ≥ˆ¥ÌŒª÷√°ø") != R.npos)
+                            if (R.find(u8"„ÄêÂá∫Èîô‰ΩçÁΩÆ„Äë") != R.npos)
                             {
                                 TgIdx = Idx;
-                                ImGui::Text(u8"µ⁄%d––£∫", Idx);
+                                ImGui::Text(u8"Á¨¨%dË°åÔºö", Idx);
                                 break;
                             }
                             Idx++;
@@ -248,17 +250,30 @@ namespace IBR_PopupManager
         }
         else ClearPopupDelayed();
     }
-    void AddJsonParseErrorPopup(std::string&& ErrorStr, const std::string& Info)
+    void AddErrorPopup(std::string&& ErrorStr, const std::string& Title, const std::string& Info, const std::wstring& LogFormat)
     {
         if (ErrorStr.empty())return;
-        if(JsonParseErrorList.empty())IBRF_CoreBump.SendToR({ [] {ShowJsonParseErrorImpl(); } });
+        if (JsonParseErrorListShown != 0)
+        {
+            JsonParseErrorList.erase(JsonParseErrorList.begin(), JsonParseErrorList.begin() + JsonParseErrorListShown);
+            JsonParseErrorListShown = 0;
+        }
+        if (JsonParseErrorListShown == JsonParseErrorList.size())IBRF_CoreBump.SendToR({ [] {ShowJsonParseErrorImpl(); } });
         if (EnableLog)
         {
             GlobalLog.AddLog_CurTime(false);
             auto V = UTF8toUnicode(ErrorStr);
-            GlobalLog.AddLog(std::vformat(locw("Log_JsonParseErrorInfo"), std::make_wformat_args(V)));
+            GlobalLog.AddLog(std::vformat(LogFormat, std::make_wformat_args(V)));
         }
-        JsonParseErrorList.push_back({ std::move(ErrorStr), Info });
+        JsonParseErrorList.push_back({ Title, std::move(ErrorStr), Info });
+    }
+    void AddJsonParseErrorPopup(std::string&& ErrorStr, const std::string& Info)
+    {
+        AddErrorPopup(std::move(ErrorStr), loc("GUI_JsonParseError"), Info, locw("Log_JsonParseErrorInfo"));
+    }
+    void AddModuleParseErrorPopup(std::string&& ErrorStr, const std::string& Info)
+    {
+        AddErrorPopup(std::move(ErrorStr), loc("GUI_ModuleParseError"), Info, locw("Log_ModuleParseErrorInfo"));
     }
 
     bool IsMouseOnPopup()
@@ -270,6 +285,8 @@ namespace IBR_PopupManager
     };
     void ClearPopupDelayed()
     {
+        JsonParseErrorList.clear();
+        JsonParseErrorListShown = 0;
         IBRF_CoreBump.SendToR({ [] {IBR_PopupManager::ClearCurrentPopup(); } });
     }
     Popup& Popup::Create(const _TEXT_UTF8 std::string& title)
@@ -315,7 +332,7 @@ namespace IBR_PopupManager
         HasOwnStyle = true;
         return *this;
     }
-    Popup& Popup::PushTextPrev(const _TEXT_UTF8 std::string& Text)//TODO:”≈ªØ£¨ ‘Õºø≥µÙprev
+    Popup& Popup::PushTextPrev(const _TEXT_UTF8 std::string& Text)//TODO:‰ºòÂåñÔºåËØïÂõæÁ†çÊéâprev
     {
         StdMessage ShowPrev{ std::move(Show) };
         Show = [=]() {ImGui::TextWrapped(Text.c_str()); ShowPrev(); };
@@ -630,7 +647,7 @@ namespace IBR_HintManager
                 Hint.push_back(str);
             }
             GetHint.Close();
-            if (!Hint.empty())Hint.erase(Hint.begin());//µ⁄“ª∏ˆ≤ª“™£°
+            if (!Hint.empty())Hint.erase(Hint.begin());//Á¨¨‰∏Ä‰∏™‰∏çË¶ÅÔºÅ
             if (EnableLog)
             {
                 GlobalLog.AddLog_CurTime(false);
@@ -672,7 +689,7 @@ namespace IBR_HintManager
         /*
         if (_TempSelectLink::IsInLink())
         {
-            const char* Tx = u8"◊Ûº¸µ•ª˜—°‘Ò£¨”“º¸»°œ˚";
+            const char* Tx = u8"Â∑¶ÈîÆÂçïÂáªÈÄâÊã©ÔºåÂè≥ÈîÆÂèñÊ∂à";
             DList->AddText({ FontHeight * 0.8f,(float)IBR_UICondition::CurrentScreenHeight - FontHeight * 1.25f },
                 ImColor(ImGui::GetStyleColorVec4(ImGuiCol_Text)),
                 Tx, Tx + strlen(Tx));
@@ -795,6 +812,7 @@ namespace IBR_SelectMode
             for (auto& [id, ds] : IBR_Inst_Project.IBR_SectionMap)
             {
                 if (!IBR_Inst_Project.GetSectionFromID(id).HasBack())continue;
+                if (ds.IsIncluded())continue;
                 ImRect EqRect{ ds.EqPos,ds.EqPos + ds.EqSize };
                 if (SelectRect.Contains(EqRect))
                 {
@@ -815,6 +833,7 @@ namespace IBR_SelectMode
                 auto R = IBR_Inst_Project.GetSectionFromID(id);
                 auto ds = R.GetSectionData();
                 if (!ds || !R.HasBack())continue;
+                if (ds->IsIncluded())continue;
                 auto ReUL = IBR_WorkSpace::EqPosToRePos(ds->EqPos), ReDR = IBR_WorkSpace::EqPosToRePos(ds->EqPos + ds->EqSize);
                 DList->AddRectFilled(ReUL, ReDR, IBR_Color::ForegroundCoverColor);
             }

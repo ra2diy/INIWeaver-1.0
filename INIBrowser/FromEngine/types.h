@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 typedef unsigned       hash_t;
 const int MAX_LINE_LENGTH = 10000;
@@ -9,3 +9,4 @@ typedef void (*callback_t)();
 
 #define _TEXT_UTF8
 #define _TEXT_ANSI
+#define _TEXT_WIDE

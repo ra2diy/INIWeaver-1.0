@@ -1,4 +1,4 @@
-
+ï»¿
 #include "IBRender.h"
 #include "IBFront.h"
 #include "Global.h"
@@ -101,7 +101,7 @@ void IBR_IniLine::CloseInput()
 }
 
 
-extern const char* LinkGroup_IniName;
+extern const char* Internal_IniName;
 bool InRectangle(ImVec2 P, ImVec2 UL, ImVec2 DR)
 {
     std::tie(UL.x, DR.x) = std::minmax(UL.x, DR.x);
@@ -133,19 +133,50 @@ dImVec2& operator/=(dImVec2& a, const double b) { a.x /= b; a.y /= b; return a; 
 dImVec2& operator*=(dImVec2& a, const double b) { a.x *= b; a.y *= b; return a; }
 
 
-
+IBR_SectionData::~IBR_SectionData()
+{
+    IncludingModules.clear();
+}
 
 IBR_SectionData::IBR_SectionData() :
-    EqPos(IBR_FullView::EqCenter), EqSize({ (float)IBG_GetSetting().FontSize * 15,(float)IBG_GetSetting().FontSize * 8 }) {}
+    EqPos(IBR_FullView::EqCenter),
+    EqSize({ (float)IBG_GetSetting().FontSize * 15,(float)IBG_GetSetting().FontSize * 8 }),
+    BackPtr_Cached(nullptr),
+    ReWindowUL(IBR_RealCenter::Center)
+{}
 IBR_SectionData::IBR_SectionData(const IBB_Section_Desc& D) :
-    Desc(D), EqPos(IBR_FullView::EqCenter), EqSize({ (float)IBG_GetSetting().FontSize * 15,(float)IBG_GetSetting().FontSize * 8 }) {}
+    Desc(D),
+    EqPos(IBR_FullView::EqCenter),
+    EqSize({ (float)IBG_GetSetting().FontSize * 15,(float)IBG_GetSetting().FontSize * 8 }),
+    BackPtr_Cached(nullptr),
+    ReWindowUL(IBR_RealCenter::Center)
+{}
 IBR_SectionData::IBR_SectionData(const IBB_Section_Desc& D, std::string&& Name) :
-    DisplayName(std::move(Name)), Desc(D), EqPos(IBR_FullView::EqCenter), EqSize({ (float)IBG_GetSetting().FontSize * 15,(float)IBG_GetSetting().FontSize * 8 })
+    DisplayName(std::move(Name)),
+    Desc(D),
+    EqPos(IBR_FullView::EqCenter),
+    EqSize({ (float)IBG_GetSetting().FontSize * 15,(float)IBG_GetSetting().FontSize * 8 }),
+    BackPtr_Cached(nullptr),
+    ReWindowUL(IBR_RealCenter::Center)
 {
     
 }
 
+IBR_SectionData::IBR_SectionData(IBR_SectionData&& rhs)
+noexcept :
+    DisplayName(std::move(rhs.DisplayName)),
+    Desc(std::move(rhs.Desc)),
+    BackPtr_Cached(nullptr),
+    EqPos(rhs.EqPos),
+    EqSize(rhs.EqSize),
+    ReWindowUL(rhs.ReWindowUL),
+    IncludingModules(std::move(rhs.IncludingModules)),
+    IncludedByModule(rhs.IncludedByModule),
+    IncludedByModule_TmpDesc(std::move(rhs.IncludedByModule_TmpDesc)),
+    IncludingModules_TmpDesc(std::move(rhs.IncludingModules_TmpDesc))
+{
 
+}
 
 namespace IBR_RealCenter
 {
@@ -312,12 +343,19 @@ namespace IBR_EditFrame
         }
     }
 
+    void ActivateAndEdit(IBR_Project::id_t id, bool TextMode)
+    {
+        SetActive(id);
+        if (TextMode)SwitchToText();
+        IBR_Inst_Menu.ChooseMenu(MenuItemID_EDIT);
+    }
+
     void SwitchToText()
     {
         auto rsc = CurSection.GetBack();
         if (rsc)
         {
-            strcpy(EditBuf, rsc->GetText(false).c_str());
+            strcpy(EditBuf, rsc->GetTextForEdit().c_str());
             TextEditError = false;
         }
         else TextEditError = true;
@@ -440,8 +478,8 @@ namespace IBR_EditFrame
 
         for (auto& [K, V] : EditLines)
         {
-            if (K == "__INHERIT__")continue;
-            if (ImGui::RadioButton(("##" + K).c_str(), !pbk->OnShow[K].empty()))
+            if (K == InheritKeyName)continue;
+            if (ImGui::RadioButton(("##" + K).c_str(), !pbk->OnShow[K].empty(), GlobalNodeStyle))
             {
                 IBG_Undo.SomethingShouldBeHere();
                 if (pbk->OnShow[K].empty())pbk->OnShow[K] = EmptyOnShowDesc;
@@ -567,7 +605,7 @@ namespace IBR_Color
 
     namespace Light
     {
-        ImColor BackgroundColor(247, 236, 153, 255);//±³¾°É«
+        ImColor BackgroundColor(247, 236, 153, 255);//èƒŒæ™¯è‰²
 
         ImColor FocusWindowColor(0, 100, 255, 255);
 
@@ -595,7 +633,7 @@ namespace IBR_Color
 
     namespace Dark
     {
-        ImColor BackgroundColor(66, 89, 92, 255);//±³¾°É«
+        ImColor BackgroundColor(66, 89, 92, 255);//èƒŒæ™¯è‰²
 
         ImColor ViewFocusWindowColor(255, 240, 0, 255);
 

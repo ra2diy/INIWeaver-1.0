@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #include "IBG_Ini.h"
 
 class ClipWriteStream
@@ -7,7 +7,7 @@ public:
     std::vector<BYTE> Buffer;
 
     template<typename T>
-    size_t Push(const T& Data, size_t ExtBytes)//·µ»ØĞ´ÈëµÄÍ·Æ«ÒÆÁ¿
+    size_t Push(const T& Data, size_t ExtBytes)//è¿”å›å†™å…¥çš„å¤´åç§»é‡
     {
         auto pData = (const BYTE*)&Data;
         auto sz = Buffer.size();
@@ -16,7 +16,7 @@ public:
         return sz;
     }
 
-    size_t PushBytes(const BYTE* Data, size_t Count)//·µ»ØĞ´ÈëµÄÍ·Æ«ÒÆÁ¿
+    size_t PushBytes(const BYTE* Data, size_t Count)//è¿”å›å†™å…¥çš„å¤´åç§»é‡
     {
         auto sz = Buffer.size();
         Buffer.resize(sz + Count);
@@ -51,6 +51,7 @@ private:
     std::vector<BYTE> Buffer;
     LPBYTE Begin;
     LPBYTE Cursor;
+    int ClipFormatVersion;
 public:
     void Init(LPBYTE begin)
     {
@@ -91,6 +92,9 @@ public:
         Buffer = Vec;
         Init(Buffer.data());
     }
+
+    void SetVersion(int v) { ClipFormatVersion = v; }
+    bool VersionAtLeast(int v) const { return ClipFormatVersion >= v; }
 };
 
 struct PairClipString
@@ -112,6 +116,7 @@ struct ModuleClipData
     bool IsComment;
     bool Ignore;
     bool FromClipBoard;
+    bool CollapsedInComposed;
     ImVec2 EqSize;
     ImVec2 EqDelta;
     PairClipString Desc;
@@ -123,10 +128,14 @@ struct ModuleClipData
     std::vector<IniToken> Lines;//STD Module Line
     std::vector<PairClipString> LinkGroup_LinkTo;
     std::vector<PairClipString> VarList;
+    PairClipString IncludedBySection;
+    std::vector<PairClipString> IncludingSections;
 
     void Replace(const std::string& Parameter, const std::string& Argument);
-    void Load(const std::string_view Str);
+    void Load(const std::string_view Str, int ClipFormatVersion);
+    bool NeedtoMangle() const;
     std::string Save() const;
+    JsonFile ToJson() const;
 };
 
 ClipWriteStream& operator<<(ClipWriteStream& stm, bool v);
@@ -173,6 +182,9 @@ ClipReadStream& operator>>(ClipReadStream& stm, ModuleClipData& v);
 struct IBB_Section;
 struct IBB_Section_Desc;
 
+void MangleModules(std::vector<ModuleClipData>& Modules);
+JsonFile ModulesToJson(const std::vector<ModuleClipData>& Modules);
+
 struct IBB_ClipBoardData
 {
     uint32_t ProjectRID;
@@ -183,13 +195,24 @@ struct IBB_ClipBoardData
     void GenerateAll(bool UsePosAsDelta, bool FromClipBoard);
     std::string GetString() const;
     std::vector<BYTE> GetStream() const;
-    bool SetString(const std::string_view Str);
-    bool SetStream(const std::vector<BYTE>& Vec);
+    //Fill ErrorContext Before Calling
+    bool SetString(const std::string_view Str, int ClipFormatVersion = INT_MAX);
+    //Fill ErrorContext Before Calling
+    bool SetStream(const std::vector<BYTE>& Vec, int ClipFormatVersion);
+    JsonFile ToJson() const;
+
+    struct ErrorCtx
+    {
+        std::wstring ModulePath;
+        std::string _TEXT_UTF8 ModuleName;
+    };
+    static ErrorCtx ErrorContext;
 };
 
 struct IBB_ModuleAlt
 {
     bool Available{ false };
+    bool FromClipBoard{ false };
     std::string Name;
     std::string DescShort;
     std::string DescLong;

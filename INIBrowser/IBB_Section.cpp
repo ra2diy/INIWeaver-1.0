@@ -1,4 +1,4 @@
-
+ï»¿
 #include "FromEngine/Include.h"
 #include "FromEngine/global_tool_func.h"
 
@@ -73,8 +73,8 @@ bool IBB_Section::Generate(const ModuleClipData& Clip)
             Inherit = Clip.Inherit;
             IBB_DefaultRegType::GenerateDLK(Clip.DefaultLinkKey, Register, DefaultLinkKey);
             IBB_VariableList VL;
-            VL.Value["__INHERIT__"] = Inherit;
-            OnShow["__INHERIT__"] = "\n";
+            VL.Value[InheritKeyName] = Inherit;
+            OnShow[InheritKeyName] = "\n";
             for (auto& L : Clip.Lines)
             {
                 VL.Value[L.Key] = L.Value;
@@ -157,7 +157,7 @@ void IBB_Section::GetClipData(ModuleClipData& Clip)
             {
                 for (auto& [key, lin] : sec.Lines)
                 {
-                    if (key == "__INHERIT__")
+                    if (key == InheritKeyName)
                     {
                         Clip.Inherit = lin.Data->GetStringForExport();
                         continue;
@@ -202,7 +202,7 @@ bool IBB_Section::SetText(const std::vector<IniToken>& Tokens)
 {
     IsLinkGroup = false;
     bool Ret = true;
-    auto l = this->GetLineFromSubSecs("__INHERIT__");
+    auto l = this->GetLineFromSubSecs(InheritKeyName);
     if (l)Inherit = l->Data->GetString();
     SubSecs.clear();
     UnknownLines.Value.clear();
@@ -228,7 +228,7 @@ bool IBB_Section::SetText(const std::vector<IniToken>& Tokens)
         };
 
     IniToken i;
-    i.Key = "__INHERIT__";
+    i.Key = InheritKeyName;
     i.Value = Inherit;
     i.HasDesc = false;
     i.IsSection = false;
@@ -358,6 +358,7 @@ IBB_VariableList IBB_Section::GetSimpleLines() const
     }
     return Ret;
 }
+
 std::string IBB_Section::GetText(bool PrintExtraData, bool FromExport) const
 {
     std::string Text;
@@ -402,6 +403,20 @@ std::string IBB_Section::GetText(bool PrintExtraData, bool FromExport) const
         }
     }
     return Text;
+}
+
+std::string IBB_Section::GetTextForEdit() const
+{
+    std::string Ret;
+    if (!Inherit.empty())
+    {
+        Ret += InheritKeyName;
+        Ret += "=";
+        Ret += Inherit;
+        Ret += "\n";
+    }
+    Ret += GetText(false);
+    return Ret;
 }
 
 std::vector<size_t> IBB_Section::GetRegisteredPosition() const
@@ -546,7 +561,7 @@ bool IBB_Section::Generate(const IBB_Section_NameType& Par)
             if (EnableLog)
             {
                 GlobalLogB.AddLog_CurTime(false);
-                GlobalLogB.AddLog((u8"IBB_Section::Generate £º " + loc("Log_GenerateInvalidLines")).c_str());
+                GlobalLogB.AddLog((u8"IBB_Section::Generate ï¼š " + loc("Log_GenerateInvalidLines")).c_str());
             }
             return false;
         }

@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include<cstdio>
 #include<string>
@@ -156,7 +156,7 @@ public:
         WriteData('\0');
         return true;
     }
-    bool ReadLabel(std::string& Str)const//´ı²âÊÔ£¡£¡
+    bool ReadLabel(std::string& Str)const//å¾…æµ‹è¯•ï¼ï¼
     {
         const size_t MaxSize = 65536;
         static char Buf[MaxSize];
@@ -176,20 +176,20 @@ public:
         return Read(&Data, sizeof(T), 1);
     }
     template<typename T>
-    bool WriteVector(const std::vector<T>& Data)const//´ı²âÊÔ£¡£¡
+    bool WriteVector(const std::vector<T>& Data)const//å¾…æµ‹è¯•ï¼ï¼
     {
         if (!WriteData((int64_t)Data.size()))return false;
         return Write(Data.data(), sizeof(T), Data.size());
     }
     template<typename T>
-    bool ReadVector(std::vector<T>& Data)const//´ı²âÊÔ£¡£¡
+    bool ReadVector(std::vector<T>& Data)const//å¾…æµ‹è¯•ï¼ï¼
     {
         int64_t Size;
         if (!ReadData(Size))return false;
         Data.resize((size_t)Size);
         return Read(Data.data(), sizeof(T), (size_t)Size);
     }
-    int WriteVector(const std::vector<std::string>& Data)const//´ı²âÊÔ£¡£¡
+    int WriteVector(const std::vector<std::string>& Data)const//å¾…æµ‹è¯•ï¼ï¼
     {
         if (!WriteData((int64_t)Data.size()))return 0;
         int Ret = 0;
@@ -200,7 +200,7 @@ public:
         }
         return Ret;
     }
-    int ReadVector(std::vector<std::string>& Data)const//´ı²âÊÔ£¡£¡
+    int ReadVector(std::vector<std::string>& Data)const//å¾…æµ‹è¯•ï¼ï¼
     {
         int64_t Size;
         if (!ReadData(Size))return 0;
@@ -214,7 +214,7 @@ public:
         return Ret;
     }
     template<typename T>
-    int WriteVector(const std::vector<T>& Data, const std::function<bool(const ExtFileClass&, const T&)>& Proc)const//´ı²âÊÔ£¡£¡
+    int WriteVector(const std::vector<T>& Data, const std::function<bool(const ExtFileClass&, const T&)>& Proc)const//å¾…æµ‹è¯•ï¼ï¼
     {
         if (!WriteData((int64_t)Data.size()))return 0;
         int Ret = 0;
@@ -226,7 +226,7 @@ public:
         return Ret;
     }
     template<typename T>
-    int WriteVector(std::vector<T>& Data, const std::function<bool(const ExtFileClass&, T&)>& Proc)const//´ı²âÊÔ£¡£¡
+    int WriteVector(std::vector<T>& Data, const std::function<bool(const ExtFileClass&, T&)>& Proc)const//å¾…æµ‹è¯•ï¼ï¼
     {
         if (!WriteData((int64_t)Data.size()))return 0;
         int Ret = 0;
@@ -238,7 +238,7 @@ public:
         return Ret;
     }
     template<typename T>
-    int ReadVector(std::vector<T>& Data, const std::function<bool(const ExtFileClass&, T&)>& Proc)const//´ı²âÊÔ£¡£¡
+    int ReadVector(std::vector<T>& Data, const std::function<bool(const ExtFileClass&, T&)>& Proc)const//å¾…æµ‹è¯•ï¼ï¼
     {
         int64_t Size;
         if (!ReadData(Size))return 0;
@@ -253,6 +253,7 @@ public:
     }
     size_t GetSize()
     {
+        if (!IsOpen)return 0;
         int Cur = Position();
         Seek(0, SEEK_END);
         int Res = Position();

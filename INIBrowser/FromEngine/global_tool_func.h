@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include"types.h"
 #include"..\cjson\cJSON.h"
@@ -31,17 +31,17 @@ T lcm(T a, T b)
 }
 
 
-// ANSI�ַ���ת����Unicode
+// ANSI字符集转换成Unicode
 std::wstring MBCStoUnicode(const std::string& MBCS);
-// UTF-8�ַ���ת����Unicode
+// UTF-8字符集转换成Unicode
 std::wstring UTF8toUnicode(const std::string& UTF8);
-// Unicode�ַ���ת����UTF-8
+// Unicode字符集转换成UTF-8
 std::string UnicodetoUTF8(const std::wstring& Unicode);
-// Unicode�ַ���ת����ANSI
+// Unicode字符集转换成ANSI
 std::string UnicodetoMBCS(const std::wstring& Unicode);
-// ANSI�ַ���ת����UTF-8
+// ANSI字符集转换成UTF-8
 std::string MBCStoUTF8(const std::string& MBCS);
-// UTF-8�ַ���ת����ANSI
+// UTF-8字符集转换成ANSI
 std::string UTF8toMBCS(const std::string& MBCS);
 
 uint64_t GetSysTimeMicros();
@@ -76,6 +76,8 @@ std::string RandStr(int Length);
 std::wstring RandWStr(int Length);
 std::string GenerateModuleTag();
 
+class ExtFileClass;
+std::string GetStringFromFile(ExtFileClass& File);
 std::string GetStringFromFile(const char* FileName);
 std::string GetStringFromFile(const wchar_t* FileName);
 
@@ -92,6 +94,25 @@ public:
     void ReadFromFile(const char* FileName);
     void ReadFromFile(const wchar_t* FileName);
 };
+
+enum class StrBoolType :size_t
+{
+    Str_true_false,
+    Str_True_False,
+    Str_TRUE_FALSE,
+    Str_yes_no,
+    Str_Yes_No,
+    Str_YES_NO,
+    Str_t_f,
+    Str_T_F,
+    Str_y_n,
+    Str_Y_N,
+    Str_1_0
+};
+std::string StrBoolImpl(bool Val, StrBoolType Type);
+const char* CStrBoolImpl(bool Val, StrBoolType Type);
+
+class JsonFile;
 
 class JsonObject
 {
@@ -185,22 +206,89 @@ public:
     std::unordered_map<std::string, std::string> GetMapString() const;
 
     std::string PrintData() const;
+
+    JsonObject CreateObjectItem(const std::string& Str) const;
+    void AddObjectItem(const std::string& Str, JsonObject Child, bool NeedsCopy) const;
+    void AddObjectItem(const std::string& Str, JsonFile&& File) const;
+    void AddNull(const std::string& Str) const;
+    void AddInt(const std::string& Str, int Val) const;
+    void AddDouble(const std::string& Str, double Val) const;
+    void AddString(const std::string& Str, const std::string& Val) const;
+    void AddBool(const std::string& Str, bool Val) const;
+    void AddStrBool(const std::string& Str, bool Val, StrBoolType Type) const;
+
+    //返回原来的Obj
+    JsonFile SwapNull() const;
+    JsonFile SwapInt(int Val) const;
+    JsonFile SwapDouble(double Val) const;
+    JsonFile SwapString(const std::string& Val) const;
+    JsonFile SwapBool(bool Val) const;
+    JsonFile SwapStrBool(bool Val, StrBoolType Type) const;
+    JsonFile CopyAndSwap(JsonObject Obj, bool Recurse) const;
+    JsonFile RedirectAndSwap(JsonObject Obj);
+    void SwapObject(JsonObject Obj) const;
+
+    //给非空的Object
+    void SetNull() const;
+    void SetInt(int Val) const;
+    void SetDouble(double Val) const;
+    void SetString(const std::string& Val) const;
+    void SetBool(bool Val) const;
+    void SetStrBool(bool Val, StrBoolType Type) const;
+    void CopyObject(JsonObject Obj, bool Recurse) const;
+    void RedirectObject(JsonObject Obj);
+    void SetObject();
+
+    //给空节点的非const函数
+    void CreateNull();
+    void CreateInt(int Val);
+    void CreateDouble(double Val);
+    void CreateString(const std::string& Val);
+    void CreateBool(bool Val);
+    void CreateStrBool(bool Val, StrBoolType Type);
+    void CreateCopy(JsonObject Obj, bool Recurse);
+    void CreateObject();
+
+    // 不知道是否为空时请调用以下函数 
+    void SetOrCreateNull();
+    void SetOrCreateInt(int Val);
+    void SetOrCreateDouble(double Val);
+    void SetOrCreateString(const std::string& Val);
+    void SetOrCreateBool(bool Val);
+    void SetOrCreateStrBool(bool Val, StrBoolType Type);
+    void SetOrCreateCopy(JsonObject Obj, bool Recurse);
+    void SetOrCreateObject();
+
+    JsonFile DetachObjectItem(const std::string& Str);
+    JsonFile DetachArrayItem(int Index);
+    void DeleteObjectItem(const std::string& Str) { cJSON_DeleteItemFromObject(Object, Str.c_str()); }
+    void DeleteArrayItem(int Index) { cJSON_DeleteItemFromArray(Object, Index); }
+
+    //改变当前Object，合入的Json本身不变，数据仅复制
+    //不需要可用性检查
+    void Merge(JsonObject Obj);
 };
 
 class JsonFile
 {
 private:
     cJSON* File{ nullptr };
-    JsonFile(cJSON* _F) { File = _F; }
 public:
+    JsonFile(cJSON* _F) { File = _F; }
     JsonFile() : File(nullptr) {}
     JsonFile(JsonObject Obj) { File = Obj.GetRaw(); }
     ~JsonFile() { if (File != nullptr)cJSON_Delete(File); }
+    JsonFile(const JsonFile&) = delete;
+    JsonFile& operator=(const JsonFile&) = delete;
+    JsonFile(JsonFile&& r) noexcept : File(r.File) { r.File = nullptr; }
 
-    operator JsonObject() const { return JsonObject(File); }
-    JsonObject GetObj() const { return JsonObject(File); }
+
+    JsonObject GetObj() { if (!File) { File = cJSON_CreateNull(); } return JsonObject(File); }
+    operator JsonObject() { return GetObj(); }
+    
 
     cJSON* GetRaw() const { return File; }
+    cJSON* Release() { auto _F = File; File = nullptr; return _F; }
 
     bool Available() const { return File != nullptr; }
     JsonFile Duplicate(bool Recurse) const { return cJSON_Duplicate(File, Recurse); }
@@ -226,6 +314,7 @@ bool RegexNotFull_Throw(const std::string& Str, const std::string& Regex);
 bool RegexNotNone_Nothrow(const std::string& Str, const std::string& Regex) throw();
 bool RegexNotNone_Throw(const std::string& Str, const std::string& Regex);
 
+JsonFile GetArrayOfObjects(std::vector<JsonFile>&&);
 
 #define _FAKE_DWORD unsigned long
 bool IBG_SuspendThread(_FAKE_DWORD ThreadID);

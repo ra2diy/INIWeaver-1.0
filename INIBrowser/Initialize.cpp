@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #define IDI_ICON1 101
 #define DllLoadFunc(Fn) (Fn=(decltype(Fn))GetProcAddress(TElib,#Fn))
@@ -23,14 +23,15 @@ namespace Initialize
 
     void glfw_error_callback(int error, const char* description)
     {
-        auto gle = std::vformat(loc("Error_GlfwErrorText"), std::make_format_args(error, description));
+        const auto descw = UTF8toUnicode(description);
+        auto gle = std::vformat(locw("Error_GlfwErrorText"), std::make_wformat_args(error, descw));
         if (EnableLog)
         {
             GlobalLog.AddLog_CurTime(false);
-            GlobalLog.AddLog(gle.c_str());
+            GlobalLog.AddLog(gle);
         }
         MessageBoxW(NULL,
-            UTF8toUnicode(gle).c_str(),
+            gle.c_str(),
             _AppNameW, MB_ICONERROR);
     }
 
@@ -41,54 +42,13 @@ namespace Initialize
         return true;
     }
 
-    int Initialize_Stage_II()
-    {
-        using namespace PreLink;
-
-        TEMPLOG("glfwSetErrorCallback(glfw_error_callback);");
-        glfwSetErrorCallback(glfw_error_callback);
-
-        TEMPLOG("if (!glfwInit())return 1;");
-        if (!glfwInit())return 1;
-
-        TEMPLOG("glfwWindowHint(GLFW_VISIBLE, GL_FALSE);");
-        glfwWindowHint(GLFW_VISIBLE, GL_FALSE);
-
-        TEMPLOG("window = glfwCreateWindow(ScrX, ScrY, _AppName, NULL, NULL);");
-        window = glfwCreateWindow(ScrX, ScrY, _AppName, NULL, NULL);
-
-        TEMPLOG("MainWindowHandle = glfwGetWin32Window(window);");
-        MainWindowHandle = glfwGetWin32Window(window);
-        //glfwHideWindow(window);
-
-        TEMPLOG("SetClassLongW(MainWindowHandle, GCL_HICON, (LONG)LoadIcon(hInst, MAKEINTRESOURCE(IDI_ICON1)));");
-        SetClassLongW(MainWindowHandle, GCL_HICON, (LONG)LoadIcon(hInst, MAKEINTRESOURCE(IDI_ICON1)));
-        //ShowWindow(MainWindowHandle, SW_HIDE);
-
-        TEMPLOG("if (window == NULL)return 1;");
-        if (window == NULL)return 1;
-
-        TEMPLOG("glfwMakeContextCurrent(window);");
-        glfwMakeContextCurrent(window);
-
-        TEMPLOG("glfwSwapInterval(1); ");
-        glfwSwapInterval(1); // Enable vsync
-
-        if (EnableLog)
-        {
-            GlobalLog.AddLog_CurTime(false);
-            GlobalLog.AddLog(locc("Log_OpenWindow"));
-        }
-        return 0;
-    }
-
     void InitConfigJson()
     {
         IBR_PopupManager::AddJsonParseErrorPopup(Cfg.ParseFromFileChecked(".\\Resources\\config.json", loc("Error_JsonParseErrorPos"), nullptr)
             , UnicodetoUTF8(std::vformat(locw("Error_JsonSyntaxError"), std::make_wformat_args(L"Config.json"))));
         if (!Cfg.Available())
         {
-            //MessageBoxA(NULL, "config.json ��ȡʧ�ܣ�", AppNameA, MB_OK);
+            //MessageBoxA(NULL, "config.json 读取失败！", AppNameA, MB_OK);
             FontPath.clear();
         }
         else
@@ -101,6 +61,12 @@ namespace Initialize
 
             S = Obj.GetObjectItem("StyleDark");
             if (S.Available())IBR_Color::LoadDark(S);
+
+            auto NodeStyleStr = Obj.ItemStringOr("NodeStyle", "Circle");
+            if (NodeStyleStr == "Circle")GlobalNodeStyle = ImGuiRadioButtonFlags_Circle;
+            else if (NodeStyleStr == "Rounded")GlobalNodeStyle = ImGuiRadioButtonFlags_RoundedSquare;
+            else if (NodeStyleStr == "Square")GlobalNodeStyle = ImGuiRadioButtonFlags_Square;
+            else GlobalNodeStyle = ImGuiRadioButtonFlags_Circle;
         }
         auto A0 = UTF8toUnicode(FontPath);
         auto Fin = IBR_Font::SearchFont(A0);
@@ -147,18 +113,6 @@ namespace Initialize
             exit(0);
         }
         //MessageBoxW(NULL, Fin.c_str(), L"SearchFont", MB_OK);
-    }
-
-    void Initialize_Stage_III()
-    {
-        TEMPLOG(" std::thread FrontThr(IBF_Thr_FrontLoop);");
-        std::thread FrontThr(IBF_Thr_FrontLoop);
-        TEMPLOG(" FrontThr.detach();");
-        FrontThr.detach();
-        TEMPLOG("std::thread SaveThr(IBS_Thr_SaveLoop);");
-        std::thread SaveThr(IBS_Thr_SaveLoop);
-        TEMPLOG("SaveThr.detach();");
-        SaveThr.detach();
     }
 
     void InitializeHotKeys()
@@ -216,147 +170,7 @@ namespace Initialize
             });
     }
 
-    void Initialize_Stage_IV()
-    {
-        using namespace PreLink;
 
-        TEMPLOG("IBR_FullView::ViewSize = { FontHeight * 12.0f, FontHeight * 12.0f };");
-        IBR_FullView::ViewSize = { FontHeight * 12.0f, FontHeight * 12.0f };
-
-        TEMPLOG("IBR_Inst_Setting.SetSettingName(SettingFileName);");
-        IBR_Inst_Setting.SetSettingName(SettingFileName);
-
-        TEMPLOG("IBR_Inst_Setting.CallReadSetting();");
-        IBR_Inst_Setting.CallReadSetting();
-
-        std::string EncodingStr;//MBCS Unicode UTF8
-
-        TEMPLOG("IBR_Font::BuildFontQuery();");
-        IBR_Font::BuildFontQuery();
-
-        TEMPLOG(" InitConfigJson();");
-        InitConfigJson();
-
-        TEMPLOG("IBR_HintManager::Load();");
-        IBR_HintManager::Load();
-
-        // Setup Dear ImGui context
-        IMGUI_CHECKVERSION();
-        TEMPLOG("ImGui::CreateContext();");
-        ImGui::CreateContext();
-        ImGui::GetIO().IniFilename = NULL;
-        ImGui::GetIO().LogFilename = NULL;
-        //io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-        //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
-
-        // Setup Dear ImGui style
-        //ImGui::StyleColorsDark();
-        //ImGui::StyleColorsClassic();
-        //ImGui::StyleColorsLight();
-
-        TEMPLOG("IBR_RecentManager::Load();");
-        IBR_RecentManager::Load();
-        if (EnableLog)
-        {
-            GlobalLog.AddLog_CurTime(false);
-            GlobalLog.AddLog(std::vformat(locw("Log_LoadRecent"), std::make_wformat_args(L".\\Resources\\recent.dat")));
-        }
-
-        ImGuiIO& io = ImGui::GetIO();
-        ExtFileClass GetHint;
-
-
-        if (GetHint.Open(".\\Resources\\load.txt", "rb"))
-        {
-            ImFontGlyphRangesBuilder myGlyph;
-
-            ImWchar base_ranges[] =
-            {
-                0x0020, 0x0FFF, // Basic Supplement
-                0x2000, 0x206F, // General Punctuation
-                0x3000, 0x30FF, // CJK Symbols and Punctuations, Hiragana, Katakana
-                0x31F0, 0x31FF, // Katakana Phonetic Extensions
-                0xFF00, 0xFFEF, // Half-width characters
-                0xFFFD, 0xFFFD, // Invalid
-                0
-            };
-            unsigned char* charBuf;
-            GetHint.Seek(0, SEEK_END);
-            int Len = GetHint.Position();
-            charBuf = new unsigned char[Len + 1]();
-            GetHint.Seek(0, SEEK_SET);
-            GetHint.Read(charBuf, 1, Len);
-            GetHint.Close();
-            charBuf[Len] = 0;
-            myGlyph.AddRanges(base_ranges);
-            myGlyph.AddText((const char*)charBuf);
-            myGlyph.BuildRanges(&myRange);
-            delete[]charBuf;
-            //Sleep(12000);
-            if (EnableLog)
-            {
-                GlobalLog.AddLog_CurTime(false);
-                GlobalLog.AddLog(std::vformat(locw("Log_LoadCharList"), std::make_wformat_args(L".\\Resources\\load.txt")));
-            }
-
-            //0x4e00, 0x9FAF, // CJK Ideograms
-            //font = io.Fonts->AddFontFromFileTTF(FontPath.c_str(), (float)FontHeight, NULL, LoadRange.data());
-
-            LoadMyRange = true;
-
-        }
-        else
-        {
-            if (EnableLog)
-            {
-                GlobalLog.AddLog_CurTime(false);
-                GlobalLog.AddLog(std::vformat(locw("Log_LoadCharListFailed"), std::make_wformat_args(L".\\Resources\\load.txt")));
-            }
-
-            LoadMyRange = false;
-            font = io.Fonts->AddFontFromFileTTF(FontPath.c_str(), (float)FontHeight, NULL, io.Fonts->GetGlyphRangesChineseSimplifiedCommon());
-            //font = io.Fonts->AddFontFromFileTTF(FontPath.c_str(), (float)FontHeight, NULL, io.Fonts->GetGlyphRangesChineseFull());
-        }
-
-
-        // Setup Platform/Renderer backends
-        TEMPLOG("ImGui_ImplGlfw_InitForOpenGL(window, true);");
-        ImGui_ImplGlfw_InitForOpenGL(window, true);
-
-        TEMPLOG("ImGui_ImplOpenGL2_Init();");
-        ImGui_ImplOpenGL2_Init();
-
-        TEMPLOG("glfwShowWindow(PreLink::window);");
-        glfwShowWindow(PreLink::window);
-        SetClassLong(MainWindowHandle, GCL_HICON, (LONG)LoadIconW(PreLink::hInst, MAKEINTRESOURCE(IDI_ICON1)));
-        if (EnableLog)
-        {
-            GlobalLog.AddLog_CurTime(false);
-            GlobalLog.AddLog(locc("Log_GlfwShowWindow"));
-        }
-
-        while (!IBR_Inst_Setting.IsReadSettingComplete());
-
-        TEMPLOG("CallInitializeDatabase();");
-        CallInitializeDatabase();
-
-        TEMPLOG("InitializeStyle();");
-        InitializeStyle();
-
-        TEMPLOG("InitializeHotKeys();");
-        InitializeHotKeys();
-
-        TEMPLOG("InitializeFontFile();");
-        InitializeFontFile();
-
-        TEMPLOG("glfwSetDropCallback(PreLink::window, IBR_ProjectManager::OnDropFile);");
-        glfwSetDropCallback(PreLink::window, IBR_ProjectManager::OnDropFile);
-
-        while (!LoadDatabaseComplete);
-
-        TEMPLOG("IBR_ProjectManager::CreateAction();");
-        IBR_ProjectManager::CreateAction();
-    }
 
     void CleanUp()
     {
@@ -560,7 +374,7 @@ namespace Initialize
         RScrX = GetSystemMetrics(SM_CXSCREEN);
         RScrY = GetSystemMetrics(SM_CYSCREEN);
 
-        IBR_DynamicData::Read(1280, 720);//Ĭ�Ϸֱ���
+        IBR_DynamicData::Read(1280, 720);//默认分辨率
         IBR_DynamicData::SetRandom();
     }
 
@@ -636,5 +450,195 @@ namespace Initialize
             return 0;
     }
 
+    int Initialize_Stage_II()
+    {
+        using namespace PreLink;
+
+        TEMPLOG("glfwSetErrorCallback(glfw_error_callback);");
+        glfwSetErrorCallback(glfw_error_callback);
+
+        TEMPLOG("if (!glfwInit())return 1;");
+        if (!glfwInit())return 1;
+
+        TEMPLOG("glfwWindowHint(GLFW_VISIBLE, GL_FALSE);");
+        glfwWindowHint(GLFW_VISIBLE, GL_FALSE);
+
+        TEMPLOG("window = glfwCreateWindow(ScrX, ScrY, _AppName, NULL, NULL);");
+        window = glfwCreateWindow(ScrX, ScrY, _AppName, NULL, NULL);
+
+        TEMPLOG("MainWindowHandle = glfwGetWin32Window(window);");
+        MainWindowHandle = glfwGetWin32Window(window);
+        //glfwHideWindow(window);
+
+        TEMPLOG("SetClassLongW(MainWindowHandle, GCL_HICON, (LONG)LoadIcon(hInst, MAKEINTRESOURCE(IDI_ICON1)));");
+        SetClassLongW(MainWindowHandle, GCL_HICON, (LONG)LoadIcon(hInst, MAKEINTRESOURCE(IDI_ICON1)));
+        //ShowWindow(MainWindowHandle, SW_HIDE);
+
+        TEMPLOG("if (window == NULL)return 1;");
+        if (window == NULL)return 1;
+
+        TEMPLOG("glfwMakeContextCurrent(window);");
+        glfwMakeContextCurrent(window);
+
+        TEMPLOG("glfwSwapInterval(1); ");
+        glfwSwapInterval(1); // Enable vsync
+
+        if (EnableLog)
+        {
+            GlobalLog.AddLog_CurTime(false);
+            GlobalLog.AddLog(locc("Log_OpenWindow"));
+        }
+        return 0;
+    }
+
+    void Initialize_Stage_III()
+    {
+        TEMPLOG(" std::thread FrontThr(IBF_Thr_FrontLoop);");
+        std::thread FrontThr(IBF_Thr_FrontLoop);
+        TEMPLOG(" FrontThr.detach();");
+        FrontThr.detach();
+        TEMPLOG("std::thread SaveThr(IBS_Thr_SaveLoop);");
+        std::thread SaveThr(IBS_Thr_SaveLoop);
+        TEMPLOG("SaveThr.detach();");
+        SaveThr.detach();
+    }
+
+    void Initialize_Stage_IV()
+    {
+        using namespace PreLink;
+
+        IBR_FullView::ViewSize = { FontHeight * 12.0f, FontHeight * 12.0f };
+
+        IBR_Inst_Setting.SetSettingName(SettingFileName);
+
+        IBR_Inst_Setting.CallReadSetting();
+
+        std::string EncodingStr;//MBCS Unicode UTF8
+
+        IBR_Font::BuildFontQuery();
+
+        TEMPLOG(" InitConfigJson();");
+        InitConfigJson();
+
+        TEMPLOG("IBR_HintManager::Load();");
+        IBR_HintManager::Load();
+
+        // Setup Dear ImGui context
+        IMGUI_CHECKVERSION();
+        TEMPLOG("ImGui::CreateContext();");
+        ImGui::CreateContext();
+        ImGui::GetIO().IniFilename = NULL;
+        ImGui::GetIO().LogFilename = NULL;
+        //io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+        //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+
+        // Setup Dear ImGui style
+        //ImGui::StyleColorsDark();
+        //ImGui::StyleColorsClassic();
+        //ImGui::StyleColorsLight();
+
+        TEMPLOG("IBR_RecentManager::Load();");
+        IBR_RecentManager::Load();
+        if (EnableLog)
+        {
+            GlobalLog.AddLog_CurTime(false);
+            GlobalLog.AddLog(std::vformat(locw("Log_LoadRecent"), std::make_wformat_args(L".\\Resources\\recent.dat")));
+        }
+
+        ImGuiIO& io = ImGui::GetIO();
+        ExtFileClass GetHint;
+
+
+        if (GetHint.Open(".\\Resources\\load.txt", "rb"))
+        {
+            ImFontGlyphRangesBuilder myGlyph;
+
+            ImWchar base_ranges[] =
+            {
+                0x0020, 0x0FFF, // Basic Supplement
+                0x2000, 0x206F, // General Punctuation
+                0x3000, 0x30FF, // CJK Symbols and Punctuations, Hiragana, Katakana
+                0x31F0, 0x31FF, // Katakana Phonetic Extensions
+                0xFF00, 0xFFEF, // Half-width characters
+                0xFFFD, 0xFFFD, // Invalid
+                0
+            };
+            unsigned char* charBuf;
+            GetHint.Seek(0, SEEK_END);
+            int Len = GetHint.Position();
+            charBuf = new unsigned char[Len + 1]();
+            GetHint.Seek(0, SEEK_SET);
+            GetHint.Read(charBuf, 1, Len);
+            GetHint.Close();
+            charBuf[Len] = 0;
+            myGlyph.AddRanges(base_ranges);
+            myGlyph.AddText((const char*)charBuf);
+            myGlyph.BuildRanges(&myRange);
+            delete[]charBuf;
+            //Sleep(12000);
+            if (EnableLog)
+            {
+                GlobalLog.AddLog_CurTime(false);
+                GlobalLog.AddLog(std::vformat(locw("Log_LoadCharList"), std::make_wformat_args(L".\\Resources\\load.txt")));
+            }
+
+            //0x4e00, 0x9FAF, // CJK Ideograms
+            //font = io.Fonts->AddFontFromFileTTF(FontPath.c_str(), (float)FontHeight, NULL, LoadRange.data());
+
+            LoadMyRange = true;
+
+        }
+        else
+        {
+            if (EnableLog)
+            {
+                GlobalLog.AddLog_CurTime(false);
+                GlobalLog.AddLog(std::vformat(locw("Log_LoadCharListFailed"), std::make_wformat_args(L".\\Resources\\load.txt")));
+            }
+
+            LoadMyRange = false;
+            font = io.Fonts->AddFontFromFileTTF(FontPath.c_str(), (float)FontHeight, NULL, io.Fonts->GetGlyphRangesChineseSimplifiedCommon());
+            //font = io.Fonts->AddFontFromFileTTF(FontPath.c_str(), (float)FontHeight, NULL, io.Fonts->GetGlyphRangesChineseFull());
+        }
+
+
+        // Setup Platform/Renderer backends
+        TEMPLOG("ImGui_ImplGlfw_InitForOpenGL(window, true);");
+        ImGui_ImplGlfw_InitForOpenGL(window, true);
+
+        TEMPLOG("ImGui_ImplOpenGL2_Init();");
+        ImGui_ImplOpenGL2_Init();
+
+        TEMPLOG("glfwShowWindow(PreLink::window);");
+        glfwShowWindow(PreLink::window);
+        SetClassLong(MainWindowHandle, GCL_HICON, (LONG)LoadIconW(PreLink::hInst, MAKEINTRESOURCE(IDI_ICON1)));
+        if (EnableLog)
+        {
+            GlobalLog.AddLog_CurTime(false);
+            GlobalLog.AddLog(locc("Log_GlfwShowWindow"));
+        }
+
+        while (!IBR_Inst_Setting.IsReadSettingComplete());
+
+        TEMPLOG("CallInitializeDatabase();");
+        CallInitializeDatabase();
+
+        TEMPLOG("InitializeStyle();");
+        InitializeStyle();
+
+        TEMPLOG("InitializeHotKeys();");
+        InitializeHotKeys();
+
+        TEMPLOG("InitializeFontFile();");
+        InitializeFontFile();
+
+        TEMPLOG("glfwSetDropCallback(PreLink::window, IBR_ProjectManager::OnDropFile);");
+        glfwSetDropCallback(PreLink::window, IBR_ProjectManager::OnDropFile);
+
+        while (!LoadDatabaseComplete);
+
+        TEMPLOG("IBR_ProjectManager::CreateAction();");
+        IBR_ProjectManager::CreateAction();
+    }
 }
 

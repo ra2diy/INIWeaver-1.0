@@ -1,4 +1,4 @@
-
+﻿
 #include "IBRender.h"
 #include "IBFront.h"
 #include "Global.h"
@@ -120,10 +120,34 @@ bool _PROJ_CMD_READ IBR_Section::GetClipData(ModuleClipData& Clip, bool UsePosAs
     if (!bk)return false;
     auto dt = GetSectionData();
     if (!dt)return false;
+    if (dt->IsComment)
+    {
+        bk->Comment = dt->CommentEdit.get();
+        bk->CreateAsCommentBlock = true;
+    }
     Clip.DisplayName = dt->DisplayName;
     Clip.EqSize = dt->EqSize;
     Clip.EqDelta = UsePosAsDelta ? dt->EqPos : dt->EqDelta;
     Clip.Ignore = dt->Ignore;
+    Clip.CollapsedInComposed = dt->CollapsedInComposed;
+    if (dt->IsIncluded())
+    {
+        auto D = Root->GetSectionFromID(dt->IncludedByModule).GetDesc();
+        assert(D != nullptr);
+        Clip.IncludedBySection.A = D->Ini;
+        Clip.IncludedBySection.B = D->Sec;
+    }
+    else Clip.IncludedBySection = { "","" };
+    if (dt->IsVirtualBlock())
+    {
+        for (auto id : dt->IncludingModules)
+        {
+            auto D = Root->GetSectionFromID(id).GetDesc();
+            assert(D != nullptr);
+            Clip.IncludingSections.push_back({ D->Ini,D->Sec });
+        }
+    }
+    else Clip.IncludingSections.clear();
     bk->GetClipData(Clip);
     return true;
 }

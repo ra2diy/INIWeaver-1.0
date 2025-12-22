@@ -1,19 +1,19 @@
-
+ï»¿
 
 /***********************************************************************************************
- ***                                 ??????????¡ª¡ªÔ´´úÂë                                    ***
+ ***                                 ??????????â€”â€”æºä»£ç                                     ***
  ***********************************************************************************************
  *                                                                                             *
- *                       ÎÄ¼şÃû : global_tool_func.cpp                                         *
+ *                       æ–‡ä»¶å : global_tool_func.cpp                                         *
  *                                                                                             *
- *                     ±àĞ´Ãûµ¥ : Old Sovok                                                    *
+ *                     ç¼–å†™åå• : Old Sovok                                                    *
  *                                                                                             *
- *                     ĞÂ½¨ÈÕÆÚ : 2022/3/21                                                    *
+ *                     æ–°å»ºæ—¥æœŸ : 2022/3/21                                                    *
  *                                                                                             *
- *                     ×î½ü±à¼­ : 2022/3/23 Old Sovok                                          *
+ *                     æœ€è¿‘ç¼–è¾‘ : 2022/3/23 Old Sovok                                          *
  *                                                                                             *
  *---------------------------------------------------------------------------------------------*
- * ÄÚÈİ£º
+ * å†…å®¹ï¼š
  *   --
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
@@ -47,52 +47,52 @@ void TemporaryLog(const wchar_t* s)
 }
 
 
-// ANSI×Ö·û¼¯×ª»»³ÉUnicode
+// ANSIå­—ç¬¦é›†è½¬æ¢æˆUnicode
 std::wstring MBCStoUnicode(const std::string& MBCS)
 {
-    int nLength = MultiByteToWideChar(CP_ACP, 0, MBCS.c_str(), -1, NULL, NULL);   // »ñÈ¡»º³åÇø³¤¶È£¬ÔÙ·ÖÅäÄÚ´æ
+    int nLength = MultiByteToWideChar(CP_ACP, 0, MBCS.c_str(), -1, NULL, NULL);   // è·å–ç¼“å†²åŒºé•¿åº¦ï¼Œå†åˆ†é…å†…å­˜
     WCHAR* tch = new WCHAR[nLength + 4]();
-    nLength = MultiByteToWideChar(CP_ACP, 0, MBCS.c_str(), -1, tch, nLength);     // ½«MBCS×ª»»³ÉUnicode
+    nLength = MultiByteToWideChar(CP_ACP, 0, MBCS.c_str(), -1, tch, nLength);     // å°†MBCSè½¬æ¢æˆUnicode
     std::wstring ret = tch;
     delete[] tch;
     return ret;
 }
-// UTF-8×Ö·û¼¯×ª»»³ÉUnicode
+// UTF-8å­—ç¬¦é›†è½¬æ¢æˆUnicode
 std::wstring UTF8toUnicode(const std::string& UTF8)
 {
-    int nLength = MultiByteToWideChar(CP_UTF8, 0, UTF8.c_str(), -1, NULL, NULL);   // »ñÈ¡»º³åÇø³¤¶È£¬ÔÙ·ÖÅäÄÚ´æ
+    int nLength = MultiByteToWideChar(CP_UTF8, 0, UTF8.c_str(), -1, NULL, NULL);   // è·å–ç¼“å†²åŒºé•¿åº¦ï¼Œå†åˆ†é…å†…å­˜
     WCHAR* tch = new WCHAR[nLength + 4]{};
-    MultiByteToWideChar(CP_UTF8, 0, UTF8.c_str(), -1, tch, nLength);     // ½«UTF-8×ª»»³ÉUnicode
+    MultiByteToWideChar(CP_UTF8, 0, UTF8.c_str(), -1, tch, nLength);     // å°†UTF-8è½¬æ¢æˆUnicode
     std::wstring ret = tch;
     delete[] tch;
     return ret;
 }
-// Unicode×Ö·û¼¯×ª»»³ÉUTF-8
+// Unicodeå­—ç¬¦é›†è½¬æ¢æˆUTF-8
 std::string UnicodetoUTF8(const std::wstring& Unicode)
 {
-    int UTF8len = WideCharToMultiByte(CP_UTF8, 0, Unicode.c_str(), -1, 0, 0, 0, 0);// »ñÈ¡UTF-8±àÂë³¤¶È
+    int UTF8len = WideCharToMultiByte(CP_UTF8, 0, Unicode.c_str(), -1, 0, 0, 0, 0);// è·å–UTF-8ç¼–ç é•¿åº¦
     char* UTF8 = new CHAR[UTF8len + 4]{};
-    WideCharToMultiByte(CP_UTF8, 0, Unicode.c_str(), -1, UTF8, UTF8len, 0, 0); //×ª»»³ÉUTF-8±àÂë
+    WideCharToMultiByte(CP_UTF8, 0, Unicode.c_str(), -1, UTF8, UTF8len, 0, 0); //è½¬æ¢æˆUTF-8ç¼–ç 
     std::string ret = UTF8;
     delete[] UTF8;
     return ret;
 }
-// Unicode×Ö·û¼¯×ª»»³ÉANSI
+// Unicodeå­—ç¬¦é›†è½¬æ¢æˆANSI
 std::string UnicodetoMBCS(const std::wstring& Unicode)
 {
-    int ANSIlen = WideCharToMultiByte(CP_ACP, 0, Unicode.c_str(), -1, 0, 0, 0, 0);// »ñÈ¡UTF-8±àÂë³¤¶È
+    int ANSIlen = WideCharToMultiByte(CP_ACP, 0, Unicode.c_str(), -1, 0, 0, 0, 0);// è·å–UTF-8ç¼–ç é•¿åº¦
     char* ANSI = new CHAR[ANSIlen + 4]{};
-    WideCharToMultiByte(CP_ACP, 0, Unicode.c_str(), -1, ANSI, ANSIlen, 0, 0); //×ª»»³ÉUTF-8±àÂë
+    WideCharToMultiByte(CP_ACP, 0, Unicode.c_str(), -1, ANSI, ANSIlen, 0, 0); //è½¬æ¢æˆUTF-8ç¼–ç 
     std::string ret = ANSI;
     delete[] ANSI;
     return ret;
 }
-// ANSI×Ö·û¼¯×ª»»³ÉUTF-8
+// ANSIå­—ç¬¦é›†è½¬æ¢æˆUTF-8
 std::string MBCStoUTF8(const std::string& MBCS)
 {
     return UnicodetoUTF8(MBCStoUnicode(MBCS));
 }
-// UTF-8×Ö·û¼¯×ª»»³ÉANSI
+// UTF-8å­—ç¬¦é›†è½¬æ¢æˆANSI
 std::string UTF8toMBCS(const std::string& MBCS)
 {
     return UnicodetoMBCS(UTF8toUnicode(MBCS));
@@ -107,7 +107,7 @@ uint64_t GetSysTimeMicros()
     GetSystemTimeAsFileTime(&ft);
     li.LowPart = ft.dwLowDateTime;
     li.HighPart = ft.dwHighDateTime;
-    // ´Ó1970Äê1ÔÂ1ÈÕ0:0:0:000µ½ÏÖÔÚµÄÎ¢ÃëÊı(UTCÊ±¼ä)
+    // ä»1970å¹´1æœˆ1æ—¥0:0:0:000åˆ°ç°åœ¨çš„å¾®ç§’æ•°(UTCæ—¶é—´)
     tt = (li.QuadPart - EpochFIleTime) / 10;
     return tt;
 }
@@ -115,19 +115,19 @@ uint64_t GetSysTimeMicros()
 
 
 
-//const static char ÔÂ·İ[12][20] = 
-//{ "Ò»ÔÂ", "¶şÔÂ", "ÈıÔÂ", "ËÄÔÂ", "ÎåÔÂ", "ÁùÔÂ", "ÆßÔÂ", "°ËÔÂ", "¾ÅÔÂ", "Ê®ÔÂ", "Ê®Ò»ÔÂ", "Ê®¶şÔÂ", };
-//{ "1ÔÂ", "2ÔÂ", "3ÔÂ", "4ÔÂ", "5ÔÂ", "6ÔÂ", "7ÔÂ", "8ÔÂ", "9ÔÂ", "10ÔÂ", "11ÔÂ", "12ÔÂ", };
+//const static char æœˆä»½[12][20] = 
+//{ "ä¸€æœˆ", "äºŒæœˆ", "ä¸‰æœˆ", "å››æœˆ", "äº”æœˆ", "å…­æœˆ", "ä¸ƒæœˆ", "å…«æœˆ", "ä¹æœˆ", "åæœˆ", "åä¸€æœˆ", "åäºŒæœˆ", };
+//{ "1æœˆ", "2æœˆ", "3æœˆ", "4æœˆ", "5æœˆ", "6æœˆ", "7æœˆ", "8æœˆ", "9æœˆ", "10æœˆ", "11æœˆ", "12æœˆ", };
 /*
 std::string TimeNow()
 {
-    const static char ĞÇÆÚ[7][20] =
-    { "ĞÇÆÚÈÕ", "ĞÇÆÚÒ»", "ĞÇÆÚ¶ş", "ĞÇÆÚÈı", "ĞÇÆÚËÄ", "ĞÇÆÚÎå", "ĞÇÆÚÁù" };
+    const static char æ˜ŸæœŸ[7][20] =
+    { "æ˜ŸæœŸæ—¥", "æ˜ŸæœŸä¸€", "æ˜ŸæœŸäºŒ", "æ˜ŸæœŸä¸‰", "æ˜ŸæœŸå››", "æ˜ŸæœŸäº”", "æ˜ŸæœŸå…­" };
     char* TBuf = new char[5000]();
     std::tm stm;
     std::time_t tt = std::time(0);
     localtime_s(&stm, &tt);
-    sprintf(TBuf, "%04dÄê%02dÔÂ%02dÈÕ %s %02d:%02d:%02d", stm.tm_year + 1900, stm.tm_mon + 1, stm.tm_mday, ĞÇÆÚ[stm.tm_wday], stm.tm_hour, stm.tm_min, stm.tm_sec);
+    sprintf(TBuf, "%04då¹´%02dæœˆ%02dæ—¥ %s %02d:%02d:%02d", stm.tm_year + 1900, stm.tm_mon + 1, stm.tm_mday, æ˜ŸæœŸ[stm.tm_wday], stm.tm_hour, stm.tm_min, stm.tm_sec);
     std::string rt = TBuf;
     delete[]TBuf;
     return rt;
@@ -241,7 +241,7 @@ bool system_hide(const char* CommandLine)
 
     si.dwFlags = STARTF_USESHOWWINDOW | STARTF_USESTDHANDLES;
 
-    //¹Ø¼ü²½Öè£¬CreateProcessº¯Êı²ÎÊıÒâÒåÇë²éÔÄMSDN   
+    //å…³é”®æ­¥éª¤ï¼ŒCreateProcesså‡½æ•°å‚æ•°æ„ä¹‰è¯·æŸ¥é˜…MSDN   
 
     if (!CreateProcessA(NULL, (LPSTR)CommandLine, NULL, NULL, TRUE, NULL, NULL, NULL, &si, &pi))
     {
@@ -258,9 +258,9 @@ bool system_hide(const char* CommandLine)
         if (ReadFile(hRead, buffer, 4095, &bytesRead, NULL) == NULL)
             break;
 
-        //bufferÖĞ¾ÍÊÇÖ´ĞĞµÄ½á¹û£¬¿ÉÒÔ±£´æµ½ÎÄ±¾£¬Ò²¿ÉÒÔÖ±½ÓÊä³ö   
+        //bufferä¸­å°±æ˜¯æ‰§è¡Œçš„ç»“æœï¼Œå¯ä»¥ä¿å­˜åˆ°æ–‡æœ¬ï¼Œä¹Ÿå¯ä»¥ç›´æ¥è¾“å‡º   
 
-        //printf(buffer);//ÕâĞĞ×¢ÊÍµô¾Í¿ÉÒÔÁË  
+        //printf(buffer);//è¿™è¡Œæ³¨é‡Šæ‰å°±å¯ä»¥äº†  
 
         Sleep(100);
 
@@ -423,34 +423,304 @@ std::string JsonObject::PrintData() const
     return r;
 }
 
+void cJson_SwapData(cJSON* A, cJSON* B)
+{
+    if (A == nullptr || B == nullptr)return;
+    std::swap(*A, *B);
+    std::swap(A->next, B->next);
+}
+
+const char* const StrBool_TrueList[]
+{
+    "true","True","TRUE",
+    "yes","Yes","YES",
+    "t","T","y","Y","1"
+};
+const char* const StrBool_FalseList[]
+{
+    "false","False","FALSE",
+    "no","No","NO",
+    "f","F","n","N","0"
+};
+
+std::string StrBoolImpl(bool Val, StrBoolType Type)
+{
+    return std::string{ CStrBoolImpl(Val, Type) };
+}
+const char* CStrBoolImpl(bool Val, StrBoolType Type)
+{
+    return (Val ? StrBool_TrueList : StrBool_FalseList)[(size_t)Type];
+}
+
+JsonObject JsonObject::CreateObjectItem(const std::string& Str) const
+{
+    auto ObjPtr = cJSON_CreateNull();
+    cJSON_AddItemToObject(Object, Str.c_str(), ObjPtr);
+    return JsonObject(ObjPtr);
+}
+void JsonObject::AddObjectItem(const std::string& Str, JsonObject Child, bool NeedsCopy) const
+{
+    cJSON_AddItemToObject(Object, Str.c_str(), (NeedsCopy ? cJSON_Duplicate(Child.GetRaw(), true) : Child.GetRaw()));
+}
+void JsonObject::AddObjectItem(const std::string& Str, JsonFile&& File) const
+{
+    cJSON_AddItemToObject(Object, Str.c_str(), File.Release());
+}
+void JsonObject::AddNull(const std::string& Str) const
+{
+    cJSON_AddNullToObject(Object, Str.c_str());
+}
+void JsonObject::AddInt(const std::string& Str, int Val) const
+{
+    cJSON_AddIntegerToObject(Object, Str.c_str(), Val);
+}
+void JsonObject::AddDouble(const std::string& Str, double Val) const
+{
+    cJSON_AddNumberToObject(Object, Str.c_str(), Val);
+}
+void JsonObject::AddString(const std::string& Str, const std::string& Val) const
+{
+    cJSON_AddStringToObject(Object, Str.c_str(), Val.c_str());
+}
+void JsonObject::AddBool(const std::string& Str, bool Val) const
+{
+    cJSON_AddBoolToObject(Object, Str.c_str(), Val);
+}
+void JsonObject::AddStrBool(const std::string& Str, bool Val, StrBoolType Type) const
+{
+    cJSON_AddStringToObject(Object, Str.c_str(), CStrBoolImpl(Val, Type));
+}
+JsonFile JsonObject::SwapNull() const
+{
+    JsonFile F(cJSON_CreateNull());
+    cJson_SwapData(F.GetRaw(), Object);
+    return F;
+}
+JsonFile JsonObject::SwapInt(int Val) const
+{
+    JsonFile F(cJSON_CreateInteger(Val));
+    cJson_SwapData(F.GetRaw(), Object);
+    return F;
+}
+JsonFile JsonObject::SwapDouble(double Val) const
+{
+    JsonFile F(cJSON_CreateNumber(Val));
+    cJson_SwapData(F.GetRaw(), Object);
+    return F;
+}
+JsonFile JsonObject::SwapString(const std::string& Val) const
+{
+    JsonFile F(cJSON_CreateString(Val.c_str()));
+    cJson_SwapData(F.GetRaw(), Object);
+    return F;
+}
+JsonFile JsonObject::SwapBool(bool Val) const
+{
+    JsonFile F(cJSON_CreateBool(Val));
+    cJson_SwapData(F.GetRaw(), Object);
+    return F;
+}
+JsonFile JsonObject::SwapStrBool(bool Val, StrBoolType Type) const
+{
+    JsonFile F(cJSON_CreateString(CStrBoolImpl(Val, Type)));
+    cJson_SwapData(F.GetRaw(), Object);
+    return F;
+}
+JsonFile JsonObject::CopyAndSwap(JsonObject Obj, bool Recurse) const
+{
+    JsonFile F(cJSON_Duplicate(Obj.GetRaw(), Recurse));
+    cJson_SwapData(F.GetRaw(), Object);
+    return F;
+}
+JsonFile JsonObject::RedirectAndSwap(JsonObject Obj)
+{
+    JsonFile F(this->GetRaw());
+    Object = Obj.GetRaw();
+    return F;
+}
+void JsonObject::SwapObject(JsonObject Obj) const
+{
+    cJson_SwapData(Obj.GetRaw(), Object);
+}
+void JsonObject::SetNull() const
+{
+    SwapNull();
+}
+void JsonObject::SetInt(int Val) const
+{
+    SwapInt(Val);
+}
+void JsonObject::SetDouble(double Val) const
+{
+    SwapDouble(Val);
+}
+void JsonObject::SetString(const std::string& Val) const
+{
+    SwapString(Val);
+}
+void JsonObject::SetBool(bool Val) const
+{
+    SwapBool(Val);
+}
+void JsonObject::SetStrBool(bool Val, StrBoolType Type) const
+{
+    SwapStrBool(Val, Type);
+}
+void JsonObject::CopyObject(JsonObject Obj, bool Recurse) const
+{
+    CopyAndSwap(Obj, Recurse);
+}
+void JsonObject::RedirectObject(JsonObject Obj)
+{
+    RedirectAndSwap(Obj);
+}
+void JsonObject::SetObject()
+{
+    JsonFile F(cJSON_CreateObject());
+    cJson_SwapData(F.GetRaw(), Object);
+}
+
+
+//ç»™ç©ºèŠ‚ç‚¹çš„éconstå‡½æ•°
+void JsonObject::CreateNull()
+{
+    Object = cJSON_CreateNull();
+}
+void JsonObject::CreateInt(int Val)
+{
+    Object = cJSON_CreateInteger(Val);
+}
+void JsonObject::CreateDouble(double Val)
+{
+    Object = cJSON_CreateNumber(Val);
+}
+void JsonObject::CreateString(const std::string& Val)
+{
+    Object = cJSON_CreateString(Val.c_str());
+}
+void JsonObject::CreateBool(bool Val)
+{
+    Object = cJSON_CreateBool(Val);
+}
+void JsonObject::CreateStrBool(bool Val, StrBoolType Type)
+{
+    Object = cJSON_CreateString(CStrBoolImpl(Val, Type));
+}
+void JsonObject::CreateCopy(JsonObject Obj, bool Recurse)
+{
+    Object = cJSON_Duplicate(Obj.GetRaw(), Recurse);
+}
+void JsonObject::CreateObject()
+{
+    Object = cJSON_CreateObject();
+}
+
+// ä¸çŸ¥é“æ˜¯å¦ä¸ºç©ºçš„å‡½æ•° 
+void JsonObject::SetOrCreateNull()
+{
+    if (Available())SetNull();
+    else CreateNull();
+}
+void JsonObject::SetOrCreateInt(int Val)
+{
+    if (Available())SetInt(Val);
+    else CreateInt(Val);
+}
+void JsonObject::SetOrCreateDouble(double Val)
+{
+    if (Available())SetDouble(Val);
+    else CreateDouble(Val);
+}
+void JsonObject::SetOrCreateString(const std::string& Val)
+{
+    if (Available())SetString(Val);
+    else CreateString(Val);
+}
+void JsonObject::SetOrCreateBool(bool Val)
+{
+    if (Available())SetBool(Val);
+    else CreateBool(Val);
+}
+void JsonObject::SetOrCreateStrBool(bool Val, StrBoolType Type)
+{
+    if (Available())SetStrBool(Val, Type);
+    else CreateStrBool(Val, Type);
+}
+void JsonObject::SetOrCreateCopy(JsonObject Obj, bool Recurse)
+{
+    if (Available())CopyObject(Obj, Recurse);
+    else CreateCopy(Obj, Recurse);
+}
+void JsonObject::SetOrCreateObject()
+{
+    if (Available())SetObject();
+    else CreateObject();
+}
+
+JsonFile JsonObject::DetachObjectItem(const std::string& Str) { return cJSON_DetachItemFromObject(Object, Str.c_str()); }
+JsonFile JsonObject::DetachArrayItem(int Index) { return cJSON_DetachItemFromArray(Object, Index); }
+
+
+void JsonObject::Merge(JsonObject Obj)
+{
+    if (!Obj.Available())return;
+    if (!Available())
+    {
+        CreateCopy(Obj, true);
+        return;
+    }
+    if (!Obj.IsTypeObject())
+    {
+        CopyObject(Obj, true);
+    }
+    else
+    {
+        JsonObject Node = Obj.GetChildItem();
+        while (Node.Available())
+        {
+            auto Item = GetObjectItem(Node.GetName());
+            bool PrevAvailable = Item.Available();
+            Item.Merge(Node);
+            if (!PrevAvailable)AddObjectItem(Node.GetName(), Item, false);
+            Node = Node.GetNextItem();
+        }
+    }
+}
+
+std::string GetStringFromFile(ExtFileClass& File)
+{
+    auto Pos = File.GetSize();
+    std::string LoadStr;
+    LoadStr.reserve(Pos + 16);
+    LoadStr.resize(Pos);
+    File.Read(LoadStr.data(), 1, Pos);
+
+    //Remove BOM if there is
+    //UTF-8 BOM: EF BB BF
+    if (Pos >= 3 && (unsigned char)LoadStr[0] == 0xEF && (unsigned char)LoadStr[1] == 0xBB && (unsigned char)LoadStr[2] == 0xBF)
+        LoadStr = LoadStr.substr(3);
+    //UTF-16 LE BOM: FF FE
+    if (Pos >= 2 && (unsigned char)LoadStr[0] == 0xFF && (unsigned char)LoadStr[1] == 0xFE)
+        LoadStr = LoadStr.substr(2);
+    //UTF-16 BE BOM: FE FF
+    if (Pos >= 2 && (unsigned char)LoadStr[0] == 0xFE && (unsigned char)LoadStr[1] == 0xFF)
+        LoadStr = LoadStr.substr(2);
+
+    return LoadStr;
+}
+
 std::string GetStringFromFile(const char* FileName)
 {
     ExtFileClass File;
     if (!File.Open(FileName, "r"))return "";
-    File.Seek(0, SEEK_END);
-    int Pos = File.Position();
-    std::string LoadStr;
-    LoadStr.reserve(Pos + 16);
-    LoadStr.resize(Pos);
-    File.Seek(0, SEEK_SET);
-    File.Read(LoadStr.data(), 1, Pos);
-    File.Close();
-    return LoadStr;
+    return GetStringFromFile(File);
 }
 
 std::string GetStringFromFile(const wchar_t* FileName)
 {
     ExtFileClass File;
     if (!File.Open(FileName, L"r"))return "";
-    File.Seek(0, SEEK_END);
-    int Pos = File.Position();
-    std::string LoadStr;
-    LoadStr.reserve(Pos + 16);
-    LoadStr.resize(Pos);
-    File.Seek(0, SEEK_SET);
-    File.Read(LoadStr.data(), 1, Pos);
-    File.Close();
-    return LoadStr;
+    return GetStringFromFile(File);
 }
 
 void JsonFile::Parse(std::string Str)
@@ -507,7 +777,7 @@ void JsonFile::ParseFromFile(const char* FileName)
     if (EnableLogEx)
     {
         GlobalLogB.AddLog_CurTime(false);
-        GlobalLogB.AddLog((u8"JsonFile::ParseFromFile £º " + loc("Log_ParseJsonFile")).c_str());
+        GlobalLogB.AddLog((u8"JsonFile::ParseFromFile ï¼š " + loc("Log_ParseJsonFile")).c_str());
         GlobalLogB.AddLog_CurTime(false);
         GlobalLogB.AddLog("\"", false);
         GlobalLogB.AddLog(UTF8toMBCS(FileStr + iPos).c_str(), false);
@@ -549,7 +819,7 @@ void JsonFile::ParseFromFileWithOpts(const char* FileName, int RequireNullTermin
     if (EnableLogEx)
     {
         GlobalLogB.AddLog_CurTime(false);
-        GlobalLogB.AddLog((u8"JsonFile::ParseFromFileWithOpts £º " + loc("Log_ParseJsonFile")).c_str());
+        GlobalLogB.AddLog((u8"JsonFile::ParseFromFileWithOpts ï¼š " + loc("Log_ParseJsonFile")).c_str());
         GlobalLogB.AddLog_CurTime(false);
         GlobalLogB.AddLog("\"", false);
         GlobalLogB.AddLog(UTF8toMBCS(FileStr + iPos).c_str(), false);
@@ -636,6 +906,17 @@ bool RegexNotNone_Throw(const std::string& Str, const std::string& Regex)
 }
 
 
+JsonFile GetArrayOfObjects(std::vector<JsonFile>&& Arr)
+{
+    auto pObj = cJSON_CreateArray();
+    for (auto& i : Arr)
+    {
+        cJSON_AddItemToArray(pObj, i.Release());
+    }
+    Arr.clear();
+    return JsonFile(pObj);
+}
+
 bool IBG_SuspendThread(_FAKE_DWORD ThreadID)
 {
     HANDLE hThread = OpenThread(THREAD_SUSPEND_RESUME, FALSE, (DWORD)ThreadID);
@@ -661,16 +942,16 @@ int GetProcessState(DWORD dwProcessID) {
     HANDLE hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, dwProcessID);
 
     if (hSnapshot != INVALID_HANDLE_VALUE) {
-        DWORD state = 1;//ÏÈÖÃ1£¬Ò»µ©ÓĞÏß³Ì»¹ÔÚÔËĞĞ¾ÍÖÃ0
+        DWORD state = 1;//å…ˆç½®1ï¼Œä¸€æ—¦æœ‰çº¿ç¨‹è¿˜åœ¨è¿è¡Œå°±ç½®0
         THREADENTRY32 te = { sizeof(te) };
         BOOL fOk = Thread32First(hSnapshot, &te);
         for (; fOk; fOk = Thread32Next(hSnapshot, &te)) {
             if (te.th32OwnerProcessID == dwProcessID) {
                 HANDLE hThread = OpenThread(THREAD_SUSPEND_RESUME, FALSE, te.th32ThreadID);
-                DWORD suspendCount = SuspendThread(hThread);//·µ»ØÖ®Ç°µÄ¹ÒÆğÊı£¬´óÓÚ0±íÊ¾ÒÑ¹ÒÆğ
-                ResumeThread(hThread);//ÂíÉÏ»Ö¸´£¬ÕâÑù²»»á¶ÔÄ¿±ê³ÌĞòÔì³ÉÓ°Ïì
+                DWORD suspendCount = SuspendThread(hThread);//è¿”å›ä¹‹å‰çš„æŒ‚èµ·æ•°ï¼Œå¤§äº0è¡¨ç¤ºå·²æŒ‚èµ·
+                ResumeThread(hThread);//é©¬ä¸Šæ¢å¤ï¼Œè¿™æ ·ä¸ä¼šå¯¹ç›®æ ‡ç¨‹åºé€ æˆå½±å“
                 CloseHandle(hThread);
-                if (suspendCount == 0) state = 0; //ÊÇ¸öÅĞ¶ÏËùÓĞÏß³Ì¶¼¹ÒÆğµÄºÃ·½·¨
+                if (suspendCount == 0) state = 0; //æ˜¯ä¸ªåˆ¤æ–­æ‰€æœ‰çº¿ç¨‹éƒ½æŒ‚èµ·çš„å¥½æ–¹æ³•
             }
         }
         CloseHandle(hSnapshot);

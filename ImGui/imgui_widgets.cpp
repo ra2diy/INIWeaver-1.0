@@ -1,4 +1,4 @@
-// dear imgui, v1.88 WIP
+﻿// dear imgui, v1.88 WIP
 // (widgets code)
 
 /*
@@ -1207,11 +1207,15 @@ bool ImGui::CheckboxFlags(const char* label, ImU64* flags, ImU64 flags_value)
     return CheckboxFlagsT(label, flags, flags_value);
 }
 
-bool ImGui::RadioButton(const char* label, bool active, bool is_square)
+
+bool ImGui::RadioButton(const char* label, bool active, ImGuiRadioButtonFlags flag)
 {
     ImGuiWindow* window = GetCurrentWindow();
     if (window->SkipItems)
         return false;
+
+    const bool is_square = flag == ImGuiRadioButtonFlags_Square || flag == ImGuiRadioButtonFlags_RoundedSquare;
+    const bool SQUARE_BUTTON_NO_ROUNDING = flag == ImGuiRadioButtonFlags_Square;
 
     ImGuiContext& g = *GImGui;
     const ImGuiStyle& style = g.Style;
@@ -1238,31 +1242,53 @@ bool ImGui::RadioButton(const char* label, bool active, bool is_square)
 
     RenderNavHighlight(total_bb, id);
     if(is_square)
-        window->DrawList->AddRectFilled(check_bb.Min, check_bb.Max, GetColorU32((held && hovered) ? ImGuiCol_FrameBgActive : hovered ? ImGuiCol_FrameBgHovered : ImGuiCol_FrameBg), GetFrameHeight() * 0.1f);
+        window->DrawList->AddRectFilled(
+            check_bb.Min,
+            check_bb.Max,
+            GetColorU32((held && hovered) ? ImGuiCol_FrameBgActive : hovered ? ImGuiCol_FrameBgHovered : ImGuiCol_FrameBg),
+            SQUARE_BUTTON_NO_ROUNDING ? 0.0f : GetFrameHeight() * 0.1f);
     else
-        window->DrawList->AddCircleFilled(center, radius, GetColorU32((held && hovered) ? ImGuiCol_FrameBgActive : hovered ? ImGuiCol_FrameBgHovered : ImGuiCol_FrameBg), 16);
+        window->DrawList->AddCircleFilled(
+            center,
+            radius,
+            GetColorU32((held && hovered) ? ImGuiCol_FrameBgActive : hovered ? ImGuiCol_FrameBgHovered : ImGuiCol_FrameBg),
+            16);
     if (active)
     {
         const float pad = ImMax(1.0f, IM_FLOOR(square_sz / 6.0f));
         if (is_square)
             window->DrawList->AddRectFilled(
                 { check_bb.Min.x + pad, check_bb.Min.y + pad },
-                { check_bb.Max.x - pad, check_bb.Max.y - pad }, GetColorU32(ImGuiCol_CheckMark), GetFrameHeight() * 0.1f);
+                { check_bb.Max.x - pad, check_bb.Max.y - pad },
+                GetColorU32(ImGuiCol_CheckMark),
+                SQUARE_BUTTON_NO_ROUNDING ? 0.0f : GetFrameHeight() * 0.1f);
         else
-            window->DrawList->AddCircleFilled(center, radius - pad, GetColorU32(ImGuiCol_CheckMark), 16);
+            window->DrawList->AddCircleFilled(
+                center,
+                radius - pad,
+                GetColorU32(ImGuiCol_CheckMark),
+                16);
     }
 
     if (style.FrameBorderSize > 0.0f)
     {
         if (is_square)
         {
-            window->DrawList->AddRect(check_bb.Min + ImVec2(1, 1), check_bb.Max + ImVec2(1, 1), GetColorU32(ImGuiCol_BorderShadow), GetFrameHeight() * 0.1f, 0, style.FrameBorderSize);
-            window->DrawList->AddRect(check_bb.Min, check_bb.Max, GetColorU32(ImGuiCol_BorderShadow), GetFrameHeight() * 0.1f, 0, style.FrameBorderSize);
+            window->DrawList->AddRect(check_bb.Min + ImVec2(1, 1), check_bb.Max + ImVec2(1, 1),
+                GetColorU32(ImGuiCol_BorderShadow),
+                SQUARE_BUTTON_NO_ROUNDING ? 0.0f : GetFrameHeight() * 0.1f,
+                0, style.FrameBorderSize);
+            window->DrawList->AddRect(check_bb.Min, check_bb.Max,
+                GetColorU32(ImGuiCol_BorderShadow),
+                SQUARE_BUTTON_NO_ROUNDING ? 0.0f : GetFrameHeight() * 0.1f,
+                0, style.FrameBorderSize);
         }
         else
         {
-            window->DrawList->AddCircle(center + ImVec2(1, 1), radius, GetColorU32(ImGuiCol_BorderShadow), 16, style.FrameBorderSize);
-            window->DrawList->AddCircle(center, radius, GetColorU32(ImGuiCol_Border), 16, style.FrameBorderSize);
+            window->DrawList->AddCircle(center + ImVec2(1, 1), radius,
+                GetColorU32(ImGuiCol_BorderShadow), 16, style.FrameBorderSize);
+            window->DrawList->AddCircle(center, radius,
+                GetColorU32(ImGuiCol_Border), 16, style.FrameBorderSize);
         }
         
     }

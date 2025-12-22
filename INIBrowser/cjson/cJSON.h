@@ -1,4 +1,4 @@
-/*
+﻿/*
   Copyright (c) 2009 Dave Gamble
  
   Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -89,6 +89,7 @@ extern cJSON *cJSON_CreateNull(void);
 extern cJSON *cJSON_CreateTrue(void);
 extern cJSON *cJSON_CreateFalse(void);
 extern cJSON *cJSON_CreateBool(int b);
+extern cJSON *cJSON_CreateInteger(int num);
 extern cJSON *cJSON_CreateNumber(double num);
 extern cJSON *cJSON_CreateString(const char *string);
 extern cJSON *cJSON_CreateArray(void);
@@ -135,6 +136,7 @@ extern void cJSON_Minify(char *json);
 #define cJSON_AddTrueToObject(object,name)		cJSON_AddItemToObject(object, name, cJSON_CreateTrue())
 #define cJSON_AddFalseToObject(object,name)		cJSON_AddItemToObject(object, name, cJSON_CreateFalse())
 #define cJSON_AddBoolToObject(object,name,b)	cJSON_AddItemToObject(object, name, cJSON_CreateBool(b))
+#define cJSON_AddIntegerToObject(object,name,n)	cJSON_AddItemToObject(object, name, cJSON_CreateInteger(n))
 #define cJSON_AddNumberToObject(object,name,n)	cJSON_AddItemToObject(object, name, cJSON_CreateNumber(n))
 #define cJSON_AddStringToObject(object,name,s)	cJSON_AddItemToObject(object, name, cJSON_CreateString(s))
 
