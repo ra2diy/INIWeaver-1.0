@@ -5,6 +5,7 @@
 #include <any>
 
 extern int HintStayTimeMillis;
+extern bool IsEnumHovered;
 
 class IBR_Setting
 {
@@ -55,6 +56,9 @@ struct BufferedLine
     bool Known;
     bool AltRes;
     bool IsAltBool;
+    bool IsAltEnum;
+    std::vector<std::string> Enum;
+    std::vector<std::string> EnumValue;
 };
 
 struct ActiveLine

@@ -34,6 +34,8 @@ struct IBB_IniLine_Default
         std::string Type;
         JsonObject Lim;
         std::string TypeAlt;
+        std::vector<std::string> Enum;
+        std::vector<std::string> EnumValue;
     };
 
     std::string Name, DescShort, DescLong;

@@ -97,6 +97,10 @@ struct IBB_DefaultTypeAlt
     std::string Name, DescLong, DescShort, LinkType;
     int LinkLimit{ 1 };
     ImU32 Color;
+    std::vector<std::string> EnumVector;
+    std::vector<std::string> EnumValue;
+
+    std::vector<std::string> EnumSplit(const std::string& s, char delimiter);
 
     bool Load(JsonObject FromJson);
     bool Load(const std::vector<std::string>& FromCSV);

@@ -304,7 +304,6 @@ LineData IBB_IniLine_Default::Create() const
 
 
 
-
 const IBB_Ini* IBB_Project::GetIni(const IBB_Project_Index& Index) const
 {
     return Index.GetIni(*this);
