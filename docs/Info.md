@@ -1,5 +1,4 @@
-
-# INIBrowser
+# INI Weaver
 ## What is This Tool
 
 This is an advanced tool for advanced INI users. For so-called advanced users, they rarely need to verify basic INI flag meanings and syntax when writing INI files, having already established clear understanding of which flags to use for specific effects and which INI types to employ.
@@ -92,9 +91,93 @@ RegisterTypes.json declares all valid categories in the system. The "LinkCategor
 - \Resources\config.json: Main configuration file for customizing shortcuts and settings (common hotkeys are predefined).
 - Launch the editor with the -debugmenu parameter to enable debug menus.
 
+## Hotkeys
+
+|Key                        |Function
+|:--------------------------|:------------------
+|F2                         |Switch display mode
+|Ctrl+S                     |save
+|Ctrl+Shift+S               |save as
+|Ctrl+O                     |open project
+|Ctrl+E                     |export
+|Ctrl+W                     |close project
+|Ctrl+C                     |copy
+|Ctrl+V                     |paste
+|right click on canvas      |module library
+|double click on canvas     |module search
+|left click on module       |edit this module
+|right click on module title|enter module menu
+|double click on flag       |edit value
+
+## Image demonstration
+
+### right click for modules
+
+![image](../pic/right_click_for_modules.gif)
+
+### link modules
+
+![image](../pic/link_modules.gif)
+
+### reverse link
+
+![image](../pic/reverse_link.gif)
+
+### fold flags
+
+![image](../pic/fold_flags.gif)
+
+### text editor
+
+![image](../pic/text_editor.gif)
+
+### directly edit bool
+
+![image](../pic/directly_edit_bool.gif)
+
+### directly edit value
+
+![image](../pic/directly_edit_value.gif)
+
+### import assets
+- Shape/Voxel
+
+![image](../pic/import_assets.png)
+
+## Interface Overview
+
+### main menu
+
+![image](../pic/main_menu.png)
+
+### file menu
+
+![image](../pic/file_menu.png)
+
+### navigate menu
+
+![image](../pic/navigate_menu.png)
+
+### list menu
+
+![image](../pic/list_menu.png)
+
+### options menu
+
+![image](../pic/options_menu.png)
+
+### right click menu
+
+![image](../pic/right_click_menu.png)
+
 ## Planned Features
 - **Flag-to-flag linking**: E.g., referencing ArmorTypes directly.
 - **Flag bundle modules**: Linking to these modules will copy their sub-flags into the parent module.
 - **Relocation of inheritance linkage points.**
 - **Expanded module categories**: Support for AI, Sound, and other types.
 - **INI file parsing**: Import and visualize entire INI files as connection diagrams.
+
+## The Last
+```{seealso}
+[Basic Operation Teaching Video](https://www.bilibili.com/video/BV1b5EuzzEzT/)
+```

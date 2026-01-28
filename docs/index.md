@@ -1,8 +1,7 @@
 ```{toctree}
 :hidden:
 :caption: Docs
-info<../Info.md>
-documentation<../documentation.md>
+Info<../Info.md>
 ```
 
 ```{include} ../README.txt

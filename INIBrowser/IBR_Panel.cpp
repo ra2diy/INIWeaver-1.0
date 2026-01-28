@@ -1,4 +1,4 @@
-﻿#include "IBRender.h"
+#include "IBRender.h"
 #include "IBFront.h"
 #include "Global.h"
 #include "FromEngine/RFBump.h"
