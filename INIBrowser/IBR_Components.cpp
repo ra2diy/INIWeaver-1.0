@@ -138,6 +138,39 @@ namespace IBR_RecentManager
     void RenderUI()
     {
         ImGui::Text(locc("GUI_Recent"));
+        if (ImGui::Button(locc("GUI_ClearRecent")))
+        {
+            IBR_PopupManager::SetCurrentPopup(std::move(
+                IBR_PopupManager::Popup{}
+                .CreateModal(loc("GUI_WaitingTitle"), false, []()
+                    {
+                            IBR_HintManager::SetHint(loc("GUI_ActionCanceled"), HintStayTimeMillis);
+                    }
+                )
+                .SetFlag(
+                    ImGuiWindowFlags_NoTitleBar |
+                    ImGuiWindowFlags_NoNav |
+                    ImGuiWindowFlags_NoCollapse |
+                    ImGuiWindowFlags_NoMove |
+                    ImGuiWindowFlags_NoResize)
+                .SetSize({ FontHeight * 15.0F,FontHeight * 7.0F })
+                .PushTextBack(loc("GUI_AskIfClearRecent"))
+                .PushMsgBack([]()
+                    {
+                        if (ImGui::Button(locc("GUI_Yes"), { FontHeight * 6.0f,FontHeight * 2.0f }))
+                        {
+                            RecentName.clear();
+                            IBR_RecentManager::Save();
+                            IBR_PopupManager::ClearPopupDelayed();
+                        }
+                        ImGui::SameLine();
+                        if (ImGui::Button(locc("GUI_No"), { FontHeight * 6.0f,FontHeight * 2.0f }))
+                        {
+                            IBR_PopupManager::ClearPopupDelayed();
+                        }
+                    }))
+            );
+        }
         RecentList.RenderUI();
     }
     void Load()
