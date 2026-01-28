@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "FromEngine/Include.h"
 #define NOMINMAX
 #include <Windows.h>
@@ -10,6 +10,8 @@ struct IniToken
 
     void Tokenize(std::string_view, bool UseDesc = true);
     IniToken() = default;
+    IniToken(const IniToken&) = default;
+    IniToken(IniToken&&) noexcept = default;
     IniToken(std::string_view Line, bool UseDesc = true)
     {
         Tokenize(Line, UseDesc);
