@@ -180,6 +180,7 @@ namespace IBR_WorkSpace
     bool OperateOnText{ false };
     IBR_Section MouseOverSection{ &IBR_Inst_Project, UINT64_MAX };
     IBR_SectionData* MouseOverSecData{ nullptr };
+    ImVec2 MassAfter_RightDownPos{ FLT_MAX, FLT_MAX };
     
     void RenderRightClickTable()
     {
@@ -675,37 +676,41 @@ namespace IBR_WorkSpace
      状态机:
      Normal -> BgDragging MassSelecting HoldingModules
      BgDragging -> Normal
-     HoldingModules -> Normal
-     MassSelecting -> MassAfter Normal
+     HoldingModules -> HoldingModules Normal
+     MassSelecting -> MassAfter Normal MassSelecting
      MassAfter -> HoldingModules Normal MassSelecting
+     //ADDED 2025/09/25 MassAfter -> MassSelecting
     */
     //画布上的键鼠动作
     void ProcessBackgroundOpr()
     {
-        if (IsResizingWindow())return;
-
-        if (IsMassAfter)
+        //PREPROCESSING I : Remove Illegal States
         {
-            bool AllHidden = true;
-            for (auto& v : MassTarget)
+            if (IsResizingWindow())return;
+            if (IsMassAfter)
             {
-                auto sc = IBR_Inst_Project.GetSectionFromID(v);
-                auto Data = sc.GetSectionData();
-                if (Data && !(Data->Hidden || Data->IsIncluded()) )
+                bool AllHidden = true;
+                for (auto& v : MassTarget)
                 {
-                    AllHidden = false;
-                    break;
+                    auto sc = IBR_Inst_Project.GetSectionFromID(v);
+                    auto Data = sc.GetSectionData();
+                    if (Data && !(Data->Hidden || Data->IsIncluded()))
+                    {
+                        AllHidden = false;
+                        break;
+                    }
                 }
-            }
-            if (AllHidden)
-            {
-                IsMassAfter = false;
-                IsBgDragging = false;
-                MassTarget.clear();
-                MassTargetExtended.clear();
+                if (AllHidden)
+                {
+                    IsMassAfter = false;
+                    IsBgDragging = false;
+                    MassTarget.clear();
+                    MassTargetExtended.clear();
+                }
             }
         }
 
+        //PREPROCESSING II : Update Mouse State
         auto MousePos = ImGui::GetMousePos();
         bool OnWindow = false;
         Cont = IBR_RealCenter::GetWorkSpaceRect().Contains(MousePos);
@@ -728,6 +733,8 @@ namespace IBR_WorkSpace
                 break;
             }
         }
+
+        //PROCESSING I : Update Display Ratio
         if (Cont && LastCont && !IBR_PopupManager::IsMouseOnPopup())
         {
             auto DeltaWheel = ImGui::GetIO().MouseWheel;
@@ -745,7 +752,7 @@ namespace IBR_WorkSpace
             else NeedChangeRatio = false;
         }
 
-
+        //PROCESSING II : Respond to HotKeys
         if (IsHotKeyPressed(Paste))
         {
             Paste();
@@ -778,6 +785,8 @@ namespace IBR_WorkSpace
             },nullptr });
         }
         else if (IsHotKeyPressed(SwitchDisplayMode))ShowRegName ^= 1;
+
+        //PROCESSING III : Double Click -> Module Search
         else if (!OnWindow && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left) && Cont)
         {
             //IsBgDragging = false;
@@ -787,6 +796,8 @@ namespace IBR_WorkSpace
                     //ControlPanel_ModuleAlt();
                     })), ImGui::GetMousePos());
         }
+
+        //STATE CHANGE : Normal -> BgDragging
         else if ((LastClickable && !IsBgDragging && ImGui::IsMouseDown(ImGuiMouseButton_Left)))
         {
             
@@ -800,6 +811,8 @@ namespace IBR_WorkSpace
                 ExtraMove = { 0.0f,0.0f };
             }
         }
+
+        //STATE CHANGE : Normal -> MassSelecting
         else if ((LastClickable && !IsBgDragging && ImGui::IsMouseDown(ImGuiMouseButton_Right)))
         {
             if (/*!OnWindow && */MousePos.x != -FLT_MAX)
@@ -810,10 +823,14 @@ namespace IBR_WorkSpace
                 DragCurEqMouse = DragStartEqMouse = RePosToEqPos(MousePos);
             }
         }
+
+        //PROCESSING IV : Right Click Menu
         else if (Cont && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
         {
             OpenRightClick();
         }
+
+        //STATE CHANGE : Normal -> HoldingModules
         else if (HoldingModules && !InitHolding)
         {
             IsBgDragging = true;
@@ -832,12 +849,16 @@ namespace IBR_WorkSpace
                     Data.EqDelta = Data.EqPos - TSum;
             InitHolding = true;
         }
+
+        //STATE : NOT Normal
         else if (IsBgDragging && MousePos.x != -FLT_MAX)
         {
+            //STATE : HoldingModules
             if (HoldingModules)
             {
                 if (Cont)
                 {
+                    //STATE CHANGE : HoldingModules -> Holding&LeftDown / Normal
                     if (!HasLefttDownToWait && ImGui::IsMouseDown(ImGuiMouseButton_Left))
                     {
                         IsBgDragging = false;
@@ -847,6 +868,7 @@ namespace IBR_WorkSpace
                         for (auto& [ID, Data] : IBR_Inst_Project.IBR_SectionMap)
                             Data.Dragging = false;
                     }
+                    //STATE CHANGE : HoldingModules -> Holding&Rightdown / Normal
                     else if (!HasRightDownToWait && ImGui::IsMouseDown(ImGuiMouseButton_Right))
                     {
                         IsBgDragging = false;
@@ -875,6 +897,7 @@ namespace IBR_WorkSpace
                                 }, nullptr });
                         }
                     }
+                    //STATE CHANGE : Holding&LeftDown -> Normal
                     else if (ImGui::IsMouseReleased(ImGuiMouseButton_Left))
                     {
                         IBR_EditFrame::Clear();
@@ -892,15 +915,19 @@ namespace IBR_WorkSpace
                                 Data.Dragging = false;
                         }
                     }
+                    //STATE CHANGE : Holding&Rightdown -> Normal
                     else if (ImGui::IsMouseReleased(ImGuiMouseButton_Right))
                     {
                         HasRightDownToWait = false;
                     }
+                    //STATE CHANGE : HoldingModules -> HoldingModules
                     else UpdateScrollAlt(MousePos);
                 }
             }
+            //STATE : MassSelecting
             else if (IsMassSelecting)
             {
+                //STATE CHANGE : MassSelecting -> MassAfter / Normal
                 if (ImGui::IsMouseReleased(ImGuiMouseButton_Right))
                 {
                     IsMassSelecting = false;
@@ -921,10 +948,13 @@ namespace IBR_WorkSpace
                         OpenRightClick();
                     }
                 }
+                //STATE CHANGE : MassSelecting -> MassSelecting
                 else UpdateScrollMassSelect(MousePos);
             }
+            //STATE : MassAfter
             else if (IsMassAfter)
             {
+                //PROCESSING V : Respond to Other HotKeys
                 if (IsHotKeyPressed(Delete))
                 {
                     IsMassAfter = false;
@@ -940,13 +970,30 @@ namespace IBR_WorkSpace
                     CutSelected();
                 }
 
+                //STATE CHANGE : MassAfter -> Normal
                 if (!OnWindow && ImGui::IsMouseDown(ImGuiMouseButton_Left) && !IBR_PopupManager::HasRightClickMenu)
                 {
                     IsMassAfter = false;
                     IsBgDragging = false;
                 }
+                //STATE CHANGE : MassAfter -> MassSelecting
                 else if (ImGui::IsMouseDown(ImGuiMouseButton_Right))
                 {
+                    if (MassAfter_RightDownPos.x != FLT_MAX && abs((MousePos - MassAfter_RightDownPos).max()) > 5.0f)
+                    {
+                        HoldingModules = false;
+                        IsMassSelecting = true;
+                        IsMassAfter = false;
+                        DragCurMouse = DragStartMouse = MousePos;
+                        DragCurEqMouse = DragStartEqMouse = RePosToEqPos(MousePos);
+                        MassAfter_RightDownPos = { FLT_MAX, FLT_MAX };
+                    }
+                    else MassAfter_RightDownPos = MousePos;
+                }
+                //PROCESSING VI : Mass Select Right Menu
+                else if (ImGui::IsMouseReleased(ImGuiMouseButton_Right))
+                {
+                    MassAfter_RightDownPos = { FLT_MAX, FLT_MAX };
                     auto F = []() {
                         {
                             IsMassAfter = false;
@@ -1082,6 +1129,7 @@ namespace IBR_WorkSpace
 
                             })), ImGui::GetMousePos());
                 }
+                //STATE CHANGE : MassAfter -> HoldingModules
                 else if (OnWindow && Cont)
                 {
                     if (ImGui::IsMouseDown(ImGuiMouseButton_Left))
@@ -1099,16 +1147,19 @@ namespace IBR_WorkSpace
                         //MessageBoxA(NULL, "!!", "!!!", MB_OK);
                     }
                 }
-                //在有选中的块的时候鼠标移动到画布边缘就会移动视野，这个能不能去掉
-                //Kenosis 25/09/14
+                //by Kenosis 25/09/14 : 在有选中的块的时候鼠标移动到画布边缘就会移动视野，这个能不能去掉
+                //STATE CHANGE : MassAfter -> MassAfter
                 //else UpdateScrollGeneral(MousePos);
             }
-            else//BgDragging
+            //STATE : BgDragging
+            else
             {
+                //STATE CHANGE : BgDragging -> BgDragging
                 if (ImGui::IsMouseDragging(ImGuiMouseButton_Left))
                 {
                     UpdateScroll(MousePos);
                 }
+                //STATE CHANGE : BgDragging -> Normal
                 else if (ImGui::IsMouseReleased(ImGuiMouseButton_Left))
                 {
                     IBR_EditFrame::Clear();
@@ -1120,6 +1171,7 @@ namespace IBR_WorkSpace
             }
         }
 
+        //POSTPROCESSING : Update Mouse State
         LastOnWindow = OnWindow;
         LastClickable = !OnWindow && !ImGui::IsMouseDown(ImGuiMouseButton_Left);
         LastCont = Cont;
