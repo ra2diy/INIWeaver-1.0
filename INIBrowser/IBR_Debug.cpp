@@ -54,6 +54,7 @@ namespace IBR_WorkSpace
     extern float NewRatio;
     extern bool NeedChangeRatio, HoldingModules, InitHolding, IsMassSelecting, IsMassAfter, HasRightDownToWait, HasLefttDownToWait, MoveAfterMass;
     extern bool LastClickable, LastOnWindow, LastCont, Cont;
+    extern ImVec2 MassAfter_RightDownPos;
 }
 
 
@@ -95,6 +96,11 @@ void IBR_Debug::RenderUI()
         }
     }
 
+    auto& mardp = IBR_WorkSpace::MassAfter_RightDownPos;
+    auto msp = ImGui::GetMousePos();
+
+    ImGui::Text("MousePos = (%.1f,%.1f)", msp.x, msp.y);
+    ImGui::Text("MassAfter_RightDownPos = (%.1f,%.1f)", mardp.x, mardp.y);
     ImGui::Text("IsBgDragging = %s", IBR_WorkSpace::IsBgDragging ? "true" : "false");
     ImGui::Text("HoldingModules = %s", IBR_WorkSpace::HoldingModules ? "true" : "false");
     ImGui::Text("IsMassSelecting = %s", IBR_WorkSpace::IsMassSelecting ? "true" : "false");
