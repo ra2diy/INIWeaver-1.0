@@ -757,13 +757,17 @@ void IBR_SectionData::RenderUI()
             }
             for (auto i : Bsec->SubSecOrder)
             {
-                const auto& sub = Bsec->SubSecs[i];
+                auto& sub = Bsec->SubSecs[i];
                 std::string Last{};
                 std::unordered_set<std::string> Used;
                 bool IsInheritSubSec = (sub.Default->Name == "  INHERIT_SUBSEC__");
 
                 if (IsInheritSubSec && Bsec->Inherit.empty())
                     continue;
+
+                auto BLinkCmp = [](const IBB_Link& a, const IBB_Link& b) { return a.FromKey < b.FromKey; };
+                if (!std::ranges::is_sorted(sub.LinkTo, BLinkCmp))
+                    std::ranges::sort(sub.LinkTo, BLinkCmp);
 
                 for (const auto& lt : sub.LinkTo)
                 {
@@ -952,8 +956,9 @@ void IBR_SectionData::RenderUI()
                     }
                     Last = lt.FromKey;
                 }
-                for (const auto& [k, l] : sub.Lines)
+                for (const auto& k : sub.Lines_ByName)
                 {
+                    //const auto& l = sub.Lines.at(k);
                     if (Used.count(k) > 0)continue;
                     auto _F = Bsec->OnShow.find(k);
                     if (_F != Bsec->OnShow.end() && _F->second.empty())continue;

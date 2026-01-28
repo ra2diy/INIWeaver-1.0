@@ -200,7 +200,7 @@ struct IBR_Section
 
     _RETURN_BACK_DATA IBB_VariableList* _PROJ_CMD_READ GetVarList() _PROJ_CMD_BACK_CONST const;
     IBB_VariableList _PROJ_CMD_READ GetVarListCopy() _PROJ_CMD_BACK_CONST const;
-    IBB_VariableList _PROJ_CMD_READ GetVarListFullCopy(bool PrintExtraData) _PROJ_CMD_BACK_CONST const;
+    IBB_VariableList _PROJ_CMD_READ GetVarListFullCopy(bool PrintExtraData, bool FromExport) _PROJ_CMD_BACK_CONST const;
     bool _PROJ_CMD_READ GetClipData(ModuleClipData& Data, bool UsePosAsDelta) _PROJ_CMD_BACK_CONST;
     ImColor _PROJ_CMD_READ GetRegTypeColor() _PROJ_CMD_BACK_CONST const;
     const std::string& _PROJ_CMD_READ GetRegTypeName() _PROJ_CMD_BACK_CONST const;

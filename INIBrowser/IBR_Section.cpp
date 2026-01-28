@@ -101,12 +101,12 @@ IBB_VariableList _PROJ_CMD_READ IBR_Section::GetVarListCopy() _PROJ_CMD_BACK_CON
     if (pSec == nullptr)return {};
     return pSec->VarList;
 }
-IBB_VariableList _PROJ_CMD_READ IBR_Section::GetVarListFullCopy(bool PrintExtraData) _PROJ_CMD_BACK_CONST const
+IBB_VariableList _PROJ_CMD_READ IBR_Section::GetVarListFullCopy(bool PrintExtraData, bool FromExport) _PROJ_CMD_BACK_CONST const
 {
     IBD_RInterruptF(x);
     auto pSec = GetBack_Inl();
     if (pSec == nullptr)return {};
-    return pSec->GetLineList(PrintExtraData);
+    return pSec->GetLineList(PrintExtraData, FromExport);
 }
 bool _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE IBR_Section::SetVarList(const IBB_VariableList& NewList)
 {

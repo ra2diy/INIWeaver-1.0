@@ -468,9 +468,11 @@ namespace IBR_EditFrame
             return;
         }
 
-        for (auto& [K, V] : EditLines)
+        for (auto& K : pbk->LineOrder)
         {
-            if (K == InheritKeyName)continue;
+            //if (K == InheritKeyName)continue;
+            auto& V = EditLines.at(K);
+            
             if (ImGui::RadioButton(("##" + K).c_str(), !pbk->OnShow[K].empty(), GlobalNodeStyle))
             {
                 IBG_Undo.SomethingShouldBeHere();

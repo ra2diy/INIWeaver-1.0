@@ -326,7 +326,7 @@ std::vector<std::string> IBB_SubSec::GetKeys(bool PrintExtraData) const
     }
     return Ret;
 }
-IBB_VariableList IBB_SubSec::GetLineList(bool PrintExtraData) const
+IBB_VariableList IBB_SubSec::GetLineList(bool PrintExtraData, bool FromExport) const
 {
     IBB_VariableList Ret;
     if (PrintExtraData)Ret.Value["_DEFAULT_NAME"] = (Default == nullptr ? std::string{ "MISSING SubSec Default" } : Default->Name);
@@ -341,9 +341,16 @@ IBB_VariableList IBB_SubSec::GetLineList(bool PrintExtraData) const
                 GlobalLogB.AddLog(std::vformat(L"IBB_SubSec::GetLineList ：" + locw("Log_SubSecNotExist"), std::make_wformat_args(sl)));
             }
         auto& L = It->second;
-        if (L.Default == nullptr)Ret.Value[sn] = "MISSING Line Default";
+        if (FromExport)
+        {
+            auto ex = L.Data->GetStringForExport();
+            if (ex.empty())continue;
+            if (sn == InheritKeyName)continue;
+            Ret.Value[sn] = ex;
+        }
         else
         {
+            if (sn == InheritKeyName)continue;
             Ret.Value[sn] = L.Data->GetString();
         }
     }

@@ -158,7 +158,7 @@ struct IBB_SubSec
 
     std::string GetText(bool PrintExtraData, bool FromExport = false) const;//RARELY USED 这个GetText自带换行符
     std::vector<std::string> GetKeys(bool PrintExtraData) const;//RARELY USED
-    IBB_VariableList GetLineList(bool PrintExtraData) const;//RARELY USED
+    IBB_VariableList GetLineList(bool PrintExtraData, bool FromExport) const;//RARELY USED
     std::string GetFullVariable(const std::string& Name) const;
     IBB_SubSec Duplicate() const;//这个才是深复制，鉴于深复制用处远低浅复制，故默认浅复制
     void GenerateAsDuplicate(const IBB_SubSec& Src);//从Src深复制
@@ -201,6 +201,7 @@ struct IBB_Section
     std::vector<IBB_Link> LinkGroup_LinkTo;
     IBB_VariableList DefaultLinkKey;
     std::unordered_map<std::string, std::string> OnShow;//EmptyOnShowDesc means no desc
+    std::vector<std::string> LineOrder;
     std::string Inherit;
     std::string Comment{};
     std::string Register;
@@ -218,17 +219,17 @@ struct IBB_Section
     bool Merge(const IBB_Section& Another, IBB_IniMergeMode MergeType, bool IsDuplicate);//they share the same merge type
     bool MergeLine(const std::string& Key, const std::string& Value, IBB_IniMergeMode Mode);
     bool Generate(const IBB_Section_NameType& Paragraph);
-    bool GenerateLines(const IBB_VariableList& Lines);
+    bool GenerateLines(const IBB_VariableList& Lines, const std::vector<std::string>& Order = {});
     bool GenerateAsDuplicate(const IBB_Section& Src);
 
-
     bool UpdateAll();
+    bool UpdateLineOrder();
 
     IBB_Section() {}
     IBB_Section(const std::string& N, IBB_Ini* R);
     IBB_Section(const IBB_Section_NameType& Paragraph, IBB_Ini* R) : Root(R) { Generate(Paragraph); }
     IBB_Section(const IBB_Section&) = default;
-    IBB_Section(IBB_Section&&);
+    IBB_Section(IBB_Section&&) noexcept;
 
     bool ChangeRoot(const IBB_Ini* NewRoot);
     IBB_Section& ChangeRootAndBack(const IBB_Ini* R) { ChangeRoot(R); return *this; }
@@ -242,7 +243,7 @@ struct IBB_Section
     IBB_Section_Desc GetThisDesc() const;
     std::vector<IBB_Link> GetLinkTo() const;//RARELY USED
     std::vector<std::string> GetKeys(bool PrintExtraData) const;//RARELY USED
-    IBB_VariableList GetLineList(bool PrintExtraData) const;//RARELY USED
+    IBB_VariableList GetLineList(bool PrintExtraData, bool FromExport) const;//RARELY USED
     IBB_VariableList GetSimpleLines() const;//RARELY USED
     std::string GetText(bool PrintExtraData, bool FromExport = false) const;
     std::string GetTextForEdit() const;
@@ -250,11 +251,14 @@ struct IBB_Section
     std::vector<size_t> GetRegisteredPosition() const;//Project的RegList序号
     std::vector<std::pair<size_t, size_t>> GetRegisteredPositionAlt() const;//pair<Project的RegList序号,RegList的Sec*序号>
     IBB_Section_NameType GetNameType() const;
+    bool IsComment() const { return CreateAsCommentBlock || !Comment.empty(); }
+    bool HasLine(const std::string& Key)const;
+
     bool SetText(char* Text);//mess Text up
     bool SetText(const std::vector<IniToken>& Tokens);//do not consider section&inherit
-    bool IsComment() const { return CreateAsCommentBlock || !Comment.empty(); }
     void GetClipData(ModuleClipData& Clip);
     bool Generate(const ModuleClipData& Clip);
+
 };
 
 struct IBB_Ini
