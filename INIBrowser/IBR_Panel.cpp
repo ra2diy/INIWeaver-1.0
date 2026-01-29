@@ -175,7 +175,7 @@ IBR_MainMenu IBR_Inst_Menu
 
     {[]() {return ImGui::SmallButton(locc("GUI_MenuItem_Setting")); },[]() {IBR_Inst_Setting.RenderUI(); }},
     {[]() {ImGui::NewLine(); ImGui::SameLine(); return ImGui::SmallButton(locc("GUI_MenuItem_About")); },ControlPanel_About},
-    {[]() {if (EnableDebugList) return ImGui::SmallButton(locc("GUI_MenuItem_Debug")); else { ImGui::NewLine(); return false; } },ControlPanel_Debug},
+    {[]() {if (EnableDebugList) { ImGui::NewLine(); ImGui::SameLine(); return ImGui::SmallButton(locc("GUI_MenuItem_Debug")); } else { ImGui::NewLine(); return false; } },ControlPanel_Debug},
 }
 };
 
