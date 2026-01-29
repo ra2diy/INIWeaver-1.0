@@ -177,13 +177,15 @@ noexcept :
 namespace IBR_RealCenter
 {
     ImVec2 Center;
-    dImVec2 WorkSpaceUL, WorkSpaceDR;
+    dImVec2 FixedUL, WorkSpaceUL, WorkSpaceDR;
     bool Update()
     {
         double LWidth = ImGui::IsWindowCollapsed() ? 0.0f : ImGui::GetWindowWidth();
+        FixedUL = dImVec2{ 0.0, FontHeight * 2.0 - WindowSizeAdjustY };
         WorkSpaceUL = dImVec2{ LWidth,FontHeight * 2.0 - WindowSizeAdjustY };
         WorkSpaceDR = dImVec2{ (double)IBR_UICondition::CurrentScreenWidth ,(double)IBR_UICondition::CurrentScreenHeight - FontHeight * 1.5 };
-        Center = ImVec2((WorkSpaceUL + WorkSpaceDR) / 2.0);
+        Center = ImVec2((FixedUL + WorkSpaceDR) / 2.0);
+
         return true;
     }
     ImRect GetWorkSpaceRect()

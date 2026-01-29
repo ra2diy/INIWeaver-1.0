@@ -1,4 +1,4 @@
-// Copyright (C) 2019 Nomango
+ï»¿// Copyright (C) 2019 Nomango
 
 #pragma once
 
@@ -11,8 +11,8 @@
 #include<ShlObj.h>
 #include<imgui_internal.h>
 
-std::string FontPath = ".\\Resources\\";//È«¹ı³Ì²»±ä
-std::wstring FontPathW = L".\\Resources\\";//È«¹ı³Ì²»±ä
+std::string FontPath = ".\\Resources\\";//å…¨è¿‡ç¨‹ä¸å˜
+std::wstring FontPathW = L".\\Resources\\";//å…¨è¿‡ç¨‹ä¸å˜
 std::wstring Defaultpath{ L"C:\\" };
 std::string Pathbuf, Desktop, TextEditAboutU8;
 std::wstring PathbufW;
@@ -20,8 +20,8 @@ std::wstring PathbufW;
 int FPSLimit = -1;
 int RFontHeight;
 
-wchar_t CurrentDirW[5000];//µ÷ÓÃµ±Ç°Ä¿Â¼Ê±±ØĞëµ÷ÓÃÕâÁ½¸ö£¬²»ÒªÁÙÊ±Çó£¡
-char CurrentDirA[5000];//ÒòÎªOpenFileDialog»á¸Ä±äµ±Ç°Ä¿Â¼£¬ËùÒÔ±ØĞëÌáÇ°¼ÓÔØ
+wchar_t CurrentDirW[5000];//è°ƒç”¨å½“å‰ç›®å½•æ—¶å¿…é¡»è°ƒç”¨è¿™ä¸¤ä¸ªï¼Œä¸è¦ä¸´æ—¶æ±‚ï¼
+char CurrentDirA[5000];//å› ä¸ºOpenFileDialogä¼šæ”¹å˜å½“å‰ç›®å½•ï¼Œæ‰€ä»¥å¿…é¡»æå‰åŠ è½½
 
 int RecentFileLimit = 10;
 std::vector<std::string>RecentFilePath;//UTF-8
@@ -209,7 +209,7 @@ void ControlPanel()
     RFontHeight = FontHeight;
     FontHeight = (int)(FontHeight * IBR_FullView::Ratio);
     dImVec2 PrevClipZoneCenter = IBR_RealCenter::Center;
-    IBR_RealCenter::Center = (IBR_RealCenter::WorkSpaceUL + IBR_RealCenter::WorkSpaceDR) / 2.0;
+    IBR_RealCenter::Center = (IBR_RealCenter::FixedUL + IBR_RealCenter::WorkSpaceDR) / 2.0;
     
 
     IBR_Inst_Debug.AddMsgCycle([=]() {ImGui::Text("PrevSet = %s", (PrevSet?"true":"false")); });

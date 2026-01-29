@@ -334,7 +334,7 @@ private:
 namespace IBR_RealCenter
 {
     extern ImVec2 Center;
-    extern dImVec2 WorkSpaceUL, WorkSpaceDR;
+    extern dImVec2 FixedUL, WorkSpaceUL, WorkSpaceDR;
     bool Update();
 }
 
