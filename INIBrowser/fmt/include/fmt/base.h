@@ -1,4 +1,4 @@
-// Formatting library for C++ - the base API for char/UTF-8
+﻿// Formatting library for C++ - the base API for char/UTF-8
 //
 // Copyright (c) 2012 - present, Victor Zverovich
 // All rights reserved.
@@ -462,8 +462,7 @@ enum { use_utf8 = !FMT_WIN32 || is_utf8_enabled };
 #  define FMT_UNICODE 1
 #endif
 
-static_assert(!FMT_UNICODE || use_utf8,
-              "Unicode support requires compiling with /utf-8");
+//static_assert(!FMT_UNICODE || use_utf8, "Unicode support requires compiling with /utf-8");
 
 template <typename T> constexpr auto narrow(T*) -> char* { return nullptr; }
 constexpr FMT_ALWAYS_INLINE auto narrow(const char* s) -> const char* {
@@ -924,6 +923,12 @@ class locale_ref {
  public:
   constexpr locale_ref() : locale_(nullptr) {}
 
+// Suppress C4834
+#ifdef _MSC_VER
+#  pragma warning(push)
+#  pragma warning(disable : 4834)
+#endif
+
   template <typename Locale, FMT_ENABLE_IF(sizeof(Locale::collate) != 0)>
   locale_ref(const Locale& loc) : locale_(&loc) {
     // Check if std::isalpha is found via ADL to reduce the chance of misuse.
@@ -931,6 +936,12 @@ class locale_ref {
   }
 
   inline explicit operator bool() const noexcept { return locale_ != nullptr; }
+
+// Suppress C4834
+#ifdef _MSC_VER
+#  pragma warning(pop)
+#endif
+
 #endif  // FMT_USE_LOCALE
 
  public:

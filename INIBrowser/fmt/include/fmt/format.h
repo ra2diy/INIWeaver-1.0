@@ -1,4 +1,4 @@
-/*
+﻿/*
   Formatting library for C++
 
   Copyright (c) 2012 - present, Victor Zverovich
@@ -32,6 +32,12 @@
 
 #ifndef FMT_FORMAT_H_
 #define FMT_FORMAT_H_
+
+// Suppress C4244
+#ifdef _MSC_VER
+#  pragma warning(push)
+#  pragma warning(disable : 4244)
+#endif
 
 #ifndef _LIBCPP_REMOVE_TRANSITIVE_INCLUDES
 #  define _LIBCPP_REMOVE_TRANSITIVE_INCLUDES
@@ -4390,6 +4396,11 @@ FMT_END_NAMESPACE
 // Restore _LIBCPP_REMOVE_TRANSITIVE_INCLUDES.
 #ifdef FMT_REMOVE_TRANSITIVE_INCLUDES
 #  undef _LIBCPP_REMOVE_TRANSITIVE_INCLUDES
+#endif
+
+// Suppress C4244
+#ifdef _MSC_VER
+#  pragma warning(pop)
 #endif
 
 #endif  // FMT_FORMAT_H_
