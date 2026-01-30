@@ -2,6 +2,7 @@
 #include "Global.h"
 #include "IBB_ModuleAlt.h"
 #include "IBB_Index.h"
+#include "IBG_InputType.h"
 
 std::string IBB_RegType::GetNoName()
 {
@@ -34,7 +35,54 @@ namespace IBB_DefaultRegType
         DefaultColor, DefaultColor, DefaultColor, DefaultColor,
         DefaultColor, DefaultColor, DefaultColor, DefaultColor,
         DefaultColorD, DefaultColorD, DefaultColorD, DefaultColorD,
-        false, false, false, u8"模块", 0};
+        false, false, false, false, u8"模块", 0};
+
+    std::unordered_map<_TEXT_UTF8 std::string, IBG_InputType> InputTypes;
+    void InitInputTypes()
+    {
+        const char* StrTypeJSON =
+R"({
+    "Type" : "Form",
+    "Form" : {
+        "Input" : [
+            {"Type": "InputText", "ValueID": 0}
+        ],
+        "Format" : [
+            {"ValueIDToString": 0}
+        ]
+    }
+})";
+        const char* BoolTypeJSON =
+R"({
+    "Type" : "Form",
+    "Form" : {
+        "Input" : [
+            {"Type": "Bool", "ValueID": 0, "InitialValue": false}
+        ],
+        "Format" : [
+            {"ValueIDToString": 0}
+        ]
+    }
+})";
+        const char* LinkTypeJSON =
+R"({
+    "Type" : "Link",
+    "Form" : {
+        "Input" : [
+            {"Type": "InputText", "ValueID": 0}
+        ],
+        "Format" : [
+            {"ValueIDToString": 0}
+        ]
+    }
+})";
+        JsonFile StrObj; StrObj.Parse(StrTypeJSON);
+        JsonFile BoolObj; BoolObj.Parse(BoolTypeJSON);
+        JsonFile LinkObj; LinkObj.Parse(LinkTypeJSON);
+        InputTypes[u8"String"].Load(StrObj);
+        InputTypes[u8"Bool"].Load(BoolObj);
+        InputTypes[u8"Link"].Load(LinkObj);
+    }
 
     void ClearModuleCount()
     {
@@ -79,13 +127,18 @@ namespace IBB_DefaultRegType
         Reg.Export = Obj.ItemBoolOr(u8"Export", false);
         Reg.RegNameAsDisplay = Obj.ItemBoolOr(u8"UseRegName", false);
         Reg.UseOwnName = Obj.ItemBoolOr(u8"UseOwnName", false);
+        Reg.ValidateOptions = Obj.ItemBoolOr(u8"ValidateOptions", false);
+
         Reg.DefaultLinks.Value = Obj.ItemMapStringOr(u8"DefaultLinks");
+        Reg.Options = Obj.ItemMapStringOr(u8"Options");
 
         S = Obj.GetObjectItem(u8"Name");
         if (S.Available())Reg.Name = S.GetString();
         else if (Reg.UseOwnName)Reg.Name = Obj.GetName() + "_";
         else Reg.Name = loc("Back_DefaultModuleName");
         Reg.Count = 0;
+
+        
 
 
 
@@ -207,6 +260,13 @@ namespace IBB_DefaultRegType
             Reg.DefaultLinks.Value.insert(Temp.begin(), Temp.end());
         }
 
+
+        InitInputTypes();
+        S = Obj.GetObjectItem(u8"InputTypes");
+        if (S.Available())
+            for (auto& [N, V] : S.GetMapObject())
+                InputTypes[N].Load(V);
+
         return true;
     }
     bool LoadFromFile(const wchar_t* FileName)
@@ -236,6 +296,16 @@ namespace IBB_DefaultRegType
     {
         auto it = RegisterTypes.find(Type);
         if (it == RegisterTypes.end())return __Default;
+        else return it->second;
+    }
+    bool HasInputType(const _TEXT_UTF8 std::string& Type)
+    {
+        return InputTypes.find(Type) != InputTypes.end();
+    }
+    IBG_InputType& GetInputType(const _TEXT_UTF8 std::string& Type)
+    {
+        auto it = InputTypes.find(Type);
+        if (it == InputTypes.end())return InputTypes[u8"Link"];
         else return it->second;
     }
     //A 属于 B

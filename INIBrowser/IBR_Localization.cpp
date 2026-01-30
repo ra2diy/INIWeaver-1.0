@@ -203,6 +203,18 @@ namespace IBR_L10n
             W.resize(AlignMax, L' ');
         return W;
     }
+    const std::string& _TEXT_UTF8 GetStringOr(const std::string& Key, const std::string& Fallback)
+    {
+        if (CurrentMap.contains(Key))
+            return CurrentMap[Key];
+        else return Fallback;
+    }
+    const std::wstring& _TEXT_WIDE GetWStringOr(const std::string& Key, const std::wstring& Fallback)
+    {
+        if (CurrentMapW.contains(Key))
+            return CurrentMapW[Key];
+        else return Fallback;
+    }
     void SetLanguage(const std::string& Language)
     {
         if (CurrentLanguage == Language)return;

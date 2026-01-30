@@ -16,6 +16,9 @@
     <Filter Include="ImGui">
       <UniqueIdentifier>{5aba4f2b-0ad4-431f-ab52-6e0ae836ce08}</UniqueIdentifier>
     </Filter>
+    <Filter Include="fmt">
+      <UniqueIdentifier>{2092f611-0774-48d5-b5a1-a2170a6da556}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Resource.h">
@@ -131,6 +134,54 @@
     </ClInclude>
     <ClInclude Include="IBR_ListView.h">
       <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="IBG_InputType.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="fmt\include\fmt\args.h">
+      <Filter>fmt</Filter>
+    </ClInclude>
+    <ClInclude Include="fmt\include\fmt\base.h">
+      <Filter>fmt</Filter>
+    </ClInclude>
+    <ClInclude Include="fmt\include\fmt\chrono.h">
+      <Filter>fmt</Filter>
+    </ClInclude>
+    <ClInclude Include="fmt\include\fmt\color.h">
+      <Filter>fmt</Filter>
+    </ClInclude>
+    <ClInclude Include="fmt\include\fmt\compile.h">
+      <Filter>fmt</Filter>
+    </ClInclude>
+    <ClInclude Include="fmt\include\fmt\core.h">
+      <Filter>fmt</Filter>
+    </ClInclude>
+    <ClInclude Include="fmt\include\fmt\format.h">
+      <Filter>fmt</Filter>
+    </ClInclude>
+    <ClInclude Include="fmt\include\fmt\format-inl.h">
+      <Filter>fmt</Filter>
+    </ClInclude>
+    <ClInclude Include="fmt\include\fmt\os.h">
+      <Filter>fmt</Filter>
+    </ClInclude>
+    <ClInclude Include="fmt\include\fmt\ostream.h">
+      <Filter>fmt</Filter>
+    </ClInclude>
+    <ClInclude Include="fmt\include\fmt\printf.h">
+      <Filter>fmt</Filter>
+    </ClInclude>
+    <ClInclude Include="fmt\include\fmt\ranges.h">
+      <Filter>fmt</Filter>
+    </ClInclude>
+    <ClInclude Include="fmt\include\fmt\scan.h">
+      <Filter>fmt</Filter>
+    </ClInclude>
+    <ClInclude Include="fmt\include\fmt\std.h">
+      <Filter>fmt</Filter>
+    </ClInclude>
+    <ClInclude Include="fmt\include\fmt\xchar.h">
+      <Filter>fmt</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -259,6 +310,15 @@
     </ClCompile>
     <ClCompile Include="IBR_ListView.cpp">
       <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="IBG_InputType.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="fmt\src\fmt.cc">
+      <Filter>fmt</Filter>
+    </ClCompile>
+    <ClCompile Include="fmt\src\format.cc">
+      <Filter>fmt</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

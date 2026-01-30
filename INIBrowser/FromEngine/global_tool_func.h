@@ -124,6 +124,9 @@ public:
 
     cJSON* GetRaw() const { return Object; }
 
+    operator bool() const { return Object != nullptr; }
+    bool operator!() const { return Object == nullptr; }
+
     bool Available() const { return Object != nullptr; }
     int GetType() const { return Object->type; }
     bool IsTypeNumber() const { return ((Object->type & 0xFF) == cJSON_Number); }
@@ -206,6 +209,7 @@ public:
     std::unordered_map<std::string, std::string> GetMapString() const;
 
     std::string PrintData() const;
+    std::string PrintUnformatted() const;
 
     JsonObject CreateObjectItem(const std::string& Str) const;
     void AddObjectItem(const std::string& Str, JsonObject Child, bool NeedsCopy) const;

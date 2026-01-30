@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #include "FromEngine/Include.h"
 #include "cjson/cJSON.h"
 #include "IBB_Components.h"
@@ -50,9 +50,9 @@ struct ModuleClipData;
 struct IBB_Project
 {
     std::wstring ProjName;//Name or Path ? Unsure.
-    std::wstring Path;//¾ø¶ÔÂ·¾¶
-    std::wstring LastOutputDir;//ÉÏ´Îµ¼³öµÄÂ·¾¶
-    std::unordered_map<std::string, std::wstring> LastOutputIniName;//ÉÏ´Îµ¼³öµÄiniÎÄ¼şÃû
+    std::wstring Path;//ç»å¯¹è·¯å¾„
+    std::wstring LastOutputDir;//ä¸Šæ¬¡å¯¼å‡ºçš„è·¯å¾„
+    std::unordered_map<std::string, std::wstring> LastOutputIniName;//ä¸Šæ¬¡å¯¼å‡ºçš„iniæ–‡ä»¶å
 
     bool IsNewlyCreated{ false };
     bool ChangeAfterSave{ false };
@@ -76,7 +76,7 @@ struct IBB_Project
     IBB_Section* CreateNewSection(const IBB_Section_Desc& Desc);
     bool AddNewLinkToLinkGroup(const IBB_Section_Desc& From, const IBB_Section_Desc& To);
 
-    IBB_RegisterList& GetRegisterList(const std::string& Name, const std::string& IniName);//ÕÒ²»µ½¾Í·µ»ØÒ»¸öĞÂ½¨µÄ
+    IBB_RegisterList& GetRegisterList(const std::string& Name, const std::string& IniName);//æ‰¾ä¸åˆ°å°±è¿”å›ä¸€ä¸ªæ–°å»ºçš„
     bool RegisterSection(const std::string& Name, const std::string& IniName, IBB_Section& Section);
     bool RegisterSection(size_t RegListID, IBB_Section& Section);
 
@@ -94,7 +94,7 @@ private:
 
 struct IBB_DefaultTypeAlt
 {
-    std::string Name, DescLong, DescShort, LinkType;
+    std::string Name, DescLong, DescShort, LinkType, Input;
     int LinkLimit{ 1 };
     ImU32 Color;
 
@@ -118,7 +118,7 @@ public:
     // std::unordered_map<Name, Object>
     std::unordered_map<std::string, JsonObject> Require_Default;
     std::unordered_map<std::string, IBB_IniLine_Default> IniLine_Default;
-    std::unordered_map<std::string, IBB_SubSec_Default> SubSec_Default;//Ò»¸öIniLineÖ»ÄÜÊôÓÚÒ»¸öSubSec
+    std::unordered_map<std::string, IBB_SubSec_Default> SubSec_Default;//ä¸€ä¸ªIniLineåªèƒ½å±äºä¸€ä¸ªSubSec
     std::unordered_map<std::string, IBB_Link_Default> Link_Default;
 
     struct _Query

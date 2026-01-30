@@ -76,7 +76,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <LibraryPath>$(MSBuildStartupDirectory)\libs\glfw\lib-vc2010-32;$(LibraryPath)</LibraryPath>
-    <IncludePath>$(SolutionDir)ImGui;$(SolutionDir)ImGui\Backends;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)INIBrowser\fmt\include;$(SolutionDir)ImGui;$(SolutionDir)ImGui\Backends;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
@@ -103,7 +103,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>IMGUI_USE_WCHAR32;_CRT_SECURE_NO_WARNINGS;WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>FMT_DEPRECATED_SCAN;FMT_END_EXPORT=;FMT_BEGIN_EXPORT=;FMT_EXPORT=;FMT_HEADER_ONLY;IMGUI_USE_WCHAR32;_CRT_SECURE_NO_WARNINGS;WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>..\..;..\..\backends;..\libs\glfw\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp23</LanguageStandard>
@@ -159,6 +159,21 @@
     <ClInclude Include="..\ImGui\imstb_textedit.h" />
     <ClInclude Include="..\ImGui\imstb_truetype.h" />
     <ClInclude Include="cjson\cJSON.h" />
+    <ClInclude Include="fmt\include\fmt\args.h" />
+    <ClInclude Include="fmt\include\fmt\base.h" />
+    <ClInclude Include="fmt\include\fmt\chrono.h" />
+    <ClInclude Include="fmt\include\fmt\color.h" />
+    <ClInclude Include="fmt\include\fmt\compile.h" />
+    <ClInclude Include="fmt\include\fmt\core.h" />
+    <ClInclude Include="fmt\include\fmt\format-inl.h" />
+    <ClInclude Include="fmt\include\fmt\format.h" />
+    <ClInclude Include="fmt\include\fmt\os.h" />
+    <ClInclude Include="fmt\include\fmt\ostream.h" />
+    <ClInclude Include="fmt\include\fmt\printf.h" />
+    <ClInclude Include="fmt\include\fmt\ranges.h" />
+    <ClInclude Include="fmt\include\fmt\scan.h" />
+    <ClInclude Include="fmt\include\fmt\std.h" />
+    <ClInclude Include="fmt\include\fmt\xchar.h" />
     <ClInclude Include="FromEngine\external_file.h" />
     <ClInclude Include="FromEngine\external_log.h" />
     <ClInclude Include="FromEngine\global_timer.h" />
@@ -176,6 +191,7 @@
     <ClInclude Include="IBB_Setting.h" />
     <ClInclude Include="IBFront.h" />
     <ClInclude Include="IBG_Ini.h" />
+    <ClInclude Include="IBG_InputType.h" />
     <ClInclude Include="IBRender.h" />
     <ClInclude Include="IBR_Font.h" />
     <ClInclude Include="IBR_HotKey.h" />
@@ -198,6 +214,8 @@
     <ClCompile Include="..\ImGui\imgui_tables.cpp" />
     <ClCompile Include="..\ImGui\imgui_widgets.cpp" />
     <ClCompile Include="cjson\cJSON.c" />
+    <ClCompile Include="fmt\src\fmt.cc" />
+    <ClCompile Include="fmt\src\format.cc" />
     <ClCompile Include="FromEngine\external_log.cpp" />
     <ClCompile Include="FromEngine\global_tool_func.cpp" />
     <ClCompile Include="FromEngine\RFBump.cpp" />
@@ -212,6 +230,7 @@
     <ClCompile Include="IBB_Setting.cpp" />
     <ClCompile Include="IBB_SubSec.cpp" />
     <ClCompile Include="IBFront.cpp" />
+    <ClCompile Include="IBG_InputType.cpp" />
     <ClCompile Include="IBR_Font.cpp" />
     <ClCompile Include="IBR_HotKey.cpp" />
     <ClCompile Include="IBR_ListView.cpp" />
@@ -245,6 +264,5 @@
     <None Include="..\Release\Resources\language.ini" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
-  <ImportGroup Label="ExtensionTargets">
-  </ImportGroup>
+  <ImportGroup Label="ExtensionTargets" />
 </Project>

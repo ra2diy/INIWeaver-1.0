@@ -12,6 +12,8 @@ struct IniToken;
 struct ModuleClipData;
 
 struct IBB_IniLine_Data_Base;
+struct IBB_RegType;
+struct IBG_InputType;
 using LineData = std::shared_ptr<IBB_IniLine_Data_Base>;
 
 enum class IBB_IniMergeMode
@@ -20,6 +22,7 @@ enum class IBB_IniMergeMode
     Merge,
     Reserve
 };
+
 
 struct IBB_IniLine_Default
 {
@@ -32,18 +35,27 @@ struct IBB_IniLine_Default
     struct _Property//存储的是什么
     {
         std::string Type;
-        JsonObject Lim;
-        std::string TypeAlt;
+        JsonObject Lim;//限制数据，对link来说是LinkLimit
+        std::string TypeAlt;//一个RegType的名字
     };
 
+    //从TypeAlt加载
     std::string Name, DescShort, DescLong;
+
+    //保留备用
     std::vector<std::string> Platform;
     _Limit Limit;
     _Property Property;
+    
+    //从TypeAlt加载
     ImU32 Color;
+    std::string InputName;
+    const IBG_InputType* Input;
 
     LineData Create() const;
     bool IsLinkAlt() const;
+    const IBB_RegType& GetRegType() const;
+    const IBG_InputType& GetInputType() const;
     //bool Load(JsonObject FromJson);
 };
 
@@ -119,6 +131,19 @@ struct IBB_IniLine
 {
     IBB_IniLine_Default* Default{ nullptr };
     LineData Data;
+
+    //校验逻辑暂时空挂在这
+    enum ValidateResult
+    {
+        Normal,//值通过校验
+        Abnormal,//值未通过校验，但可以接受
+        Refused,//拒绝这个值
+        Unknown//校验无法进行
+    };
+    ValidateResult ValidateValue() const;
+    ValidateResult ValidateAndSet(const std::string& Value);
+    ValidateResult ValidateAndMerge(const std::string& Another, IBB_IniMergeMode Mode);
+    ValidateResult ValidateAndMerge(const IBB_IniLine& Another, IBB_IniMergeMode Mode);
 
     template<typename T> T* GetData() const { return dynamic_cast<T*>(Data.get()); }
 

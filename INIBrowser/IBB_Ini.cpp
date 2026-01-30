@@ -293,7 +293,7 @@ bool IBB_IniLine_Default::IsLinkAlt() const
 
 LineData IBB_IniLine_Default::Create() const
 {
-         if (Property.Type == IBB_IniLine_Data_Int::TypeName)
+    if (Property.Type == IBB_IniLine_Data_Int::TypeName)
         return LineData(new IBB_IniLine_Data_Int);
     else if (Property.Type == IBB_IniLine_Data_String::TypeName)
         return LineData(new IBB_IniLine_Data_String);
@@ -302,6 +302,15 @@ LineData IBB_IniLine_Default::Create() const
     return LineData(new IBB_IniLine_Data_String);
 }
 
+const IBB_RegType& IBB_IniLine_Default::GetRegType() const
+{
+    return IBB_DefaultRegType::GetRegType(Property.TypeAlt);
+}
+
+const IBG_InputType& IBB_IniLine_Default::GetInputType() const
+{
+    return *Input;
+}
 
 
 
@@ -408,6 +417,90 @@ bool IBB_Ini::Merge(const IBB_Ini& Another, bool IsDuplicate)
 }
 
 
+IBB_IniLine::ValidateResult IBB_IniLine::ValidateValue() const
+{
+    if (!Default)return ValidateResult::Unknown;
+
+    auto& RegType = Default->GetRegType();
+    if (RegType.Options.contains(Data->GetString()))
+        return ValidateResult::Normal;
+    else if (RegType.ValidateOptions)
+        return ValidateResult::Refused;
+    else
+        return ValidateResult::Abnormal;
+}
+IBB_IniLine::ValidateResult IBB_IniLine::ValidateAndSet(const std::string& Value)
+{
+    //Backup -> Set -> Validate -> Accept or Recover
+
+    if (!Default)return ValidateResult::Unknown;
+
+    auto Backup = Default->Create();
+
+    if (Data)
+    {
+        if(!Backup->MergeData(Data.get()))
+            return ValidateResult::Unknown;
+    }
+
+    Data->SetValue(Value);
+
+    auto VR = ValidateValue();
+    if (VR == ValidateResult::Unknown || VR == ValidateResult::Refused)
+    {
+        std::swap(Data, Backup);
+    }
+
+    return VR;
+}
+IBB_IniLine::ValidateResult IBB_IniLine::ValidateAndMerge(const std::string& Another, IBB_IniMergeMode Mode)
+{
+    //Backup -> Set -> Validate -> Accept or Recover
+
+    if (!Default)return ValidateResult::Unknown;
+
+    auto Backup = Default->Create();
+
+    if (Data)
+    {
+        if (!Backup->MergeData(Data.get()))
+            return ValidateResult::Unknown;
+    }
+
+    Merge(Another, Mode);
+
+    auto VR = ValidateValue();
+    if (VR == ValidateResult::Unknown || VR == ValidateResult::Refused)
+    {
+        std::swap(Data, Backup);
+    }
+
+    return VR;
+}
+IBB_IniLine::ValidateResult IBB_IniLine::ValidateAndMerge(const IBB_IniLine& Another, IBB_IniMergeMode Mode)
+{
+    //Backup -> Set -> Validate -> Accept or Recover
+
+    if (!Default)return ValidateResult::Unknown;
+
+    auto Backup = Default->Create();
+
+    if (Data)
+    {
+        if (!Backup->MergeData(Data.get()))
+            return ValidateResult::Unknown;
+    }
+
+    Merge(Another, Mode);
+
+    auto VR = ValidateValue();
+    if (VR == ValidateResult::Unknown || VR == ValidateResult::Refused)
+    {
+        std::swap(Data, Backup);
+    }
+
+    return VR;
+}
 
 
 bool IBB_IniLine::Merge(const IBB_IniLine& Another, IBB_IniMergeMode Mode)
@@ -496,6 +589,8 @@ bool IBB_IniLine::Generate(const std::string& Value, IBB_IniLine_Default* Def)
     }
     return Ret;
 }
+
+
 //IBB_IniLine(IBB_IniLine&& F) { Default = F.Default; Data = F.Data; if (F.ShouldDestroy) { F.ShouldDestroy = false; ShouldDestroy = true; } }
 IBB_IniLine::IBB_IniLine(IBB_IniLine&& F)
 {

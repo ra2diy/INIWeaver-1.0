@@ -21,9 +21,11 @@ struct IBB_RegType
     bool Export;
     bool RegNameAsDisplay;
     bool UseOwnName;
+    bool ValidateOptions;
     std::string Name;
     int Count;
     IBB_VariableList DefaultLinks;
+    std::unordered_map<std::string, std::string> Options;//AllowedValue : DisplayName ; if empty then any value allowed
 
     std::string GetNoName();
     std::string GetNoName(const std::string& Reg);
@@ -39,6 +41,8 @@ struct IBB_CompoundRegType
 
 struct PairClipString;
 
+struct IBG_InputType;
+
 namespace IBB_DefaultRegType
 {
     extern const ImColor DefaultColor;
@@ -48,6 +52,8 @@ namespace IBB_DefaultRegType
     bool LoadFromFile(const wchar_t* FileName);
     bool HasRegType(const _TEXT_UTF8 std::string& Type);
     IBB_RegType& GetRegType(const _TEXT_UTF8 std::string& Type);
+    bool HasInputType(const _TEXT_UTF8 std::string& Type);
+    IBG_InputType& GetInputType(const _TEXT_UTF8 std::string& Type);
     const bool MatchType(const _TEXT_UTF8 std::string& TypeA, const _TEXT_UTF8 std::string& TypeB);
     void GenerateDLK(const std::vector<PairClipString>& DLK1, const std::string& Register, IBB_VariableList& DefaultLinkKey);
     void SwitchLightColor();

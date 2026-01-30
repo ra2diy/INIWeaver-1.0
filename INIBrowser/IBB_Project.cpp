@@ -22,6 +22,8 @@ void IBB_DefaultTypeList::EnsureType(const IBB_DefaultTypeAlt& D, std::set<std::
     L.DescShort = D.DescShort;
     L.DescLong = D.DescLong;
     L.Color = D.Color;
+    L.Input = &IBB_DefaultRegType::GetInputType(D.Input);
+    L.InputName = D.Input;
     if (D.LinkType.empty() || D.LinkLimit == 0 || D.LinkType == "bool")
     {
         L.Property.Type = DefaultAltPropType;
@@ -130,6 +132,13 @@ ImU32 StrToCol(const std::string& Str)
     }
 }
 
+const char* SelectDefaultInput(const std::string& LinkType)
+{
+    if (LinkType == "bool")return "Bool";
+    if (LinkType == "string")return "String";
+    return "Link";
+}
+
 bool IBB_DefaultTypeAlt::Load(JsonObject FromJson)
 {
     Name = FromJson.ItemStringOr("Name");
@@ -138,6 +147,7 @@ bool IBB_DefaultTypeAlt::Load(JsonObject FromJson)
     LinkType = FromJson.ItemStringOr("LinkType");
     LinkLimit = FromJson.ItemIntOr("LinkLimit", 1);
     Color = StrToCol(FromJson.ItemStringOr("LineColor", "00000000").c_str());
+    Input = FromJson.ItemStringOr("InputType", SelectDefaultInput(LinkType));
     return true;
 }
 
@@ -151,6 +161,7 @@ bool IBB_DefaultTypeAlt::Load(const std::vector<std::string>& FromCSV)
     DescShort = FromCSV[3];
     DescLong = FromCSV[4];
     Color = StrToCol(FromCSV.size() > 5 ? FromCSV[5].c_str() : "00000000");
+    Input = FromCSV.size() > 6 ? FromCSV[6] : SelectDefaultInput(LinkType);
     return true;
 }
 

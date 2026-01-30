@@ -423,6 +423,15 @@ std::string JsonObject::PrintData() const
     return r;
 }
 
+std::string JsonObject::PrintUnformatted() const
+{
+    if (!Available())return "";
+    auto u = cJSON_PrintUnformatted(Object);
+    std::string r = u;
+    free(u);
+    return r;
+}
+
 void cJson_SwapData(cJSON* A, cJSON* B)
 {
     if (A == nullptr || B == nullptr)return;
