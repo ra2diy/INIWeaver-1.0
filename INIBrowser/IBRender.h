@@ -2,6 +2,7 @@
 #include "IBFront.h"
 #include "FromEngine/RFBump.h"
 #include "IBSave.h"
+#include "IBG_InputType.h"
 #include <any>
 
 extern int HintStayTimeMillis;
@@ -22,12 +23,12 @@ public:
 
 struct IBR_InputManager
 {
-    static constexpr size_t InputSize = 5000;
-    std::unique_ptr<char[]> Input;
+    using AfterInputType = std::function<void(const std::string&)>;
+    IIFPtr Form;
     std::string ID;
-    std::function<void(char*)> AfterInput;
+    AfterInputType AfterInput;
     
-    IBR_InputManager(const std::string& InitialText, const std::string& id, const std::function<void(char*)>& Fn);
+    IBR_InputManager(const std::string& InitialText, const std::string& id, const AfterInputType& Fn, IIFPtr&& InitialForm);
     bool RenderUI();
     ~IBR_InputManager() = default;
 };
@@ -40,7 +41,15 @@ struct IBR_IniLine
     {
         std::string InitText;
         std::string ID;
-        std::function<void(char*)> AfterInput;
+        IBR_InputManager::AfterInputType AfterInput;
+        const IIFPtr& InitialForm;
+
+        InitType(const std::string& Text,
+            const std::string& id,
+            const IBR_InputManager::AfterInputType& Fn,
+            const IIFPtr& Form)
+            :InitText(Text), ID(id), AfterInput(Fn), InitialForm(Form) {
+        }
     };
     bool NeedInit() { return HasInput && !Input; }
     void RenderUI(const std::string& Line, const std::string& Hint, const InitType* Init = nullptr);
@@ -50,11 +59,11 @@ struct IBR_IniLine
 struct BufferedLine
 {
     IBR_IniLine Edit;
+    const IBG_InputType* InputType;
     std::string Buffer;
     std::string Hint;
     bool Known;
     bool AltRes;
-    bool IsAltBool;
 };
 
 struct ActiveLine
@@ -646,6 +655,7 @@ namespace IBR_HintManager
 {
     void Clear();
     void RenderUI();
+    float GetHeight();
     void SetHint(const _TEXT_UTF8 std::string& Str, int TimeLimitMillis = -1);
     void SetHintCustom(const std::function<bool(_TEXT_UTF8 std::string&)>& Fn);//返回true继续，false停止并Clear
     const std::string& GetHint();

@@ -2,13 +2,13 @@
 #include "Global.h"
 
 //所有版本号相关数据
-const std::string Version = u8"1.0.6";
-const std::wstring VersionW = L"1.0.6";
+const std::string Version = u8"1.0.7";
+const std::wstring VersionW = L"1.0.7";
 const int VersionMajor = 1;
 const int VersionMinor = 0;
-const int VersionRelease = 6;
+const int VersionRelease = 7;
 const int VersionN = VersionMajor * 10000 + VersionMinor * 100 + VersionRelease;
-const std::string VersionNStr = u8"010006";
+const std::string VersionNStr = u8"010007";
 //剪贴板格式不更新就不要动了
 const std::string ClipDataFormatVersion = u8"1.0.6";
 

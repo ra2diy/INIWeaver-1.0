@@ -30,23 +30,29 @@ int HintStayTimeMillis = 3000;
 
 
 
-std::shared_ptr<IBR_InputManager> NewInput(const std::string& InitialText, const std::string& id, const std::function<void(char*)>& Fn)
+std::shared_ptr<IBR_InputManager> NewInput(const std::string& InitialText, const std::string& id, const IBR_InputManager::AfterInputType& Fn, IIFPtr&& InitialForm)
 {
-    return std::make_shared<IBR_InputManager>(InitialText, id, Fn);
+    return std::make_shared<IBR_InputManager>(InitialText, id, Fn, std::move(InitialForm));
 }
-IBR_InputManager::IBR_InputManager(const std::string& InitialText, const std::string& id, const std::function<void(char*)>& Fn) :ID(id), AfterInput(Fn)
+IBR_InputManager::IBR_InputManager(const std::string& InitialText, const std::string& id, const AfterInputType& Fn, IIFPtr&& InitialForm)
+    :ID(id), AfterInput(Fn), Form(std::move(InitialForm))
 {
-    Input.reset(new char[InputSize]); 
-    strcpy_s(Input.get(), InputSize, InitialText.c_str());
+    if (!Form)DebugBreak();
+    Form->ParseFromString(InitialText);
 }
 bool IBR_InputManager::RenderUI()
 {
-    if (ImGui::InputText(ID.c_str(), Input.get(), InputSize))
+    ImGui::BeginGroup();
+    ImGui::PushID(Form.get());
+    auto Result = Form->RenderUI();
+    ImGui::PopID();
+    ImGui::EndGroup();
+    if (Result.Changed)
     {
-        AfterInput(Input.get());
+        AfterInput(Form->GetFormattedString());
     }
-    if (ImGui::IsItemActive())IBR_WorkSpace::OperateOnText = true;
-    return ImGui::IsItemActive();
+    if (Result.Active)IBR_WorkSpace::OperateOnText = true;
+    return Result.Active;
 }
 
 void IBR_IniLine::RenderUI(const std::string& Line, const std::string& Hint, const InitType* Init)
@@ -81,7 +87,7 @@ void IBR_IniLine::RenderUI(const std::string& Line, const std::string& Hint, con
         }
         else
         {
-            Input = NewInput(Init->InitText , Init->ID, Init->AfterInput);
+            Input = NewInput(Init->InitText , Init->ID, Init->AfterInput, Init->InitialForm->Duplicate());
         }
     }
 }
@@ -90,7 +96,7 @@ void IBR_IniLine::RenderUI(const std::string& Line, const std::string& Hint, con
 
 void IBR_IniLine::CloseInput()
 {
-    if(Input)Input->AfterInput(Input->Input.get());
+    if(Input)Input->AfterInput(Input->Form->GetFormattedString());
     Input.reset();
     HasInput = false;
     UseInput = false;
@@ -299,8 +305,8 @@ namespace IBR_EditFrame
                 auto& Line = EditLines[K];
                 Line.Buffer = V.Data->GetString();
                 Line.Known = true;
-                Line.IsAltBool = V.Default->Property.TypeAlt == "bool";
                 Line.Hint = V.Default->DescLong;
+                Line.InputType = V.Default->Input;
             }
         }
         for (auto& [K, V] : rsc->UnknownLines.Value)
@@ -308,8 +314,8 @@ namespace IBR_EditFrame
             auto& Line = EditLines[K];
             Line.Buffer = V;
             Line.Known = false;
-            Line.IsAltBool = false;
             Line.Hint = "";
+            Line.InputType = &IBB_DefaultRegType::GetDefaultInputType();
         }
     }
 
@@ -385,8 +391,8 @@ namespace IBR_EditFrame
         {
             it->second.Buffer = NewValue;
             auto& L = it->second;
-            if (L.Edit.Input && L.Edit.Input->Input)
-                strcpy(L.Edit.Input->Input.get(), NewValue.c_str());
+            if (L.Edit.Input && L.Edit.Input->Form)
+                L.Edit.Input->Form->ParseFromString(NewValue);
         }
     }
 
@@ -417,8 +423,8 @@ namespace IBR_EditFrame
             if (it != data->ActiveLines.end())
             {
                 it->second.Buffer = L.Buffer;
-                if(it->second.Edit.Input && it->second.Edit.Input->Input)
-                    strcpy(it->second.Edit.Input->Input.get(), L.Buffer.c_str());
+                if (it->second.Edit.Input && it->second.Edit.Input->Form)
+                    it->second.Edit.Input->Form->ParseFromString(L.Buffer);
             }
         }
     }
@@ -482,7 +488,7 @@ namespace IBR_EditFrame
                 else pbk->OnShow[K].clear();
             }
             ImGui::SameLine();
-            if ((V.Known && V.IsAltBool) || (!V.Known && (V.Buffer == "yes" || V.Buffer == "no" || V.Buffer == "true" || V.Buffer == "false")))
+            if (/*(V.Known && V.IsAltBool) || */(!V.Known && (V.Buffer == "yes" || V.Buffer == "no" || V.Buffer == "true" || V.Buffer == "false")))
             {
                 V.AltRes = (V.Buffer == "yes" || V.Buffer == "true");
                 ImGui::TextWrapped(K.c_str());
@@ -510,12 +516,12 @@ namespace IBR_EditFrame
                         }
                     }
                     EditingLine = K;
-                    IBR_IniLine::InitType It{ V.Buffer ,"##" + RandStr(8),[Str = K](char* S)
+                    IBR_IniLine::InitType It{ V.Buffer ,"##" + RandStr(8),[Str = K](const std::string& S)
                              {
                                  IBG_Undo.SomethingShouldBeHere();
                                  EditLines[Str].Buffer = S;
                                  Modify(Str, EditLines[Str]);
-                             } };
+                             } , V.InputType->Sidebar };
                     V.Edit.RenderUI(K, V.Hint, &It);
                 }
                 else

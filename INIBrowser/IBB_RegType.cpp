@@ -308,6 +308,10 @@ R"({
         if (it == InputTypes.end())return InputTypes[u8"Link"];
         else return it->second;
     }
+    IBG_InputType& GetDefaultInputType()
+    {
+        return InputTypes[u8"String"];
+    }
     //A 属于 B
     const bool ContainType(const _TEXT_UTF8 std::string& TypeA, const _TEXT_UTF8 std::string& TypeB)
     {

@@ -68,9 +68,10 @@ IBB_InputValue& IBG_InputForm::GetValue(int ValueID)
     return ValueContainer.GetValue(ValueID);
 }
 
-bool IBG_InputForm::RenderUI()
+IBG_InputFormUIResult IBG_InputForm::RenderUI()
 {
     bool Changed = false;
+    bool Active = false;
 
     for (auto& IC : *InputComponents)
     {
@@ -82,11 +83,12 @@ bool IBG_InputForm::RenderUI()
         auto R = IC->RenderUI(ValueContainer);
         ImGui::PopID();
         Changed |= R.Updated;
+        Active |= R.Active;
         if (R.Updated)
             GetValue(R.ValueID).NeedsUpdate(ValueContainer, *IC);
     }
     if (Changed) Dirty = true;
-    return Changed;
+    return { Changed, Active };
 }
 
 const std::string& IBG_InputForm::GetFormattedString()
@@ -169,6 +171,7 @@ void IBG_InputForm::ParseFromString(const std::string& Str)
             auto& fmt = activeComponents[0];
             auto& V = GetValue(fmt.ValueID);
             V.StateValPtr->Parse(fmt.Format, pendingText);
+            V.Value = pendingText;
         }
         else
         {
@@ -176,7 +179,7 @@ void IBG_InputForm::ParseFromString(const std::string& Str)
             for (const auto& fmt : activeComponents)
             {
                 auto& V = GetValue(fmt.ValueID);
-                V.StateValPtr->TryAccept(fmt.Format, pendingText);
+                V.Value = V.StateValPtr->TryAccept(fmt.Format, pendingText);
             }
         }
     };
@@ -438,8 +441,6 @@ void IIC_Parser_String(const std::string& StrValue, const IBB_InputFormat& Forma
         break;
     }
     }
-
-    std::unreachable();
 }
 
 bool Check_A_Format_String_For_Both_Scanf_And_Printf_With_One_Parameter_Is_For_A_String(const std::string& Format)
@@ -520,7 +521,6 @@ void IIC_Parser_Bool(const std::string& StrValue, const IBB_InputFormat& Format,
     }
     }
 
-    std::unreachable();
 }
 void IIC_Parser_Int(const std::string& StrValue, const IBB_InputFormat& Format, int& OutValue)
 {
@@ -548,7 +548,6 @@ void IIC_Parser_Int(const std::string& StrValue, const IBB_InputFormat& Format, 
         }
         }
 
-        std::unreachable();
     }
     catch (...)
     {
@@ -556,27 +555,30 @@ void IIC_Parser_Int(const std::string& StrValue, const IBB_InputFormat& Format, 
     }
 }
 
-void IIC_Accepter_String(const IBB_InputFormat& Format, std::string& Value, std::string& OutValue)
+//return 已解析的部分
+std::string IIC_Accepter_String(const IBB_InputFormat& Format, std::string& Value, std::string& OutValue)
 {
     switch (Format.Type)
     {
     case IBB_InputFormat::UseFormat:
         OutValue = Format.String;
         //Value 不变
-        break;
+        return "";
     case IBB_InputFormat::ToString:
         OutValue.clear();
         OutValue.swap(Value);
-        break;
+        return OutValue;
     case IBB_InputFormat::PrintF:
     {
         char buffer[4096];
         int n = -1;
         auto NewFmt = Format.String + "%n";
         sscanf_s(Value.c_str(), NewFmt.c_str(), buffer, &n);
+        buffer[4095] = 0;
         OutValue = std::string(buffer);
+        auto Ret = Value.substr(0, n);
         if(n > 0)Value = Value.substr(n);
-        break;
+        return Ret;
     }
     case IBB_InputFormat::StdFormat:
     {
@@ -585,12 +587,16 @@ void IIC_Accepter_String(const IBB_InputFormat& Format, std::string& Value, std:
         {
             OutValue = res->value();
             auto rg = res->range();
-            Value.assign(rg.begin(), rg.end());
+            std::string V(rg.begin(), rg.end());
+            auto Ret = Value.substr(0, Value.size() - V.size());
+            Value = V;
+            return Ret;
         }
         else
         {
             OutValue.clear();
             OutValue.swap(Value);
+            return OutValue;
         }
         break;
     }
@@ -598,14 +604,14 @@ void IIC_Accepter_String(const IBB_InputFormat& Format, std::string& Value, std:
 
     std::unreachable();
 }
-void IIC_Accepter_Bool(const IBB_InputFormat& Format, std::string& Value, bool& OutValue)
+std::string IIC_Accepter_Bool(const IBB_InputFormat& Format, std::string& Value, bool& OutValue)
 {
     switch (Format.Type)
     {
     case IBB_InputFormat::UseFormat:
         OutValue = IsTrueString(Format.String);
         //Value 不变
-        break;
+        return "";
     case IBB_InputFormat::ToString:
     {
         auto res = fmt::scan<std::string>(Value, "{}");
@@ -614,9 +620,12 @@ void IIC_Accepter_Bool(const IBB_InputFormat& Format, std::string& Value, bool& 
             std::string valStr = res->value();
             OutValue = IsTrueString(valStr);
             auto rg = res->range();
-            Value.assign(rg.begin(), rg.end());
+            std::string V(rg.begin(), rg.end());
+            auto Ret = Value.substr(0, Value.size() - V.size());
+            Value = V;
+            return Ret;
         }
-        break;
+        return "";
     }
     case IBB_InputFormat::PrintF:
     {
@@ -631,14 +640,26 @@ void IIC_Accepter_Bool(const IBB_InputFormat& Format, std::string& Value, bool& 
             char buffer[4096];
             sscanf_s(Value.c_str(), NewFmt.c_str(), buffer);
             OutValue = IsTrueString(std::string(buffer));
-            if (n > 0)Value = Value.substr(n);
+            if (n > 0)
+            {
+                auto Ret = Value.substr(0, n);
+                Value = Value.substr(n);
+                return Ret;
+            }
+            else return "";
         }
         else
         {
             int intVal = 0;
             sscanf_s(Value.c_str(), NewFmt.c_str(), &intVal);
             OutValue = (intVal != 0);
-            if (n > 0)Value = Value.substr(n);
+            if (n > 0)
+            {
+                auto Ret = Value.substr(0, n);
+                Value = Value.substr(n);
+                return Ret;
+            }
+            else return "";
         }
     }
     case IBB_InputFormat::StdFormat:
@@ -658,19 +679,25 @@ void IIC_Accepter_Bool(const IBB_InputFormat& Format, std::string& Value, bool& 
                 std::string valStr = res2->value();
                 OutValue = IsTrueString(valStr);
                 auto rg = res2->range();
-                Value.assign(rg.begin(), rg.end());
+                std::string V(rg.begin(), rg.end());
+                auto Ret = Value.substr(0, Value.size() - V.size());
+                Value = V;
+                return Ret;
             }
             else
             {
                 OutValue = false;
                 // Value 不变
+                return "";
             }
         }
         break;
     }
     }
+
+    std::unreachable();
 }
-void IIC_Accepter_Int(const IBB_InputFormat& Format, std::string& Value, int& OutValue)
+std::string IIC_Accepter_Int(const IBB_InputFormat& Format, std::string& Value, int& OutValue)
 {
     try
     {
@@ -679,21 +706,27 @@ void IIC_Accepter_Int(const IBB_InputFormat& Format, std::string& Value, int& Ou
         case IBB_InputFormat::UseFormat:
             OutValue = std::stoi(Format.String);
             //Value 不变
-            break;
+            return "";
         case IBB_InputFormat::ToString:
         {
             size_t idx;
             OutValue = std::stoi(Value, &idx);
+            auto Ret = Value.substr(0, idx);
             Value = Value.substr(idx);
-            break;
+            return Ret;
         }
         case IBB_InputFormat::PrintF:
         {
             int n = -1;
             auto NewFmt = Format.String + "%n";
             sscanf_s(Value.c_str(), NewFmt.c_str(), &OutValue);
-            if (n > 0)Value = Value.substr(n);
-            break;
+            if (n > 0)
+            {
+                auto Ret = Value.substr(0, n);
+                Value = Value.substr(n);
+                return Ret;
+            }
+            else return "";
         }
         case IBB_InputFormat::StdFormat:
         {
@@ -702,25 +735,32 @@ void IIC_Accepter_Int(const IBB_InputFormat& Format, std::string& Value, int& Ou
             {
                 OutValue = res->value();
                 auto rg = res->range();
-                Value.assign(rg.begin(), rg.end());
+                std::string V(rg.begin(), rg.end());
+                auto Ret = Value.substr(0, Value.size() - V.size());
+                Value = V;
+                return Ret;
             }
             else
             {
                 size_t idx;
                 OutValue = std::stoi(Value, &idx);
+                auto Ret = Value.substr(0, idx);
                 Value = Value.substr(idx);
+                return Ret;
             }
             break;
         }
         }
 
-        std::unreachable();
     }
     catch (...)
     {
         OutValue = 0;
         // Value 不变
+        return "";
     }
+
+    std::unreachable();
 }
 
 
@@ -738,8 +778,8 @@ void IIS_String::Parse(const IBB_InputFormat& Format, const std::string& Val) {
     return IIC_Parser_String(Val, Format, Text);
 }
 
-void IIS_String::TryAccept(const IBB_InputFormat& Format, std::string& Value) {
-    IIC_Accepter_String(Format, Value, Text);
+std::string IIS_String::TryAccept(const IBB_InputFormat& Format, std::string& Value) {
+    return IIC_Accepter_String(Format, Value, Text);
 }
 
 IISPtr IIS_String::Duplicate() const {
@@ -759,8 +799,8 @@ void IIS_Bool::Parse(const IBB_InputFormat& Format, const std::string& Val) {
     return IIC_Parser_Bool(Val, Format, Value);
 }
 
-void IIS_Bool::TryAccept(const IBB_InputFormat& Format, std::string& Val) {
-    IIC_Accepter_Bool(Format, Val, Value);
+std::string IIS_Bool::TryAccept(const IBB_InputFormat& Format, std::string& Val) {
+    return IIC_Accepter_Bool(Format, Val, Value);
 }
 
 IISPtr IIS_Bool::Duplicate() const {
@@ -780,8 +820,8 @@ void IIS_Int::Parse(const IBB_InputFormat& Format, const std::string& Val) {
     return IIC_Parser_Int(Val, Format, Value);
 }
 
-void IIS_Int::TryAccept(const IBB_InputFormat& Format, std::string& Val) {
-    IIC_Accepter_Int(Format, Val, Value);
+std::string IIS_Int::TryAccept(const IBB_InputFormat& Format, std::string& Val) {
+    return IIC_Accepter_Int(Format, Val, Value);
 }
 
 IISPtr IIS_Int::Duplicate() const {
@@ -808,7 +848,7 @@ IBB_UpdateResult IIC_PureText::RenderUI(IBB_ValueContainer&) {
     if (Disabled || Colored)
         ImGui::PopStyleColor();
 
-    return { false, -1 };
+    return { false, ImGui::IsItemActive(), -1};
 }
 
 std::string IIC_PureText::FormatValue(IBB_ValueContainer& , const IBB_InputFormat& Format) {
@@ -834,7 +874,7 @@ IBB_UpdateResult IIC_LocalizedText::RenderUI(IBB_ValueContainer&) {
     if (Disabled || Colored)
         ImGui::PopStyleColor();
 
-    return { false, -1 };
+    return { false, ImGui::IsItemActive(), -1 };
 }
 
 std::string IIC_LocalizedText::FormatValue(IBB_ValueContainer& ,const IBB_InputFormat& Format) {
@@ -845,7 +885,7 @@ std::string IIC_LocalizedText::FormatValue(IBB_ValueContainer& ,const IBB_InputF
 IBB_UpdateResult IIC_SameLine::RenderUI(IBB_ValueContainer&)
 {
     ImGui::SameLine();
-    return { false, -1 };
+    return { false, false, -1 };
 }
 
 std::string IIC_SameLine::FormatValue(IBB_ValueContainer& ,const IBB_InputFormat& )
@@ -857,7 +897,7 @@ std::string IIC_SameLine::FormatValue(IBB_ValueContainer& ,const IBB_InputFormat
 IBB_UpdateResult IIC_NewLine::RenderUI(IBB_ValueContainer&)
 {
     ImGui::NewLine();
-    return { false, -1 };
+    return { false, false, -1 };
 }
 
 std::string IIC_NewLine::FormatValue(IBB_ValueContainer& ,const IBB_InputFormat& )
@@ -869,7 +909,7 @@ std::string IIC_NewLine::FormatValue(IBB_ValueContainer& ,const IBB_InputFormat&
 IBB_UpdateResult IIC_Separator::RenderUI(IBB_ValueContainer&)
 {
     ImGui::Separator();
-    return { false, -1 };
+    return { false, false, -1 };
 }
 
 std::string IIC_Separator::FormatValue(IBB_ValueContainer& ,const IBB_InputFormat& )
@@ -892,6 +932,8 @@ IBB_UpdateResult IIC_InputText::RenderUI(IBB_ValueContainer& Cont) {
     static const IBB_InputFormat Fmt = { IBB_InputFormat::ToString, "" };
     auto CurrentValue = Var.Dirty ? Var.StateValPtr->Format(Fmt) : Var.Value;
 
+    auto Size = ImGui::CalcTextSize(Hint.c_str(), NULL, true);
+    ImGui::SetNextItemWidth(ImGui::GetWindowContentRegionWidth() - ImGui::GetCursorPosX() - Size.x);
     auto Changed = InputTextStdString(Hint.c_str(), CurrentValue);
 
     if (Changed)
@@ -901,7 +943,7 @@ IBB_UpdateResult IIC_InputText::RenderUI(IBB_ValueContainer& Cont) {
         else Var.ResetState<IIS_String>(CurrentValue);
     }
 
-    return { Changed, ValueID };
+    return { Changed, ImGui::IsItemActive(), ValueID };
 }
 
 std::string IIC_InputText::FormatValue(IBB_ValueContainer& Cont, const IBB_InputFormat& Format)
@@ -941,8 +983,14 @@ IBB_UpdateResult IIC_EnumCombo::RenderUI(IBB_ValueContainer& Cont) {
     static const IBB_InputFormat Fmt = { IBB_InputFormat::ToString, "" };
     auto CurrentValue = Var.Dirty ? Var.StateValPtr->Format(Fmt) : Var.Value;
 
-    if (ImGui::BeginCombo(Hint.c_str(), CurrentValue.c_str()))
+    auto Active = false;
+    auto Size = ImGui::CalcTextSize(Hint.c_str(), NULL, true);
+    ImGui::SetNextItemWidth(ImGui::GetWindowContentRegionWidth() - ImGui::GetCursorPosX() - Size.x);
+    if (ImGui::BeginCombo(Hint.c_str(),
+        (Options.contains(CurrentValue)? Options[CurrentValue] : CurrentValue).c_str()
+    ))
     {
+        Active = ImGui::IsItemActive();
         ImGui::PushOrderFront(ImGui::GetCurrentWindow());
         for (auto& [Key, DisplayName] : Options)
         {
@@ -955,6 +1003,7 @@ IBB_UpdateResult IIC_EnumCombo::RenderUI(IBB_ValueContainer& Cont) {
                     CurrentValue = Key;
                 }
             }
+            Active |= ImGui::IsItemActive();
         }
         ImGui::EndCombo();
     }
@@ -966,7 +1015,7 @@ IBB_UpdateResult IIC_EnumCombo::RenderUI(IBB_ValueContainer& Cont) {
         else Var.ResetState<IIS_String>(CurrentValue);
     }
 
-    return { Changed, ValueID };
+    return { Changed, Active, ValueID };
 }
 
 std::string IIC_EnumCombo::FormatValue(IBB_ValueContainer& Cont, const IBB_InputFormat& Format)
@@ -1005,6 +1054,7 @@ IBB_UpdateResult IIC_EnumRadio::RenderUI(IBB_ValueContainer& Cont) {
     static const IBB_InputFormat Fmt = { IBB_InputFormat::ToString, "" };
     auto CurrentValue = Var.Dirty ? Var.StateValPtr->Format(Fmt) : Var.Value;
 
+    bool Active = false;
 
     for (auto& [Key, DisplayName] : Options)
     {
@@ -1017,6 +1067,7 @@ IBB_UpdateResult IIC_EnumRadio::RenderUI(IBB_ValueContainer& Cont) {
                 CurrentValue = Key;
             }
         }
+        Active |= ImGui::IsItemActive();
         if(SameLine)ImGui::SameLine();
     }
 
@@ -1029,7 +1080,7 @@ IBB_UpdateResult IIC_EnumRadio::RenderUI(IBB_ValueContainer& Cont) {
         else Var.ResetState<IIS_String>(CurrentValue);
     }
 
-    return { Changed, ValueID };
+    return { Changed, Active, ValueID };
 }
 
 std::string IIC_EnumRadio::FormatValue(IBB_ValueContainer& Cont, const IBB_InputFormat& Format)
@@ -1083,7 +1134,7 @@ IBB_UpdateResult IIC_Bool::RenderUI(IBB_ValueContainer& Cont)
         else Var.ResetState<IIS_Bool>(Val, FmtType);
     }
 
-    return { Changed, ValueID };
+    return { Changed, ImGui::IsItemActive(), ValueID };
 }
 
 std::string IIC_Bool::FormatValue(IBB_ValueContainer& Cont, const IBB_InputFormat& Format)
@@ -1127,7 +1178,9 @@ IBB_UpdateResult IIC_InputInt::RenderUI(IBB_ValueContainer& Cont) {
         catch (...) { Val = 0; }
     }
 
-    auto Changed = ImGui::InputInt(Hint.c_str(), &Val);
+    auto Size = ImGui::CalcTextSize(Hint.c_str(), NULL, true);
+    ImGui::SetNextItemWidth(ImGui::GetWindowContentRegionWidth() - ImGui::GetCursorPosX() - Size.x);
+    auto Changed = ImGui::InputInt(Hint.c_str(), &Val, 0, 0);
 
     if (Changed)
     {
@@ -1135,7 +1188,7 @@ IBB_UpdateResult IIC_InputInt::RenderUI(IBB_ValueContainer& Cont) {
         else Var.ResetState<IIS_Int>(Val);
     }
 
-    return { Changed, ValueID };
+    return { Changed, ImGui::IsItemActive(), ValueID };
 }
 
 std::string IIC_InputInt::FormatValue(IBB_ValueContainer& Cont, const IBB_InputFormat& Format)
@@ -1179,6 +1232,8 @@ IBB_UpdateResult IIC_SliderInt::RenderUI(IBB_ValueContainer& Cont) {
         catch (...) { Val = 0; }
     }
 
+    auto Size = ImGui::CalcTextSize(Hint.c_str(), NULL, true);
+    ImGui::SetNextItemWidth(ImGui::GetWindowContentRegionWidth() - ImGui::GetCursorPosX() - Size.x);
     auto Changed = ImGui::SliderInt(Hint.c_str(), &Val, Min, Max, SlideFormat.c_str(),
         Logarithmic ? ImGuiSliderFlags_Logarithmic : ImGuiSliderFlags_None);
 
@@ -1188,7 +1243,7 @@ IBB_UpdateResult IIC_SliderInt::RenderUI(IBB_ValueContainer& Cont) {
         else Var.ResetState<IIS_Int>(Val);
     }
 
-    return { Changed, ValueID };
+    return { Changed, ImGui::IsItemActive(), ValueID };
 }
 
 std::string IIC_SliderInt::FormatValue(IBB_ValueContainer& Cont, const IBB_InputFormat& Format)
@@ -1219,7 +1274,7 @@ IIC_Error::IIC_Error(const std::string& Desc)
 
 IBB_UpdateResult IIC_Error::RenderUI(IBB_ValueContainer&) {
     ImGui::TextColored(IBR_Color::ErrorTextColor, "%s", UnicodetoUTF8(std::vformat(locw("Error_FailedToParseComponent"), std::make_wformat_args(TextW))).c_str());
-    return { false, -1 };
+    return { false, false, -1 };
 }
 
 std::string IIC_Error::FormatValue(IBB_ValueContainer& ,const IBB_InputFormat& ) {
@@ -1284,7 +1339,7 @@ IICPtr InputFormComponentFactory::CreateInputComponent(IBB_ValueContainer& Cont,
     //IIC_Bool(int valueid, bool InitialValue, StrBoolType fmt, const std::string& hint)
     // {"Type": "Bool", "ValueID": <int>, "InitialValue": <bool> 【, "Fmt": <string>】【, "Hint": <string>】}
     //IIC_InputInt(int valueid, int InitialValue, int min, int max, const std::string& hint)
-    // {"Type": "InputInt", "ValueID": <int>, "InitialValue": <int>, "Min": <int>, "Max": <int> 【, "Hint": <string>】}
+    // {"Type": "InputInt", "ValueID": <int>, "InitialValue": <int>【, "Min": <int>, 】【"Max": <int> 】【, "Hint": <string>】}
     //IIC_SliderInt(int valueid, int InitialValue, int min, int max, const std::string& hint, const std::string& slidefmt, bool log)
     // {"Type": "SliderInt", "ValueID": <int>, "InitialValue": <int>, "Min": <int>, "Max": <int> 【, "Hint": <string>】【, "ValueFormat": <string>】【, "Logarithmic": <bool>】}
 
@@ -1443,10 +1498,13 @@ IICPtr InputFormComponentFactory::CreateInputComponent(IBB_ValueContainer& Cont,
 
             auto oMin = Obj.GetObjectItem("Min");
             auto oMax = Obj.GetObjectItem("Max");
-            if (!oMin || !oMin.IsTypeNumber() || !oMax || !oMax.IsTypeNumber())
-                return nullptr;
-            int Min = oMin.GetInt();
-            int Max = oMax.GetInt();
+            int Min, Max;
+
+            if (!oMin || !oMin.IsTypeNumber())Min = -INT_MAX;
+            else Min = oMin.GetInt();
+
+            if (!oMax || !oMax.IsTypeNumber())Max = INT_MAX;
+            else Max = oMax.GetInt();
 
             auto InitValue = Obj.ItemIntOr("InitialValue", 0);
             auto Hint = Obj.ItemStringOr("Hint", "");
@@ -1549,6 +1607,12 @@ IFCPtr InputFormComponentFactory::GetParseErrorFormatComponent(const std::string
 
 // ======== LOADING ==========
 
+IIFPtr IBG_InputForm::Duplicate() const
+{
+    auto pif = std::make_unique<IBG_InputForm>(*this);
+    return pif;
+}
+
 bool IBG_InputForm::Load(const JsonObject& Obj)
 {
     InputComponents = std::make_shared<std::vector<IICPtr>>();
@@ -1602,16 +1666,12 @@ bool IBG_InputForm::Load(const JsonObject& Obj)
 }
 
 IBG_InputType::IBG_InputType(const IBG_InputType& rhs)
-    : Type(rhs.Type), Sidebar(rhs.MakeSidebarIIF()), WorkSpace(rhs.MakeWorkSpaceIIF())
+    : Type(rhs.Type), Sidebar(rhs.Sidebar->Duplicate()), WorkSpace(rhs.WorkSpace->Duplicate())
 { }
 
 bool IBG_InputType::Load(const JsonObject& Obj)
 {
-    auto oType = Obj.GetObjectItem("Type");
-    if (!oType.Available() || !oType.IsTypeString())
-        return false;
-
-    auto TypeStr = oType.GetString();
+    auto TypeStr = Obj.ItemStringOr("Type", "Form");
     if (TypeStr == "Link")
         Type = IBG_InputType::Link;
     else if (TypeStr == "Form")
@@ -1634,16 +1694,12 @@ bool IBG_InputType::Load(const JsonObject& Obj)
     if (!oWorkSpace.Available())
         return false;
 
+    Sidebar.reset(new IBG_InputForm());
+    WorkSpace.reset(new IBG_InputForm());
+
     bool Ret1 = Sidebar->Load(oSidebar);
     bool Ret2 = WorkSpace->Load(oWorkSpace);
     return Ret1 && Ret2;
 }
 
-IIFPtr IBG_InputType::MakeSidebarIIF() const//Make a copy
-{
-    return Sidebar ? std::make_unique<IBG_InputForm>(*Sidebar) : nullptr;
-}
-IIFPtr IBG_InputType::MakeWorkSpaceIIF() const//Make a copy
-{
-    return WorkSpace ? std::make_unique<IBG_InputForm>(*WorkSpace) : nullptr;
-}
+

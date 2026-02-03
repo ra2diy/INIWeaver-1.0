@@ -250,7 +250,7 @@ bool IBR_SectionData::OnLineEdit(const std::string& Name, bool OnLink)
     if (Line.Edit.NeedInit())
     {
         IBR_IniLine::InitType It{ line->Data->GetString() ,
-            "##" + RandStr(8),[Name, desc = this->Desc, line](char* S)
+            "##" + RandStr(8),[Name, desc = this->Desc, line](const std::string& S)
                 {
                     IBG_Undo.SomethingShouldBeHere();
                     line->Data->SetValue(S);
@@ -258,7 +258,7 @@ bool IBR_SectionData::OnLineEdit(const std::string& Name, bool OnLink)
                     {
                         IBR_EditFrame::EditLines[Name].Buffer = S;
                     }
-                } };
+                }, line->Default->Input->WorkSpace };
         if (Name == InheritKeyName)
         {
             auto Q = line->Data->GetString();
@@ -1016,7 +1016,8 @@ void IBR_SectionData::RenderUI()
                         {
                             IBR_EditFrame::EditLines[k].Buffer = V;
                             auto& ed = IBR_EditFrame::EditLines[k].Edit;
-                            if (ed.Input && ed.Input->Input) strcpy(ed.Input->Input.get(), V.c_str());
+                            if (ed.Input && ed.Input->Form)
+                                ed.Input->Form->ParseFromString(V);
                         }
                     }
                 }
@@ -1043,16 +1044,18 @@ void IBR_SectionData::RenderUI()
                     */
                     if (!Line.Edit.Input)
                     {
-                        Line.Edit.Input.reset(new IBR_InputManager(l, "##" + RandStr(8), [desc = Desc, Bsec, Str = k](char* S)
+                        Line.Edit.Input.reset(new IBR_InputManager(l, "##" + RandStr(8), [desc = Desc, Bsec, Str = k](const std::string& S)
                             {
                                 IBG_Undo.SomethingShouldBeHere();
                                 Bsec->UnknownLines.Value[Str] = S;
                                 if (IBR_Inst_Project.IBR_Rev_SectionMap[desc] == IBR_EditFrame::CurSection.ID)
                                 {
                                     auto& ed = IBR_EditFrame::EditLines[Str].Edit;
-                                    if (ed.Input && ed.Input->Input) strcpy(ed.Input->Input.get(), S);
+                                    if (ed.Input && ed.Input->Form)
+                                        ed.Input->Form->ParseFromString(S);
                                 }
-                            }));
+                            },
+                            IBB_DefaultRegType::GetDefaultInputType().WorkSpace->Duplicate()));
                     }
                     ImGui::TextEx(k.c_str());
                     ImGui::SameLine();

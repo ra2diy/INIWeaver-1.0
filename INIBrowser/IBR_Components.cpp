@@ -460,6 +460,7 @@ namespace IBR_PopupManager
                 DelayedPopupAction.clear();
                 if (RightClickMenu.Size.x >= 1.0F && RightClickMenu.Size.y >= 1.0F)ImGui::SetNextWindowSize(RightClickMenu.Size);
                 ImGui::SetNextWindowPos(RightClickMenuPos);
+                float W = -1.0F, H = -1.0F;
                 if (ImGui::BeginPopup(RightClickMenu.Title.c_str(),
                     RightClickMenu.Flag
                     | ImGuiWindowFlags_NoTitleBar
@@ -478,7 +479,25 @@ namespace IBR_PopupManager
                     {
                         AboutToCloseRight = true;
                     }
+                    H = ImGui::GetWindowHeight();
+                    W = ImGui::GetWindowWidth();
                     ImGui::EndPopup();
+
+                    //Adjust position if out of screen
+                    ImVec2 NewPos = RightClickMenuPos;
+                    auto ScrH = IBR_UICondition::CurrentScreenHeight - IBR_HintManager::GetHeight();
+                    auto ScrW = IBR_UICondition::CurrentScreenWidth;
+                    if (NewPos.y + H > ScrH )
+                    {
+                        NewPos.y = ScrH - H;
+                        if (NewPos.y < 0)NewPos.y = 0;
+                    }
+                    if (NewPos.x + W > ScrW)
+                    {
+                        NewPos.x = ScrW - W;
+                        if (NewPos.x < 0)NewPos.x = 0;
+                    }
+                    RightClickMenuPos = NewPos;
                 }
             }
             
@@ -696,6 +715,14 @@ namespace IBR_HintManager
             }
         }
     }
+
+    const float ExtHeight = 0.4f;
+    const float TotHeight = 1.0f + 2 * ExtHeight;
+
+    float GetHeight()
+    {
+        return FontHeight * TotHeight;
+    }
     void RenderUI()
     {
         ImDrawList* DList = ImGui::GetForegroundDrawList();
@@ -711,13 +738,11 @@ namespace IBR_HintManager
         if (HasSet && HasCustom)
             if (!CustomFn(CustomHint))Clear();
 
-        const float ExtHeight = 0.4f;
-        const float TotHeight = 1.0f + 2 * ExtHeight;
-        DList->AddRectFilled({ 0.0f,(float)IBR_UICondition::CurrentScreenHeight - FontHeight * TotHeight },
+        DList->AddRectFilled({ 0.0f,(float)IBR_UICondition::CurrentScreenHeight - GetHeight() },
             { (float)IBR_UICondition::CurrentScreenWidth ,(float)IBR_UICondition::CurrentScreenHeight },
             ImColor(ImGui::GetStyleColorVec4(ImGuiCol_WindowBg)));
-        DList->AddLine({ 0.0f,(float)IBR_UICondition::CurrentScreenHeight - FontHeight * TotHeight },
-            { (float)IBR_UICondition::CurrentScreenWidth,(float)IBR_UICondition::CurrentScreenHeight - FontHeight * TotHeight },
+        DList->AddLine({ 0.0f,(float)IBR_UICondition::CurrentScreenHeight - GetHeight() },
+            { (float)IBR_UICondition::CurrentScreenWidth,(float)IBR_UICondition::CurrentScreenHeight - GetHeight() },
             ImColor(ImGui::GetStyleColorVec4(ImGuiCol_Border)), 1.0f);
         /*
         if (_TempSelectLink::IsInLink())

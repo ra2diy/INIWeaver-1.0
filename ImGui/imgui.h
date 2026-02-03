@@ -1038,7 +1038,8 @@ enum ImGuiInputTextFlags_
     ImGuiInputTextFlags_CallbackResize      = 1 << 18,  // Callback on buffer capacity changes request (beyond 'buf_size' parameter value), allowing the string to grow. Notify when the string wants to be resized (for string types which hold a cache of their Size). You will be provided a new BufSize in the callback and NEED to honor it. (see misc/cpp/imgui_stdlib.h for an example of using this)
     ImGuiInputTextFlags_CallbackEdit        = 1 << 19,  // Callback on any edit (note that InputText() already returns true on edit, the callback is useful mainly to manipulate the underlying buffer while focus is active)
     ImGuiInputTextFlags_WrappedText         = 1 << 20,  // Display text in a wrapped format (useful for displaying long text in a single line)
-    ImGuiInputTextFlags_SearchIconBg        = 1 << 21   // Display a search icon in the background 
+    ImGuiInputTextFlags_SearchIconBg        = 1 << 21,  // Display a search icon in the background
+    ImGuiInputTextFlags_NoPlusMinus         = 1 << 22   // Disable +/- buttons on numerical inputs
 
     // Obsolete names (will be removed soon)
 #ifndef IMGUI_DISABLE_OBSOLETE_FUNCTIONS

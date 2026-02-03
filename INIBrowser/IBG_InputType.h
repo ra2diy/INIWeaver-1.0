@@ -26,6 +26,7 @@ struct IBB_ValueFormat
 struct IBB_UpdateResult
 {
     bool Updated;
+    bool Active;
     int ValueID;
 };
 
@@ -59,7 +60,7 @@ struct IBB_InputState
     virtual std::string Format(const IBB_InputFormat& Format) = 0;
     virtual void Parse(const IBB_InputFormat& Format, const std::string& Value) = 0;
     virtual IISPtr Duplicate() const = 0;
-    virtual void TryAccept(const IBB_InputFormat& Format, std::string& Value) = 0;
+    virtual std::string TryAccept(const IBB_InputFormat& Format, std::string& Value) = 0;
 };
 
 struct IBB_InputUpdateInfo
@@ -122,18 +123,27 @@ struct IBB_ValueContainer
     void Clear();
 };
 
+struct IBG_InputFormUIResult
+{
+    bool Changed;
+    bool Active;
+};
+
+struct IBG_InputForm;
+using IIFPtr = std::unique_ptr<IBG_InputForm>;
+
 struct IBG_InputForm
 {
     std::shared_ptr<std::vector<IICPtr>> InputComponents;
     std::shared_ptr<std::vector<IFCPtr>> FormatComponents;
     
     IBB_InputValue& GetValue(int ValueID);
-    bool RenderUI(); //returns whether any value changed
+    IBG_InputFormUIResult RenderUI(); //returns whether any value changed
     const std::string& GetFormattedString();
     void ParseFromString(const std::string& Str);
     void ResetState();
     bool Load(const JsonObject& Obj);
-
+    IIFPtr Duplicate() const;
 
 private:
     std::string FormattedString;
@@ -141,7 +151,7 @@ private:
     bool Dirty{ true };
 };
 
-using IIFPtr = std::unique_ptr<IBG_InputForm>;
+
 
 struct IBG_InputType
 {
@@ -157,11 +167,6 @@ struct IBG_InputType
     IBG_InputType(const IBG_InputType&);
     IBG_InputType() = default;
     IBG_InputType(IBG_InputType&&) = default;
-
-
-    IIFPtr MakeSidebarIIF() const;//Make a copy
-    IIFPtr MakeWorkSpaceIIF() const;//Make a copy
-
 };
 
 
@@ -229,7 +234,7 @@ struct IIS_String final : public IBB_InputState
     std::string Format(const IBB_InputFormat& Format);
     void Parse(const IBB_InputFormat& Format, const std::string& Value);
     IISPtr Duplicate() const;
-    void TryAccept(const IBB_InputFormat& Format, std::string& Value);
+    std::string TryAccept(const IBB_InputFormat& Format, std::string& Value);
 };
 
 struct IIS_Bool final : public IBB_InputState
@@ -241,7 +246,7 @@ struct IIS_Bool final : public IBB_InputState
     std::string Format(const IBB_InputFormat& Format);
     void Parse(const IBB_InputFormat& Format, const std::string& Value);
     IISPtr Duplicate() const;
-    void TryAccept(const IBB_InputFormat& Format, std::string& Value);
+    std::string TryAccept(const IBB_InputFormat& Format, std::string& Value);
     void SetFmt(StrBoolType fmtType) { FmtType = fmtType; }
 };
 
@@ -253,7 +258,7 @@ struct IIS_Int final : public IBB_InputState
     std::string Format(const IBB_InputFormat& Format);
     void Parse(const IBB_InputFormat& Format, const std::string& Value);
     IISPtr Duplicate() const;
-    void TryAccept(const IBB_InputFormat& Format, std::string& Value);
+    std::string TryAccept(const IBB_InputFormat& Format, std::string& Value);
 };
 
 
@@ -421,9 +426,9 @@ std::string IIC_Formatter(int Value, const IBB_InputFormat& Format);
 void IIC_Parser_String(const std::string& StrValue, const IBB_InputFormat& Format, std::string& OutValue);
 void IIC_Parser_Bool(const std::string& StrValue, const IBB_InputFormat& Format, bool& OutValue);
 void IIC_Parser_Int(const std::string& StrValue, const IBB_InputFormat& Format, int& OutValue);
-void IIC_Accepter_String(const IBB_InputFormat& Format, std::string& Value, std::string& OutValue);
-void IIC_Accepter_Bool(const IBB_InputFormat& Format, std::string& Value, bool& OutValue);
-void IIC_Accepter_Int(const IBB_InputFormat& Format, std::string& Value, int& OutValue);
+std::string IIC_Accepter_String(const IBB_InputFormat& Format, std::string& Value, std::string& OutValue);
+std::string IIC_Accepter_Bool(const IBB_InputFormat& Format, std::string& Value, bool& OutValue);
+std::string IIC_Accepter_Int(const IBB_InputFormat& Format, std::string& Value, int& OutValue);
 
 
 StrBoolType StrBoolTypeFromString(const std::string& str, StrBoolType Default);
