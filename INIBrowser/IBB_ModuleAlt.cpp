@@ -1012,8 +1012,8 @@ void IBB_ModuleAlt::LoadFromString(std::wstring_view FileName, std::string&& Fil
                 else if (sec[i].Key == "ImportDeltaX")
                 {
                     M.EqDelta.x = FontHeight * (float)std::strtod(sec[i].Value.c_str(), nullptr);
-                    GlobalLogB.AddLog(sec[i].Value.c_str());
-                    GlobalLogB.AddLog((int)M.EqDelta.x);
+                    //GlobalLogB.AddLog(sec[i].Value.c_str());
+                    //GlobalLogB.AddLog((int)M.EqDelta.x);
                     //Sleep(100);
                 }
                 else if (sec[i].Key == "ImportDeltaY")
