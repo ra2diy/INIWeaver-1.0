@@ -226,6 +226,7 @@ struct IBB_ModuleAlt
     std::wstring Path;
 
     std::string GetFirstINI() const;
+    JsonFile ToJson() const;
     bool Search(const std::string& Str, bool ConsiderRegName, bool ConsiderDescName, bool ConsiderDesc);
     void LoadFromFile(const wchar_t* FileName);
     void LoadFromFile(const char* FileName);

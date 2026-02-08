@@ -1242,6 +1242,22 @@ JsonFile IBB_ClipBoardData::ToJson() const
     return F;
 }
 
+JsonFile IBB_ModuleAlt::ToJson() const
+{
+    JsonFile F;
+    auto Obj = F.GetObj();
+    Obj.SetOrCreateObject();
+    Obj.AddString("Name", Name);
+    Obj.AddString("DescShort", DescShort);
+    Obj.AddString("DescLong", DescLong);
+    Obj.AddString("ParamDescShort", ParamDescShort);
+    Obj.AddString("ParamDescLong", ParamDescLong);
+    Obj.AddString("Parameter", Parameter);
+    Obj.AddString("Path", UnicodetoUTF8(Path));
+    Obj.AddObjectItem("Modules", ModulesToJson(Modules));
+    return F;
+}
+
 bool IBB_ClipBoardData::SetString(const std::string_view Str, int ClipFormatVersion)
 {
     
