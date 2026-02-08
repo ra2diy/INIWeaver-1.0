@@ -344,5 +344,11 @@
     <None Include="..\Release\Resources\config.json">
       <Filter>资源文件</Filter>
     </None>
+    <None Include="..\Release\Global\RegisterTypesCompound.json">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="..\Release\Global\TypeAltCompound.csv">
+      <Filter>资源文件</Filter>
+    </None>
   </ItemGroup>
 </Project>

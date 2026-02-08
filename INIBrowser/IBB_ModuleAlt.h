@@ -93,6 +93,7 @@ public:
         Init(Buffer.data());
     }
 
+    int GetVersion() const { return ClipFormatVersion; }
     void SetVersion(int v) { ClipFormatVersion = v; }
     bool VersionAtLeast(int v) const { return ClipFormatVersion >= v; }
 };

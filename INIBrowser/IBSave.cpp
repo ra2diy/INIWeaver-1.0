@@ -220,9 +220,9 @@ WriteFileHeader IBS_SaveProject
             GlobalLogB.AddLog(locc("Log_CallSaveAction"));
         }
         File.WriteData(IBS_Inst_Project.CreateTime);
-        File.WriteData(IBS_Inst_Project.CreateVersionMajor);
-        File.WriteData(IBS_Inst_Project.CreateVersionMinor);
-        File.WriteData(IBS_Inst_Project.CreateVersionRelease);
+        File.WriteData(VersionMajor);
+        File.WriteData(VersionMinor);
+        File.WriteData(VersionRelease);
         File.WriteData(IBS_Inst_Project.FullView_Ratio);
         File.WriteData(IBS_Inst_Project.FullView_EqCenter);
         File.WriteData(IBS_Inst_Project.LastOutputDir);

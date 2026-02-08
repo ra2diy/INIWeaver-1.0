@@ -259,7 +259,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\Release\Global\RegisterTypes.json" />
+    <None Include="..\Release\Global\RegisterTypesCompound.json" />
     <None Include="..\Release\Global\TypeAlt.csv" />
+    <None Include="..\Release\Global\TypeAltCompound.csv" />
     <None Include="..\Release\Resources\config.json" />
     <None Include="..\Release\Resources\language.ini" />
   </ItemGroup>
