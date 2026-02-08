@@ -19,6 +19,28 @@ std::tuple<bool, ImVec2, ImVec2> RectangleCross(ImVec2 UL1, ImVec2 DR1, ImVec2 U
 
 namespace IBR_DynamicData
 {
+    int LastCSW, LastCSH;
+    float LastMWW, LastRatio;
+
+    bool UpdateLast(int CSW, int CSH, float MWW, float Ratio)
+    {
+        bool Changed;
+        Changed = (LastCSW != CSW) || (LastCSH != CSH) || (LastMWW != MWW) || (LastRatio != Ratio);
+        LastCSW = CSW;
+        LastCSH = CSH;
+        LastMWW = MWW;
+        LastRatio = Ratio;
+        return Changed;
+    }
+
+    bool UpdateLast()
+    {
+        return UpdateLast(IBR_UICondition::CurrentScreenWidth,
+            IBR_UICondition::CurrentScreenHeight,
+            MWWidth,
+            IBR_FullView::Ratio);
+    }
+
     ExtFileClass DynamicData;
     int DefaultX{ -1 }, DefaultY{ -1 };
     void SetDefaultWidth(int W)
@@ -47,6 +69,8 @@ namespace IBR_DynamicData
             //DynamicData.ReadData(IBR_FullView::EqCenter.x);
             //DynamicData.ReadData(IBR_FullView::EqCenter.y);
             IBR_WorkSpace::EqCenterPrev = IBR_FullView::EqCenter;
+
+            UpdateLast((int)ScrXR, (int)ScrYR, MWWidth2, IBR_FullView::Ratio);
 
             ScrX = (int)ScrXR;
             ScrY = (int)ScrYR;
@@ -80,27 +104,29 @@ namespace IBR_DynamicData
     }
     void Open()
     {
-        DynamicData.Open(L".\\Resources\\dynamic.dat", L"wb");
-        const int Retry = 5;
-        for (int i = 0; i < Retry && (!DynamicData.Available()); i++)
+        while (1)
         {
-            Sleep(5);
             DynamicData.Open(L".\\Resources\\dynamic.dat", L"wb");
-        }
-        if (!DynamicData.Available())
-        {
-            if (GetLastError() == ERROR_SHARING_VIOLATION)
+            if (!DynamicData.Available())
             {
-                glfwHideWindow(PreLink::window);
-                MessageBoxW(NULL, locwc("Error_AnotherInstanceIsRunning"), _AppNameW, MB_OK);
-                ExitProcess(0);
+                if (GetLastError() == ERROR_SHARING_VIOLATION)
+                {
+                    Sleep(5);
+                    continue;
+                }
+                else
+                {
+                    glfwHideWindow(PreLink::window);
+                    auto ls = std::to_wstring(::GetLastError());
+                    MessageBoxW(NULL, (std::vformat(locw("Error_LastErrorCode"), std::make_wformat_args(ls))).c_str(),
+                        (L"IBR_DynamicData::Open " + locw("Error_ErrorOccurred")).c_str(), MB_OK);
+                    ExitProcess(0);
+                }
             }
-            auto ls = std::to_wstring(::GetLastError());
-            MessageBoxW(NULL, (std::vformat(locw("Error_LastErrorCode"), std::make_wformat_args(ls))).c_str(),
-                (L"IBR_DynamicData::Open " + locw("Error_ErrorOccurred")).c_str(), MB_OK);
+            else break;
         }
     }
-    void Save()
+    void SaveData()
     {
         DynamicData.Rewind();
         DynamicData.WriteData((int64_t)(IBR_UICondition::CurrentScreenWidth));
@@ -110,6 +136,15 @@ namespace IBR_DynamicData
         //DynamicData.WriteData(IBR_FullView::EqCenter.x);
         //DynamicData.WriteData(IBR_FullView::EqCenter.y);
         DynamicData.Flush();
+    }
+    void Save()
+    {
+        if (UpdateLast())
+        {
+            Open();
+            SaveData();
+            Close();
+        }
     }
     void Close()
     {

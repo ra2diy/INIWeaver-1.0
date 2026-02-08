@@ -116,7 +116,6 @@ void ControlPanel()
     IBR_WorkSpace::UpdatePrev();
     if (First)
     {
-        IBR_DynamicData::Open();
         DynamicDataXDelta = ScrX - (FinalWP.right - FinalWP.left);
         DynamicDataYDelta = ScrY - (FinalWP.bottom - FinalWP.top);
         if (EnableLog)

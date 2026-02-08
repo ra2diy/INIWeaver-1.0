@@ -24,7 +24,6 @@ int IBG_ExitProcess()
     IBF_Inst_Setting.SaveSetting(IBR_Inst_Setting.SettingName);
 
     IBR_DynamicData::Save();
-    IBR_DynamicData::Close();
 
     /*
     if (EnableLog)
