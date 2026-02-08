@@ -17,12 +17,34 @@ bool EnableDebugList = false;
 std::atomic_bool LoadDatabaseComplete{ false };
 JsonFile Cfg;//Config.json
 
+std::set<int> DisabledGLFWErrors;
+
+void SuppressGLFWError(int errorcode)
+{
+    DisabledGLFWErrors.insert(errorcode);
+}
+
+void UnsuppressGLFWError(int errorcode)
+{
+    DisabledGLFWErrors.erase(errorcode);
+}
+
+bool IssuppressGLFWError(int errorcode)
+{
+    return DisabledGLFWErrors.find(errorcode) != DisabledGLFWErrors.end();
+}
+
 namespace Initialize
 {
+    
+
 
 
     void glfw_error_callback(int error, const char* description)
     {
+        if(IssuppressGLFWError(error))
+            return;
+
         const auto descw = UTF8toUnicode(description);
         auto gle = std::vformat(locw("Error_GlfwErrorText"), std::make_wformat_args(error, descw));
         if (EnableLog)

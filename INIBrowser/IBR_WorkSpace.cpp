@@ -16,6 +16,7 @@ bool IsExistingDir(const wchar_t* Path)
     return (dwAttr != INVALID_FILE_ATTRIBUTES) && (dwAttr & FILE_ATTRIBUTE_DIRECTORY);
 }
 
+
 namespace ImGui
 {
     ImVec2 GetLineEndPos();
@@ -26,9 +27,13 @@ namespace ImGui
 extern const char* Internal_IniName;
 extern wchar_t CurrentDirW[];
 extern int RFontHeight;
+extern bool EnableDebugList;
 
 bool InRectangle(ImVec2 P, ImVec2 UL, ImVec2 DR);
 std::tuple<bool, ImVec2, ImVec2> RectangleCross(ImVec2 UL1, ImVec2 DR1, ImVec2 UL2, ImVec2 DR2);
+void SuppressGLFWError(int errorcode);
+void UnsuppressGLFWError(int errorcode);
+bool IssuppressGLFWError(int errorcode);
 
 void DrawCross(ImVec2 pos, float size, ImU32 col);
 
@@ -69,33 +74,44 @@ namespace SearchModuleAlt
             ImGui::Text(pModule->DescLong.c_str());
             ImGui::EndTooltip();
         }
-        //ImGui::SameLine();
-        //ImGui::SetCursorPosX(FontHeight * 8.0f);
-        /*
-        if (ImGui::SmallButton((u8"属性##" + pModule->Name).c_str()))
+
+        
+        if (EnableDebugList)
         {
-            IBR_PopupManager::SetCurrentPopup(std::move(IBR_PopupManager::Popup{}.CreateModal(pModule->DescShort, true).SetFlag(ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize).PushMsgBack([pModule]()
-                {
-                    ImGui::SetWindowSize({ RFontHeight * 20.0f,RFontHeight * 15.0f });
-                    ImGui::Text(pModule->DescLong.c_str());
-                    ImGui::NewLine();
-                    if (!pModule->ParamDescLong.empty() || !pModule->ParamDescShort.empty())ImGui::Text(u8"参数：%s", pModule->ParamDescShort.c_str());
-                    if(!pModule->ParamDescLong.empty())ImGui::Text(pModule->ParamDescLong.c_str());
-
-                    ImGui::Text(u8"文件路径：%s", UnicodetoUTF8(pModule->Path).c_str());
-                    if (ImGui::SmallButton(u8"复制路径"))
+            ImGui::SameLine();
+            ImGui::SetCursorPosX(FontHeight * 8.0f);
+            if (ImGui::SmallButton((u8"属性##" + pModule->Name).c_str()))
+            {
+                IBR_PopupManager::SetCurrentPopup(std::move(IBR_PopupManager::Popup{}.CreateModal(pModule->DescShort, true).SetFlag(ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize).PushMsgBack([pModule]()
                     {
-                        ImGui::SetClipboardText(UnicodetoUTF8(pModule->Path).c_str());
-                        IBR_HintManager::SetHint(u8"路径复制成功", HintStayTimeMillis);
-                    }
+                        ImGui::SetWindowSize({ RFontHeight * 20.0f,RFontHeight * 15.0f });
+                        ImGui::Text(pModule->DescLong.c_str());
+                        ImGui::NewLine();
+                        if (!pModule->ParamDescLong.empty() || !pModule->ParamDescShort.empty())ImGui::Text(u8"参数：%s", pModule->ParamDescShort.c_str());
+                        if (!pModule->ParamDescLong.empty())ImGui::Text(pModule->ParamDescLong.c_str());
 
-                })));
+                        ImGui::Text(u8"文件路径：%s", UnicodetoUTF8(pModule->Path).c_str());
+                        if (ImGui::SmallButton(u8"复制路径"))
+                        {
+                            ImGui::SetClipboardText(UnicodetoUTF8(pModule->Path).c_str());
+                            IBR_HintManager::SetHint(u8"路径复制成功", HintStayTimeMillis);
+                        }
+                        if (ImGui::SmallButton(u8"复制JSON"))
+                        {
+                            ImGui::SetClipboardText(pModule->ToJson().GetObj().PrintData().c_str());
+                            IBR_HintManager::SetHint(u8"模块Json复制成功", HintStayTimeMillis);
+                        }
+                    })));
+            }
+            ImGui::SameLine();
+            if(ImGui::SmallButton((u8"添加##" + pModule->Name).c_str()))
+                IBR_Inst_Project.AddModule(*pModule, GenerateModuleTag());
         }
-        */
-        //ImGui::SameLine();
-        //ImGui::SmallButton((u8"添加##" + pModule->Name).c_str());
-        if(R.Contains(ImGui::GetMousePos()) && ImGui::IsMouseDown(ImGuiMouseButton_Left))
-            IBR_Inst_Project.AddModule(*pModule, GenerateModuleTag());
+        else
+        {
+            if (R.Contains(ImGui::GetMousePos()) && ImGui::IsMouseDown(ImGuiMouseButton_Left))
+                IBR_Inst_Project.AddModule(*pModule, GenerateModuleTag());
+        }
     }
 
         IBR_ListMenu<IBB_ModuleAlt*> DoubleClickTable{ SearchModuleAlt::Get(), u8"DoubleClick_Module",
@@ -415,7 +431,14 @@ namespace IBR_WorkSpace
     }
     void Paste()
     {
+        SuppressGLFWError(GLFW_FORMAT_UNAVAILABLE);
         auto Str = ImGui::GetClipboardText();
+        UnsuppressGLFWError(GLFW_FORMAT_UNAVAILABLE);
+        if (!Str)
+        {
+            IBR_HintManager::SetHint(loc("GUI_PasteFailed"), HintStayTimeMillis);
+            return;
+        }
         IBB_ClipBoardData ClipData;
         IBB_ClipBoardData::ErrorContext.ModuleName = loc("GUI_Clipboard");
         IBB_ClipBoardData::ErrorContext.ModulePath = locw("GUI_Clipboard");
