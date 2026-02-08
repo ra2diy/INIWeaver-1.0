@@ -1338,8 +1338,20 @@ namespace IBB_ModuleAltDefault
                         ImGui::SameLine();
                         ImGui::SetCursorPosX(ImGui::GetWindowWidth() - 1.0F * FontHeight);
                         ImGui::Text(u8">");
+
                         ImVec2 ppos = ImGui::GetLineEndPos();
                         ppos.y -= ImGui::GetTextLineHeightWithSpacing();
+
+                        auto PredictedHeight = S->Sub.size() * (ImGui::GetTextLineHeightWithSpacing());
+                        PredictedHeight += S->Modules.size() * (ImGui::GetTextLineHeightWithSpacing());
+                        auto WorkspaceMaxHeight = IBR_UICondition::CurrentScreenHeight - IBR_HintManager::GetHeight();
+                        if (ppos.y + PredictedHeight > WorkspaceMaxHeight)
+                        {
+                            ppos.y = WorkspaceMaxHeight - PredictedHeight - ImGui::GetTextLineHeightWithSpacing();
+                            if (ppos.y < 0)ppos.y = 0;
+                        }
+
+
                         IBR_PopupManager::DelayedPopupAction.push_back(
                             [ppos, P = S.get()] {
                                 P->ChildMenuHovered = ImGui::IsWindowHovered(ImGuiHoveredFlags_RectOnly);

@@ -204,15 +204,15 @@ namespace IBR_ProjectManager
             .PushTextBack(loc("GUI_AskIfSave"))
             .PushMsgBack([=]()
                 {
-                    if (ImGui::Button((loc("GUI_AskIfSave_Yes") + u8"##AskIfSave").c_str()))
+                    if (ImGui::Button((loc("GUI_AskIfSave_Yes") + u8"##AskIfSave").c_str(), { FontHeight * 4.0f,FontHeight * 2.0f }))
                     {
                         IBRF_CoreBump.SendToR({ [=]() {  Next(true); IBR_PopupManager::ClearCurrentPopup(); }, nullptr });
                     }ImGui::SameLine(); ImGui::SetCursorPosX(ImGui::GetCursorPosX() + FontHeight * 0.7f);
-                    if (ImGui::Button((loc("GUI_AskIfSave_No") + u8"##AskIfSave").c_str()))
+                    if (ImGui::Button((loc("GUI_AskIfSave_No") + u8"##AskIfSave").c_str(), { FontHeight * 4.0f,FontHeight * 2.0f }))
                     {
                         IBRF_CoreBump.SendToR({ [=]() {  Next(false); IBR_PopupManager::ClearCurrentPopup(); }, nullptr});
                     }ImGui::SameLine(); ImGui::SetCursorPosX(ImGui::GetCursorPosX() + FontHeight * 0.7f);
-                    if (ImGui::Button((loc("GUI_AskIfSave_Cancel") + u8"##AskIfSave").c_str()))
+                    if (ImGui::Button((loc("GUI_AskIfSave_Cancel") + u8"##AskIfSave").c_str(), { FontHeight * 4.0f,FontHeight * 2.0f }))
                     {
                         IBRF_CoreBump.SendToR({ [=]() {IBR_PopupManager::ClearCurrentPopup();
                         GotoCloseShellLoop = false; glfwSetWindowShouldClose(PreLink::window, false); }, nullptr });
