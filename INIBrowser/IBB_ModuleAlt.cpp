@@ -534,7 +534,7 @@ ClipWriteStream& operator<<(ClipWriteStream& stm, const ModuleClipData& v)
     */
     else if (!v.IsLinkGroup)
     {
-        MessageBoxW(NULL, UTF8toUnicode(v.Comment).c_str(), L"COMMENT_WRITE", MB_OK);
+        //MessageBoxW(NULL, UTF8toUnicode(v.Comment).c_str(), L"COMMENT_WRITE", MB_OK);
         stm << v.IsLinkGroup << v.IsComment << v.Desc << v.EqSize << v.EqDelta << v.Comment;
     }
     /*
@@ -593,7 +593,7 @@ ClipReadStream& operator>>(ClipReadStream& stm, ModuleClipData& v)
         else
         {
             stm >> v.Desc >> v.EqSize >> v.EqDelta >> v.Comment;
-            MessageBoxW(NULL, UTF8toUnicode(v.Comment).c_str(), L"COMMENT", MB_OK);
+            //MessageBoxW(NULL, UTF8toUnicode(v.Comment).c_str(), L"COMMENT", MB_OK);
         }
     }
     /*
