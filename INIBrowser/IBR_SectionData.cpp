@@ -1079,6 +1079,13 @@ void IBR_SectionData::RenderUI()
                 PosUL.x -= ImGui::GetCurrentContext()->Style.ItemSpacing.x;
                 PosUL.y -= ImGui::GetCurrentContext()->Style.ItemSpacing.y;
                 Data->RenderUI();
+
+                if (!Data->CollapsedInComposed)
+                {
+                    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + ImGui::GetTextLineHeight() * 0.5f);
+                    Data->FinalY += ImGui::GetTextLineHeight() * 0.5f;
+                }
+
                 if (Data->First)Data->First = false;
                 auto PosDR = ImVec2{ PosUL.x + ImGui::GetWindowWidth(), PosUL.y + Data->FinalY };
                 ImRect rc{ PosUL,PosDR };
