@@ -4,6 +4,7 @@
 #include "FromEngine/RFBump.h"
 #include "FromEngine/global_timer.h"
 #include "IBR_ListView.h"
+#include "IBR_Debug.h"
 #include <imgui_internal.h>
 
 extern bool EnableDebugList;

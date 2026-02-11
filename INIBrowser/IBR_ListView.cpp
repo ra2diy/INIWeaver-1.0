@@ -3,6 +3,7 @@
 #include "IBFront.h"
 #include "Global.h"
 #include "IBB_RegType.h"
+#include "IBR_Combo.h"
 #include "imgui_internal.h"
 #include <ranges>
 #include <locale>
@@ -126,9 +127,7 @@ namespace IBR_ListView
 
                 //-----NEW LINE-----
 
-                if (ImGui::BeginCombo(locc("GUI_SortBy"), GetCurrentSortName()))
-                {
-                    ImGui::PushOrderFront(ImGui::GetCurrentWindow());
+                IBR_Combo(locc("GUI_SortBy"), GetCurrentSortName(), 0, [&] {
                     for (int i = 0; i < SortTypeCount; i++)
                     {
                         auto CurSort = static_cast<SortBy>(i);
@@ -137,8 +136,7 @@ namespace IBR_ListView
                             SetSortBy(CurSort);
                         }
                     }
-                    ImGui::EndCombo();
-                }
+                });
                 ImGui::SameLine();
 
                 //IsReversed() false 为升序 true 为降序

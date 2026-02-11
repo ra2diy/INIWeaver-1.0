@@ -183,6 +183,12 @@
     <ClInclude Include="fmt\include\fmt\xchar.h">
       <Filter>fmt</Filter>
     </ClInclude>
+    <ClInclude Include="IBR_Debug.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="IBR_Combo.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="INIBrowser.cpp">
@@ -319,6 +325,12 @@
     </ClCompile>
     <ClCompile Include="fmt\src\format.cc">
       <Filter>fmt</Filter>
+    </ClCompile>
+    <ClCompile Include="IBR_Combo.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="IBR_LinkNode.cpp">
+      <Filter>头文件</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

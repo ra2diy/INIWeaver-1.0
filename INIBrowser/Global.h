@@ -73,6 +73,7 @@ extern IBR_Project IBR_Inst_Project;
 extern IBS_Project IBS_Inst_Project;
 
 //调试
+struct IBR_Debug;
 extern IBR_Debug IBR_Inst_Debug;
 
 //随机种子

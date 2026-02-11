@@ -986,10 +986,8 @@ IBB_UpdateResult IIC_EnumCombo::RenderUI(IBB_ValueContainer& Cont) {
     auto Active = false;
     auto Size = ImGui::CalcTextSize(Hint.c_str(), NULL, true);
     ImGui::SetNextItemWidth(ImGui::GetWindowContentRegionWidth() - ImGui::GetCursorPosX() - Size.x);
-    if (ImGui::BeginCombo(Hint.c_str(),
-        (Options.contains(CurrentValue)? Options[CurrentValue] : CurrentValue).c_str()
-    ))
-    {
+    IBR_Combo(Hint.c_str(), (Options.contains(CurrentValue) ? Options[CurrentValue] : CurrentValue).c_str(), 0,
+        [&] {
         Active = ImGui::IsItemActive();
         ImGui::PushOrderFront(ImGui::GetCurrentWindow());
         for (auto& [Key, DisplayName] : Options)
@@ -1365,7 +1363,7 @@ IICPtr InputFormComponentFactory::CreateInputComponent(IBB_ValueContainer& Cont,
     auto oKey = Obj.GetObjectItem("Key");
     auto oFallback = Obj.GetObjectItem("FallBack");
 
-    if (oKey && oFallback && oKey.IsTypeString() && oKey.IsTypeString())
+    if (oKey && oFallback && oKey.IsTypeString() && oFallback.IsTypeString())
     {
         return std::make_unique<IIC_LocalizedText>(oKey.GetString(), oFallback.GetString(), ImColor(), false, false, false);
     }
@@ -1405,7 +1403,7 @@ IICPtr InputFormComponentFactory::CreateInputComponent(IBB_ValueContainer& Cont,
             {
                 return std::make_unique<IIC_PureText>(oText.GetString(), Col, Colored, Disabled, Wrapped);
             }
-            else if (oKey && oFallback && oKey.IsTypeString() && oKey.IsTypeString())
+            else if (oKey && oFallback && oKey.IsTypeString() && oFallback.IsTypeString())
             {
                 return std::make_unique<IIC_LocalizedText>(oKey.GetString(), oFallback.GetString(), Col, Colored, Disabled, Wrapped);
             }

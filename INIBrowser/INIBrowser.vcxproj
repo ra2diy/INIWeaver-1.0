@@ -193,6 +193,8 @@
     <ClInclude Include="IBG_Ini.h" />
     <ClInclude Include="IBG_InputType.h" />
     <ClInclude Include="IBRender.h" />
+    <ClInclude Include="IBR_Combo.h" />
+    <ClInclude Include="IBR_Debug.h" />
     <ClInclude Include="IBR_Font.h" />
     <ClInclude Include="IBR_HotKey.h" />
     <ClInclude Include="IBR_ListView.h" />
@@ -231,8 +233,10 @@
     <ClCompile Include="IBB_SubSec.cpp" />
     <ClCompile Include="IBFront.cpp" />
     <ClCompile Include="IBG_InputType.cpp" />
+    <ClCompile Include="IBR_Combo.cpp" />
     <ClCompile Include="IBR_Font.cpp" />
     <ClCompile Include="IBR_HotKey.cpp" />
+    <ClCompile Include="IBR_LinkNode.cpp" />
     <ClCompile Include="IBR_ListView.cpp" />
     <ClCompile Include="IBR_Localization.cpp" />
     <ClCompile Include="IBR_Misc.cpp" />

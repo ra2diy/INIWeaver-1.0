@@ -4,9 +4,11 @@
 #include "FromEngine/RFBump.h"
 #include "FromEngine/global_timer.h"
 #include "IBB_ModuleAlt.h"
-#include<imgui_internal.h>
+#include <imgui_internal.h>
 #include <shlwapi.h>
 #include "IBR_HotKey.h"
+#include "IBR_Debug.h"
+#include "IBR_Combo.h"
 
 
 
@@ -76,11 +78,12 @@ namespace SearchModuleAlt
         }
 
         
-        if (EnableDebugList)
+        if (IBR_Inst_Debug.UseModuleProperties)
         {
             ImGui::SameLine();
             ImGui::SetCursorPosX(FontHeight * 8.0f);
-            if (ImGui::SmallButton((u8"属性##" + pModule->Name).c_str()))
+            ImGui::SmallButton((u8"属性##" + pModule->Name).c_str());
+            if (ImGui::IsMouseDown(ImGuiMouseButton_Left) && ImGui::IsItemHovered())
             {
                 IBR_PopupManager::SetCurrentPopup(std::move(IBR_PopupManager::Popup{}.CreateModal(pModule->DescShort, true).SetFlag(ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize).PushMsgBack([pModule]()
                     {
@@ -104,7 +107,8 @@ namespace SearchModuleAlt
                     })));
             }
             ImGui::SameLine();
-            if(ImGui::SmallButton((u8"添加##" + pModule->Name).c_str()))
+            ImGui::SmallButton((u8"添加##" + pModule->Name).c_str());
+            if (ImGui::IsMouseDown(ImGuiMouseButton_Left) && ImGui::IsItemHovered())
                 IBR_Inst_Project.AddModule(*pModule, GenerateModuleTag());
         }
         else
@@ -189,6 +193,8 @@ namespace IBR_WorkSpace
     bool HasRightDownToWait{ false };
     bool HasLefttDownToWait{ false };
     bool MoveAfterMass{ false };
+    bool OnCombo{ false };
+    bool OnPopupMenu{ false };
     std::vector<IBR_Project::id_t> MassTarget;
     //包含了被编组的块
     std::vector<IBR_Project::id_t> MassTargetExtended;
@@ -747,9 +753,13 @@ namespace IBR_WorkSpace
                 !w->LastFrameRendered
                 )continue;
 
+            if (IBR_Inst_Debug.ShowWorkspaceWindowFrame)
+            {
+                ImGui::GetForegroundDrawList()->AddText(w->Rect().Min, IBR_Color::IllegalLineColor, w->Name);
+                ImGui::GetForegroundDrawList()->AddRect(w->Rect().Min, w->Rect().Max, IBR_Color::FocusWindowColor, 2.0F, 0, 3.0F);
+            }
 
-            //ImGui::GetForegroundDrawList()->AddText(w->Rect().Min, IBR_Color::IllegalLineColor, w->Name);
-            //ImGui::GetForegroundDrawList()->AddRect(w->Rect().Min, w->Rect().Max, IBR_Color::FocusWindowColor, 2.0F, 0, 3.0F);
+
             if (w->Rect().Contains(MousePos))
             {
                 OnWindow = true;
@@ -757,8 +767,25 @@ namespace IBR_WorkSpace
             }
         }
 
+        OnCombo = false;
+        for (auto r : GetComboRects())
+        {
+            if (IBR_Inst_Debug.ShowWorkspaceWindowFrame)
+            {
+                ImGui::GetForegroundDrawList()->AddRect(r.Min, r.Max, IBR_Color::FocusWindowColor, 2.0F, 0, 3.0F);
+            }
+            if (r.Contains(MousePos))
+            {
+                OnWindow = true;
+                OnCombo = true;
+                break;
+            }
+        }
+
+        OnPopupMenu = IBR_PopupManager::IsMouseOnPopup();
+
         //PROCESSING I : Update Display Ratio
-        if (Cont && LastCont && !IBR_PopupManager::IsMouseOnPopup())
+        if (Cont && LastCont && !OnPopupMenu && !OnCombo)
         {
             auto DeltaWheel = ImGui::GetIO().MouseWheel;
             if (abs(DeltaWheel) > 1e-6f)

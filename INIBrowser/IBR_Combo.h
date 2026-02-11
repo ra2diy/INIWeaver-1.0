@@ -1,0 +1,22 @@
+﻿#pragma once
+#include "FromEngine/Include.h"
+
+bool IBR_Combo_Stage_I(const char* label, const char* preview_value, ImGuiComboFlags flags);
+void IBR_Combo_Stage_II();
+void IBR_Combo_Stage_III();
+
+template <typename T>
+bool IBR_Combo(const char* label, const char* preview_value, ImGuiComboFlags flags, const T& body)
+{
+    if (IBR_Combo_Stage_I(label, preview_value, flags))
+    {
+        IBR_Combo_Stage_II();
+        body();
+        IBR_Combo_Stage_III();
+        return true;
+    }
+    return false;
+}
+
+struct ImRect;
+std::vector<ImRect>& GetComboRects();

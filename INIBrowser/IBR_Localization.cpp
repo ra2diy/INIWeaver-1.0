@@ -4,14 +4,11 @@
 #include "Global.h"
 #include <imgui_internal.h>
 #include <format>
+#include "IBR_Combo.h"
 
 extern wchar_t CurrentDirW[];
 void subreplace(std::string& dst_str, const std::string& sub_str, const std::string& new_str);
 void RefreshSettingTypes();
-namespace ImGui
-{
-    void PushOrderFront(ImGuiWindow* Window);
-}
 bool RefreshLangBuffer1 = false;
 bool RefreshLangBuffer2 = false;
 bool RefreshLangBuffer3 = false;
@@ -30,12 +27,11 @@ namespace IBR_L10n
     bool RenderUI(std::string_view Title)
     {
         auto it = CurrentMap.find("LangName");
-        if (ImGui::BeginCombo(Title.data(), (it == CurrentMap.end() ? CurrentLanguage : it->second).c_str()))
-        {
-            auto h = ImGui::IsItemHovered();
+        bool h = false;
+        if(IBR_Combo(Title.data(), (it == CurrentMap.end() ? CurrentLanguage : it->second).c_str(), 0, [&] {
+            h = ImGui::IsItemHovered();
             for (auto& [k, v] : LocalizationMap)
             {
-                ImGui::PushOrderFront(ImGui::GetCurrentWindow());
                 if (k == "Basic")continue;
                 auto i2 = v.find("LangName");
                 if (ImGui::Selectable((i2 == v.end() ? k : i2->second).c_str(), k == CurrentLanguage))
@@ -43,9 +39,9 @@ namespace IBR_L10n
                     SetLanguage(k);
                 }
             }
-            ImGui::EndCombo();
+        }))
             return h;
-        }
+
         return ImGui::IsItemHovered();
     }
 

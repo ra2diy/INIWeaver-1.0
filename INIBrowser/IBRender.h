@@ -86,30 +86,6 @@ std::wstring RemoveSpec(std::wstring W);
 
 
 
-
-struct IBR_Debug
-{
-    struct _UICond
-    {
-        bool LoopShow{ true }, OnceShow{ true };
-    }UICond;
-    struct _Data
-    {
-        bool Nope;
-    }Data;
-
-    std::vector<StdMessage>DebugVec, DebugVecOnce;
-    void AddMsgCycle(const StdMessage& Msg);
-    void ClearMsgCycle();
-    void AddMsgOnce(const StdMessage& Msg);
-
-    void DebugLoad();
-
-    void RenderUI();
-    void RenderUIOnce();
-    void RenderOnWorkSpace();
-};
-
 #define _PROJ_CMD_UPDATE
 #define _PROJ_CMD_CAN_UNDO
 #define _PROJ_CMD_WRITE

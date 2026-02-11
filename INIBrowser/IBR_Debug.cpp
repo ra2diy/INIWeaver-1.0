@@ -5,6 +5,7 @@
 #include "FromEngine/global_timer.h"
 #include<imgui_internal.h>
 #include "IBB_ModuleAlt.h"
+#include "IBR_Debug.h"
 
 namespace PreLink
 {
@@ -53,6 +54,7 @@ namespace IBR_WorkSpace
     extern float NewRatio;
     extern bool NeedChangeRatio, HoldingModules, InitHolding, IsMassSelecting, IsMassAfter, HasRightDownToWait, HasLefttDownToWait, MoveAfterMass;
     extern bool LastClickable, LastOnWindow, LastCont, Cont;
+    extern bool OnCombo, OnPopupMenu;
     extern ImVec2 MassAfter_RightDownPos;
 }
 
@@ -82,6 +84,9 @@ void IBR_Debug::RenderUI()
         ImGui::LogFinish();
     }
 
+    ImGui::Checkbox(u8"模块的属性菜单", &UseModuleProperties);
+    ImGui::Checkbox(u8"显示画布上窗口判定框", &ShowWorkspaceWindowFrame);
+
     if (ImGui::Button(u8"剪贴板 -> JSON"))
     {
         auto Clip = ImGui::GetClipboardText();
@@ -98,23 +103,32 @@ void IBR_Debug::RenderUI()
     auto& mardp = IBR_WorkSpace::MassAfter_RightDownPos;
     auto msp = ImGui::GetMousePos();
 
-    ImGui::Text("MousePos = (%.1f,%.1f)", msp.x, msp.y);
-    ImGui::Text("MassAfter_RightDownPos = (%.1f,%.1f)", mardp.x, mardp.y);
-    ImGui::Text("IsBgDragging = %s", IBR_WorkSpace::IsBgDragging ? "true" : "false");
-    ImGui::Text("HoldingModules = %s", IBR_WorkSpace::HoldingModules ? "true" : "false");
-    ImGui::Text("IsMassSelecting = %s", IBR_WorkSpace::IsMassSelecting ? "true" : "false");
-    ImGui::Text("IsMassAfter = %s", IBR_WorkSpace::IsMassAfter ? "true" : "false");
-    ImGui::Text("HasRightDownToWait = %s", IBR_WorkSpace::HasRightDownToWait ? "true" : "false");
-    ImGui::Text("HasLeftDownToWait = %s", IBR_WorkSpace::HasLefttDownToWait ? "true" : "false");
-    ImGui::Text("MoveAfterMass = %s", IBR_WorkSpace::MoveAfterMass ? "true" : "false");
-    ImGui::Text("LastClickable = %s", IBR_WorkSpace::LastClickable ? "true" : "false");
-    ImGui::Text("LastOnWindow = %s", IBR_WorkSpace::LastOnWindow ? "true" : "false");
-    ImGui::Text("LastCont = %s", IBR_WorkSpace::LastCont ? "true" : "false");
-    ImGui::Text("DblClickLeft = %s", ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left) ? "true" : "false");
-    ImGui::Text("CTRL = %s", ImGui::GetIO().KeyCtrl ? "true" : "false");
-    ImGui::Text("SHIFT = %s", ImGui::GetIO().KeyShift ? "true" : "false");
-    ImGui::Text("ALT = %s", ImGui::GetIO().KeyAlt ? "true" : "false");
-    ImGui::Text("SUPER = %s", ImGui::GetIO().KeySuper ? "true" : "false");
+    if(ImGui::TreeNode(u8"UI状态参数"))
+    {
+        ImGui::Text("MousePos = (%.1f,%.1f)", msp.x, msp.y);
+        if (mardp.x == -FLT_MAX || mardp.y == -FLT_MAX)ImGui::Text("MassAfter_RightDownPos = INVALID");
+        else ImGui::Text("MassAfter_RightDownPos = (%.1f,%.1f)", mardp.x, mardp.y);
+        ImGui::Text("IsBgDragging = %s", IBR_WorkSpace::IsBgDragging ? "true" : "false");
+        ImGui::Text("HoldingModules = %s", IBR_WorkSpace::HoldingModules ? "true" : "false");
+        ImGui::Text("IsMassSelecting = %s", IBR_WorkSpace::IsMassSelecting ? "true" : "false");
+        ImGui::Text("IsMassAfter = %s", IBR_WorkSpace::IsMassAfter ? "true" : "false");
+        ImGui::Text("HasRightDownToWait = %s", IBR_WorkSpace::HasRightDownToWait ? "true" : "false");
+        ImGui::Text("HasLeftDownToWait = %s", IBR_WorkSpace::HasLefttDownToWait ? "true" : "false");
+        ImGui::Text("MoveAfterMass = %s", IBR_WorkSpace::MoveAfterMass ? "true" : "false");
+        ImGui::Text("LastClickable = %s", IBR_WorkSpace::LastClickable ? "true" : "false");
+        ImGui::Text("LastOnWindow = %s", IBR_WorkSpace::LastOnWindow ? "true" : "false");
+        ImGui::Text("LastCont = %s", IBR_WorkSpace::LastCont ? "true" : "false");
+        ImGui::Text("OnCombo = %s", IBR_WorkSpace::OnCombo ? "true" : "false");
+        ImGui::Text("OnPopupMenu = %s", IBR_WorkSpace::OnPopupMenu ? "true" : "false");
+        ImGui::Text("DblClickLeft = %s", ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left) ? "true" : "false");
+        ImGui::Text("CTRL = %s", ImGui::GetIO().KeyCtrl ? "true" : "false");
+        ImGui::Text("SHIFT = %s", ImGui::GetIO().KeyShift ? "true" : "false");
+        ImGui::Text("ALT = %s", ImGui::GetIO().KeyAlt ? "true" : "false");
+        ImGui::Text("SUPER = %s", ImGui::GetIO().KeySuper ? "true" : "false");
+
+        ImGui::TreePop();
+    }
+
     if (UICond.LoopShow) { if (ImGui::ArrowButton("loopc", ImGuiDir_Down))UICond.LoopShow = false; }
     else { if (ImGui::ArrowButton("loopa", ImGuiDir_Right))UICond.LoopShow = true; }
     if (UICond.LoopShow)for (auto x : DebugVec)x();
@@ -122,7 +136,7 @@ void IBR_Debug::RenderUI()
     if (UICond.OnceShow) { if (ImGui::ArrowButton("loopd", ImGuiDir_Down))UICond.OnceShow = false; }
     else { if (ImGui::ArrowButton("loopb", ImGuiDir_Right))UICond.OnceShow = true; }
     ImGui::SameLine();
-    if (ImGui::Button(u8"CLEAR"))DebugVecOnce.clear();
+    if (ImGui::Button(u8"CLEAR##clear"))DebugVecOnce.clear();
     if (UICond.OnceShow)for (auto x : DebugVecOnce)x();
 }
 

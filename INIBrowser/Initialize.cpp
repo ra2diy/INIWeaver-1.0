@@ -10,6 +10,7 @@
 #include "IBR_Font.h"
 #include <filesystem>
 #include "IBR_HotKey.h"
+#include "IBR_Debug.h"
 
 bool ShouldCloseShellLoop = false;
 bool GotoCloseShellLoop = false;

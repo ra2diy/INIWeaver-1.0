@@ -3,7 +3,8 @@
 #include "Global.h"
 #include "FromEngine/RFBump.h"
 #include "FromEngine/global_timer.h"
-#include<imgui_internal.h>
+#include "IBR_Debug.h"
+#include <imgui_internal.h>
 
 namespace IBR_FullView
 {

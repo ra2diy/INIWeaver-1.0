@@ -1,5 +1,6 @@
 ﻿
 #include "Global.h"
+#include "IBR_Debug.h"
 
 //所有版本号相关数据
 const std::string Version = u8"1.0.7";

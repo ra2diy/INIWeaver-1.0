@@ -10,6 +10,7 @@
 #include"IBRender.h"
 #include<ShlObj.h>
 #include<imgui_internal.h>
+#include"IBR_Debug.h"
 
 std::string FontPath = ".\\Resources\\";//全过程不变
 std::wstring FontPathW = L".\\Resources\\";//全过程不变
@@ -28,6 +29,7 @@ std::vector<std::string>RecentFilePath;//UTF-8
 
 
 int IBG_ExitProcess();
+void ClearComboRects();
 
 int DynamicDataXDelta, DynamicDataYDelta;
 
@@ -114,6 +116,7 @@ void ControlPanel()
     GetWindowRect(MainWindowHandle, &FinalWP);
     IBR_UICondition::UpdateWindowTitle();
     IBR_WorkSpace::UpdatePrev();
+    ClearComboRects();
     if (First)
     {
         DynamicDataXDelta = ScrX - (FinalWP.right - FinalWP.left);
