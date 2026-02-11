@@ -480,30 +480,31 @@ const char* CStrBoolImpl(bool Val, StrBoolType Type)
 
 bool AcceptStrAsBool(const std::string& Str, StrBoolType Type)
 {
-    if (!stricmp(Str.c_str(), "true"))return true;
-    if (!stricmp(Str.c_str(), "false"))return true;
-    if (!stricmp(Str.c_str(), "yes"))return true;
-    if (!stricmp(Str.c_str(), "no"))return true;
+    if (!_stricmp(Str.c_str(), "true"))return true;
+    if (!_stricmp(Str.c_str(), "false"))return true;
+    if (!_stricmp(Str.c_str(), "yes"))return true;
+    if (!_stricmp(Str.c_str(), "no"))return true;
     if (Type == StrBoolType::Str_t_f || Type == StrBoolType::Str_T_F)
     {
-        if (!stricmp(Str.c_str(), "t"))return true;
-        if (!stricmp(Str.c_str(), "f"))return true;
+        if (!_stricmp(Str.c_str(), "t"))return true;
+        if (!_stricmp(Str.c_str(), "f"))return true;
     }
     if (Type == StrBoolType::Str_y_n || Type == StrBoolType::Str_Y_N)
     {
-        if (!stricmp(Str.c_str(), "y"))return true;
-        if (!stricmp(Str.c_str(), "n"))return true;
+        if (!_stricmp(Str.c_str(), "y"))return true;
+        if (!_stricmp(Str.c_str(), "n"))return true;
     }
     if (Type == StrBoolType::Str_1_0)
     {
-        if (!stricmp(Str.c_str(), "0"))return true;
-        if (!stricmp(Str.c_str(), "1"))return true;
+        if (!_stricmp(Str.c_str(), "0"))return true;
+        if (!_stricmp(Str.c_str(), "1"))return true;
     }
     if (Type == StrBoolType::Str_yeah_fuck)
     {
-        if (!stricmp(Str.c_str(), "yeah"))return true;
-        if (!stricmp(Str.c_str(), "fuck"))return true;
+        if (!_stricmp(Str.c_str(), "yeah"))return true;
+        if (!_stricmp(Str.c_str(), "fuck"))return true;
     }
+    return false;
 }
 
 JsonObject JsonObject::CreateObjectItem(const std::string& Str) const
