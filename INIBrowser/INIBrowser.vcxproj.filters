@@ -189,6 +189,9 @@
     <ClInclude Include="IBR_Combo.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="IBB_OutputFormat.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="INIBrowser.cpp">
@@ -327,6 +330,9 @@
       <Filter>fmt</Filter>
     </ClCompile>
     <ClCompile Include="IBR_Combo.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="IBB_OutputFormat.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="IBR_LinkNode.cpp">

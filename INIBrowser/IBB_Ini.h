@@ -145,6 +145,8 @@ struct IBB_IniLine
     ValidateResult ValidateAndMerge(const std::string& Another, IBB_IniMergeMode Mode);
     ValidateResult ValidateAndMerge(const IBB_IniLine& Another, IBB_IniMergeMode Mode);
 
+    void MakeKVForExport(IBB_VariableList&) const;
+
     template<typename T> T* GetData() const { return dynamic_cast<T*>(Data.get()); }
 
     bool Merge(const IBB_IniLine& Another, IBB_IniMergeMode Mode);
@@ -155,7 +157,7 @@ struct IBB_IniLine
     IBB_IniLine() {}
     IBB_IniLine(const std::string& Value, IBB_IniLine_Default* Def) { Generate(Value, Def); }
     IBB_IniLine(const IBB_IniLine& F) { Default = F.Default; Data = F.Data; }
-    IBB_IniLine(IBB_IniLine&& F);
+    IBB_IniLine(IBB_IniLine&& F) noexcept;
 
     IBB_IniLine Duplicate() const;//这个才是深复制，鉴于深复制用处远低浅复制，故默认浅复制
 
@@ -181,7 +183,6 @@ struct IBB_SubSec
     bool Merge(const IBB_SubSec& Another, const std::unordered_map<std::string, IBB_IniMergeMode>& MergeType, bool IsDuplicate);
     bool Merge(const IBB_SubSec& Another, IBB_IniMergeMode Mode, bool IsDuplicate);
 
-    std::string GetText(bool PrintExtraData, bool FromExport = false) const;//RARELY USED 这个GetText自带换行符
     std::vector<std::string> GetKeys(bool PrintExtraData) const;//RARELY USED
     IBB_VariableList GetLineList(bool PrintExtraData, bool FromExport) const;//RARELY USED
     std::string GetFullVariable(const std::string& Name) const;
@@ -190,7 +191,7 @@ struct IBB_SubSec
 
     bool UpdateAll();
 
-    bool AddLine(const std::pair<std::string, std::string>& Line);
+    bool AddLine(const std::pair<std::string, std::string>& Line, bool InitOnShow);
     bool ChangeRoot(IBB_Section* NewRoot);
     IBB_SubSec& ChangeRootAndBack(IBB_Section* NewRoot) { ChangeRoot(NewRoot); return *this; }
 };
@@ -244,8 +245,9 @@ struct IBB_Section
     bool Merge(const IBB_Section& Another, IBB_IniMergeMode MergeType, bool IsDuplicate);//they share the same merge type
     bool MergeLine(const std::string& Key, const std::string& Value, IBB_IniMergeMode Mode);
     bool Generate(const IBB_Section_NameType& Paragraph);
-    bool GenerateLines(const IBB_VariableList& Lines, const std::vector<std::string>& Order = {});
+    bool GenerateLines(const IBB_VariableList& Lines, const std::vector<std::string>& Order = {}, bool InitOnShow = true);
     bool GenerateAsDuplicate(const IBB_Section& Src);
+    void OrderKey(const std::string& Key, size_t NewOrder);
 
     bool UpdateAll();
     bool UpdateLineOrder();
@@ -270,7 +272,7 @@ struct IBB_Section
     std::vector<std::string> GetKeys(bool PrintExtraData) const;//RARELY USED
     IBB_VariableList GetLineList(bool PrintExtraData, bool FromExport) const;//RARELY USED
     IBB_VariableList GetSimpleLines() const;//RARELY USED
-    std::string GetText(bool PrintExtraData, bool FromExport = false) const;
+    std::string GetText(bool PrintExtraData, bool FromExport = false, bool ForEdit = false) const;
     std::string GetTextForEdit() const;
     std::string GetFullVariable(const std::string& Name) const;//如果对其使用_SECTION_NAME则返回字段名
     std::vector<size_t> GetRegisteredPosition() const;//Project的RegList序号

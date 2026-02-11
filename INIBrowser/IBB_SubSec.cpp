@@ -228,7 +228,7 @@ bool IBB_SubSec::Merge(const IBB_SubSec& Another, IBB_IniMergeMode Mode, bool Is
     }
     return Ret;
 }
-bool IBB_SubSec::AddLine(const std::pair<std::string, std::string>& Line)
+bool IBB_SubSec::AddLine(const std::pair<std::string, std::string>& Line, bool InitOnShow)
 {
     auto it = Lines.find(Line.first);
     if (it == Lines.end())
@@ -237,8 +237,11 @@ bool IBB_SubSec::AddLine(const std::pair<std::string, std::string>& Line)
         if (Def == nullptr)return false;
         Lines_ByName.push_back(Line.first);
         auto rp = Lines.insert({ Line.first,IBB_IniLine(Line.second, Def) });
-        if (!Def->Property.TypeAlt.empty() && Def->Property.TypeAlt != "bool")
-            Root->OnShow[Line.first] = EmptyOnShowDesc;
+        if (InitOnShow)
+        {
+            if (!Def->Property.TypeAlt.empty() && Def->Property.TypeAlt != "bool")
+                Root->OnShow[Line.first] = EmptyOnShowDesc;
+        }
         return true;
     }
     else
@@ -258,52 +261,6 @@ bool IBB_SubSec::ChangeRoot(IBB_Section* NewRoot)
     return true;
 }
 
-std::string IBB_SubSec::GetText(bool PrintExtraData, bool FromExport) const
-{
-    std::string Text;
-    if (PrintExtraData)
-    {
-        Text.push_back(';'); Text += (Default == nullptr ? std::string{ "MISSING SubSec Default" } : Default->Name); Text.push_back('\n');
-    }
-    for (const auto& sn : Lines_ByName)
-    {
-        auto It = Lines.find(sn);
-        if (It == Lines.end())
-            if (EnableLog)
-            {
-                GlobalLogB.AddLog_CurTime(false);
-                auto sl = UTF8toUnicode(sn);
-                GlobalLogB.AddLog(std::vformat(L"IBB_SubSec::GetText ：" + locw("Log_SubSecNotExist"), std::make_wformat_args(sl)));
-            }
-        auto& L = It->second;
-        if (FromExport)
-        {
-            auto ex = L.Data->GetStringForExport(/*Root->Root->Name*/);
-            if (ex.empty())continue;
-            if (sn == InheritKeyName)continue;
-            Text += sn;
-            Text += '=';
-            Text += ex;
-            Text += '\n';
-        }
-        else
-        {
-            if (sn == InheritKeyName)continue;
-            Text += sn;
-            Text += '=';
-            Text += L.Data->GetString();
-            Text += '\n';
-        }
-    }
-    if (PrintExtraData)
-    {
-        //Text += ";Extra Data - Link To\n";
-        //for (const auto& to : LinkTo)
-        //    Text += to.GetText(*(Root->Root->Root));//SubSec->Sec->Ini->Project
-
-    }
-    return Text;
-}
 std::vector<std::string> IBB_SubSec::GetKeys(bool PrintExtraData) const
 {
     std::vector<std::string> Ret;
@@ -343,10 +300,8 @@ IBB_VariableList IBB_SubSec::GetLineList(bool PrintExtraData, bool FromExport) c
         auto& L = It->second;
         if (FromExport)
         {
-            auto ex = L.Data->GetStringForExport();
-            if (ex.empty())continue;
             if (sn == InheritKeyName)continue;
-            Ret.Value[sn] = ex;
+            L.MakeKVForExport(Ret);
         }
         else
         {

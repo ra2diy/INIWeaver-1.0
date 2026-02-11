@@ -145,7 +145,7 @@ struct IBR_SectionData
     void RenameRegisterImpl(const std::string& Name);
     void RenameDisplay();
     void RenameRegister();
-    bool OnLineEdit(const std::string& Name, bool OnLink);
+    bool OnLineEdit(const std::string& OnShow, const std::string& Name, bool OnLink);
     void RenderUI();
     void RenderUI_TitleBar(bool& TriggeredRightMenu, float LastFinalY);
     void CopyToClipBoard();

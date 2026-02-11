@@ -203,7 +203,7 @@ void IBR_SectionData::RenameRegisterImpl(const std::string& Name)
     BackPtr_Cached = nullptr;
 }
 
-bool IBR_SectionData::OnLineEdit(const std::string& Name, bool OnLink)
+bool IBR_SectionData::OnLineEdit(const std::string& OnShow, const std::string& Name, bool OnLink)
 {
 
     auto& Line = ActiveLines[Name];
@@ -222,32 +222,6 @@ bool IBR_SectionData::OnLineEdit(const std::string& Name, bool OnLink)
         }
         return true;
     }
-    /*
-    if (!OnLink)
-    {
-        if (line->Default->Property.TypeAlt == "bool")
-        {
-            Line.Buffer = line->Data->GetString();
-            bool X = (Line.Buffer == "yes" || Line.Buffer == "true");
-            if(!IBR_WorkSpace::ShowRegName)ImGui::Checkbox(line->Default->DescShort.c_str(), &X);
-            else ImGui::Checkbox(Name.c_str(), &X);
-            if (!line->Default->DescLong.empty() && ImGui::IsItemHovered())
-            {
-                ImGui::BeginTooltip();
-                ImGui::Text(line->Default->DescLong.c_str());
-                ImGui::EndTooltip();
-            }
-            if (ImGui::IsItemClicked(ImGuiMouseButton_Left))
-            {
-                line->Data->SetValue(!X ? "yes" : "no");
-                if (IBR_Inst_Project.IBR_Rev_SectionMap[Desc] == IBR_EditFrame::CurSection.ID)
-                {
-                    IBR_EditFrame::EditLines[Name].Buffer = !X ? "yes" : "no";
-                }
-            }
-            return true;
-        }
-    }*/
     if (Line.Edit.NeedInit())
     {
         IBR_IniLine::InitType It{ line->Data->GetString() ,
@@ -269,7 +243,12 @@ bool IBR_SectionData::OnLineEdit(const std::string& Name, bool OnLink)
             if(w.empty())Line.Edit.RenderUI(locc("GUI_NoInherit"), line->Default->DescLong, &It);
             else Line.Edit.RenderUI(UnicodetoUTF8(std::vformat(locw("GUI_InheritFrom"), std::make_wformat_args(Line.Edit.HasInput ? Nul : w))), line->Default->DescLong, &It);
         }
-        else if (!IBR_WorkSpace::ShowRegName)Line.Edit.RenderUI(line->Default->DescShort, line->Default->DescLong, &It);
+        else if (!IBR_WorkSpace::ShowRegName)
+        {
+            if(OnShow.empty() || OnShow == EmptyOnShowDesc)
+                Line.Edit.RenderUI(line->Default->DescShort, line->Default->DescLong, &It);
+            else Line.Edit.RenderUI(OnShow, line->Default->DescLong, &It);
+        }
         else Line.Edit.RenderUI(Name, line->Default->DescLong, &It);
     }
     else
@@ -283,7 +262,12 @@ bool IBR_SectionData::OnLineEdit(const std::string& Name, bool OnLink)
             if (w.empty())Line.Edit.RenderUI(locc("GUI_NoInherit"), line->Default->DescLong);
             else Line.Edit.RenderUI(UnicodetoUTF8(std::vformat(locw("GUI_InheritFrom"), std::make_wformat_args(Line.Edit.HasInput ? Nul : w))), line->Default->DescLong);
         }
-        else if (!IBR_WorkSpace::ShowRegName)Line.Edit.RenderUI(line->Default->DescShort, line->Default->DescLong);
+        else if (!IBR_WorkSpace::ShowRegName)
+        {
+            if (OnShow.empty() || OnShow == EmptyOnShowDesc)
+                Line.Edit.RenderUI(line->Default->DescShort, line->Default->DescLong);
+            else Line.Edit.RenderUI(OnShow, line->Default->DescLong);
+        }
         else Line.Edit.RenderUI(Name, line->Default->DescLong);
     }
     return line->Default->Property.TypeAlt.empty() ? true : HasInput;
@@ -801,7 +785,7 @@ void IBR_SectionData::RenderUI()
                     }
 #undef _PB
 
-                    bool HasInput{ OnLineEdit(lt.FromKey, true) };
+                    bool HasInput{ OnLineEdit((_F == Bsec->OnShow.end() ? "" : _F->second), lt.FromKey, true) };
                     if (!HasInput)
                     {
                         auto NewLineCursor = ImGui::GetCursorPos();
@@ -963,7 +947,7 @@ void IBR_SectionData::RenderUI()
                     if (Used.count(k) > 0)continue;
                     auto _F = Bsec->OnShow.find(k);
                     if (_F != Bsec->OnShow.end() && _F->second.empty())continue;
-                    bool HasInput{ OnLineEdit(k, false) };
+                    bool HasInput{ OnLineEdit((_F == Bsec->OnShow.end() ? "" : _F->second), k, false)};
                     if (!HasInput)
                     {
                         auto NewLineCursor = ImGui::GetCursorPos();

@@ -590,9 +590,17 @@ bool IBB_IniLine::Generate(const std::string& Value, IBB_IniLine_Default* Def)
     return Ret;
 }
 
+void IBB_IniLine::MakeKVForExport(IBB_VariableList& vl) const
+{
+    auto& input = Default->GetInputType();
+    auto& key = Default->Name;
+    auto value = Data->GetStringForExport();
+    input.KVFmt(vl, key, value);
+}
+
 
 //IBB_IniLine(IBB_IniLine&& F) { Default = F.Default; Data = F.Data; if (F.ShouldDestroy) { F.ShouldDestroy = false; ShouldDestroy = true; } }
-IBB_IniLine::IBB_IniLine(IBB_IniLine&& F)
+IBB_IniLine::IBB_IniLine(IBB_IniLine&& F) noexcept
 {
     if (EnableLogEx) {GlobalLogB.AddLog_CurTime(false); GlobalLogB.AddLog("IBB_IniLine : Move Ctor");}
     Default = F.Default; Data = F.Data;

@@ -250,10 +250,6 @@ bool IBF_Project::UpdateCreateSection(const IBB_Section_Desc& Desc)
                         l.Another = &b;
                     }
                 }
-                for (auto& [k, l] : ss.Lines)
-                {
-                    pSec->OnShow[k] = l.Default->IsLinkAlt() ? EmptyOnShowDesc : "";
-                }
             }
         }
     }

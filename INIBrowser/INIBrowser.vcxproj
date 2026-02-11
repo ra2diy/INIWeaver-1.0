@@ -186,6 +186,7 @@
     <ClInclude Include="IBB_Components.h" />
     <ClInclude Include="IBB_Ini.h" />
     <ClInclude Include="IBB_ModuleAlt.h" />
+    <ClInclude Include="IBB_OutputFormat.h" />
     <ClInclude Include="IBB_Project.h" />
     <ClInclude Include="IBB_RegType.h" />
     <ClInclude Include="IBB_Setting.h" />
@@ -226,6 +227,7 @@
     <ClCompile Include="IBB_Components.cpp" />
     <ClCompile Include="IBB_Index.cpp" />
     <ClCompile Include="IBB_ModuleAlt.cpp" />
+    <ClCompile Include="IBB_OutputFormat.cpp" />
     <ClCompile Include="IBB_Project.cpp" />
     <ClCompile Include="IBB_RegType.cpp" />
     <ClCompile Include="IBB_Section.cpp" />

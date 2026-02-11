@@ -80,14 +80,28 @@ bool IBB_Section::Generate(const ModuleClipData& Clip)
             std::vector<std::string> Order;
             VL.Value[InheritKeyName] = Inherit;
             OnShow[InheritKeyName] = "\n";
+            OutputDebugStringA("----------\n");
             for (auto& L : Clip.Lines)
             {
                 VL.Value[L.Key] = L.Value;
                 OnShow[L.Key] = L.Desc;
+                std::string dsc;
                 Order.push_back(L.Key); 
             }
             
-            GenerateLines(VL, Order);
+            GenerateLines(VL, Order, false);
+
+            /*
+            OutputDebugStringA("----------\n");
+            OutputDebugStringA((Name + "\n").c_str());
+            for (auto& [k, v] : OnShow)
+            {
+                if (!v.empty())
+                {
+                    OutputDebugStringA((k + "\n").c_str());
+                }
+            }
+            */
         }
     }
     return true;
@@ -224,6 +238,7 @@ bool IBB_Section::SetText(const std::vector<IniToken>& Tokens)
     if (l)Inherit = l->Data->GetString();
     SubSecs.clear();
     LineOrder.clear();
+    OnShow.clear();
     UnknownLines.Value.clear();
     std::unordered_map<IBB_SubSec_Default*, int> SubSecList;
     auto u = [&](const IniToken& tok) {
@@ -241,7 +256,13 @@ bool IBB_Section::SetText(const std::vector<IniToken>& Tokens)
             }
             auto& Sub = SubSecs.at(It->second);
             {
-                if (!Sub.AddLine({ tok.Key,tok.Value }))Ret = false;
+                if (!Sub.AddLine({ tok.Key,tok.Value }, false))Ret = false;
+                if (tok.HasDesc)
+                {
+                    if (tok.Desc.empty())OnShow[tok.Key] = EmptyOnShowDesc;
+                    else OnShow[tok.Key] = tok.Desc;
+                }
+                else OnShow.erase(tok.Key);
             }
         }
         LineOrder.push_back(tok.Key);
@@ -379,7 +400,7 @@ IBB_VariableList IBB_Section::GetSimpleLines() const
     return Ret;
 }
 
-std::string IBB_Section::GetText(bool PrintExtraData, bool FromExport) const
+std::string IBB_Section::GetText(bool PrintExtraData, bool FromExport, bool ForEdit) const
 {
     std::string Text;
     if (IsLinkGroup)
@@ -412,7 +433,14 @@ std::string IBB_Section::GetText(bool PrintExtraData, bool FromExport) const
         {
             if (LineList.HasValue(s))
             {
-                Text += s + "=" + LineList.GetVariable(s) + "\n";
+                if (ForEdit && OnShow.find(s) != OnShow.end())
+                {
+                    auto& ons = OnShow.at(s);
+                    if (ons.empty()) Text += s + "=" + LineList.GetVariable(s) + "\n";
+                    else if (ons == EmptyOnShowDesc) Text += "#" + s + "=" + LineList.GetVariable(s) + "\n";
+                    else Text += ons + "#" + s + "=" + LineList.GetVariable(s) + "\n";
+                }
+                else Text += s + "=" + LineList.GetVariable(s) + "\n";
                 LineList.Value.erase(s);
             }
         }
@@ -436,7 +464,7 @@ std::string IBB_Section::GetTextForEdit() const
         Ret += Inherit;
         Ret += "\n";
     }
-    Ret += GetText(false);
+    Ret += GetText(false, false, true);
     return Ret;
 }
 
@@ -554,7 +582,7 @@ IBB_Section_Desc IBB_Section::GetThisDesc() const
     return IBB_Section_Desc{ Root->Name,Name };
 }
 
-bool IBB_Section::GenerateLines(const IBB_VariableList& Par, const std::vector<std::string>& Order)
+bool IBB_Section::GenerateLines(const IBB_VariableList& Par, const std::vector<std::string>& Order, bool InitOnShow)
 {
     bool Ret = true;
     SubSecs.clear();
@@ -575,7 +603,7 @@ bool IBB_Section::GenerateLines(const IBB_VariableList& Par, const std::vector<s
                  SubSecs.emplace_back(ptr, this);
             }
             auto& Sub = SubSecs.at(It->second);
-            if (!Sub.AddLine(L))Ret = false;
+            if (!Sub.AddLine(L, InitOnShow))Ret = false;
             if (RemakeOrder)LineOrder.push_back(L.first);
         }
     }
@@ -602,7 +630,7 @@ bool IBB_Section::Generate(const IBB_Section_NameType& Par)
     }
     else
     {
-        return GenerateLines(Par.Lines, {});
+        return GenerateLines(Par.Lines, {}, true);
     }
 }
 
@@ -713,7 +741,7 @@ bool IBB_Section::MergeLine(const std::string& Key, const std::string& Value, IB
         auto& Sub = *It;
         LineOrder.push_back(Key);
         IBRF_CoreBump.SendToR({ [=] {IBR_EditFrame::UpdateLine(Key, Value); } });
-        return Sub.AddLine({ Key, Value });
+        return Sub.AddLine({ Key, Value }, true);
     }
 }
 
@@ -729,6 +757,16 @@ bool IBB_Section::GenerateAsDuplicate(const IBB_Section& Src)
     return true;
 }
 
+void IBB_Section::OrderKey(const std::string& Key, size_t NewOrder)
+{
+    if (NewOrder > LineOrder.size())NewOrder = LineOrder.size();
+    auto it = std::find(LineOrder.begin(), LineOrder.end(), Key);
+    if (it != LineOrder.end())
+    {
+        LineOrder.erase(it);
+        LineOrder.insert(LineOrder.begin() + NewOrder, Key);
+    }
+}
 
 IBB_Section::IBB_Section(const std::string& N, IBB_Ini* R) :
     Name(N),
@@ -1006,11 +1044,13 @@ bool IBB_Section::UpdateAll()
         {
             ss.Root = this;
             if (!ss.UpdateAll())Ret = false;
+            /*
             for (auto& [K, V] : ss.Lines)
             {
                 if (OnShow.find(K) == OnShow.end())
                     OnShow[K] = V.Default->IsLinkAlt() ? EmptyOnShowDesc : "";
             }
+            */
         }
 
         Ret &= UpdateLineOrder();
