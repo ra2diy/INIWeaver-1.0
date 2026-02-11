@@ -22,6 +22,8 @@
 
 bool ImGui_TextDisabled_Helper(const char* Text);
 bool SmallButton_Disabled_Helper(bool cond, const char* Text);
+bool InputTextStdString(const char* label, std::string& str,
+    ImGuiInputTextFlags flags);
 
 int HintStayTimeMillis = 3000;
 
@@ -65,7 +67,7 @@ void IBR_IniLine::RenderUI(const std::string& Line, const std::string& Hint, con
         ImGui::TextEx(Hint.c_str());
         ImGui::EndTooltip();
     }
-    if (!HasInput && ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+    if (!HasInput)
     {
         HasInput = true;
         UseInput = false;
@@ -75,15 +77,8 @@ void IBR_IniLine::RenderUI(const std::string& Line, const std::string& Hint, con
         if (Input)
         {
             ImGui::SameLine();
-            if (Input->RenderUI())
-            {
-                UseInput = true;
-            }
-            else if (UseInput)
-            {
-                Input.reset();
-                HasInput = false;
-            }
+            UseInput = true;
+            Input->RenderUI();
         }
         else
         {
@@ -292,8 +287,8 @@ namespace IBR_EditFrame
     bool Empty{ true };
     char EditBuf[100000];
     bool TextEditError{ false }, OnTextEdit{ false }, TextEditReset{ false };
-    std::string EditingLine;
     std::unordered_map<std::string, BufferedLine> EditLines;
+    std::string NewLineKey, NewLineValue;
     
     void AFTER_INTERRUPT_F ResetEdit(IBB_Section* rsc)
     {
@@ -315,7 +310,10 @@ namespace IBR_EditFrame
             Line.Buffer = V;
             Line.Known = false;
             Line.Hint = "";
-            Line.InputType = &IBB_DefaultRegType::GetDefaultInputType();
+            if (V == "yes" || V == "no" || V == "true" || V == "false")
+                Line.InputType = &IBB_DefaultRegType::GetInputType("Bool");
+            else
+                Line.InputType = &IBB_DefaultRegType::GetDefaultInputType();
         }
     }
 
@@ -333,7 +331,8 @@ namespace IBR_EditFrame
         OnTextEdit = false;
         TextEditError = false;
         TextEditReset = false;
-        EditingLine.clear();
+        NewLineKey.clear();
+        NewLineValue.clear();
         for (auto& ini : IBF_Inst_Project.Project.Inis)
             for (auto& sec : ini.Secs)
                 sec.second.Dynamic.Selected = false;
@@ -369,11 +368,17 @@ namespace IBR_EditFrame
     void ExitTextEdit()
     {
         auto pbk = CurSection.GetBack();
-        if (!pbk)return;
+        if (!pbk)
+        {
+            Empty = true;
+            return;
+        }
         OnTextEdit = false;
         IBG_Undo.SomethingShouldBeHere();
         pbk->SetText(EditBuf);
         ResetEdit(pbk);
+        NewLineKey.clear();
+        NewLineValue.clear();
         IBR_Inst_Project.UpdateAll();
     }
 
@@ -428,6 +433,90 @@ namespace IBR_EditFrame
             }
         }
     }
+
+    void RenderUI_NewLine(IBB_Section* pbk)
+    {
+        auto FrameWidth = (ImGui::GetWindowWidth() - FontHeight * 4.0f) * 0.5f;
+        ImGui::SetNextItemWidth(FrameWidth);
+        InputTextStdString("##NewLineKey", NewLineKey); ImGui::SameLine();
+        ImGui::Text("="); ImGui::SameLine();
+        ImGui::SetNextItemWidth(FrameWidth);
+        InputTextStdString("##NewLineValue", NewLineValue); ImGui::SameLine();
+        
+        if (ImGui::Button(" + "))
+        {
+            IBG_Undo.SomethingShouldBeHere();
+            IBRF_CoreBump.SendToF([NLK = NewLineKey, NLV = NewLineValue, pbk] {
+                pbk->OnShow[NLK] = EmptyOnShowDesc;//默认在画布上显示
+                pbk->MergeLine(NLK, NLV, IBB_IniMergeMode::Replace);//添加或替换
+                pbk->OrderKey(NLK, 0);//调整到最前面，方便用户看到
+                IBF_Inst_Project.UpdateAll();
+                IBRF_CoreBump.SendToR({ [=] {
+                    ResetEdit(pbk);
+                    } });
+                });
+            NewLineKey.clear();
+            NewLineValue.clear();
+        }
+    }
+
+    void RenderUI_TextEdit()
+    {
+
+        ImGui::Text(locc("GUI_TextEditModeTitle"));
+
+        ImGui::SameLine();
+        if (ImGui::Button(locc("GUI_Exit")))
+        {
+            ExitTextEdit();
+            return;
+        }
+
+        ImGui::InputTextMultiline(u8"", EditBuf, sizeof(EditBuf),
+            ImVec2{ ImGui::GetWindowWidth() - FontHeight * 1.2f ,ImGui::GetWindowHeight() - FontHeight * 5.4f });
+        if (ImGui::IsItemActive())IBR_WorkSpace::OperateOnText = true;
+        if (!ImGui::IsItemActive())
+        {
+            if (TextEditReset)
+                ExitTextEdit();
+        }
+        else TextEditReset = true;
+    }
+
+    void RenderUI_Lines(IBB_Section* pbk)
+    {
+        for (auto& K : pbk->LineOrder)
+        {
+            //if (K == InheritKeyName)continue;
+            auto& V = EditLines.at(K);
+
+            if (ImGui::RadioButton(("##" + K).c_str(), !pbk->OnShow[K].empty(), GlobalNodeStyle))
+            {
+                IBG_Undo.SomethingShouldBeHere();
+                if (pbk->OnShow[K].empty())pbk->OnShow[K] = EmptyOnShowDesc;
+                else pbk->OnShow[K].clear();
+            }
+
+            ImGui::SameLine();
+
+            if (V.Edit.NeedInit())
+            {
+                IBR_IniLine::InitType It{ V.Buffer ,"##" + RandStr(8),[Str = K](const std::string& S)
+                         {
+                             IBG_Undo.SomethingShouldBeHere();
+                             EditLines[Str].Buffer = S;
+                             Modify(Str, EditLines[Str]);
+                         } , V.InputType->Sidebar };
+                V.Edit.RenderUI(K, V.Hint, &It);
+            }
+            else
+            {
+                if (V.Edit.HasInput)V.Edit.RenderUI(K, V.Hint);
+                else V.Edit.RenderUI(K + " = " + V.Buffer, V.Hint);
+            }
+        }
+    }
+
     void RenderUI()
     {
         if (Empty)
@@ -436,102 +525,35 @@ namespace IBR_EditFrame
             return;
         }
 
-        IBD_RInterruptF(x);
-
-        auto pbk = CurSection.GetBack();
-        if (!pbk)
-        {
-            //tmd section jb die why cnmd edit fuck it
-            Empty = true;
-            return;
-        }
-
         if (OnTextEdit)
         {
-            
-            ImGui::Text(locc("GUI_TextEditModeTitle"));
+            RenderUI_TextEdit();
+            return;
+        }
+        else
+        {
+            IBD_RInterruptF(x);
 
-            ImGui::SameLine();
-            if (ImGui::Button(locc("GUI_Exit")))
+            auto pbk = CurSection.GetBack();
+            if (!pbk)
             {
-                ExitTextEdit();
+                //tmd section jb die why cnmd edit fuck it
+                Empty = true;
                 return;
             }
 
-            ImGui::InputTextMultiline(u8"", EditBuf, sizeof(EditBuf),
-                ImVec2{ ImGui::GetWindowWidth() - FontHeight * 1.2f ,ImGui::GetWindowHeight() - FontHeight * 5.4f });
-            if (ImGui::IsItemActive())IBR_WorkSpace::OperateOnText = true;
-            if (!ImGui::IsItemActive())
+            if (ImGui::Button(locc("GUI_SwitchToTextEdit")))
             {
-                if (TextEditReset)
-                    ExitTextEdit();
+                IBR_EditFrame::SwitchToText();
+                return;
             }
-            else TextEditReset = true;
-            return;
-        }
 
-        if (ImGui::Button(locc("GUI_SwitchToTextEdit")))
-        {
-            IBR_EditFrame::SwitchToText();
-            return;
-        }
+            RenderUI_NewLine(pbk);
 
-        for (auto& K : pbk->LineOrder)
-        {
-            //if (K == InheritKeyName)continue;
-            auto& V = EditLines.at(K);
-            
-            if (ImGui::RadioButton(("##" + K).c_str(), !pbk->OnShow[K].empty(), GlobalNodeStyle))
-            {
-                IBG_Undo.SomethingShouldBeHere();
-                if (pbk->OnShow[K].empty())pbk->OnShow[K] = EmptyOnShowDesc;
-                else pbk->OnShow[K].clear();
-            }
-            ImGui::SameLine();
-            if (/*(V.Known && V.IsAltBool) || */(!V.Known && (V.Buffer == "yes" || V.Buffer == "no" || V.Buffer == "true" || V.Buffer == "false")))
-            {
-                V.AltRes = (V.Buffer == "yes" || V.Buffer == "true");
-                ImGui::TextWrapped(K.c_str());
-                ImGui::SetCursorPosX(ImGui::GetCursorPosX() + FontHeight);
-                ImGui::SameLine();
-                ImGui::Checkbox(("##" + K).c_str(), &V.AltRes);
-                if (ImGui::IsItemClicked(ImGuiMouseButton_Left))
-                {
-                    IBG_Undo.SomethingShouldBeHere();
-                    V.Buffer = !V.AltRes ? "yes" : "no";
-                    IBR_HintManager::SetHint(V.Buffer, 1000);
-                    Modify(K, V);
-                }
-            }
-            else
-            {
-                if (V.Edit.NeedInit())
-                {
-                    if (!EditingLine.empty() && EditingLine != K)
-                    {
-                        auto it = EditLines.find(EditingLine);
-                        if (it != EditLines.end())
-                        {
-                            it->second.Edit.CloseInput();
-                        }
-                    }
-                    EditingLine = K;
-                    IBR_IniLine::InitType It{ V.Buffer ,"##" + RandStr(8),[Str = K](const std::string& S)
-                             {
-                                 IBG_Undo.SomethingShouldBeHere();
-                                 EditLines[Str].Buffer = S;
-                                 Modify(Str, EditLines[Str]);
-                             } , V.InputType->Sidebar };
-                    V.Edit.RenderUI(K, V.Hint, &It);
-                }
-                else
-                {
-                    if (V.Edit.HasInput)V.Edit.RenderUI(K, V.Hint);
-                    else V.Edit.RenderUI(K + " = " + V.Buffer, V.Hint);
-                }
-            }
+            ImGui::Separator();
+
+            RenderUI_Lines(pbk);
         }
-        //TODO
     }
     void Clear()
     {
