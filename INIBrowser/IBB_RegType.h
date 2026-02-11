@@ -55,6 +55,7 @@ namespace IBB_DefaultRegType
     bool HasInputType(const _TEXT_UTF8 std::string& Type);
     IBG_InputType& GetInputType(const _TEXT_UTF8 std::string& Type);
     IBG_InputType& GetDefaultInputType();
+    IBG_InputType& SelectInputTypeByValue(const _TEXT_UTF8 std::string& Value);
     const bool MatchType(const _TEXT_UTF8 std::string& TypeA, const _TEXT_UTF8 std::string& TypeB);
     void GenerateDLK(const std::vector<PairClipString>& DLK1, const std::string& Register, IBB_VariableList& DefaultLinkKey);
     void SwitchLightColor();

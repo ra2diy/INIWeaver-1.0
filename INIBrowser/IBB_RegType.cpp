@@ -23,6 +23,8 @@ std::string IBB_RegType::GetNoName(const std::string& Reg)
 std::wstring FileName(const std::wstring& ss);
 std::vector<std::wstring> FindFileVec(const std::wstring& pattern);
 
+void subreplace(std::string& dst_str, const std::string& sub_str, const std::string& new_str);
+
 namespace IBB_DefaultRegType
 {
     std::unordered_map<_TEXT_UTF8 std::string, std::set<_TEXT_UTF8 std::string>>CompoundTypeIndex;
@@ -36,11 +38,12 @@ namespace IBB_DefaultRegType
         DefaultColor, DefaultColor, DefaultColor, DefaultColor,
         DefaultColorD, DefaultColorD, DefaultColorD, DefaultColorD,
         false, false, false, false, u8"模块", 0};
+    StrBoolType DefaultStrBoolType;
 
     std::unordered_map<_TEXT_UTF8 std::string, IBG_InputType> InputTypes;
-    void InitInputTypes()
+    void InitInputTypes(const std::string& S_StrBool)
     {
-        const char* StrTypeJSON =
+        static std::string StrTypeJSON =
 R"({
     "Type" : "Form",
     "Form" : {
@@ -52,19 +55,19 @@ R"({
         ]
     }
 })";
-        const char* BoolTypeJSON =
+        static std::string BoolTypeJSON =
 R"({
     "Type" : "Form",
     "Form" : {
         "Input" : [
-            {"Type": "Bool", "ValueID": 0, "InitialValue": false}
+            {"Type": "Bool", "ValueID": 0, "InitialValue": false, "Fmt": "<DEFAULT_FORMAT>" }
         ],
         "Format" : [
             {"ValueIDToString": 0}
         ]
     }
 })";
-        const char* LinkTypeJSON =
+        static std::string LinkTypeJSON =
 R"({
     "Type" : "Link",
     "Form" : {
@@ -76,6 +79,8 @@ R"({
         ]
     }
 })";
+        subreplace(BoolTypeJSON, "<DEFAULT_FORMAT>", S_StrBool);
+
         JsonFile StrObj; StrObj.Parse(StrTypeJSON);
         JsonFile BoolObj; BoolObj.Parse(BoolTypeJSON);
         JsonFile LinkObj; LinkObj.Parse(LinkTypeJSON);
@@ -213,7 +218,14 @@ R"({
     bool Load(JsonObject Obj)
     {
         auto S = Obj.GetObjectItem(u8"Default");
-        if (S.Available())LoadReg(__Default, S);
+        std::string S_StrBool = "yes_no";
+        if (S.Available())
+        {
+            LoadReg(__Default, S);
+            S_StrBool = S.ItemStringOr("BoolFmt", "yes_no");
+            DefaultStrBoolType = StrBoolTypeFromString(S_StrBool, StrBoolType::Str_yes_no);
+        }
+
         S = Obj.GetObjectItem(u8"RegisterTypes");
         if (S.Available())
             for (auto& [N, V] : S.GetMapObject())
@@ -261,7 +273,7 @@ R"({
         }
 
 
-        InitInputTypes();
+        InitInputTypes(S_StrBool);
         S = Obj.GetObjectItem(u8"InputTypes");
         if (S.Available())
             for (auto& [N, V] : S.GetMapObject())
@@ -311,6 +323,13 @@ R"({
     IBG_InputType& GetDefaultInputType()
     {
         return InputTypes[u8"String"];
+    }
+    IBG_InputType& SelectInputTypeByValue(const _TEXT_UTF8 std::string& Value)
+    {
+        if (AcceptStrAsBool(Value.c_str(), DefaultStrBoolType))
+            return GetInputType("Bool");
+        else
+            return GetDefaultInputType();
     }
     //A 属于 B
     const bool ContainType(const _TEXT_UTF8 std::string& TypeA, const _TEXT_UTF8 std::string& TypeB)
