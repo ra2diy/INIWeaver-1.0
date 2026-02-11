@@ -222,6 +222,7 @@ bool IBR_SectionData::OnLineEdit(const std::string& Name, bool OnLink)
         }
         return true;
     }
+    /*
     if (!OnLink)
     {
         if (line->Default->Property.TypeAlt == "bool")
@@ -246,7 +247,7 @@ bool IBR_SectionData::OnLineEdit(const std::string& Name, bool OnLink)
             }
             return true;
         }
-    }
+    }*/
     if (Line.Edit.NeedInit())
     {
         IBR_IniLine::InitType It{ line->Data->GetString() ,
