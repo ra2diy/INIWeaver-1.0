@@ -989,46 +989,10 @@ void IBR_SectionData::RenderUI()
                 auto& Line = ActiveLines[k];
                 auto& V = Bsec->UnknownLines.Value[k];
                 Line.Buffer = V;
-                //auto K2 = k + " = " + V;
-                if (V == "yes" || V == "no" || V == "true" || V == "false")
                 {
-                    bool X = (V == "yes" || V == "true");
-                    if (ImGui::Checkbox((k).c_str(), &X))
-                    {
-                        IBG_Undo.SomethingShouldBeHere();
-                        V = X ? "yes" : "no";
-                        if (IBR_Inst_Project.IBR_Rev_SectionMap[Desc] == IBR_EditFrame::CurSection.ID)
-                        {
-                            IBR_EditFrame::EditLines[k].Buffer = V;
-                            auto& ed = IBR_EditFrame::EditLines[k].Edit;
-                            if (ed.Input && ed.Input->Form)
-                                ed.Input->Form->ParseFromString(V);
-                        }
-                    }
-                }
-                else
-                {
-                    /*
-                    if (Line.Edit.NeedInit())
-                    {
-                        IBR_IniLine::InitType It{ l ,"##" + RandStr(8), [desc = Desc,Bsec,Str = k](char* S)
-                            {
-                                IBG_Undo.SomethingShouldBeHere();
-                                Bsec->UnknownLines.Value[Str] = S;
-                                if (IBR_Inst_Project.IBR_Rev_SectionMap[desc] == IBR_EditFrame::CurSection.ID)
-                                {
-                                    IBR_EditFrame::EditLines[Str].Buffer = S;
-                                }
-                            } };
-                        Line.Edit.RenderUI(k, "", &It);
-                    }
-                    else
-                    {
-                        Line.Edit.RenderUI(Line.Edit.HasInput ? k : K2, "");
-                    }
-                    */
                     if (!Line.Edit.Input)
                     {
+                        auto& InputType = IBB_DefaultRegType::SelectInputTypeByValue(V);
                         Line.Edit.Input.reset(new IBR_InputManager(l, "##" + RandStr(8), [desc = Desc, Bsec, Str = k](const std::string& S)
                             {
                                 IBG_Undo.SomethingShouldBeHere();
@@ -1040,7 +1004,7 @@ void IBR_SectionData::RenderUI()
                                         ed.Input->Form->ParseFromString(S);
                                 }
                             },
-                            IBB_DefaultRegType::GetDefaultInputType().WorkSpace->Duplicate()));
+                            InputType.WorkSpace->Duplicate()));
                     }
                     ImGui::TextEx(k.c_str());
                     ImGui::SameLine();

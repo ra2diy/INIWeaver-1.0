@@ -310,10 +310,7 @@ namespace IBR_EditFrame
             Line.Buffer = V;
             Line.Known = false;
             Line.Hint = "";
-            if (V == "yes" || V == "no" || V == "true" || V == "false")
-                Line.InputType = &IBB_DefaultRegType::GetInputType("Bool");
-            else
-                Line.InputType = &IBB_DefaultRegType::GetDefaultInputType();
+            Line.InputType = &IBB_DefaultRegType::SelectInputTypeByValue(V);
         }
     }
 
