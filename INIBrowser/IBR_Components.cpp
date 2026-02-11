@@ -109,15 +109,21 @@ namespace IBR_DynamicData
             DynamicData.Open(L".\\Resources\\dynamic.dat", L"wb");
             if (!DynamicData.Available())
             {
-                if (GetLastError() == ERROR_SHARING_VIOLATION)
+                auto Error = GetLastError();
+                if (Error == ERROR_SHARING_VIOLATION)
                 {
                     Sleep(5);
                     continue;
                 }
+                else if (Error == ERROR_SUCCESS)
+                {
+                    break;
+                    //fuck
+                }
                 else
                 {
                     glfwHideWindow(PreLink::window);
-                    auto ls = std::to_wstring(::GetLastError());
+                    auto ls = std::to_wstring(Error);
                     MessageBoxW(NULL, (std::vformat(locw("Error_LastErrorCode"), std::make_wformat_args(ls))).c_str(),
                         (L"IBR_DynamicData::Open " + locw("Error_ErrorOccurred")).c_str(), MB_OK);
                     ExitProcess(0);
