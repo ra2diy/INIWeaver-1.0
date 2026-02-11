@@ -1,8 +1,9 @@
 ﻿#include "IBG_InputType.h"
 #include "imgui_internal.h"
 #include "IBRender.h"
+#include "IBR_Combo.h"
 #include <fmt/scan.h>
-
+#include <ranges>
 
 bool InputTextStdString(const char* label, std::string& str,
     ImGuiInputTextFlags flags)
@@ -73,14 +74,27 @@ IBG_InputFormUIResult IBG_InputForm::RenderUI()
     bool Changed = false;
     bool Active = false;
 
-    for (auto& IC : *InputComponents)
+    if (ComponentStatus.size() < InputComponents->size())
+        for (size_t i = ComponentStatus.size(); i < InputComponents->size(); i++)
+            ComponentStatus.push_back(InputComponents->at(i)->InitialStatus);
+
+    for (auto& CS : ComponentStatus)
+    {
+        if (!LinkNodeEnabled)
+        {
+            if (CS.InputMethod == IICStatus::Link)
+                CS.InputMethod = IICStatus::Input;
+        }
+    }
+
+    for (auto&& [IC, CS] : std::views::zip(*InputComponents, ComponentStatus))
     {
         //存在不可缓存的状态
         if (!IC->CanProvideState(ValueContainer))
             GetFormattedString();//确保状态正确
 
         ImGui::PushID(IC.get());
-        auto R = IC->RenderUI(ValueContainer);
+        auto R = IC->RenderUI(ValueContainer, CS);
         ImGui::PopID();
         Changed |= R.Updated;
         Active |= R.Active;
@@ -237,10 +251,41 @@ void IBG_InputForm::ResetState()
         IC->ResetState(ValueContainer);
     }
     FormattedString.clear();
+    ComponentStatus.clear();
+
+    for (auto& IC : *InputComponents)
+    {
+        ComponentStatus.push_back(IC->InitialStatus);
+    }
+
     Dirty = true;
 }
 
+const std::unordered_map<std::string, IICStatus> SpecialStatus{
+    {"InitialLink", {IICStatus::Link}},
+    {"InitialInput", {IICStatus::Input}}
+};
 
+bool IICStatus::Load(const JsonObject& Obj)
+{
+    if (Obj.IsTypeString())
+    {
+        auto cit = SpecialStatus.find(Obj.GetString());
+        if (cit == SpecialStatus.end())
+        {
+            InputMethod = IICStatus::Input;
+        }
+    }
+    else if (Obj.IsTypeObject())
+    {
+        auto MethodStr = Obj.ItemStringOr("Method", "Input");
+        if (MethodStr == "Input")InputMethod = IICStatus::Input;
+        else if (MethodStr == "Link")InputMethod = IICStatus::Link;
+        else InputMethod = IICStatus::Input;
+    }
+    else return false;
+    return true;
+}
 
 
 
@@ -833,7 +878,7 @@ IIC_PureText::IIC_PureText(const std::string& InitialText, ImColor color, bool c
     : Text(InitialText), Color(color), Colored(colored), Disabled(disabled), Wrapped(wrapped) {
 }
 
-IBB_UpdateResult IIC_PureText::RenderUI(IBB_ValueContainer&) {
+IBB_UpdateResult IIC_PureText::RenderUI(IBB_ValueContainer&, IICStatus&) {
 
     if (Disabled)
         ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled));
@@ -860,7 +905,7 @@ IIC_LocalizedText::IIC_LocalizedText(const std::string& key, const std::string& 
     : Key(key), FallbackText(fallback), Color(color), Colored(colored), Disabled(disabled), Wrapped(wrapped) {
 }
 
-IBB_UpdateResult IIC_LocalizedText::RenderUI(IBB_ValueContainer&) {
+IBB_UpdateResult IIC_LocalizedText::RenderUI(IBB_ValueContainer&, IICStatus&) {
     if (Disabled)
         ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled));
     else if (Colored)
@@ -882,7 +927,7 @@ std::string IIC_LocalizedText::FormatValue(IBB_ValueContainer& ,const IBB_InputF
 }
 
 // ========= IIC_SameLine ==========
-IBB_UpdateResult IIC_SameLine::RenderUI(IBB_ValueContainer&)
+IBB_UpdateResult IIC_SameLine::RenderUI(IBB_ValueContainer&, IICStatus&)
 {
     ImGui::SameLine();
     return { false, false, -1 };
@@ -894,7 +939,7 @@ std::string IIC_SameLine::FormatValue(IBB_ValueContainer& ,const IBB_InputFormat
 }
 
 // ======== IIC_NewLine ==========
-IBB_UpdateResult IIC_NewLine::RenderUI(IBB_ValueContainer&)
+IBB_UpdateResult IIC_NewLine::RenderUI(IBB_ValueContainer&, IICStatus&)
 {
     ImGui::NewLine();
     return { false, false, -1 };
@@ -906,7 +951,7 @@ std::string IIC_NewLine::FormatValue(IBB_ValueContainer& ,const IBB_InputFormat&
 }
 
 // ======== IIC_Separator ==========
-IBB_UpdateResult IIC_Separator::RenderUI(IBB_ValueContainer&)
+IBB_UpdateResult IIC_Separator::RenderUI(IBB_ValueContainer&, IICStatus&)
 {
     ImGui::Separator();
     return { false, false, -1 };
@@ -926,7 +971,9 @@ IIC_InputText::IIC_InputText(IBB_ValueContainer& Cont, int valueid, const std::s
     Cont.GetValue(ValueID).ResetState<IIS_String>(InitialText);
 }
 
-IBB_UpdateResult IIC_InputText::RenderUI(IBB_ValueContainer& Cont) {
+IBB_UpdateResult IIC_InputText::RenderUI(IBB_ValueContainer& Cont, IICStatus&) {
+
+    //TODO STATUS
 
     auto& Var = Cont.GetValue(ValueID);
     static const IBB_InputFormat Fmt = { IBB_InputFormat::ToString, "" };
@@ -968,14 +1015,16 @@ void IIC_InputText::ResetState(IBB_ValueContainer& Cont) const
 }
 
 // ========== IIC_EnumCombo ==========
-IIC_EnumCombo::IIC_EnumCombo(IBB_ValueContainer& Cont, int valueid, const std::string& InitialValue, const std::string& hint, const std::unordered_map<std::string, std::string>& options)
-    : Options(options), Hint(hint), ValueID(valueid) {
+IIC_EnumCombo::IIC_EnumCombo(IBB_ValueContainer& Cont, int valueid, const std::string& InitialValue, const std::string& hint, const std::unordered_map<std::string, std::string>& options, const std::vector<std::string>& order)
+    : Options(options), Hint(hint), ValueID(valueid), OptionOrder(order) {
     Hint += "##";
     Hint += RandStr(12);
     Cont.GetValue(ValueID).ResetState<IIS_String>(InitialValue);
 }
 
-IBB_UpdateResult IIC_EnumCombo::RenderUI(IBB_ValueContainer& Cont) {
+IBB_UpdateResult IIC_EnumCombo::RenderUI(IBB_ValueContainer& Cont, IICStatus&) {
+
+    //TODO STATUS
 
     bool Changed = false;
 
@@ -988,23 +1037,23 @@ IBB_UpdateResult IIC_EnumCombo::RenderUI(IBB_ValueContainer& Cont) {
     ImGui::SetNextItemWidth(ImGui::GetWindowContentRegionWidth() - ImGui::GetCursorPosX() - Size.x);
     IBR_Combo(Hint.c_str(), (Options.contains(CurrentValue) ? Options[CurrentValue] : CurrentValue).c_str(), 0,
         [&] {
-        Active = ImGui::IsItemActive();
-        ImGui::PushOrderFront(ImGui::GetCurrentWindow());
-        for (auto& [Key, DisplayName] : Options)
-        {
-            auto Equal = (CurrentValue == Key);
-            if (ImGui::Selectable(DisplayName.c_str(), Equal))
+            Active = ImGui::IsItemActive();
+            for (auto& Key : OptionOrder)
             {
-                if (!Equal)
+                auto& DisplayName = Options[Key];
+                auto Equal = (CurrentValue == Key);
+                if (ImGui::Selectable(DisplayName.c_str(), Equal))
                 {
-                    Changed = true;
-                    CurrentValue = Key;
+                    if (!Equal)
+                    {
+                        Changed = true;
+                        CurrentValue = Key;
+                    }
                 }
+                Active |= ImGui::IsItemActive();
             }
-            Active |= ImGui::IsItemActive();
         }
-        ImGui::EndCombo();
-    }
+    );
 
     if (Changed)
     {
@@ -1038,12 +1087,14 @@ void IIC_EnumCombo::ResetState(IBB_ValueContainer& Cont) const
 }
 
 // ========== IIC_EnumRadio ==========
-IIC_EnumRadio::IIC_EnumRadio(IBB_ValueContainer& Cont, int valueid, const std::string& InitialValue, const std::unordered_map<std::string, std::string>& options, bool sameline)
-    : Options(options), ValueID(valueid), Hint(RandStr(12)), SameLine(sameline){
+IIC_EnumRadio::IIC_EnumRadio(IBB_ValueContainer& Cont, int valueid, const std::string& InitialValue, const std::unordered_map<std::string, std::string>& options, bool sameline, const std::vector<std::string>& order)
+    : Options(options), ValueID(valueid), Hint(RandStr(12)), SameLine(sameline), OptionOrder(order) {
     Cont.GetValue(ValueID).ResetState<IIS_String>(InitialValue);
 }
 
-IBB_UpdateResult IIC_EnumRadio::RenderUI(IBB_ValueContainer& Cont) {
+IBB_UpdateResult IIC_EnumRadio::RenderUI(IBB_ValueContainer& Cont, IICStatus&) {
+
+    //TODO STATUS
 
     bool Changed = false;
     ImGui::PushID(Hint.c_str());
@@ -1054,8 +1105,9 @@ IBB_UpdateResult IIC_EnumRadio::RenderUI(IBB_ValueContainer& Cont) {
 
     bool Active = false;
 
-    for (auto& [Key, DisplayName] : Options)
+    for (auto& Key : OptionOrder)
     {
+        auto& DisplayName = Options[Key];
         auto Equal = (CurrentValue == Key);
         if (ImGui::RadioButton(DisplayName.c_str(), Equal))
         {
@@ -1110,8 +1162,10 @@ IIC_Bool::IIC_Bool(IBB_ValueContainer& Cont, int valueid, bool InitialValue, Str
     Cont.GetValue(ValueID).ResetState<IIS_Bool>(InitialValue, FmtType);
 }
 
-IBB_UpdateResult IIC_Bool::RenderUI(IBB_ValueContainer& Cont)
+IBB_UpdateResult IIC_Bool::RenderUI(IBB_ValueContainer& Cont, IICStatus&)
 {
+    //TODO STATUS
+
     auto& Var = Cont.GetValue(ValueID);
     static const IBB_InputFormat Fmt = { IBB_InputFormat::ToString, "" };
     auto State = Var.StateValue<IIS_Bool>();
@@ -1137,7 +1191,10 @@ IBB_UpdateResult IIC_Bool::RenderUI(IBB_ValueContainer& Cont)
 
 std::string IIC_Bool::FormatValue(IBB_ValueContainer& Cont, const IBB_InputFormat& Format)
 {
-    return Cont.GetValue(ValueID).StateValPtr->Format(Format);
+    auto& Ptr = Cont.GetValue(ValueID).StateValPtr;
+    auto StateVal = Cont.GetValue(ValueID).StateValue<IIS_Bool>();
+    if (StateVal)StateVal->FmtType = FmtType;
+    return Ptr->Format(Format);
 }
 
 void IIC_Bool::ParseValue(IBB_ValueContainer& Cont, const IBB_InputFormat& Format)
@@ -1164,7 +1221,9 @@ IIC_InputInt::IIC_InputInt(IBB_ValueContainer& Cont, int valueid, int InitialVal
     Cont.GetValue(ValueID).ResetState<IIS_Int>(InitialValue);
 }
 
-IBB_UpdateResult IIC_InputInt::RenderUI(IBB_ValueContainer& Cont) {
+IBB_UpdateResult IIC_InputInt::RenderUI(IBB_ValueContainer& Cont, IICStatus&) {
+
+    //TODO STATUS
 
     auto& Var = Cont.GetValue(ValueID);
     auto State = Var.StateValue<IIS_Int>();
@@ -1218,7 +1277,9 @@ IIC_SliderInt::IIC_SliderInt(IBB_ValueContainer& Cont, int valueid, int InitialV
     Cont.GetValue(ValueID).ResetState<IIS_Int>(InitialValue);
 }
 
-IBB_UpdateResult IIC_SliderInt::RenderUI(IBB_ValueContainer& Cont) {
+IBB_UpdateResult IIC_SliderInt::RenderUI(IBB_ValueContainer& Cont, IICStatus&) {
+
+    //TODO STATUS
 
     auto& Var = Cont.GetValue(ValueID);
     auto State = Var.StateValue<IIS_Int>();
@@ -1270,7 +1331,7 @@ IIC_Error::IIC_Error(const std::string& Desc)
     : TextW(UTF8toUnicode(Desc)) {
 }
 
-IBB_UpdateResult IIC_Error::RenderUI(IBB_ValueContainer&) {
+IBB_UpdateResult IIC_Error::RenderUI(IBB_ValueContainer&, IICStatus&) {
     ImGui::TextColored(IBR_Color::ErrorTextColor, "%s", UnicodetoUTF8(std::vformat(locw("Error_FailedToParseComponent"), std::make_wformat_args(TextW))).c_str());
     return { false, false, -1 };
 }
@@ -1293,7 +1354,8 @@ StrBoolType StrBoolTypeFromString(const std::string& str, StrBoolType Default)
     Str_T_F,
     Str_y_n,
     Str_Y_N,
-    Str_1_0
+    Str_1_0,
+    Str_yeah_fuck
     */
 
     if (str == "true_false")return StrBoolType::Str_true_false;
@@ -1307,12 +1369,40 @@ StrBoolType StrBoolTypeFromString(const std::string& str, StrBoolType Default)
     else if (str == "y_n")return StrBoolType::Str_y_n;
     else if (str == "Y_N")return StrBoolType::Str_Y_N;
     else if (str == "1_0")return StrBoolType::Str_1_0;
+    else if (str == "yeah_fuck")return StrBoolType::Str_yeah_fuck;
     else return Default;
 }
 
 IICPtr InputFormComponentFactory::CreateInputComponent(IBB_ValueContainer& Cont, const JsonObject& Obj)
 {
     //【】 is optional
+    // 
+    // General Setting
+    //
+    // { "InitialStatus" : <IICStatus> }
+    // <IICStatus> :
+    // "InitialLink" / "InitialInput"
+
+    auto piic = CreateInputComponent_Special(Cont, Obj);
+
+    if (!piic) return nullptr;
+
+    auto oInitialStatus = Obj.GetObjectItem("InitialStatus");
+
+    if (oInitialStatus)
+    {
+        if (!piic->InitialStatus.Load(oInitialStatus))
+            return nullptr;
+    }
+
+    return piic; 
+}
+
+IICPtr InputFormComponentFactory::CreateInputComponent_Special(IBB_ValueContainer& Cont, const JsonObject& Obj)
+{
+    //【】 is optional
+    // Special Setting
+    // 
     //IIC_PureText(const std::string& InitialText, ImColor color, bool colored, bool disabled, bool wrapped)
     // <string>
     // {"Type": "Text", "Text": <string>【, "Color": <Color>】【, "Disabled": <bool>】【, "Wrapped": <bool>】}
@@ -1444,8 +1534,9 @@ IICPtr InputFormComponentFactory::CreateInputComponent(IBB_ValueContainer& Cont,
             auto InitValue = Obj.ItemStringOr("InitialValue", "");
             auto Hint = Obj.ItemStringOr("Hint", "");
             auto Options = Obj.ItemMapStringOr("Options");
+            auto OptionOrder = Obj.ItemArrayKeyOr("Options");
 
-            return std::make_unique<IIC_EnumCombo>(Cont, ValueID, InitValue, Hint, Options);
+            return std::make_unique<IIC_EnumCombo>(Cont, ValueID, InitValue, Hint, Options, OptionOrder);
         }
         else if (typeStr == "EnumRadio")
         {
@@ -1461,8 +1552,9 @@ IICPtr InputFormComponentFactory::CreateInputComponent(IBB_ValueContainer& Cont,
             auto Hint = Obj.ItemStringOr("Hint", "");
             auto Options = Obj.ItemMapStringOr("Options");
             auto SameLine = Obj.ItemBoolOr("SameLine", false);
+            auto OptionOrder = Obj.ItemArrayKeyOr("Options");
 
-            return std::make_unique<IIC_EnumRadio>(Cont, ValueID, InitValue, Options, SameLine);
+            return std::make_unique<IIC_EnumRadio>(Cont, ValueID, InitValue, Options, SameLine, OptionOrder);
 
         }
         else if (typeStr == "Bool")
@@ -1660,6 +1752,8 @@ bool IBG_InputForm::Load(const JsonObject& Obj)
         }
     }
 
+    ResetState();
+
     return Ret;
 }
 
@@ -1681,15 +1775,15 @@ bool IBG_InputType::Load(const JsonObject& Obj)
     //    return true;
 
     auto oSidebar = Obj.GetObjectItem("Sidebar");
-    if (!oSidebar.Available())
+    if (!oSidebar)
         oSidebar = Obj.GetObjectItem("Form");
-    if (!oSidebar.Available())
+    if (!oSidebar)
         return false;
 
     auto oWorkSpace = Obj.GetObjectItem("WorkSpace");
-    if (!oWorkSpace.Available())
+    if (!oWorkSpace)
         oWorkSpace = Obj.GetObjectItem("Form");
-    if (!oWorkSpace.Available())
+    if (!oWorkSpace)
         return false;
 
     Sidebar.reset(new IBG_InputForm());
@@ -1697,6 +1791,15 @@ bool IBG_InputType::Load(const JsonObject& Obj)
 
     bool Ret1 = Sidebar->Load(oSidebar);
     bool Ret2 = WorkSpace->Load(oWorkSpace);
+
+    WorkSpace->EnableLinkNode();
+
+    auto oFormatter = Obj.GetObjectItem("Formatter");
+    if (oFormatter)
+        KVFmt = KVFormatterFactory::LoadFromJson(oFormatter);
+    else
+        KVFmt = KVFormatter::Default();
+
     return Ret1 && Ret2;
 }
 

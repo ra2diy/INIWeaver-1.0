@@ -229,7 +229,6 @@ struct IBB_ModuleAlt;
 
 struct IBR_Project
 {
-    typedef uint64_t id_t;
     struct _Plink
     {
         ImVec2 BeginR;
@@ -239,9 +238,9 @@ struct IBR_Project
         bool IsSrcDragging;
     };
 
-    id_t MaxID{ 0 };//TODO:你还能使用超过ULL_MAX个ID？要是真的如此那就修一修
-    std::map<id_t, IBR_SectionData> IBR_SectionMap;
-    std::map<IBB_Section_Desc, id_t> IBR_Rev_SectionMap;
+    ModuleID_t MaxID{ 0 };//TODO:你还能使用超过ULL_MAX个ID？要是真的如此那就修一修
+    std::map<ModuleID_t, IBR_SectionData> IBR_SectionMap;
+    std::map<IBB_Section_Desc, ModuleID_t> IBR_Rev_SectionMap;
     std::unordered_map<std::string, SectionDragData> IBR_SecDragMap;
     std::unordered_map<std::string, LineDragData> IBR_LineDragMap;
     std::unordered_map<std::string, std::string> CopyTransform;
@@ -249,18 +248,18 @@ struct IBR_Project
     std::string DragConditionTextAlt;
     std::vector<_Plink> LinkList;
 
-    std::pair<bool, std::vector<id_t>> _PROJ_CMD_WRITE  _PROJ_CMD_UPDATE AddModule(const IBB_ModuleAlt& Module, const std::string& Argument, bool UseMouseCenter = true);
-    std::pair<bool, std::vector<id_t>> _PROJ_CMD_WRITE  _PROJ_CMD_UPDATE AddModule(const std::vector<ModuleClipData>& Modules, bool UseMouseCenter = true);
-    std::optional<id_t> _PROJ_CMD_WRITE  _PROJ_CMD_UPDATE AddModule(const ModuleClipData& Modules, bool UseMouseCenter = true);
+    std::pair<bool, std::vector<ModuleID_t>> _PROJ_CMD_WRITE  _PROJ_CMD_UPDATE AddModule(const IBB_ModuleAlt& Module, const std::string& Argument, bool UseMouseCenter = true);
+    std::pair<bool, std::vector<ModuleID_t>> _PROJ_CMD_WRITE  _PROJ_CMD_UPDATE AddModule(const std::vector<ModuleClipData>& Modules, bool UseMouseCenter = true);
+    std::optional<ModuleID_t> _PROJ_CMD_WRITE  _PROJ_CMD_UPDATE AddModule(const ModuleClipData& Modules, bool UseMouseCenter = true);
 
-    bool _PROJ_CMD_WRITE SetModuleIncludeLink(id_t ID);
-    bool _PROJ_CMD_WRITE SetModuleIncludeLink(const std::vector<id_t>& IDs);
+    bool _PROJ_CMD_WRITE SetModuleIncludeLink(ModuleID_t ID);
+    bool _PROJ_CMD_WRITE SetModuleIncludeLink(const std::vector<ModuleID_t>& IDs);
 
     //Assume IDs are checked
-    std::optional<id_t> _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE ComposeSections(const std::vector<id_t>& IDs);
+    std::optional<ModuleID_t> _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE ComposeSections(const std::vector<ModuleID_t>& IDs);
     //Assume IDs are checked
-    std::optional<std::vector<id_t>> _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE DecomposeSection(id_t ID);
-    std::optional<std::vector<id_t>> _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE DecomposeSection(IBB_Section_Desc Desc);
+    std::optional<std::vector<ModuleID_t>> _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE DecomposeSection(ModuleID_t ID);
+    std::optional<std::vector<ModuleID_t>> _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE DecomposeSection(IBB_Section_Desc Desc);
 
     bool _PROJ_CMD_WRITE _PROJ_CMD_UPDATE UpdateAll();
 
@@ -290,20 +289,20 @@ struct IBR_Project
     bool _PROJ_CMD_READ HasSection(const IBB_Section_Desc& Desc) _PROJ_CMD_BACK_CONST;
 
     //同GetSection的HasBack
-    bool _PROJ_CMD_READ HasSection(id_t id) _PROJ_CMD_BACK_CONST;
+    bool _PROJ_CMD_READ HasSection(ModuleID_t id) _PROJ_CMD_BACK_CONST;
 
     bool _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE DeleteSection(const std::vector<IBB_Section_Desc>& Descs);
 
     bool _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE DeleteSection(const IBB_Section_Desc& Desc);
 
-    bool _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE DeleteSection(id_t id);
+    bool _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE DeleteSection(ModuleID_t id);
 
-    bool _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE DeleteSection(const std::vector <IBR_Project::id_t>& ids);
+    bool _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE DeleteSection(const std::vector <ModuleID_t>& ids);
 
     //不保证ID有效
-    inline IBR_Section _PROJ_CMD_NOINTERRUPT _PROJ_CMD_READ GetSectionFromID(id_t id) _PROJ_CMD_BACK_CONST { return { this,id }; }
+    inline IBR_Section _PROJ_CMD_NOINTERRUPT _PROJ_CMD_READ GetSectionFromID(ModuleID_t id) _PROJ_CMD_BACK_CONST { return { this,id }; }
 
-    std::optional<id_t> _PROJ_CMD_NOINTERRUPT _PROJ_CMD_READ GetSectionID(const IBB_Section_Desc& Desc) _PROJ_CMD_BACK_CONST;
+    std::optional<ModuleID_t> _PROJ_CMD_NOINTERRUPT _PROJ_CMD_READ GetSectionID(const IBB_Section_Desc& Desc) _PROJ_CMD_BACK_CONST;
     void _PROJ_CMD_NOINTERRUPT _PROJ_CMD_READ EnsureSection(const IBB_Section_Desc& Desc, const std::string& DisplayName = "") _PROJ_CMD_BACK_CONST;
 
     bool _PROJ_CMD_UPDATE DataCheck();
@@ -312,7 +311,7 @@ struct IBR_Project
     void Save(IBS_Project&);
     void Clear();
 private:
-    std::optional<id_t> _PROJ_CMD_WRITE _PROJ_CMD_UPDATE AddModule_Impl(const ModuleClipData& Modules, bool UseMouseCenter = true);
+    std::optional<ModuleID_t> _PROJ_CMD_WRITE _PROJ_CMD_UPDATE AddModule_Impl(const ModuleClipData& Modules, bool UseMouseCenter = true);
 };
 
 
@@ -431,15 +430,15 @@ namespace IBR_WorkSpace
     extern float NewRatio;
     extern bool NeedChangeRatio, InitHolding, ShowRegName;
     extern bool IsBgDragging, HoldingModules, IsMassSelecting;
-    extern std::vector<IBR_Project::id_t> MassTarget;
+    extern std::vector<ModuleID_t> MassTarget;
     //包含了被缩合的块
-    extern std::vector<IBR_Project::id_t> MassTargetExtended;
+    extern std::vector<ModuleID_t> MassTargetExtended;
     extern ImVec4 TempWbg;
     extern bool LastOperateOnText, OperateOnText;
     extern IBR_Section MouseOverSection;
     extern IBR_SectionData* MouseOverSecData;
     extern bool CurOnRender_Clicked;
-    extern IBR_Project::id_t CurOnRender_ID;
+    extern ModuleID_t CurOnRender_ID;
 
     void UpdatePrev();
     void  _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE UpdatePrevII();
@@ -464,63 +463,26 @@ namespace IBR_WorkSpace
     void CopySelected();
     void CutSelected();
     void Paste();
-    void GenerateClipDataFromIDs(IBB_ClipBoardData& ClipData, const std::vector<IBR_Project::id_t>& IDs);
-    void MassSelect(const std::vector<IBR_Project::id_t>& Target);
+    void GenerateClipDataFromIDs(IBB_ClipBoardData& ClipData, const std::vector<ModuleID_t>& IDs);
+    void MassSelect(const std::vector<ModuleID_t>& Target);
     void SelectAll();
     void OpenRightClick();
     void OutputSelectedImpl(const char* IPath, const char* IDescShort, const char* IDescLong);
     void OutputSelected();
     void ComposeSelected();
 
-    dImVec2 GetMassCenter(const std::vector<IBR_Project::id_t>& Target);
-}
-namespace IBR_SelectMode
-{
-    struct Mode
-    {
-        bool RestrictedToSections;
-        std::function<void(IBR_Section, ImVec2)>Exit;
-        StdMessage Cancel;
-    };
-    const std::vector<IBR_Project::id_t>& GetMassSelected();
-    bool IsWindowMassSelected(const IBB_Section_Desc& Desc);
-    void EnterSelectMode(const Mode& Mode);
-    void ExitSelectMode(IBR_Section Section, ImVec2 ClickRePos);
-    void CancelSelectMode();
-    void RenderUI();
-    bool InSelectMode();
-    const Mode& CurrentSelectMode();
+    dImVec2 GetMassCenter(const std::vector<ModuleID_t>& Target);
 }
 
-namespace IBR_DynamicData
-{
-    void Read(int DefaultResX, int DefaultResY);
-    void SetRandom();
-    void Open();
-    void Save();
-    void Close();
-    void SetDefaultWidth(int W);
-    void SetDefaultHeight(int H);
-}
-
-namespace IBR_RecentManager
-{
-    extern std::wstring Path;
-    void RenderUI();
-    void Load();
-    void Push(const std::wstring& Path);
-    void Save();
-    void WanDuZiLe();
-}
 
 namespace IBR_EditFrame
 {
     extern IBR_Section CurSection;
-    extern IBR_Project::id_t PrevId;
+    extern ModuleID_t PrevId;
     extern bool Empty;
     extern std::unordered_map<std::string, BufferedLine> EditLines;
-    void SetActive(IBR_Project::id_t id);
-    void ActivateAndEdit(IBR_Project::id_t id, bool TextMode);
+    void SetActive(ModuleID_t id);
+    void ActivateAndEdit(ModuleID_t id, bool TextMode);
     void UpdateSection();
     void UpdateLine(const std::string& Line, const std::string& NewValue);
     void RenderUI();
@@ -555,115 +517,3 @@ namespace IBR_Color
     void LoadDark(JsonObject Obj);
 }
 
-
-namespace IBR_PopupManager
-{
-    struct Popup
-    {
-        bool CanClose;//Only when Modal==true
-        bool Modal;
-        bool HasOwnStyle{ false };
-        bool InstantClose{ false };
-        _TEXT_UTF8 std::string Title;
-        ImGuiWindowFlags Flag{ ImGuiWindowFlags_None };
-        StdMessage Show;
-        StdMessage Close;//run when it can be closed and it is closed
-
-        ImVec2 Size{ 0,0 };
-
-        Popup& Create(const _TEXT_UTF8 std::string& title);
-        Popup& CreateModal(const _TEXT_UTF8 std::string& title, bool canclose, StdMessage close = []() {});
-        Popup& SetTitle(const _TEXT_UTF8 std::string& title);
-        Popup& SetFlag(ImGuiWindowFlags flag);
-        Popup& UnsetFlag(ImGuiWindowFlags flag);
-        Popup& ClearFlag();
-        Popup& UseMyStyle();
-        Popup& SetSize(ImVec2 NewSize = { 0,0 });//{0,0}=default/auto
-        Popup& PushTextPrev(const _TEXT_UTF8 std::string& Text);
-        Popup& PushTextBack(const _TEXT_UTF8 std::string& Text);
-        Popup& PushMsgPrev(StdMessage Msg);
-        Popup& PushMsgBack(StdMessage Msg);
-        Popup& EnableInstantClose(bool Enable = true) { InstantClose = Enable; return *this; }
-    };
-    extern Popup CurrentPopup;
-    extern Popup RightClickMenu;
-    extern bool HasPopup;
-    extern bool HasRightClickMenu;
-    extern bool FirstRightClick;
-    extern ImVec2 RightClickMenuPos;
-    inline void SetCurrentPopup(Popup&& sc) { HasPopup = true; CurrentPopup = std::move(sc); }
-    inline void ClearCurrentPopup() { HasPopup = false; }
-    inline void ClearRightClickMenu() { HasRightClickMenu = false; }
-    inline void SetRightClickMenu(Popup&& sc, ImVec2 Pos) { RightClickMenuPos = Pos; FirstRightClick = HasRightClickMenu = true; RightClickMenu = std::move(sc); }
-    Popup SingleText(const _TEXT_UTF8 std::string& StrId, const _TEXT_UTF8 std::string& Text, bool Modal);
-    Popup MessageModal(const _TEXT_UTF8 std::string& Title, const _TEXT_UTF8 std::string& Text, ImVec2 Size, bool CanClose, bool UseDefaultOK, StdMessage Close = []() {});
-    void RenderUI();
-    void ClearPopupDelayed();
-    bool IsMouseOnPopup();
-    void AddJsonParseErrorPopup(std::string&& ErrorStr, const std::string& Info);
-    void AddModuleParseErrorPopup(std::string&& ErrorStr, const std::string& Info);
-}
-
-
-template<typename Cont>
-class IBR_ListMenu
-{
-    std::vector<Cont>& List;
-    int Page;
-public:
-    typedef Cont Type;
-    typedef std::function<void(Cont&, int, int)> ActionType;
-    std::string Tag;
-    ActionType Action;
-
-    IBR_ListMenu() = delete;
-    IBR_ListMenu(std::vector<Cont>& L, const std::string& t, const ActionType& a) :
-        List(L), Page(0), Tag(t), Action(a) {}
-
-    void Rewind()
-    {
-        Page = 0;
-    }
-    void RenderUI();
-};
-
-namespace IBR_HintManager
-{
-    void Clear();
-    void RenderUI();
-    float GetHeight();
-    void SetHint(const _TEXT_UTF8 std::string& Str, int TimeLimitMillis = -1);
-    void SetHintCustom(const std::function<bool(_TEXT_UTF8 std::string&)>& Fn);//返回true继续，false停止并Clear
-    const std::string& GetHint();
-    void Load();
-}
-
-
-struct BrowseParamList
-{
-    int RenderF;
-    int RenderN;
-    int Sz;
-    bool HasPrev;
-    bool HasNext;
-    int RealRF;
-    int RealNF;
-    int PageN;
-};
-BrowseParamList MakeParamList(size_t size, int Page);
-void Browse_ShowList_Impl(const std::string& suffix, int* Page, BrowseParamList& List);
-
-template<typename Cont>
-void Browse_ShowList(const std::string& suffix, std::vector<Cont>& Ser, int* Page, const std::function<void(Cont&, int, int)>& Callback)
-{
-    BrowseParamList L{ MakeParamList(Ser.size(), *Page) };
-    for (int On = L.RealRF; On < L.RealNF; On++)
-        Callback(Ser.at(On), On - L.RealRF + 1, On);
-    Browse_ShowList_Impl(suffix, Page, L);
-}
-
-template<typename Cont>
-void IBR_ListMenu<Cont>::RenderUI()
-{
-    Browse_ShowList(Tag, List, &Page, Action);
-}

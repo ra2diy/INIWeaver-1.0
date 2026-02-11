@@ -31,7 +31,7 @@
 #include "FromEngine/types.h"
 #include "IBB_Components.h"
 #include "IBG_Ini.h"
-#include "IBRender.h"
+#include "IBR_Components.h"
 #include "IBR_Localization.h"
 
 #pragma comment(lib, "crypt32.lib")

@@ -283,7 +283,7 @@ IBG_UndoStack IBG_Undo;
 namespace IBR_EditFrame
 {
     IBR_Section CurSection{ &IBR_Inst_Project,UINT64_MAX };
-    IBR_Project::id_t PrevId{ UINT64_MAX };
+    ModuleID_t PrevId{ UINT64_MAX };
     bool Empty{ true };
     char EditBuf[100000];
     bool TextEditError{ false }, OnTextEdit{ false }, TextEditReset{ false };
@@ -314,7 +314,7 @@ namespace IBR_EditFrame
         }
     }
 
-    void SetActive(IBR_Project::id_t id)
+    void SetActive(ModuleID_t id)
     {
         if (Empty)
         {
@@ -341,7 +341,7 @@ namespace IBR_EditFrame
         }
     }
 
-    void ActivateAndEdit(IBR_Project::id_t id, bool TextMode)
+    void ActivateAndEdit(ModuleID_t id, bool TextMode)
     {
         SetActive(id);
         if (TextMode)SwitchToText();

@@ -1,5 +1,4 @@
-﻿#include "IBRender.h"
-#include "IBFront.h"
+﻿#include "IBR_Components.h"
 #include "Global.h"
 #include "FromEngine/RFBump.h"
 #include "FromEngine/global_timer.h"

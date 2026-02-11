@@ -6,8 +6,7 @@
 #include"FromEngine/Include.h"
 #include"FromEngine/global_timer.h"
 #include"Global.h"
-#include"IBFront.h"
-#include"IBRender.h"
+#include"IBR_Components.h"
 #include<ShlObj.h>
 #include<imgui_internal.h>
 #include"IBR_Debug.h"

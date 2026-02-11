@@ -10,7 +10,7 @@
 #include <ranges>
 
 
-std::pair<bool, std::vector<IBR_Project::id_t>> _PROJ_CMD_WRITE  _PROJ_CMD_UPDATE IBR_Project::AddModule(const IBB_ModuleAlt& Module, const std::string& Argument, bool UseMouseCenter)
+std::pair<bool, std::vector<ModuleID_t>> _PROJ_CMD_WRITE  _PROJ_CMD_UPDATE IBR_Project::AddModule(const IBB_ModuleAlt& Module, const std::string& Argument, bool UseMouseCenter)
 {
     if (!Module.Available)return { false ,{} };
     std::vector<ModuleClipData> NewMD = Module.Modules;
@@ -32,12 +32,12 @@ std::pair<bool, std::vector<IBR_Project::id_t>> _PROJ_CMD_WRITE  _PROJ_CMD_UPDAT
 
     return AddModule(NewMD, UseMouseCenter);
 }
-std::pair<bool, std::vector<IBR_Project::id_t>> _PROJ_CMD_WRITE  _PROJ_CMD_UPDATE IBR_Project::AddModule(const std::vector<ModuleClipData>& Modules, bool UseMouseCenter)
+std::pair<bool, std::vector<ModuleID_t>> _PROJ_CMD_WRITE  _PROJ_CMD_UPDATE IBR_Project::AddModule(const std::vector<ModuleClipData>& Modules, bool UseMouseCenter)
 {
     if (Modules.empty())return { true, {} };
     IBD_RInterruptF(x);
     bool Ret = true;
-    std::vector<IBR_Project::id_t> Vec;
+    std::vector<ModuleID_t> Vec;
     for (auto& M : Modules)if (!M.IsLinkGroup)
     {
         auto R = AddModule_Impl(M, UseMouseCenter);
@@ -54,7 +54,7 @@ std::pair<bool, std::vector<IBR_Project::id_t>> _PROJ_CMD_WRITE  _PROJ_CMD_UPDAT
     Ret &= IBF_Inst_Project.UpdateAll();
     return { Ret, Vec };
 }
-std::optional<IBR_Project::id_t> _PROJ_CMD_WRITE  _PROJ_CMD_UPDATE IBR_Project::AddModule(const ModuleClipData& Modules, bool UseMouseCenter)
+std::optional<ModuleID_t> _PROJ_CMD_WRITE  _PROJ_CMD_UPDATE IBR_Project::AddModule(const ModuleClipData& Modules, bool UseMouseCenter)
 {
     IBD_RInterruptF(x);
     bool Ret = true;
@@ -66,7 +66,7 @@ std::optional<IBR_Project::id_t> _PROJ_CMD_WRITE  _PROJ_CMD_UPDATE IBR_Project::
     else return std::nullopt;
 }
 
-std::optional<IBR_Project::id_t> _PROJ_CMD_WRITE _PROJ_CMD_UPDATE IBR_Project::AddModule_Impl(const ModuleClipData& Module, bool UseMouseCenter)
+std::optional<ModuleID_t> _PROJ_CMD_WRITE _PROJ_CMD_UPDATE IBR_Project::AddModule_Impl(const ModuleClipData& Module, bool UseMouseCenter)
 {
     ImVec2 InitEqPos;
     if (UseMouseCenter)
@@ -124,7 +124,7 @@ std::optional<IBR_Project::id_t> _PROJ_CMD_WRITE _PROJ_CMD_UPDATE IBR_Project::A
 }
 
 
-bool _PROJ_CMD_WRITE IBR_Project::SetModuleIncludeLink(IBR_Project::id_t ID)
+bool _PROJ_CMD_WRITE IBR_Project::SetModuleIncludeLink(ModuleID_t ID)
 {
     auto Sec = GetSectionFromID(ID).GetSectionData();
     if (!Sec)return false;
@@ -132,16 +132,16 @@ bool _PROJ_CMD_WRITE IBR_Project::SetModuleIncludeLink(IBR_Project::id_t ID)
     Sec->IncludingModules = Sec->IncludingModules_TmpDesc
         | std::views::transform([this](const auto& Desc) {return GetSectionID(Desc).value_or(INVALID_MODULE_ID); })
         | std::views::filter([](const auto& id) { return id != INVALID_MODULE_ID; })
-        | std::ranges::to<std::vector<id_t>>();
+        | std::ranges::to<std::vector<ModuleID_t>>();
     return true;
 }
 
-bool _PROJ_CMD_WRITE IBR_Project::SetModuleIncludeLink(const std::vector<IBR_Project::id_t>& IDs)
+bool _PROJ_CMD_WRITE IBR_Project::SetModuleIncludeLink(const std::vector<ModuleID_t>& IDs)
 {
-    return std::ranges::fold_left(IDs, true, [this](bool val, IBR_Project::id_t id) { return val & SetModuleIncludeLink(id); });
+    return std::ranges::fold_left(IDs, true, [this](bool val, ModuleID_t id) { return val & SetModuleIncludeLink(id); });
 }
 
-std::optional<IBR_Project::id_t> _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE IBR_Project::ComposeSections(const std::vector<IBR_Project::id_t>& IDs)
+std::optional<ModuleID_t> _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE IBR_Project::ComposeSections(const std::vector<ModuleID_t>& IDs)
 {
     using namespace std::ranges;
     auto RSec = CreateSectionAndBack(
@@ -165,7 +165,7 @@ std::optional<IBR_Project::id_t> _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UP
         return Data->IsIncluded();
     });
 
-    sort(RD->IncludingModules, [this](id_t l, id_t r)
+    sort(RD->IncludingModules, [this](ModuleID_t l, ModuleID_t r)
         {
             auto pDataL = GetSectionFromID(l).GetSectionData();
             auto pDataR = GetSectionFromID(r).GetSectionData();
@@ -194,7 +194,7 @@ std::optional<IBR_Project::id_t> _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UP
     return std::nullopt;
 }
 
-std::optional<std::vector<IBR_Project::id_t>> _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE IBR_Project::DecomposeSection(IBR_Project::id_t ID)
+std::optional<std::vector<ModuleID_t>> _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE IBR_Project::DecomposeSection(ModuleID_t ID)
 {
     auto pData = GetSectionFromID(ID).GetSectionData();
     if (!pData)return std::nullopt;
@@ -218,7 +218,7 @@ std::optional<std::vector<IBR_Project::id_t>> _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO
     return ModuleIDs;
 }
 
-std::optional<std::vector<IBR_Project::id_t>> _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO  _PROJ_CMD_UPDATE IBR_Project::DecomposeSection(IBB_Section_Desc Desc)
+std::optional<std::vector<ModuleID_t>> _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO  _PROJ_CMD_UPDATE IBR_Project::DecomposeSection(IBB_Section_Desc Desc)
 {
     auto ID = GetSectionID(Desc);
     if (!ID)return std::nullopt;
@@ -359,7 +359,7 @@ void _PROJ_CMD_NOINTERRUPT _PROJ_CMD_READ IBR_Project::EnsureSection(const IBB_S
     }
 }
 
-std::optional<IBR_Project::id_t> _PROJ_CMD_NOINTERRUPT _PROJ_CMD_READ IBR_Project::GetSectionID(const IBB_Section_Desc& Desc) _PROJ_CMD_BACK_CONST
+std::optional<ModuleID_t> _PROJ_CMD_NOINTERRUPT _PROJ_CMD_READ IBR_Project::GetSectionID(const IBB_Section_Desc& Desc) _PROJ_CMD_BACK_CONST
 {
     auto rit = IBR_Rev_SectionMap.find(Desc);
     if (rit == IBR_Rev_SectionMap.end())return std::nullopt;
@@ -419,7 +419,7 @@ bool _PROJ_CMD_READ IBR_Project::HasSection(const IBB_Section_Desc& Desc)
     return IBF_Inst_Project.Project.GetSec(IBB_Project_Index{ Desc }) != nullptr;
 }
 
-bool _PROJ_CMD_READ IBR_Project::HasSection(IBR_Project::id_t id)
+bool _PROJ_CMD_READ IBR_Project::HasSection(ModuleID_t id)
 {
     auto it = IBR_SectionMap.find(id);
     if (it == IBR_SectionMap.end())return false;
@@ -427,14 +427,14 @@ bool _PROJ_CMD_READ IBR_Project::HasSection(IBR_Project::id_t id)
     return IBF_Inst_Project.Project.GetSec(IBB_Project_Index{ it->second.Desc }) != nullptr;
 }
 
-bool _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE IBR_Project::DeleteSection(IBR_Project::id_t id)
+bool _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE IBR_Project::DeleteSection(ModuleID_t id)
 {
     auto it = IBR_SectionMap.find(id);
     if (it == IBR_SectionMap.end())return false;
     return DeleteSection(it->second.Desc);
 }
 
-bool _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE IBR_Project::DeleteSection(const std::vector <IBR_Project::id_t>& ids)
+bool _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE IBR_Project::DeleteSection(const std::vector <ModuleID_t>& ids)
 {
     std::vector<IBB_Section_Desc> Descs;
     for (auto& id : ids)

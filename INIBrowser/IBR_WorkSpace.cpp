@@ -9,6 +9,7 @@
 #include "IBR_HotKey.h"
 #include "IBR_Debug.h"
 #include "IBR_Combo.h"
+#include "IBR_Components.h"
 
 
 
@@ -195,9 +196,9 @@ namespace IBR_WorkSpace
     bool MoveAfterMass{ false };
     bool OnCombo{ false };
     bool OnPopupMenu{ false };
-    std::vector<IBR_Project::id_t> MassTarget;
+    std::vector<ModuleID_t> MassTarget;
     //包含了被编组的块
-    std::vector<IBR_Project::id_t> MassTargetExtended;
+    std::vector<ModuleID_t> MassTargetExtended;
     bool LastOperateOnText{ false };
     bool OperateOnText{ false };
     IBR_Section MouseOverSection{ &IBR_Inst_Project, UINT64_MAX };
@@ -371,7 +372,7 @@ namespace IBR_WorkSpace
             IBR_Inst_Project.DeleteSection(MassTarget);
             },nullptr });
     }
-    dImVec2 GetMassCenter(const std::vector<IBR_Project::id_t>& Target)
+    dImVec2 GetMassCenter(const std::vector<ModuleID_t>& Target)
     {
         dImVec2 TSum{};
         double Sum{};
@@ -388,7 +389,7 @@ namespace IBR_WorkSpace
         TSum /= Sum;
         return TSum;
     }
-    void GenerateClipDataFromIDs(IBB_ClipBoardData& ClipData, const std::vector<IBR_Project::id_t>& IDs)
+    void GenerateClipDataFromIDs(IBB_ClipBoardData& ClipData, const std::vector<ModuleID_t>& IDs)
     {
         std::vector<IBB_Section_Desc> Sel;
         dImVec2 TSum{};
@@ -464,7 +465,7 @@ namespace IBR_WorkSpace
     }
     void ExtendMassSelect()
     {
-        std::unordered_set<IBR_Project::id_t> Visited;
+        std::unordered_set<ModuleID_t> Visited;
         for (auto id : MassTarget)
         {
             auto Data = IBR_Inst_Project.GetSectionFromID(id).GetSectionData();
@@ -473,7 +474,7 @@ namespace IBR_WorkSpace
                     Visited.insert(v);
             Visited.insert(id);
         }
-        MassTargetExtended = std::ranges::to<std::vector<IBR_Project::id_t>>(Visited);
+        MassTargetExtended = std::ranges::to<std::vector<ModuleID_t>>(Visited);
 
         {
             IBD_RInterruptF(x);
@@ -487,7 +488,7 @@ namespace IBR_WorkSpace
             }
         }
     }
-    void MassSelect(const std::vector<IBR_Project::id_t>& Target)
+    void MassSelect(const std::vector<ModuleID_t>& Target)
     {
         IsBgDragging = true;
         IsMassSelecting = false;
@@ -1294,7 +1295,7 @@ namespace IBR_WorkSpace
     InfoStack<StdMessage> ExtSetPos;
     IBR_SectionData* CurOnRender;
     bool CurOnRender_Clicked{ false };
-    IBR_Project::id_t CurOnRender_ID{ 0 };
+    ModuleID_t CurOnRender_ID{ 0 };
     ImVec4 TempWbg;
     struct PosHelper { ImVec2 eq, re; };
     ImGuiWindow* LastFocused{ nullptr };

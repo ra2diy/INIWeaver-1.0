@@ -1,4 +1,4 @@
-﻿#include "IBRender.h"
+﻿#include "IBR_Components.h"
 #include "IBFront.h"
 #include "Global.h"
 #include "FromEngine/RFBump.h"
@@ -844,9 +844,9 @@ namespace IBR_SelectMode
 {
     Mode CurrentMode;
     bool InSelectProcess;
-    std::vector<IBR_Project::id_t> MassSelectWindows;
+    std::vector<ModuleID_t> MassSelectWindows;
     std::set<IBB_Section_Desc> MassSelectWindowsDesc;
-    const std::vector<IBR_Project::id_t>& GetMassSelected()
+    const std::vector<ModuleID_t>& GetMassSelected()
     {
         return MassSelectWindows;
     }
@@ -945,7 +945,7 @@ namespace IBR_SelectMode
         {
             auto& WUL = IBR_RealCenter::WorkSpaceUL, WDR = IBR_RealCenter::WorkSpaceDR;
             ImDrawList* DList = ImGui::GetForegroundDrawList();
-            IBR_Project::id_t HoverId = ULLONG_MAX;
+            ModuleID_t HoverId = ULLONG_MAX;
             if (CurrentMode.RestrictedToSections)
             {
                 for (auto& sp : IBR_Inst_Project.IBR_SectionMap)

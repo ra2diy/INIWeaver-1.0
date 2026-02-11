@@ -3,6 +3,7 @@
 #include "IBB_ModuleAlt.h"
 #include "IBB_Index.h"
 #include "IBG_InputType.h"
+#include "IBR_Components.h"
 
 std::string IBB_RegType::GetNoName()
 {

@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include "FromEngine/Include.h"
+#include "IBB_OutputFormat.h"
 
 struct IBB_InputFormat
 {
@@ -32,20 +33,35 @@ struct IBB_UpdateResult
 
 struct IBG_InputComponent;
 struct IBB_FormatComponent;
+struct IBB_ValidateComponent;
 struct IBB_ValueContainer;
 struct IBB_InputState;
 using IICPtr = std::shared_ptr<IBG_InputComponent>;
 using IFCPtr = std::shared_ptr<IBB_FormatComponent>;
 using IISPtr = std::unique_ptr<IBB_InputState>;
 
+struct IICStatus
+{
+    enum _ : uint8_t {
+        Input,
+        Link
+    } InputMethod{
+        Input
+    };
+
+    bool Load(const JsonObject& Obj);
+};
+
 struct IBG_InputComponent : public std::enable_shared_from_this<IBG_InputComponent>
 {
     virtual ~IBG_InputComponent() = default;
-    virtual IBB_UpdateResult RenderUI(IBB_ValueContainer& Cont) = 0;
+    virtual IBB_UpdateResult RenderUI(IBB_ValueContainer& Cont, IICStatus& Status) = 0;
     virtual std::string FormatValue(IBB_ValueContainer& Cont, const IBB_InputFormat& Format) = 0;
     virtual void ParseValue(IBB_ValueContainer& Cont, const IBB_InputFormat& Format) = 0;
     virtual bool CanProvideState(IBB_ValueContainer& Cont) const = 0;
     virtual void ResetState(IBB_ValueContainer& Cont) const = 0;
+
+    IICStatus InitialStatus;
 };
 
 struct IBB_FormatComponent : public std::enable_shared_from_this<IBB_FormatComponent>
@@ -109,6 +125,7 @@ struct IBB_InputValue
 
 struct InputFormComponentFactory
 {
+    static IICPtr CreateInputComponent_Special(IBB_ValueContainer& Cont, const JsonObject& Obj);
     static IICPtr CreateInputComponent(IBB_ValueContainer& Cont, const JsonObject& Obj);
     static IFCPtr CreateFormatComponent(IBB_ValueContainer& Cont, const JsonObject& Obj);
 
@@ -144,11 +161,14 @@ struct IBG_InputForm
     void ResetState();
     bool Load(const JsonObject& Obj);
     IIFPtr Duplicate() const;
+    void EnableLinkNode() { LinkNodeEnabled = true; }
 
 private:
     std::string FormattedString;
     IBB_ValueContainer ValueContainer;
+    std::vector<IICStatus> ComponentStatus;
     bool Dirty{ true };
+    bool LinkNodeEnabled{ false };
 };
 
 
@@ -160,8 +180,10 @@ struct IBG_InputType
         Link,
         Form
     }Type;
+
     IIFPtr Sidebar;
     IIFPtr WorkSpace;
+    KVFormatter_t KVFmt;
     bool Load(const JsonObject& Obj);
 
     IBG_InputType(const IBG_InputType&);
@@ -271,7 +293,7 @@ struct IIC_PureText final : public IBG_InputComponent
     bool Wrapped;
     IIC_PureText(const std::string& InitialText, ImColor color, bool colored, bool disabled, bool wrapped);
 
-    IBB_UpdateResult RenderUI(IBB_ValueContainer& Cont);
+    IBB_UpdateResult RenderUI(IBB_ValueContainer& Cont, IICStatus& Status);
     std::string FormatValue(IBB_ValueContainer& Cont, const IBB_InputFormat& Format);
     void ParseValue(IBB_ValueContainer&, const IBB_InputFormat&) {}
     bool CanProvideState(IBB_ValueContainer&) const { return true; }
@@ -288,7 +310,7 @@ struct IIC_LocalizedText final : public IBG_InputComponent
     bool Wrapped;
     IIC_LocalizedText(const std::string& key, const std::string& Fallback, ImColor color, bool colored, bool disabled, bool wrapped);
 
-    IBB_UpdateResult RenderUI(IBB_ValueContainer& Cont);
+    IBB_UpdateResult RenderUI(IBB_ValueContainer& Cont, IICStatus& Status);
     std::string FormatValue(IBB_ValueContainer& Cont, const IBB_InputFormat& Format);
     void ParseValue(IBB_ValueContainer&, const IBB_InputFormat&) {}
     bool CanProvideState(IBB_ValueContainer&) const { return true; }
@@ -297,7 +319,7 @@ struct IIC_LocalizedText final : public IBG_InputComponent
 
 struct IIC_SameLine final : public IBG_InputComponent
 {
-    IBB_UpdateResult RenderUI(IBB_ValueContainer& Cont);
+    IBB_UpdateResult RenderUI(IBB_ValueContainer& Cont, IICStatus& Status);
     std::string FormatValue(IBB_ValueContainer& Cont, const IBB_InputFormat& Format);
     void ParseValue(IBB_ValueContainer&, const IBB_InputFormat&) {}
     bool CanProvideState(IBB_ValueContainer&) const { return true; }
@@ -306,7 +328,7 @@ struct IIC_SameLine final : public IBG_InputComponent
 
 struct IIC_NewLine final : public IBG_InputComponent
 {
-    IBB_UpdateResult RenderUI(IBB_ValueContainer& Cont);
+    IBB_UpdateResult RenderUI(IBB_ValueContainer& Cont, IICStatus& Status);
     std::string FormatValue(IBB_ValueContainer& Cont, const IBB_InputFormat& Format);
     void ParseValue(IBB_ValueContainer&, const IBB_InputFormat&) {}
     bool CanProvideState(IBB_ValueContainer&) const { return true; }
@@ -315,7 +337,7 @@ struct IIC_NewLine final : public IBG_InputComponent
 
 struct IIC_Separator final : public IBG_InputComponent
 {
-    IBB_UpdateResult RenderUI(IBB_ValueContainer& Cont);
+    IBB_UpdateResult RenderUI(IBB_ValueContainer& Cont, IICStatus& Status);
     std::string FormatValue(IBB_ValueContainer& Cont, const IBB_InputFormat& Format);
     void ParseValue(IBB_ValueContainer&, const IBB_InputFormat&) {}
     bool CanProvideState(IBB_ValueContainer&) const { return true; }
@@ -328,7 +350,7 @@ struct IIC_InputText final : public IBG_InputComponent
     int ValueID;
     IIC_InputText(IBB_ValueContainer& Cont, int valueid, const std::string& InitialText, const std::string& hint);
 
-    IBB_UpdateResult RenderUI(IBB_ValueContainer& Cont);
+    IBB_UpdateResult RenderUI(IBB_ValueContainer& Cont, IICStatus& Status);
     std::string FormatValue(IBB_ValueContainer& Cont, const IBB_InputFormat& Format);
     void ParseValue(IBB_ValueContainer& Cont, const IBB_InputFormat& Format);
     bool CanProvideState(IBB_ValueContainer& Cont) const;
@@ -338,11 +360,12 @@ struct IIC_InputText final : public IBG_InputComponent
 struct IIC_EnumCombo final : public IBG_InputComponent
 {
     std::unordered_map<std::string, std::string> Options;//AllowedValue : DisplayName ; if empty then any value allowed
+    std::vector<std::string> OptionOrder;
     std::string Hint;
     int ValueID;
-    IIC_EnumCombo(IBB_ValueContainer& Cont, int valueid, const std::string& InitialValue, const std::string& hint, const std::unordered_map<std::string, std::string>& options);
+    IIC_EnumCombo(IBB_ValueContainer& Cont, int valueid, const std::string& InitialValue, const std::string& hint, const std::unordered_map<std::string, std::string>& options, const std::vector<std::string>& OptionOrder);
 
-    IBB_UpdateResult RenderUI(IBB_ValueContainer& Cont);
+    IBB_UpdateResult RenderUI(IBB_ValueContainer& Cont, IICStatus& Status);
     std::string FormatValue(IBB_ValueContainer& Cont, const IBB_InputFormat& Format);
     void ParseValue(IBB_ValueContainer& Cont, const IBB_InputFormat& Format);
     bool CanProvideState(IBB_ValueContainer& Cont) const;
@@ -352,12 +375,13 @@ struct IIC_EnumCombo final : public IBG_InputComponent
 struct IIC_EnumRadio final : public IBG_InputComponent
 {
     std::unordered_map<std::string, std::string> Options;//AllowedValue : DisplayName ; if empty then any value allowed
+    std::vector<std::string> OptionOrder;
     std::string Hint;
     bool SameLine;
     int ValueID;
-    IIC_EnumRadio(IBB_ValueContainer& Cont, int valueid, const std::string& InitialValue, const std::unordered_map<std::string, std::string>& options, bool sameline);
+    IIC_EnumRadio(IBB_ValueContainer& Cont, int valueid, const std::string& InitialValue, const std::unordered_map<std::string, std::string>& options, bool sameline, const std::vector<std::string>& OptionOrder);
 
-    IBB_UpdateResult RenderUI(IBB_ValueContainer& Cont);
+    IBB_UpdateResult RenderUI(IBB_ValueContainer& Cont, IICStatus& Status);
     std::string FormatValue(IBB_ValueContainer& Cont, const IBB_InputFormat& Format);
     void ParseValue(IBB_ValueContainer& Cont, const IBB_InputFormat& Format);
     bool CanProvideState(IBB_ValueContainer& Cont) const;
@@ -371,7 +395,7 @@ struct IIC_Bool final : public IBG_InputComponent
     StrBoolType FmtType;
     IIC_Bool(IBB_ValueContainer& Cont, int valueid, bool InitialValue, StrBoolType fmt, const std::string& hint);
 
-    IBB_UpdateResult RenderUI(IBB_ValueContainer& Cont);
+    IBB_UpdateResult RenderUI(IBB_ValueContainer& Cont, IICStatus& Status);
     std::string FormatValue(IBB_ValueContainer& Cont, const IBB_InputFormat& Format);
     void ParseValue(IBB_ValueContainer& Cont, const IBB_InputFormat& Format);
     bool CanProvideState(IBB_ValueContainer& Cont) const;
@@ -385,7 +409,7 @@ struct IIC_InputInt final : public IBG_InputComponent
     int ValueID;
     IIC_InputInt(IBB_ValueContainer& Cont, int valueid, int InitialValue, int min, int max, const std::string& hint);
 
-    IBB_UpdateResult RenderUI(IBB_ValueContainer& Cont);
+    IBB_UpdateResult RenderUI(IBB_ValueContainer& Cont, IICStatus& Status);
     std::string FormatValue(IBB_ValueContainer& Cont, const IBB_InputFormat& Format);
     void ParseValue(IBB_ValueContainer& Cont, const IBB_InputFormat& Format);
     bool CanProvideState(IBB_ValueContainer& Cont) const;
@@ -401,7 +425,7 @@ struct IIC_SliderInt final : public IBG_InputComponent
     int ValueID;
     IIC_SliderInt(IBB_ValueContainer& Cont, int valueid, int InitialValue, int min, int max, const std::string& hint, const std::string& slidefmt, bool log);
 
-    IBB_UpdateResult RenderUI(IBB_ValueContainer& Cont);
+    IBB_UpdateResult RenderUI(IBB_ValueContainer& Cont, IICStatus& Status);
     std::string FormatValue(IBB_ValueContainer& Cont, const IBB_InputFormat& Format);
     void ParseValue(IBB_ValueContainer& Cont, const IBB_InputFormat& Format);
     bool CanProvideState(IBB_ValueContainer& Cont) const;
@@ -412,7 +436,7 @@ struct IIC_Error final : public IBG_InputComponent
 {
     std::wstring TextW;
     IIC_Error(const std::string& Desc);
-    IBB_UpdateResult RenderUI(IBB_ValueContainer& Cont);
+    IBB_UpdateResult RenderUI(IBB_ValueContainer& Cont, IICStatus& Status);
     std::string FormatValue(IBB_ValueContainer& Cont, const IBB_InputFormat& Format);
     void ParseValue(IBB_ValueContainer&, const IBB_InputFormat&) {}
     bool CanProvideState(IBB_ValueContainer&) const { return true; }

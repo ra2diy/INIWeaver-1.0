@@ -200,6 +200,7 @@
     <ClInclude Include="IBR_HotKey.h" />
     <ClInclude Include="IBR_ListView.h" />
     <ClInclude Include="IBR_Localization.h" />
+    <ClInclude Include="IBR_Components.h" />
     <ClInclude Include="IBSave.h" />
     <ClInclude Include="MainStage.h" />
     <ClInclude Include="Initialize.h" />

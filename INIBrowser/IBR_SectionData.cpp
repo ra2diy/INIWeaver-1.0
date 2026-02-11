@@ -5,7 +5,8 @@
 #include "FromEngine/global_timer.h"
 #include "IBB_ModuleAlt.h"
 #include "IBB_RegType.h"
-#include<imgui_internal.h>
+#include "IBR_Components.h"
+#include <imgui_internal.h>
 #include <ranges>
 
 void DrawNoEntrySymbol(ImVec2 pos, float size, ImU32 col) {

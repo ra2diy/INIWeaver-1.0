@@ -10,6 +10,7 @@
 #include <format>
 #include "IBR_HotKey.h"
 #include "IBR_ListView.h"
+#include "IBR_Components.h"
 
 extern wchar_t CurrentDirW[];
 extern bool ShouldCloseShellLoop;

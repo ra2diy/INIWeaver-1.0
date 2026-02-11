@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include"InfoStack.h"
 #include <functional>
@@ -8,6 +8,7 @@
 #define _TEXT_UTF8
 #endif
 
+typedef uint64_t ModuleID_t;
 typedef std::function<void()> StdMessage;
 using IBR_ToFMessage = StdMessage;
 struct IBF_ToRMessage
@@ -17,7 +18,7 @@ struct IBF_ToRMessage
 };
 
 
-//µ«ÊÇËüºÍIBD_RInterruptF¡¢IBD_FInterruptR²»Í¬£¬²»ÔÊĞíÇ¶Ì×
+//ä½†æ˜¯å®ƒå’ŒIBD_RInterruptFã€IBD_FInterruptRä¸åŒï¼Œä¸å…è®¸åµŒå¥—
 template<typename T>
 T IBG_Interrupt(std::mutex& mu, const std::function<T()>& msg)
 {
