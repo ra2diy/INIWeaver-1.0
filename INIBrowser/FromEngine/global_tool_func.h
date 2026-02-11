@@ -162,6 +162,7 @@ public:
     std::unordered_map<std::string, int> ItemMapInt(const std::string& Str) const;
     std::unordered_map<std::string, bool> ItemMapBool(const std::string& Str) const;
     std::unordered_map<std::string, std::string> ItemMapString(const std::string& Str) const;
+    std::vector<std::string> ItemArrayKey(const std::string& Str) const;
 
 #define XXXOR(NAME ,TYPE) \
     template<class... TArgs>\
@@ -186,6 +187,7 @@ public:
     XXXOR(MapBool, StrUMap<bool>)
     XXXOR(MapString, StrUMap<std::string>)
     XXXOR(MapObject, StrUMap<JsonObject>)
+    XXXOR(ArrayKey, std::vector<std::string>)
 
 #undef XXXOR
 
@@ -207,6 +209,7 @@ public:
     std::unordered_map<std::string, int> GetMapInt() const;
     std::unordered_map<std::string, bool> GetMapBool() const;
     std::unordered_map<std::string, std::string> GetMapString() const;
+    std::vector<std::string> GetArrayKey() const;
 
     std::string PrintData() const;
     std::string PrintUnformatted() const;

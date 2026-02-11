@@ -356,6 +356,7 @@ std::unordered_map<std::string, double> JsonObject::ItemMapDouble(const std::str
 std::unordered_map<std::string, int> JsonObject::ItemMapInt(const std::string& Str) const { ____GET____; return Obj.GetMapInt(); }
 std::unordered_map<std::string, bool> JsonObject::ItemMapBool(const std::string& Str) const { ____GET____; return Obj.GetMapBool(); }
 std::unordered_map<std::string, std::string> JsonObject::ItemMapString(const std::string& Str) const { ____GET____; return Obj.GetMapString(); }
+std::vector<std::string> JsonObject::ItemArrayKey(const std::string& Str) const { ____GET____; return Obj.GetArrayKey(); }
 #undef ____GET____
 
 std::unordered_map<std::string, JsonObject> JsonObject::GetMapObject() const
@@ -409,6 +410,17 @@ std::unordered_map<std::string, std::string> JsonObject::GetMapString() const
     while (Node.Available())
     {
         Ret.insert({ Node.GetName(),Node.GetString() });
+        Node = Node.GetNextItem();
+    }
+    return Ret;
+}
+std::vector<std::string> JsonObject::GetArrayKey() const
+{
+    std::vector<std::string> Ret;
+    JsonObject Node = GetChildItem();
+    while (Node.Available())
+    {
+        Ret.push_back(Node.GetName());
         Node = Node.GetNextItem();
     }
     return Ret;
