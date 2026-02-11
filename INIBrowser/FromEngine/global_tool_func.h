@@ -107,10 +107,12 @@ enum class StrBoolType :size_t
     Str_T_F,
     Str_y_n,
     Str_Y_N,
-    Str_1_0
+    Str_1_0,
+    Str_yeah_fuck
 };
 std::string StrBoolImpl(bool Val, StrBoolType Type);
 const char* CStrBoolImpl(bool Val, StrBoolType Type);
+bool AcceptStrAsBool(const std::string& Str, StrBoolType Type);
 
 class JsonFile;
 

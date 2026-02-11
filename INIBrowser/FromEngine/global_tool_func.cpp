@@ -187,7 +187,12 @@ std::string TimeNowU8()
 
 bool IsTrueString(const std::string& s1)
 {
-    return s1 == "true" || s1 == "yes" || s1 == "1" || s1 == "T" || s1 == "True" || s1 == "Yes" || s1 == "t" || s1 == "Y" || s1 == "y";
+    //return s1 == "true" || s1 == "yes" || s1 == "1" || s1 == "T" || s1 == "True" || s1 == "Yes" || s1 == "t" || s1 == "Y" || s1 == "y";
+    if (s1.empty())return false;
+    //Use logic same as Red Alert II
+    //check the first char is TtYy1
+    auto& F = s1[0];
+    return F == 'T' || F == 't' || F == 'Y' || F == 'y' || F == '1';
 }
 
 std::string RandStr(int i)
@@ -455,13 +460,13 @@ const char* const StrBool_TrueList[]
 {
     "true","True","TRUE",
     "yes","Yes","YES",
-    "t","T","y","Y","1"
+    "t","T","y","Y","1","yeah"
 };
 const char* const StrBool_FalseList[]
 {
     "false","False","FALSE",
     "no","No","NO",
-    "f","F","n","N","0"
+    "f","F","n","N","0","fuck"
 };
 
 std::string StrBoolImpl(bool Val, StrBoolType Type)
@@ -471,6 +476,34 @@ std::string StrBoolImpl(bool Val, StrBoolType Type)
 const char* CStrBoolImpl(bool Val, StrBoolType Type)
 {
     return (Val ? StrBool_TrueList : StrBool_FalseList)[(size_t)Type];
+}
+
+bool AcceptStrAsBool(const std::string& Str, StrBoolType Type)
+{
+    if (!stricmp(Str.c_str(), "true"))return true;
+    if (!stricmp(Str.c_str(), "false"))return true;
+    if (!stricmp(Str.c_str(), "yes"))return true;
+    if (!stricmp(Str.c_str(), "no"))return true;
+    if (Type == StrBoolType::Str_t_f || Type == StrBoolType::Str_T_F)
+    {
+        if (!stricmp(Str.c_str(), "t"))return true;
+        if (!stricmp(Str.c_str(), "f"))return true;
+    }
+    if (Type == StrBoolType::Str_y_n || Type == StrBoolType::Str_Y_N)
+    {
+        if (!stricmp(Str.c_str(), "y"))return true;
+        if (!stricmp(Str.c_str(), "n"))return true;
+    }
+    if (Type == StrBoolType::Str_1_0)
+    {
+        if (!stricmp(Str.c_str(), "0"))return true;
+        if (!stricmp(Str.c_str(), "1"))return true;
+    }
+    if (Type == StrBoolType::Str_yeah_fuck)
+    {
+        if (!stricmp(Str.c_str(), "yeah"))return true;
+        if (!stricmp(Str.c_str(), "fuck"))return true;
+    }
 }
 
 JsonObject JsonObject::CreateObjectItem(const std::string& Str) const
