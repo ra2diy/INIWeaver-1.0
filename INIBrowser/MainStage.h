@@ -174,7 +174,7 @@ void ControlPanel()
     if (IBR_Inst_Menu.GetMenuItem() == MenuItemID_EDIT && IBR_EditFrame::CurSection.GetSectionData())
         ImGui::Begin((IBR_EditFrame::CurSection.GetSectionData()->DisplayName + u8"###" + loc("GUI_MainMenu")).c_str()
             , nullptr, ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoMove);
-    else ImGui::Begin(locc("GUI_MainMenu"), nullptr, ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoMove);
+    else ImGui::Begin((loc("GUI_MainMenu") + u8"###" + loc("GUI_MainMenu")).c_str(), nullptr, ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoMove);
     ImGui::SetWindowPos({ 0,FontHeight * 2.0f - WindowSizeAdjustY });
     auto M = std::min(((float)(FinalWP.right - FinalWP.left - WindowSizeAdjustX)) / 4, 400.0f);
     ImGui::SetWindowSize({ std::max(ImGui::GetWindowWidth(),M),
