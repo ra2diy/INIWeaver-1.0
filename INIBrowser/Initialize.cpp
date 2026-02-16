@@ -11,14 +11,19 @@
 #include <filesystem>
 #include "IBR_HotKey.h"
 #include "IBR_Debug.h"
+#include <dbghelp.h>
+
+#pragma comment(lib, "Dbghelp.lib")
 
 bool ShouldCloseShellLoop = false;
 bool GotoCloseShellLoop = false;
 bool EnableDebugList = false;
+bool NoTopExceptionHandler = false;
 std::atomic_bool LoadDatabaseComplete{ false };
 JsonFile Cfg;//Config.json
 
 std::set<int> DisabledGLFWErrors;
+std::string TimeNowU8();
 
 void SuppressGLFWError(int errorcode)
 {
@@ -206,93 +211,176 @@ namespace Initialize
         glfwTerminate();
     }
 
-    void ShellLoop()
+    PEXCEPTION_POINTERS pException;
+    HANDLE CrashEvent;
+    HANDLE CrashFinishEvent;
+    BufString CrashBuf;
+
+    LONG WINAPI TopLevelFilter(PEXCEPTION_POINTERS pExceptionInfo)
+    {
+        pException = pExceptionInfo;
+        SetEvent(CrashEvent);
+        WaitForSingleObject(CrashFinishEvent, INFINITE);
+        return 0;
+    }
+
+    DWORD WINAPI CrashLoggerThread(LPVOID)
+    {
+        WaitForSingleObject(CrashEvent, INFINITE);
+
+        auto Addr = pException->ExceptionRecord->ExceptionAddress;
+        auto Code = pException->ExceptionRecord->ExceptionCode;
+
+        if (Code == EXCEPTION_ACCESS_VIOLATION)
+        {
+            DWORD op = pException->ExceptionRecord->ExceptionInformation[0];
+            PVOID target = (PVOID)pException->ExceptionRecord->ExceptionInformation[1];
+            const char* Access = (
+                op == 0 ? "READ" : (
+                op == 1 ? "WRITE" : (
+                op == 8 ? "EXECUTE" : (
+                "UNKNOWN"
+                ))));
+            sprintf_s(CrashBuf, "Addr = %p\nCode = %p\n%s(%d) at %p", Addr, (PVOID)Code, Access, op, target);
+        }
+        else
+        {
+            sprintf_s(CrashBuf, "Addr = %p\nCode = %p\n", Addr, (PVOID)Code);
+        }
+
+        const auto MS_VC_EXCEPTION = 0xE06D7363;
+        if (Code != MS_VC_EXCEPTION)
+        {
+            MessageBoxW(nullptr, UTF8toUnicode(CrashBuf).c_str(), locwc("Error_FatalError"), MB_ICONERROR);
+        }
+        if (EnableLog)
+        {
+            GlobalLog.AddLog_CurTime(false);
+            GlobalLog.AddLog(locc("Log_FatalErrorDesc"));
+            GlobalLog.AddLog_CurTime(false);
+            GlobalLog.AddLog(CrashBuf);
+        }
+
+        HANDLE hFile = CreateFileW(L"Crash.dmp", GENERIC_WRITE, 0, NULL,
+            CREATE_ALWAYS, 0, NULL);
+        if (hFile != INVALID_HANDLE_VALUE) {
+            MINIDUMP_EXCEPTION_INFORMATION mdei;
+            mdei.ThreadId = GetCurrentThreadId();
+            mdei.ExceptionPointers = pException;
+            mdei.ClientPointers = FALSE;
+            MiniDumpWriteDump(GetCurrentProcess(), GetCurrentProcessId(),
+                hFile, MiniDumpWithDataSegs, &mdei, NULL, NULL);
+            CloseHandle(hFile);
+        }
+
+        MessageBoxW(nullptr, locwc("Error_CheckCrashDump"), locwc("Error_FatalError"), MB_ICONERROR);
+
+        SetEvent(CrashFinishEvent);
+        return 0;
+    }
+
+    void InitializeSEHHandler()
+    {
+        if (NoTopExceptionHandler) return;
+        CrashEvent = CreateEventW(NULL, TRUE, FALSE, NULL);
+        CrashFinishEvent = CreateEventW(NULL, TRUE, FALSE, NULL);
+        SetUnhandledExceptionFilter(TopLevelFilter);
+        HANDLE hThread = CreateThread(NULL, 0, CrashLoggerThread, NULL, 0, NULL);
+        CloseHandle(hThread);
+    }
+
+    void ShellLoop_Unprotected()
     {
         using namespace PreLink;
-        try
+
+        uint64_t TimeWait = GetSysTimeMicros();
+
+        while (!ShouldCloseShellLoop)
         {
-            uint64_t TimeWait = GetSysTimeMicros();
-
-            while (!ShouldCloseShellLoop)
+            if (IBG_GetSetting().FrameRateLimit != -1)
             {
-                if (IBG_GetSetting().FrameRateLimit != -1)
+                int Uax = 1000000 / IBG_GetSetting().FrameRateLimit;
+                while (GetSysTimeMicros() < TimeWait)Sleep(Uax / 1000);
+                TimeWait += Uax;
+            }
+            ShellLoopLastTime = GetSysTimeMicros();
+            // Poll and handle events (inputs, window resize, etc.)
+            // You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to tell if dear imgui wants to use your inputs.
+            // - When io.WantCaptureMouse is true, do not dispatch mouse input data to your main application, or clear/overwrite your copy of the mouse data.
+            // - When io.WantCaptureKeyboard is true, do not dispatch keyboard input data to your main application, or clear/overwrite your copy of the keyboard data.
+            // Generally you may always pass all inputs to dear imgui, and hide them from your application based on those two flags.
+            glfwPollEvents();
+
+            // Start the Dear ImGui frame
+            ImGui_ImplOpenGL2_NewFrame();
+            ImGui_ImplGlfw_NewFrame();
+
+            if (font->ContainerAtlas == NULL)
+            {
+                if (EnableLog)
                 {
-                    int Uax = 1000000 / IBG_GetSetting().FrameRateLimit;
-                    while (GetSysTimeMicros() < TimeWait)Sleep(Uax / 1000);
-                    TimeWait += Uax;
+                    GlobalLog.AddLog_CurTime(false);
+                    GlobalLog.AddLog("font->ContainerAtlas == NULL");
+                    GlobalLog.AddLog_CurTime(false);
+                    GlobalLog.AddLog(locc("Log_PleaseRestart"));
                 }
-                ShellLoopLastTime = GetSysTimeMicros();
-                // Poll and handle events (inputs, window resize, etc.)
-                // You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to tell if dear imgui wants to use your inputs.
-                // - When io.WantCaptureMouse is true, do not dispatch mouse input data to your main application, or clear/overwrite your copy of the mouse data.
-                // - When io.WantCaptureKeyboard is true, do not dispatch keyboard input data to your main application, or clear/overwrite your copy of the keyboard data.
-                // Generally you may always pass all inputs to dear imgui, and hide them from your application based on those two flags.
-                glfwPollEvents();
+                MessageBoxW(nullptr, L"font->ContainerAtlas == NULL", locwc("Error_FailedToLoadFont"), MB_ICONERROR);
+                MessageBoxW(nullptr, locwc("Log_PleaseRestart"), locwc("Error_FailedToLaunch"), MB_ICONERROR);
+                CleanUp();
+                exit(0);
+            }
 
-                // Start the Dear ImGui frame
-                ImGui_ImplOpenGL2_NewFrame();
-                ImGui_ImplGlfw_NewFrame();
+            ImGui::NewFrame();
 
-                if (font->ContainerAtlas == NULL)
+            ControlPanel();
+
+            {
+                static bool __First = true;
+                if (__First)
                 {
-                    if (EnableLog)
-                    {
-                        GlobalLog.AddLog_CurTime(false);
-                        GlobalLog.AddLog("font->ContainerAtlas == NULL");
-                        GlobalLog.AddLog_CurTime(false);
-                        GlobalLog.AddLog(locc("Log_PleaseRestart"));
-                    }
-                    MessageBoxW(nullptr, L"font->ContainerAtlas == NULL", locwc("Error_FailedToLoadFont"), MB_ICONERROR);
-                    MessageBoxW(nullptr, locwc("Log_PleaseRestart"), locwc("Error_FailedToLaunch"), MB_ICONERROR);
-                    CleanUp();
-                    exit(0);
-                }
-
-                ImGui::NewFrame();
-
-                ControlPanel();
-
-                {
-                    static bool __First = true;
-                    if (__First)
-                    {
-                        __First = false;
-                        IBR_Inst_Debug.RenderUIOnce();
-                    }
-                }
-
-                // Rendering
-                ImGui::Render();
-                int display_w, display_h;
-                glfwGetFramebufferSize(window, &display_w, &display_h);
-                glViewport(0, 0, display_w, display_h);
-                auto& cc = IBR_Color::BackgroundColor.Value;
-                glClearColor(cc.x * cc.w, cc.y * cc.w, cc.z * cc.w, cc.w);
-                glClear(GL_COLOR_BUFFER_BIT);
-
-                // If you are using this code with non-legacy OpenGL header/contexts (which you should not, prefer using imgui_impl_opengl3.cpp!!),
-                // you may need to backup/reset/restore other state, e.g. for current shader using the commented lines below.
-                //GLint last_program;
-                //glGetIntegerv(GL_CURRENT_PROGRAM, &last_program);
-                //glUseProgram(0);
-                ImGui_ImplOpenGL2_RenderDrawData(ImGui::GetDrawData());
-                //glUseProgram(last_program);
-
-                glfwMakeContextCurrent(window);
-                glfwSwapBuffers(window);
-
-                if (glfwWindowShouldClose(window))
-                {
-                    if (IBR_ProjectManager::IsOpen())
-                    {
-                        GotoCloseShellLoop = true;
-                        IBR_ProjectManager::CloseAction();
-                    }
-                    else ShouldCloseShellLoop = true;
+                    __First = false;
+                    IBR_Inst_Debug.RenderUIOnce();
                 }
             }
+
+            // Rendering
+            ImGui::Render();
+            int display_w, display_h;
+            glfwGetFramebufferSize(window, &display_w, &display_h);
+            glViewport(0, 0, display_w, display_h);
+            auto& cc = IBR_Color::BackgroundColor.Value;
+            glClearColor(cc.x * cc.w, cc.y * cc.w, cc.z * cc.w, cc.w);
+            glClear(GL_COLOR_BUFFER_BIT);
+
+            // If you are using this code with non-legacy OpenGL header/contexts (which you should not, prefer using imgui_impl_opengl3.cpp!!),
+            // you may need to backup/reset/restore other state, e.g. for current shader using the commented lines below.
+            //GLint last_program;
+            //glGetIntegerv(GL_CURRENT_PROGRAM, &last_program);
+            //glUseProgram(0);
+            ImGui_ImplOpenGL2_RenderDrawData(ImGui::GetDrawData());
+            //glUseProgram(last_program);
+
+            glfwMakeContextCurrent(window);
+            glfwSwapBuffers(window);
+
+            if (glfwWindowShouldClose(window))
+            {
+                if (IBR_ProjectManager::IsOpen())
+                {
+                    GotoCloseShellLoop = true;
+                    IBR_ProjectManager::CloseAction();
+                }
+                else ShouldCloseShellLoop = true;
+            }
         }
-        //*
+    }
+
+    void ShellLoop_Protected()
+    {
+        try
+        {
+            ShellLoop_Unprotected();
+        }
         catch (std::exception& e)
         {
             MessageBoxW(nullptr, UTF8toUnicode(e.what()).c_str(), locwc("Error_ThrowException"), MB_ICONERROR);
@@ -305,11 +393,31 @@ namespace Initialize
             }
             throw(e);
         }
-        //*/
+        catch (...)
+        {
+            MessageBoxW(nullptr, locwc("Error_UnknownException"), locwc("Error_ThrowException"), MB_ICONERROR);
+            if (EnableLog)
+            {
+                GlobalLog.AddLog_CurTime(false);
+                GlobalLog.AddLog(locc("Error_UnknownException"));
+            }
+        }
         if (EnableLog)
         {
             GlobalLog.AddLog_CurTime(false);
             GlobalLog.AddLog(locc("Log_MainLoopFinish"));
+        }
+    }
+
+    void ShellLoop()
+    {
+        if (NoTopExceptionHandler)
+        {
+            ShellLoop_Unprotected();
+        }
+        else
+        {
+            ShellLoop_Protected();
         }
     }
 
@@ -434,6 +542,10 @@ namespace Initialize
             {
                 EnableDebugList = true;
             }
+            else if (!_wcsicmp(szArglist[i], L"-notophandler"))
+            {
+                NoTopExceptionHandler = true;
+            }
             else if (!_wcsnicmp(szArglist[i], L"-width=", 7))
             {
                 auto W = _wtoi(szArglist[i] + 7);
@@ -468,6 +580,9 @@ namespace Initialize
 
         TEMPLOG("InitializeResolution();")
             InitializeResolution();
+
+        TEMPLOG("InitializeSEHHandler();")
+            InitializeSEHHandler();
 
         TEMPLOG("return 0;")
             return 0;
