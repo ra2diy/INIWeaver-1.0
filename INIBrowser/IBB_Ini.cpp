@@ -272,19 +272,6 @@ bool IBB_SubSec_Default::Load(JsonObject FromJson, const std::unordered_map<std:
     return true;
 }
 
-bool IBB_Link_Default::Load(JsonObject FromJson)
-{
-    LinkFromRequired = FromJson.GetObjectItem(u8"LinkFromRequired").GetArrayObject();
-    LinkFromForbidden = FromJson.GetObjectItem(u8"LinkFromForbidden").GetArrayObject();
-    LinkToRequired = FromJson.GetObjectItem(u8"LinkToRequired").GetArrayObject();
-    LinkToForbidden = FromJson.GetObjectItem(u8"LinkToForbidden").GetArrayObject();
-    Name = FromJson.GetObjectItem(u8"Name").GetString();
-    NameOnlyAsRegister = false;
-    return true;
-}
-
-
-
 
 bool IBB_IniLine_Default::IsLinkAlt() const
 {
@@ -294,12 +281,12 @@ bool IBB_IniLine_Default::IsLinkAlt() const
 
 LineData IBB_IniLine_Default::Create() const
 {
-    if (Property.Type == IBB_IniLine_Data_Int::TypeName)
+    /*if (Property.Type == IBB_IniLine_Data_Int::TypeName)
         return LineData(new IBB_IniLine_Data_Int);
     else if (Property.Type == IBB_IniLine_Data_String::TypeName)
         return LineData(new IBB_IniLine_Data_String);
     else if (IsLinkAlt())
-        return LineData(new IBB_IniLine_DataList);
+        return LineData(new IBB_IniLine_DataList);*/
     return LineData(new IBB_IniLine_Data_String);
 }
 
@@ -678,25 +665,6 @@ bool IBB_Ini::AddSection(const IBB_Section& Section, bool IsDuplicate)
         return Is->second.Merge(Section, IBB_IniMergeMode::Merge, IsDuplicate);
     }
 }
-//TODO:刷新Link，不过不着急，毕竟AddSection实际只会在AddModule时调用，而不会导致原有Link的改动
-
-/*
-bool IBB_Ini::DeleteSection(const std::string& Tg)
-{
-    bool Ret = true;
-    auto it = Secs.find(Tg);
-    if (it == Secs.end())return false;
-    else
-    {
-        for (auto ij = Secs_ByName.begin(); ij != Secs_ByName.end(); ++ij)
-            if (*ij == Tg){ Secs_ByName.erase(ij); break; }
-        if(it->second.Isolate())Ret = false;
-        Secs.erase(it);
-    }
-    return Ret;
-}
-*/
-//TODO
 
 bool IBB_Ini::DeleteSection(const std::string& Tg)
 {
@@ -760,93 +728,6 @@ bool IBB_Ini::UpdateAll()
     }
     return Ret;
 }
-
-
-
-
-
-void IBB_Link::DynamicCheck_Legal(const IBB_Project& Proj)
-{
-    auto pf = Proj.GetSec(From), pt = Proj.GetSec(To);
-    if (pf == nullptr || pt == nullptr){ Dynamic.Legal = IBB_Link::_Dynamic::Incomplete; return; }
-    else { Dynamic.Legal = IBB_Link::_Dynamic::Correct; return; }
-    /*
-    std::vector<IBB_Link*> ToChange;
-    while(pt->IsLinkGroup)
-    {
-        if(pt->LinkGroup_LinkTo.empty()) { Dynamic.Legal = IBB_Link::_Dynamic::Incomplete; return; }
-        pt = nullptr; auto it = pt->LinkGroup_LinkTo.begin();
-        IBB_Link* pl;
-        while (pt == nullptr && it != pt->LinkGroup_LinkTo.end()) { pl = &(*it); pt = Proj.GetSec(it->To); ++it; }
-        if(pt == nullptr) { Dynamic.Legal = IBB_Link::_Dynamic::Incomplete; return; }
-        //暂且这么干
-        ToChange.push_back(pl);
-        for (auto l : pt->LinkedBy)if (l == *pl)ToChange.push_back(&l);
-    }
-    while (pf->IsLinkGroup)
-    {
-        if(pf->LinkedBy.empty()) { Dynamic.Legal = IBB_Link::_Dynamic::Incomplete; return; }
-        pf = nullptr; auto it = pf->LinkedBy.begin();
-        IBB_Link* pl;
-        while (pf == nullptr && it != pf->LinkedBy.end()) { pl = &(*it); pf = Proj.GetSec(it->From); ++it; }
-        if (pf == nullptr) { Dynamic.Legal = IBB_Link::_Dynamic::Incomplete; return; }
-        //暂且这么干
-        ToChange.push_back(pl);
-        for (auto l : pt->GetLinkTo())if (l == *pl)ToChange.push_back(&l);
-    }
-    //TODO: Correct or Wrong
-    //TODO: Mixed Cond Check
-    */
-}
-void IBB_Link::DynamicCheck_UpdateNewLink(const IBB_Project& Proj)
-{
-    auto sp = Proj.GetSec(To);
-    if (sp != nullptr)
-    {
-        //sp->Dynamic.NewLinkedBy.push_back(*this);
-        //auto& b = sp->Dynamic.NewLinkedBy.back();
-        //b.FillData(this, FromKey);
-        //Another = &b;
-        sp->LinkedBy.push_back(*this);
-        auto& b = sp->LinkedBy.back();
-        b.Order = sp->LinkedBy.size() - 1;
-        b.Another = this;
-        Another = &b;
-    }
-}
-bool IBB_Link::ChangeAddress()
-{
-    if (Another != nullptr)
-    {
-        Another->Another = this;
-    }
-    return true;
-}
-
-
-
-std::string IBB_Link::GetText(const IBB_Project& Proj) const
-{
-    std::string Text;
-    auto pf = From.GetSec(Proj), pt = To.GetSec(Proj);
-
-    Text += ((pf) ? ("_LINK_FROM:" + pf->Root->Name + "->" + pf->Name) : ("_MISSING:" + From.GetText()));
-    Text.push_back('=');
-    Text += ((pt && pf)? ("_LINK_TO:" + pf->Root->Name + "->" + pt->Name) : ("_MISSING:" + To.GetText()));
-    Text.push_back('\n');
-
-    Text += "_ADDRESS=" + std::to_string(this); Text.push_back('\n');
-    Text += "_ANO_ADDR=" + std::to_string(Another); Text.push_back('\n');
-    Text += "_FROM_KEY=" + FromKey; Text.push_back('\n');
-    return Text;
-}
-
-IBB_Link_NameType IBB_Link::GetNameType() const
-{
-    return IBB_Link_NameType{ From.Ini.GetText(),From.Section.GetText(),To.Ini.GetText(),To.Section.GetText() };
-}
-
-
 
 
 
@@ -916,37 +797,14 @@ void IBB_RegisterList_NameType::Read(const ExtFileClass& File)
 }
 void IBB_RegisterList_NameType::Write(const ExtFileClass& File)const
 {
-    //File.WriteLabel("<NameType>");
     File.WriteData(Type);
     File.WriteData(IniType);
     File.WriteData(UseTargetIniTypeList);
-    //::MessageBoxA(NULL, "91", "Title", MB_OK);
-    //File.WriteLabel("<NameType::List>");
     File.WriteVector(List);
-    //File.WriteLabel("</NameType::List>");
-    //File.WriteLabel("<NameType::TargetIniType>");
-    //::MessageBoxA(NULL, "92", "Title", MB_OK);
     if (UseTargetIniTypeList)File.WriteVector(TargetIniTypeList);
     else File.WriteData(TargetIniType);
-    //File.WriteLabel("</NameType::TargetIniType>");
-    //::MessageBoxA(NULL, "93", "Title", MB_OK);
-    //File.WriteLabel("</NameType>");
 }
 
-void IBB_Link_NameType::Read(const ExtFileClass& File)
-{
-    File.ReadData(FromIni);
-    File.ReadData(FromSec);
-    File.ReadData(ToIni);
-    File.ReadData(ToSec);
-}
-void IBB_Link_NameType::Write(const ExtFileClass& File)const
-{
-    File.WriteData(FromIni);
-    File.WriteData(FromSec);
-    File.WriteData(ToIni);
-    File.WriteData(ToSec);
-}
 
 
 
@@ -1019,10 +877,10 @@ IBB_IniLine_Default* IBB_DefaultTypeList::KeyBelongToLine(const std::string& Key
         }
     }
     {
-        for (const auto& p : Query.IniLine_Default_RegexFull)if (RegexFull_Nothrow(KeyName, p.first))return p.second;
-        for (const auto& p : Query.IniLine_Default_RegexNone)if (RegexNone_Nothrow(KeyName, p.first))return p.second;
-        for (const auto& p : Query.IniLine_Default_RegexNotFull)if (RegexNotFull_Nothrow(KeyName, p.first))return p.second;
-        for (const auto& p : Query.IniLine_Default_RegexNotNone)if (RegexNotNone_Nothrow(KeyName, p.first))return p.second;
+        //for (const auto& p : Query.IniLine_Default_RegexFull)if (RegexFull_Nothrow(KeyName, p.first))return p.second;
+        //for (const auto& p : Query.IniLine_Default_RegexNone)if (RegexNone_Nothrow(KeyName, p.first))return p.second;
+        //for (const auto& p : Query.IniLine_Default_RegexNotFull)if (RegexNotFull_Nothrow(KeyName, p.first))return p.second;
+        //for (const auto& p : Query.IniLine_Default_RegexNotNone)if (RegexNotNone_Nothrow(KeyName, p.first))return p.second;
     }
     return nullptr;
 }

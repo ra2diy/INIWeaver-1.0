@@ -900,12 +900,13 @@ void IBR_SectionData::RenderUI()
         {
             if (IsIncluded())RenderUI_Composed();
             Bsec->CheckSubsecOrder();
+            auto& cc = LinkNodeContext::CollapsedCenter;
 
             for (auto i : Bsec->SubSecOrder)
             {
                 auto& sub = Bsec->SubSecs[i];
                 LinkNodeContext::CurSub = &sub;
-                LinkNodeContext::CollapsedCenter = { HeadLineRN.x , FinalY + HalfLine };
+                cc = { HeadLineRN.x , FinalY + HalfLine };
 
                 if (sub.Default->IsInherit && Bsec->Inherit.empty())continue;
                 for (const auto& k : sub.Lines_ByName)
@@ -913,13 +914,14 @@ void IBR_SectionData::RenderUI()
                     if(!Bsec->IsOnShow(k))continue;
                     OnLineEdit(Bsec->GetOnShow(k), k);
                 }
-
-                IBR_LinkNode::PushInactiveLines(sub, LinkNodeContext::CollapsedCenter + ImGui::GetWindowPos());
             }
             LinkNodeContext::CurSub = nullptr;
 
             for (const auto& [k, l] : Bsec->UnknownLines.Value)
                 RenderUI_UnknownLine(k, l, Bsec);
+
+            for (auto& sub : Bsec->SubSecs)
+                IBR_LinkNode::PushInactiveLines(sub, { cc.x, cc.y + ImGui::GetWindowPos().y });
         }
     }
 

@@ -1445,7 +1445,7 @@ IICPtr InputFormComponentFactory::CreateInputComponent(IBB_ValueContainer& Cont,
 
     if (oLinkNode)
     {
-        piic->NodeSetting.Load(oInitialStatus, &piic->UseCustomSetting);
+        piic->NodeSetting.Load(oLinkNode, &piic->UseCustomSetting);
     }
     else
     {

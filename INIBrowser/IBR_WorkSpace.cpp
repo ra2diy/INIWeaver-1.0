@@ -769,7 +769,7 @@ namespace IBR_WorkSpace
         }
 
         OnCombo = false;
-        for (auto r : GetComboRects())
+        for (auto& r : GetComboRects())
         {
             if (IBR_Inst_Debug.ShowWorkspaceWindowFrame)
             {
@@ -1305,6 +1305,8 @@ namespace IBR_WorkSpace
         auto EstimateLineWidth = [](ImVec2 pa, ImVec2 pb) -> float
             {
                 //give up
+                IM_UNUSED(pa);
+                IM_UNUSED(pb);
                 return FontHeight / 5.0f;
                 /*
                 float Base = FontHeight / 5.0f;

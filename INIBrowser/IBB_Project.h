@@ -119,7 +119,6 @@ public:
     std::unordered_map<std::string, JsonObject> Require_Default;
     std::unordered_map<std::string, IBB_IniLine_Default> IniLine_Default;
     std::unordered_map<std::string, IBB_SubSec_Default> SubSec_Default;//一个IniLine只能属于一个SubSec
-    std::unordered_map<std::string, IBB_Link_Default> Link_Default;
 
     struct _Query
     {

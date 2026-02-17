@@ -71,9 +71,9 @@ bool IBB_Section::Generate(const ModuleClipData& Clip)
         {
             Comment.clear();
             OnShow.clear();
-            LinkedBy.clear();
+            NewLinkedBy.clear();
             LineOrder.clear();
-            LinkGroup_LinkTo.clear();
+            LinkGroup_NewLinkTo.clear();
             Register = Clip.Register;
             Inherit = Clip.Inherit;
             IBB_DefaultRegType::GenerateDLK(Clip.DefaultLinkKey, Register, DefaultLinkKey);
@@ -116,7 +116,7 @@ void IBB_Section::GetClipData(ModuleClipData& Clip)
         //DefaultLinkKey.Flatten(DD);
         for (auto& [A, B] : DefaultLinkKey.Value)
             Clip.DefaultLinkKey.push_back({ A, B });
-        for (auto& L : LinkGroup_LinkTo)
+        for (auto& L : LinkGroup_NewLinkTo)
             Clip.LinkGroup_LinkTo.push_back(L.To);
         for (auto& [A, B] : VarList.Value)
             Clip.VarList.push_back({ A, B });
@@ -277,7 +277,7 @@ std::vector<std::string> IBB_Section::GetKeys(bool PrintExtraData) const
     std::vector<std::string> Ret;
     if (IsLinkGroup)
     {
-        for (const auto& L : LinkGroup_LinkTo)
+        for (const auto& L : LinkGroup_NewLinkTo)
         {
             auto pf = L.From.GetSec(*(Root->Root)), pt = L.To.GetSec(*(Root->Root));
             if (pf != nullptr && pt != nullptr)
@@ -310,7 +310,7 @@ std::vector<std::string> IBB_Section::GetKeys(bool PrintExtraData) const
             VarList.Flatten(VL);
             for (const auto& V : VL.Value)
                 Ret.push_back(V.first);
-            for (const auto& L : LinkedBy)
+            for (const auto& L : NewLinkedBy)
             {
                 auto pf = L.From.GetSec(*(Root->Root)), pt = L.To.GetSec(*(Root->Root));
                 if (pf != nullptr && pt != nullptr)
@@ -325,7 +325,7 @@ IBB_VariableList IBB_Section::GetLineList(bool PrintExtraData, bool FromExport) 
     IBB_VariableList Ret;
     if (IsLinkGroup)
     {
-        for (const auto& L : LinkGroup_LinkTo)
+        for (const auto& L : LinkGroup_NewLinkTo)
         {
             auto pf = L.From.GetSec(*(Root->Root)), pt = L.To.GetSec(*(Root->Root));
             if (pf != nullptr && pt != nullptr)
@@ -352,7 +352,7 @@ IBB_VariableList IBB_Section::GetLineList(bool PrintExtraData, bool FromExport) 
             IBB_VariableList VL;
             VarList.Flatten(VL);
             Ret.Merge(VL, false);
-            for (auto L : LinkedBy)
+            for (auto L : NewLinkedBy)
             {
                 auto pf = L.From.GetSec(*(Root->Root)), pt = L.To.GetSec(*(Root->Root));
                 if (pf != nullptr && pt != nullptr)
@@ -379,25 +379,10 @@ std::string IBB_Section::GetText(bool PrintExtraData, bool FromExport, bool ForE
     std::string Text;
     if (IsLinkGroup)
     {
-        Text += ";LinkGroup - Links\n";
-        for (const auto& L : LinkGroup_LinkTo)
+        auto LineList = GetLineList(PrintExtraData, FromExport);
+        for (auto& [K, V] : LineList.Value)
         {
-            auto pf = L.From.GetSec(*(Root->Root)), pt = L.To.GetSec(*(Root->Root));
-            if (pf != nullptr && pt != nullptr)
-            {
-                Text += pf->Name;
-                Text.push_back('=');
-                Text += pt->Name;
-                Text.push_back('\n');
-            }
-            else Text += "_ERROR=\n";
-        }
-        if (PrintExtraData)
-        {
-            Text += "\n;ExtraData - Name\n";
-            Text += "_SECTION_NAME=" + Name;
-            Text += "\n\n;ExtraData - IsLinkGroup\n_IS_LINKGROUP=true\n;ExtraData - Variables\n";
-            Text += VarList.GetText(true, FromExport);
+            Text += K + "=" + V + "\n";
         }
     }
     else
@@ -478,9 +463,9 @@ IBB_Section_NameType IBB_Section::GetNameType() const
     return Ret;
 }
 
-IIFWrapper_Wrapper IBB_Section::GetLineIIF(const std::string& Key) const
+IIFWrapper_Wrapper IBB_Section::GetNewLineIIF(const std::string& Key) const
 {
-    auto NewIIF = [&] () -> IIFWrapper {
+    auto NewIIF = [&]() -> IIFWrapper {
         auto pLine = GetLineFromSubSecs(Key);
         if (pLine)
         {
@@ -508,8 +493,12 @@ IIFWrapper_Wrapper IBB_Section::GetLineIIF(const std::string& Key) const
             else return std::monostate{};
         }
         else return std::monostate{};
-    };
+        };
+    return { NewIIF() };
+}
 
+IIFWrapper_Wrapper IBB_Section::GetLineIIF(const std::string& Key) const
+{
     auto pbk = IBR_EditFrame::CurSection.GetBack();
     if (pbk == this)
     {
@@ -519,7 +508,7 @@ IIFWrapper_Wrapper IBB_Section::GetLineIIF(const std::string& Key) const
         if (it->second.Edit.Input)
             return { &(it->second.Edit.Input->Form) };
         else
-            return { NewIIF() };
+            return GetNewLineIIF(Key);
     }
     auto Rsec = IBR_Inst_Project.GetSection(GetThisDesc());
     auto pSD = Rsec.GetSectionData();
@@ -527,13 +516,13 @@ IIFWrapper_Wrapper IBB_Section::GetLineIIF(const std::string& Key) const
     {
         auto it = pSD->ActiveLines.find(Key);
         if (it == pSD->ActiveLines.end())
-            return { NewIIF() };
+            return GetNewLineIIF(Key);
         if (it->second.Edit.Input)
             return { &(it->second.Edit.Input->Form) };
         else
-            return { NewIIF() };
+            return GetNewLineIIF(Key);
     }
-    return { NewIIF() };
+    return GetNewLineIIF(Key);
 }
 
 std::string IBB_Section::GetFullVariable(const std::string& _Name) const
@@ -733,7 +722,7 @@ bool IBB_Section::Merge(const IBB_Section& Another, const std::unordered_map<std
     auto pproj = Root->Root; (void)pproj;
     if (IsLinkGroup)
     {
-        LinkGroup_LinkTo.insert(LinkGroup_LinkTo.end(), Another.LinkGroup_LinkTo.begin(), Another.LinkGroup_LinkTo.end());
+        LinkGroup_NewLinkTo.insert(LinkGroup_NewLinkTo.end(), Another.LinkGroup_NewLinkTo.begin(), Another.LinkGroup_NewLinkTo.end());
         return true;
     }
     else
@@ -770,7 +759,7 @@ bool IBB_Section::Merge(const IBB_Section& Another, IBB_IniMergeMode MergeType, 
     auto pproj = Root->Root; (void)pproj;
     if (IsLinkGroup)
     {
-        LinkGroup_LinkTo.insert(LinkGroup_LinkTo.end(), Another.LinkGroup_LinkTo.begin(), Another.LinkGroup_LinkTo.end());
+        LinkGroup_NewLinkTo.insert(LinkGroup_NewLinkTo.end(), Another.LinkGroup_NewLinkTo.begin(), Another.LinkGroup_NewLinkTo.end());
         return true;
     }
     else
@@ -806,7 +795,7 @@ bool IBB_Section::Merge(const IBB_Section& Another, IBB_IniMergeMode MergeType, 
 
 const std::vector<std::string>& SplitParamCached(const std::string& Text);
 
-bool IBB_Section::MergeLine(const std::string& Key, const std::string& Value, IBB_IniMergeMode Mode)
+bool IBB_Section::MergeLine(const std::string& Key, const std::string& Value, IBB_IniMergeMode Mode, bool NoUpdate)
 {
     switch (Mode)
     {
@@ -831,7 +820,7 @@ bool IBB_Section::MergeLine(const std::string& Key, const std::string& Value, IB
             }
             auto& Sub = *It;
             IBRF_CoreBump.SendToR({ [=] {IBR_EditFrame::UpdateLine(Key, Value); } });
-            return Sub.AddLine({ Key, Value }, true, IBB_IniMergeMode::Replace);
+            return Sub.AddLine({ Key, Value }, true, IBB_IniMergeMode::Replace, NoUpdate);
         }
     }
     case IBB_IniMergeMode::Merge:
@@ -875,14 +864,14 @@ bool IBB_Section::MergeLine(const std::string& Key, const std::string& Value, IB
             if (LineIt == Sub.Lines.end())NewVal = Value;
             else NewVal = MergeVal(LineIt->second.Data->GetString(), Value);
             IBRF_CoreBump.SendToR({ [=] {IBR_EditFrame::UpdateLine(Key, NewVal); } });
-            return Sub.AddLine({ Key, NewVal }, true, IBB_IniMergeMode::Replace);
+            return Sub.AddLine({ Key, NewVal }, true, IBB_IniMergeMode::Replace, NoUpdate);
         }
         return true;
     }
     case IBB_IniMergeMode::Reserve:
     {
         if (HasLine(Key))return true;
-        return MergeLine(Key, Value, IBB_IniMergeMode::Replace);
+        return MergeLine(Key, Value, IBB_IniMergeMode::Replace, NoUpdate);
     }
     }
 
@@ -938,10 +927,10 @@ IBB_Section::IBB_Section(IBB_Section&& S) noexcept :
     IsLinkGroup(S.IsLinkGroup),
     Name(std::move(S.Name)),
     SubSecs(std::move(S.SubSecs)),
-    LinkedBy(std::move(S.LinkedBy)),
+    NewLinkedBy(std::move(S.NewLinkedBy)),
     VarList(std::move(S.VarList)),
     UnknownLines(std::move(S.UnknownLines)),
-    LinkGroup_LinkTo(std::move(S.LinkGroup_LinkTo)),
+    LinkGroup_NewLinkTo(std::move(S.LinkGroup_NewLinkTo)),
     LineOrder(std::move(S.LineOrder))
 {
     if (EnableLogEx)
@@ -957,6 +946,144 @@ bool IBB_Section::ChangeRoot(const IBB_Ini* NewRoot)
     Root = const_cast<IBB_Ini*>(NewRoot);
 }
 
+bool IBB_Section::AcceptNewNameInLinkTo(IBB_Section* Target, const std::string& NewName)
+{
+    //现在this的有些Link的To指向Target，处理他们。
+    //同时，修改里面的值。
+    //只能由Rename调用，故Target非空，且非自连。
+    auto& Proj = *Root->Root;
+    bool Ret = true;
+    if (IsLinkGroup)
+    {
+        //直接修改链接本身
+        for (auto& Link : LinkGroup_NewLinkTo)
+            if (Link.To.GetSec(Proj) == Target)
+                Link.To.Section.Assign(NewName);
+    }
+    else
+    {
+        for (auto& Sub : SubSecs)
+            for (auto&& [idx, Link] : std::views::zip(std::views::iota(0u), Sub.NewLinkTo))
+                if (Link.To.GetSec(Proj) == Target)
+                {
+                    //按照这个Link，找到所有from的地方并修改to到新name
+                    Ret &= Sub.RenameInLinkTo(idx, NewName);
+                    //然后修改链接本身
+                    Link.To.Section.Assign(NewName);
+                }
+    }
+    return Ret;
+}
+
+bool IBB_Section::RemoveNameInLinkTo(IBB_Section* Target)
+{
+    //现在this的有些Link的To指向Target，处理他们。
+    //同时，清除里面的值。
+    //只能由Isolate调用，故Target非空，且非自连。
+    auto& Proj = *Root->Root;
+    bool Ret = true;
+    if (IsLinkGroup)
+    {
+        std::vector<IBB_NewLink> NL;
+        //直接修改链接本身
+        for (auto& Link : LinkGroup_NewLinkTo)
+            if (Link.To.GetSec(Proj) != Target)
+                NL.push_back(Link);
+    }
+    else
+    {
+        for (auto& Sub : SubSecs)
+        {
+            std::vector<IBB_NewLink> NL;
+            std::map<size_t, size_t> OldToNew;
+            for (auto&& [idx, Link] : std::views::zip(std::views::iota(0u), Sub.NewLinkTo))
+                if (Link.To.GetSec(Proj) == Target)
+                    //按照这个Link，找到所有from的地方并修改to到新name
+                    Ret &= Sub.RenameInLinkTo(idx, "");
+                else
+                {
+                    NL.push_back(Link);
+                    OldToNew[idx] = NL.size() - 1;
+                }
+            Sub.NewLinkTo = NL;
+            Sub.LinkSrc = Sub.LinkSrc |
+                std::views::filter([&](auto& p) { return OldToNew.contains(p.second); }) |
+                std::views::transform([&](auto& p) { return std::make_pair(p.first, OldToNew[p.second]); }) |
+                std::ranges::to<std::multimap>();
+        }
+    }
+    return Ret;
+}
+
+bool IBB_Section::AcceptNewNameInLinkedBy(const IBB_Project_Index& OldIndex, const std::string& NewName)
+{
+    auto& Proj = *Root->Root;
+    auto Sec = OldIndex.GetSec(Proj);
+    //不存在则退出
+    if (!Sec)return true;
+    //从自己来的都得改
+    for (auto& Link : Sec->NewLinkedBy)
+        if (Link.From.GetSec(Proj) == this)
+            Link.From.Section.Assign(NewName);
+    return true;
+}
+
+bool IBB_Section::Rename(const std::string& NewName)
+{
+    bool Ret = true;
+    auto& Proj = *Root->Root;
+    if (IsLinkGroup)
+    {
+        for (auto& Link : LinkGroup_NewLinkTo)
+        {
+            //找到连到的对象，改他们linkedby
+            Ret &= AcceptNewNameInLinkedBy(Link.To, NewName);
+            //然后修改链接本身From
+            Link.From.Section.Assign(NewName);
+            //自连则也要修改To
+            if(Link.To.GetSec(Proj) == this)
+                Link.To.Section.Assign(NewName);
+        }
+    }
+    else
+    {
+        for (auto& Sub : SubSecs)
+            for (auto&& [idx, Link] : std::views::zip(std::views::iota(0u), Sub.NewLinkTo))
+            {
+                //按照这个Link，找到所有from的地方并修改to到新name
+                Ret &= Sub.RenameInLinkTo(idx, NewName);
+                //找到连到的对象，改他们linkedby
+                Ret &= AcceptNewNameInLinkedBy(Link.To, NewName);
+                //然后修改链接本身
+                Link.From.Section.Assign(NewName);
+                //自连则也要修改To
+                if (Link.To.GetSec(Proj) == this)
+                    Link.To.Section.Assign(NewName);
+            }
+    }
+    for (auto& Link : NewLinkedBy)
+    {
+        //按照From追溯到来源
+        auto Src = Link.From.GetSec(Proj);
+        //空挂则跳过
+        if (!Src)
+            continue;
+        //自连则也要修改From
+        else if (Src == this)
+            Link.From.Section.Assign(NewName);
+        //非自连则修改LinkTo的情况
+        else
+            Ret &= Src->AcceptNewNameInLinkTo(this, NewName);
+        //然后修改链接本身
+        Link.To.Section.Assign(NewName);
+        
+    }
+    Name = NewName;
+    return Ret;
+}
+
+/*
+
 bool IBB_Section::Rename(const std::string& NewName)
 {
     auto OldName = Name;
@@ -968,7 +1095,7 @@ bool IBB_Section::Rename(const std::string& NewName)
     Name = NewName;
     if (IsLinkGroup)
     {
-        for (auto& p : LinkGroup_LinkTo)
+        for (auto& p : LinkGroup_NewLinkTo)
         {
             if (p.Another != nullptr)p.Another->From.Section.Assign(NewName);
             p.From.Section.Assign(NewName);
@@ -1023,24 +1150,31 @@ bool IBB_Section::Rename(const std::string& NewName)
     return true;
 }
 
+*/
 bool IBB_Section::ChangeAddress()
 {
     bool Ret = true;
-    for (auto& L : LinkedBy) if (!L.ChangeAddress())Ret = false;
-    if (IsLinkGroup)
-    {
-        for (auto& L : LinkGroup_LinkTo)if (!L.ChangeAddress())Ret = false;
-    }
-    else
-    {
-        for (auto& ss : SubSecs) if (!ss.ChangeRoot(this))Ret = false;
-    }
+    for (auto& ss : SubSecs) if (!ss.ChangeRoot(this))Ret = false;
     return Ret;
 }
 
 bool IBB_Section::Isolate()
 {
-    auto pproj = Root->Root;
+    auto& Proj = *Root->Root;
+    bool Ret = true;
+    for (auto& Link : NewLinkedBy)
+    {
+        //按照From追溯到来源
+        auto Src = Link.From.GetSec(Proj);
+        if (Src && Src != this)
+            Ret &= Src->RemoveNameInLinkTo(this);
+    }
+    return Ret;
+}
+
+/*
+
+auto pproj = Root->Root;
 
     for (auto& L : LinkedBy)
     {
@@ -1086,50 +1220,77 @@ bool IBB_Section::Isolate()
             }
         }
     }
-    /*
-    for (auto& L : LinkedBy)
+
+*/
+
+
+/*
+for (auto& L : LinkedBy)
+{
+    auto ps = L.From.GetSec(*pproj);
+    if (L.Another != nullptr && ps != nullptr)
     {
-        auto ps = L.From.GetSec(*pproj);
-        if (L.Another != nullptr && ps != nullptr)
+        if (ps->IsLinkGroup)
         {
-            if (ps->IsLinkGroup)
+            if (L.Another->Order < ps->LinkGroup_LinkTo.size() - 1)
             {
-                if (L.Another->Order < ps->LinkGroup_LinkTo.size() - 1)
+                ps->LinkGroup_LinkTo.at(L.Another->Order) = ps->LinkGroup_LinkTo.back();
+                ps->LinkGroup_LinkTo.pop_back();
+            }
+            if (L.Another->Order == ps->LinkGroup_LinkTo.size() - 1)
+            {
+                ps->LinkGroup_LinkTo.pop_back();
+            }
+        }
+        else
+        {
+            if (L.Another->OrderEx < ps->SubSecs.size())
+            {
+                auto& ss = ps->SubSecs.at(L.Another->OrderEx);
+                auto it = ss.Lines.find(L.Another->FromKey);
+                if (it != ss.Lines.end())if (it->second.Default != nullptr)
+                    it->second.Data->Clear();
+                if (L.Another->Order < ss.LinkTo.size() - 1)
                 {
-                    ps->LinkGroup_LinkTo.at(L.Another->Order) = ps->LinkGroup_LinkTo.back();
-                    ps->LinkGroup_LinkTo.pop_back();
+                    ss.LinkTo.at(L.Another->Order) = ss.LinkTo.back();
+                    ss.LinkTo.pop_back();
                 }
-                if (L.Another->Order == ps->LinkGroup_LinkTo.size() - 1)
+                if (L.Another->Order == ss.LinkTo.size() - 1)
                 {
-                    ps->LinkGroup_LinkTo.pop_back();
+                    ss.LinkTo.pop_back();
                 }
             }
-            else
-            {
-                if (L.Another->OrderEx < ps->SubSecs.size())
-                {
-                    auto& ss = ps->SubSecs.at(L.Another->OrderEx);
-                    auto it = ss.Lines.find(L.Another->FromKey);
-                    if (it != ss.Lines.end())if (it->second.Default != nullptr)
-                        it->second.Data->Clear();
-                    if (L.Another->Order < ss.LinkTo.size() - 1)
-                    {
-                        ss.LinkTo.at(L.Another->Order) = ss.LinkTo.back();
-                        ss.LinkTo.pop_back();
-                    }
-                    if (L.Another->Order == ss.LinkTo.size() - 1)
-                    {
-                        ss.LinkTo.pop_back();
-                    }
-                }
 
+        }
+    }
+}
+
+if (IsLinkGroup)
+{
+    for (auto& L : LinkGroup_LinkTo)
+    {
+        auto ps = L.To.GetSec(*pproj);
+        if (L.Another != nullptr && ps != nullptr)
+        {
+            if (L.Another->Order < ps->LinkedBy.size() - 1)
+            {
+                ps->LinkedBy.back().Order = L.Another->Order;
+                ps->LinkedBy.at(L.Another->Order) = ps->LinkedBy.back();
+                ps->LinkedBy.pop_back();
+            }
+            else if (L.Another->Order == ps->LinkedBy.size() - 1)
+            {
+                ps->LinkedBy.pop_back();
             }
         }
     }
-
-    if (IsLinkGroup)
+}
+else
+{
+    //TODO
+    for (auto& ss : SubSecs)
     {
-        for (auto& L : LinkGroup_LinkTo)
+        for (auto& L : ss.LinkTo)
         {
             auto ps = L.To.GetSec(*pproj);
             if (L.Another != nullptr && ps != nullptr)
@@ -1147,33 +1308,8 @@ bool IBB_Section::Isolate()
             }
         }
     }
-    else
-    {
-        //TODO
-        for (auto& ss : SubSecs)
-        {
-            for (auto& L : ss.LinkTo)
-            {
-                auto ps = L.To.GetSec(*pproj);
-                if (L.Another != nullptr && ps != nullptr)
-                {
-                    if (L.Another->Order < ps->LinkedBy.size() - 1)
-                    {
-                        ps->LinkedBy.back().Order = L.Another->Order;
-                        ps->LinkedBy.at(L.Another->Order) = ps->LinkedBy.back();
-                        ps->LinkedBy.pop_back();
-                    }
-                    else if (L.Another->Order == ps->LinkedBy.size() - 1)
-                    {
-                        ps->LinkedBy.pop_back();
-                    }
-                }
-            }
-        }
-    }
-    //*/
-    return true;
 }
+//*/
 
 bool IBB_Section::UpdateAll()
 {
@@ -1181,18 +1317,16 @@ bool IBB_Section::UpdateAll()
     auto PProj = Root->Root;
     if (IsLinkGroup)
     {
-        std::vector<IBB_Link> NewGroup;
-        NewGroup.reserve(LinkGroup_LinkTo.size());
-        for (size_t i = 0; i < LinkGroup_LinkTo.size(); i++)
+        std::vector<IBB_NewLink> NewGroup;
+        NewGroup.reserve(LinkGroup_NewLinkTo.size());
+        for (size_t i = 0; i < LinkGroup_NewLinkTo.size(); i++)
         {
-            if (LinkGroup_LinkTo.at(i).To.GetSec(*PProj) != nullptr)NewGroup.push_back(LinkGroup_LinkTo.at(i));
+            auto& NL = LinkGroup_NewLinkTo.at(i);
+            if (NL.To.GetSec(*PProj) != nullptr)NewGroup.push_back(NL);
         }
         for (auto& L : NewGroup)
-        {
             L.FromKey.clear();
-        }
-        LinkGroup_LinkTo = NewGroup;
-        if (LinkGroup_LinkTo.size() < (LinkGroup_LinkTo.capacity() >> 1))LinkGroup_LinkTo.shrink_to_fit();//TEST
+        LinkGroup_NewLinkTo = NewGroup;
     }
     else
     {
@@ -1200,13 +1334,6 @@ bool IBB_Section::UpdateAll()
         {
             ss.Root = this;
             if (!ss.UpdateAll())Ret = false;
-            /*
-            for (auto& [K, V] : ss.Lines)
-            {
-                if (OnShow.find(K) == OnShow.end())
-                    OnShow[K] = V.Default->IsLinkAlt() ? EmptyOnShowDesc : "";
-            }
-            */
         }
 
         Ret &= UpdateLineOrder();

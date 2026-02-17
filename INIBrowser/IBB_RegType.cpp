@@ -55,7 +55,7 @@ R"({
     "Type" : "Form",
     "Form" : {
         "Input" : [
-            {"Type": "InputText", "ValueID": 0}
+            {"Type": "InputText", "ValueID": 0, "LinkNode": { "Type": "_AnyType" } }
         ],
         "Format" : [
             {"ValueIDToString": 0}

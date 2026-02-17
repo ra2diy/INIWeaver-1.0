@@ -48,7 +48,7 @@ std::string DecodeListForExport(const std::string& Val)
     if (pSec && pSec->IsLinkGroup)
     {
         std::string R;
-        for (auto& V : pSec->LinkGroup_LinkTo)
+        for (auto& V : pSec->LinkGroup_NewLinkTo)
         {
             auto pp = V.To.GetSec(IBF_Inst_Project.Project);
             if (pp)
@@ -160,7 +160,7 @@ std::string IBB_NewLink::GetText() const
 }
 
 IBB_SubSec::IBB_SubSec(IBB_SubSec&& A) :
-    Root(A.Root), Default(A.Default), Lines_ByName(std::move(A.Lines_ByName)), Lines(std::move(A.Lines)), LinkTo(std::move(A.LinkTo)), NewLinkTo(std::move(A.NewLinkTo))
+    Root(A.Root), Default(A.Default), Lines_ByName(std::move(A.Lines_ByName)), Lines(std::move(A.Lines)), NewLinkTo(std::move(A.NewLinkTo))
 {}
 
 bool IBB_SubSec::Merge(const IBB_SubSec& Another, const std::unordered_map<std::string, IBB_IniMergeMode>& MergeType, bool IsDuplicate)
@@ -189,11 +189,6 @@ bool IBB_SubSec::Merge(const IBB_SubSec& Another, const std::unordered_map<std::
     {
         //auto pproj = Root->Root->Root;
         auto ti = Root->GetThisIndex();
-        for (const auto& p : Another.LinkTo)
-        {
-            LinkTo.push_back(p);
-            LinkTo.back().From = ti;
-        }
         for (const auto& p : Another.NewLinkTo)
         {
             NewLinkTo.push_back(p);
@@ -230,12 +225,6 @@ bool IBB_SubSec::Merge(const IBB_SubSec& Another, IBB_IniMergeMode Mode, bool Is
     {
         //auto pproj = Root->Root->Root;
         auto ti = Root->GetThisIndex();
-        for (const auto& p : Another.LinkTo)
-        {
-            LinkTo.push_back(p);
-            LinkTo.back().From = ti;
-
-        }
         for (const auto& p : Another.NewLinkTo)
         {
             NewLinkTo.push_back(p);
@@ -245,7 +234,7 @@ bool IBB_SubSec::Merge(const IBB_SubSec& Another, IBB_IniMergeMode Mode, bool Is
     }
     return Ret;
 }
-bool IBB_SubSec::AddLine(const std::pair<std::string, std::string>& Line, bool InitOnShow, IBB_IniMergeMode Mode)
+bool IBB_SubSec::AddLine(const std::pair<std::string, std::string>& Line, bool InitOnShow, IBB_IniMergeMode Mode, bool NoUpdate)
 {
     bool Ret = true;
     auto it = Lines.find(Line.first);
@@ -273,7 +262,8 @@ bool IBB_SubSec::AddLine(const std::pair<std::string, std::string>& Line, bool I
         if (in)in->Form->ParseFromString(Line.second);
     }
 
-    return UpdateAll() && Ret;
+    if (NoUpdate) return Ret;
+    else return UpdateAll() && Ret;
 }
 
 bool IBB_SubSec::ChangeRoot(IBB_Section* NewRoot)
@@ -281,7 +271,6 @@ bool IBB_SubSec::ChangeRoot(IBB_Section* NewRoot)
     if (NewRoot != nullptr)
     {
         auto ti = NewRoot->GetThisIndex();
-        for (auto& L : LinkTo)L.From = ti;
         for (auto& L : NewLinkTo)L.From = ti;
     }
     Root = NewRoot;
@@ -303,7 +292,7 @@ std::vector<std::string> IBB_SubSec::GetKeys(bool PrintExtraData) const
             }
         Ret.push_back(sn);
     }
-    if (PrintExtraData)for (const auto& L : LinkTo)
+    if (PrintExtraData)for (const auto& L : NewLinkTo)
     {
         auto pf = L.From.GetSec(*(Root->Root->Root));
         if (pf != nullptr)Ret.push_back("_LINK_FROM_" + pf->Name);
@@ -336,7 +325,7 @@ IBB_VariableList IBB_SubSec::GetLineList(bool PrintExtraData, bool FromExport) c
             Ret.Value[sn] = L.Data->GetString();
         }
     }
-    if (PrintExtraData)for (const auto& L : LinkTo)
+    if (PrintExtraData)for (const auto& L : NewLinkTo)
     {
         auto pf = L.From.GetSec(*(Root->Root->Root)), pt = L.To.GetSec(*(Root->Root->Root));
         if (pf != nullptr && pt != nullptr)
@@ -359,7 +348,6 @@ IBB_SubSec IBB_SubSec::Duplicate() const
     Ret.Root = Root;
     Ret.Default = Default;
     Ret.Lines_ByName = Lines_ByName;
-    Ret.LinkTo = LinkTo;
     Ret.NewLinkTo = NewLinkTo;
     Ret.Lines.reserve(Lines.size());
     for (const auto& p : Lines)Ret.Lines.insert({ p.first,p.second.Duplicate() });
@@ -382,18 +370,54 @@ void IBB_SubSec::ClaimLink(size_t LineIdx, size_t ComponentIdx, size_t LinkIdx)
     LinkSrc.insert({ i, LinkIdx });
 }
 
+const std::vector<std::string>& SplitParamCached(const std::string& Text);
+
+bool IBB_SubSec::RenameInLinkTo(size_t LinkIdx, const std::string& NewName)
+{
+    //按照这个Link，找到所有from的地方并修改to到新name
+    //不需要修改Link结构
+    bool Ret = true;
+    auto& Link = NewLinkTo[LinkIdx];
+    auto OldName = Link.To.Section.GetText();
+    for (auto& [lc, lidx] : LinkSrc)
+    {
+        if (lidx == LinkIdx)
+        {
+            uint64_t l = lc >> 32;
+            uint64_t c = lc & 0xFFFFFFFF;
+            size_t LineIdx = (size_t)l;
+            size_t CompIdx = (size_t)c;
+            auto& Key = Lines_ByName[LineIdx];
+            auto&& wp = Root->GetNewLineIIF(Key);
+            auto& wpw = wp._;
+            //获取失败，跳过
+            if (std::holds_alternative<std::monostate>(wpw))
+                continue;
+            auto& iif = std::holds_alternative<IIFPtr>(wpw) ? std::get<0>(wpw) : *std::get<1>(wpw);
+            auto& iic = (*iif->InputComponents)[CompIdx];
+            auto vid = iic->GetCurrentTargetValueID();
+            //没有值，跳过
+            if (!iif->GetValues().Values.contains(vid)) continue;
+            auto NewVal = SplitParamCached(iif->GetValue(vid).Value) |
+                std::views::transform([&](auto& s) { return (s == OldName) ? NewName : s; }) |
+                std::views::filter([&](auto&& s) {return !s.empty(); }) |
+                std::views::join_with(',') |
+                std::ranges::to<std::string>();
+            Ret &= Root->MergeLine(Key, NewVal, IBB_IniMergeMode::Replace, true);
+        }
+    }
+    return Ret;
+}
+
 void IBB_SubSec::GenerateAsDuplicate(const IBB_SubSec& Src)
 {
     Root = Src.Root;
     Default = Src.Default;
     Lines_ByName = Src.Lines_ByName;
-    LinkTo = Src.LinkTo;
     NewLinkTo = Src.NewLinkTo;
     Lines.reserve(Src.Lines.size());
     for (const auto& p : Src.Lines)Lines.insert({ p.first,p.second.Duplicate() });
 }
-
-const std::vector<std::string>& SplitParamCached(const std::string& Text);
 
 bool IBB_SubSec::UpdateAll()
 {
@@ -542,63 +566,3 @@ bool IBB_SubSec::UpdateAll()
 }
 */
 
-/*
-bool IBB_SubSec::UpdateAll()
-{
-    bool Ret = true;
-    if (Default == nullptr)Ret = false;
-    std::vector<IBB_Link> NewLT;
-    NewLT.reserve(LinkTo.size());
-    //auto pproj = Root->Root->Root;
-    for (auto& L : Lines)
-    {
-        if (EnableLogEx)
-        {
-            GlobalLogB.AddLog_CurTime(false); GlobalLogB.AddLog("IBB_SubSec::UpdateAll Line : ", false); GlobalLogB.AddLog(L.first.c_str());//BREAKPOINT
-        }
-        auto def = L.second.Default;
-        if (def == nullptr)Ret = false;
-        else
-        {
-            if (def->Property.Type == LinkAltPropType)
-            {
-                auto It = IBF_Inst_DefaultTypeList.List.Link_Default.find(def->Property.TypeAlt);
-                auto pList = L.second.GetData<IBB_IniLine_DataList>();
-                if (pList)
-                {
-                    auto& pV = pList->GetValue();
-                    //留下无效的内容（
-                    //pV.erase(std::remove_if(pV.begin(), pV.end(), [](const std::string& v)->bool {return IBB_Project_Index{ DefaultIniName ,v }.GetSec(IBF_Inst_Project.Project) == nullptr; }), pV.end());
-                    auto Limit = reinterpret_cast<int>(def->Property.Lim.GetRaw());
-
-                    //改成了扔掉最新的链接作“连不上”状
-                    if (Limit > 1)while ((int)pV.size() > Limit)pV.pop_back();
-                    if (Limit == 1 && (int)pV.size() > Limit)pV.erase(pV.begin());
-                    //if (Limit > 0 && (int)pV.size() > Limit)pV.erase(pV.begin(), pV.begin() + pV.size() - Limit);
-                    //auto& RegType = IBB_DefaultRegType::GetRegType(L.second.Default->Property.TypeAlt);
-                    for (auto& V : pV)
-                    {
-                        //MessageBoxA(MainWindowHandle, V.c_str(), L.first.c_str(), MB_OK);
-                        NewLT.emplace_back(
-                            (It == IBF_Inst_DefaultTypeList.List.Link_Default.end()) ? nullptr : (&(It->second)),
-                            Root->GetThisIndex(),
-                            IBF_Inst_Project.Project.GetSecIndex(V)//TODO : TEST!!
-                        );
-                        NewLT.back().FromKey = L.first;
-                        if (EnableLogEx)
-                        {
-                            GlobalLogB.AddLog_CurTime(false); GlobalLogB.AddLog("IBB_SubSec::UpdateAll Line II Type : ", false);//BREAKPOINT
-                            GlobalLogB.AddLog(NewLT.back().GetText(IBF_Inst_Project.Project).c_str());//BREAKPOINT
-                         }
-                    }
-                }
-                else Ret = false;
-            }
-            //TODO: Alt
-            //TODO: LinkList
-        }
-    }
-    LinkTo = NewLT;
-    return Ret;
-}
-*/

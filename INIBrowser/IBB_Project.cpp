@@ -43,9 +43,6 @@ void IBB_DefaultTypeList::EnsureType(const IBB_DefaultTypeAlt& D, std::set<std::
             TheOnlySubSec.Lines_ByName.push_back(D.Name);
             TheOnlySubSec.Lines[D.Name] = L;
 
-            auto& K = Link_Default[D.LinkType];
-            K.Name = D.LinkType;
-            K.NameOnlyAsRegister = true;
             IBB_DefaultRegType::EnsureRegType(D.LinkType);
 
         }
@@ -111,12 +108,7 @@ bool IBB_DefaultTypeList::LoadFromAlt(const IBB_DefaultTypeAltList& AltList)
     InheritSubSec.IsInherit = true;
 
     for (const auto& s : UsedStrings)
-    {
-        auto& L = Link_Default[s];
-        L.Name = s;
-        L.NameOnlyAsRegister = true;
         IBB_DefaultRegType::EnsureRegType(s);
-    }
 
     return true;
 }
@@ -446,11 +438,7 @@ bool IBB_Project::AddNewLinkToLinkGroup(const IBB_Section_Desc& From, const IBB_
             return false;
         }
     }
-    FromPtr->LinkGroup_LinkTo.push_back({ nullptr,FIn,TIn });
-    //ToPtr->LinkedBy.push_back({ nullptr,FIn,TIn });
-    //auto& a = FromPtr->LinkGroup_LinkTo.back(), b = ToPtr->LinkedBy.back();
-    //a.FillData(&b, "");
-    //b.FillData(&a, "");
+    FromPtr->LinkGroup_NewLinkTo.push_back({ FIn,TIn,"", IBB_DefaultRegType::GetDefaultNodeColor() });
     return true;
 }
 
@@ -546,47 +534,22 @@ bool IBB_Project::UpdateAll()
     bool Ret = true;
     for (auto& Ini : Inis)for (auto& sp : Ini.Secs)
     {
-        sp.second.LinkedBy.clear();
-        for (auto& ss : sp.second.SubSecs)ss.LinkTo.clear();
+        sp.second.NewLinkedBy.clear();
+        for (auto& ss : sp.second.SubSecs)ss.NewLinkTo.clear();
     }
     for (auto& Ini : Inis)if (!Ini.UpdateAll())Ret = false;
-    for (auto& Ini : Inis)for (auto& sp : Ini.Secs)
-    {
-        if (sp.second.IsLinkGroup)
+    for (auto& Ini : Inis)
+        for (auto& [sn, Sec] : Ini.Secs)
         {
-            int iOrd = 0;
-            for (auto& L : sp.second.LinkGroup_LinkTo)
-            {
-                L.DynamicCheck_Legal(*this);
-                L.DynamicCheck_UpdateNewLink(*this);
-                L.Order = iOrd;
-                L.OrderEx = INT_MAX;
-                ++iOrd;
-            }
+            if (Sec.IsLinkGroup)
+                for (auto& Link1 : Sec.LinkGroup_NewLinkTo)
+                    if (auto To1 = Link1.To.GetSec(*this); To1)
+                        To1->NewLinkedBy.push_back(Link1);
+            else for (auto& Sub : Sec.SubSecs)
+                for (auto& Link : Sub.NewLinkTo)
+                    if (auto To = Link.To.GetSec(*this); To)
+                        To->NewLinkedBy.push_back(Link);
         }
-        else
-        {
-            int iOrdEx = 0;
-            for (auto& ss : sp.second.SubSecs)
-            {
-                int iOrd = 0;
-                for (auto& L : ss.LinkTo)
-                {
-                    L.DynamicCheck_Legal(*this);
-                    L.DynamicCheck_UpdateNewLink(*this);
-                    L.Order = iOrd;
-                    L.OrderEx = iOrdEx;
-                    ++iOrd;
-                    if (EnableLogEx)
-                    {
-                        GlobalLogB.AddLog_CurTime(false);
-                        GlobalLogB.AddLog(L.GetText(*this).c_str(), false);//BREAKPOINT
-                    }
-                }
-                ++iOrdEx;
-            }
-        }
-    }
     RecalcSPCacheSize(*this, SPCacheSize());
     if (EnableLogEx)
     {

@@ -179,7 +179,6 @@ struct IBB_SubSec
     IBB_SubSec_Default* Default{ nullptr };
     std::vector<std::string> Lines_ByName;//KeyName
     std::unordered_map<std::string, IBB_IniLine> Lines;//<KeyName,LineData>
-    std::vector<IBB_Link> LinkTo;
     std::vector<IBB_NewLink> NewLinkTo;
     std::multimap<uint64_t, size_t> LinkSrc;
     //Key复制了2遍：Lines_ByName / Lines.find(x)->first
@@ -200,10 +199,11 @@ struct IBB_SubSec
     std::pair< std::multimap<uint64_t, size_t>::const_iterator, std::multimap<uint64_t, size_t>::const_iterator>
         GetLink(size_t LineIdx, size_t ComponentIdx) const;
     void ClaimLink(size_t LineIdx, size_t ComponentIdx, size_t LinkIdx);
+    bool RenameInLinkTo(size_t LinkIdx, const std::string& NewName);
 
     bool UpdateAll();
 
-    bool AddLine(const std::pair<std::string, std::string>& Line, bool InitOnShow, IBB_IniMergeMode Mode);
+    bool AddLine(const std::pair<std::string, std::string>& Line, bool InitOnShow, IBB_IniMergeMode Mode, bool NoUpdate = false);
     bool ChangeRoot(IBB_Section* NewRoot);
     IBB_SubSec& ChangeRootAndBack(IBB_Section* NewRoot) { ChangeRoot(NewRoot); return *this; }
 };
@@ -231,12 +231,12 @@ struct IBB_Section
     std::string Name;
     std::vector<IBB_SubSec> SubSecs;
     std::vector<size_t> SubSecOrder;
-    std::vector<IBB_Link> LinkedBy;
+    std::vector<IBB_NewLink> NewLinkedBy;
     IBB_VariableList VarList;
     IBB_VariableList UnknownLines;//不归属于任一SubSec
 
     bool IsLinkGroup{ false };//no subsec varlist unklines
-    std::vector<IBB_Link> LinkGroup_LinkTo;
+    std::vector<IBB_NewLink> LinkGroup_NewLinkTo;
     IBB_VariableList DefaultLinkKey;
     std::unordered_map<std::string, std::string> OnShow;//EmptyOnShowDesc means no desc
     std::vector<std::string> LineOrder;
@@ -255,7 +255,7 @@ struct IBB_Section
     // MergeType is unused to a LinkGroup
     bool Merge(const IBB_Section& Another, const std::unordered_map<std::string, IBB_IniMergeMode>& MergeType, bool IsDuplicate);
     bool Merge(const IBB_Section& Another, IBB_IniMergeMode MergeType, bool IsDuplicate);//they share the same merge type
-    bool MergeLine(const std::string& Key, const std::string& Value, IBB_IniMergeMode Mode);
+    bool MergeLine(const std::string& Key, const std::string& Value, IBB_IniMergeMode Mode, bool NoUpdate = false);
     bool Generate(const IBB_Section_NameType& Paragraph);
     bool GenerateLines(const IBB_VariableList& Lines, const std::vector<std::string>& Order = {}, bool InitOnShow = true);
     bool GenerateAsDuplicate(const IBB_Section& Src);
@@ -274,7 +274,10 @@ struct IBB_Section
     bool ChangeRoot(const IBB_Ini* NewRoot);
     IBB_Section& ChangeRootAndBack(const IBB_Ini* R) { ChangeRoot(R); return *this; }
     bool Rename(const std::string& NewName);//无效化指向它的所有IBB_Section_Desc
+    bool AcceptNewNameInLinkTo(IBB_Section* Target, const std::string& NewName);//配合Rename
+    bool AcceptNewNameInLinkedBy(const IBB_Project_Index& OldIndex, const std::string& NewName);//配合Rename
     bool ChangeAddress();//用于不改变内容但是改变存储位置时,供移动构造
+    bool RemoveNameInLinkTo(IBB_Section* Target);//配合Isolate
     bool Isolate();//切断所有Link
     void RedirectLinkAsDupicate();
 
@@ -294,6 +297,7 @@ struct IBB_Section
     std::vector<std::pair<size_t, size_t>> GetRegisteredPositionAlt() const;//pair<Project的RegList序号,RegList的Sec*序号>
     IBB_Section_NameType GetNameType() const;
     IIFWrapper_Wrapper GetLineIIF(const std::string& Key) const;
+    IIFWrapper_Wrapper GetNewLineIIF(const std::string& Key) const;
     bool IsComment() const { return CreateAsCommentBlock || !Comment.empty(); }
     bool HasLine(const std::string& Key) const;
     bool IsOnShow(const std::string& Key) const;
@@ -330,66 +334,4 @@ struct IBB_Ini
     IBB_Ini& ChangeRootAndBack(IBB_Project* NewRoot) { Root = NewRoot; return *this; }
 
     bool UpdateAll();
-};
-
-struct IBB_Link_Default
-{
-    std::vector<JsonObject>
-        LinkFromRequired,
-        LinkFromForbidden,
-        LinkToRequired,
-        LinkToForbidden;
-    std::string Name;//链接没有Desc
-    bool NameOnlyAsRegister{ false };
-
-    bool Load(JsonObject FromJson);
-};
-
-struct IBB_Link_NameType
-{
-    std::string FromIni, FromSec, ToIni, ToSec;
-    IBB_Link_NameType() {}
-    IBB_Link_NameType(const std::string& fi, const std::string& fs, const std::string& ti, const std::string& ts) :
-        FromIni(fi), FromSec(fs), ToIni(ti), ToSec(ts) {
-    }
-
-    void Read(const ExtFileClass& File);
-    void Write(const ExtFileClass& File)const;
-};
-
-//TODO:它的析构似乎有莫名的问题，可能导致崩溃,但是至今未曾复现。。
-struct IBB_Link
-{
-    IBB_Link_Default* Default{ nullptr };
-    IBB_Project_Index From, To;
-
-    IBB_Link* Another{ nullptr };
-    std::string FromKey;
-    size_t Order{ 0 }, OrderEx{ 0 };//OrderEx=INT_MAX to a linkgroup
-    ImU32 DefaultColor{};
-
-    bool operator==(const IBB_Link& A) const
-    {
-        return A.Default == Default && A.From == From && A.To == To;
-    }
-
-    struct _Dynamic
-    {
-        enum LinkStatus
-        {
-            Incomplete, Illegal, Correct, Mixed
-        }Legal;
-    }Dynamic;
-
-    IBB_Link() = default;
-    IBB_Link(IBB_Link_Default* D, const IBB_Project_Index& F, const IBB_Project_Index& T) :Default(D), From(F), To(T), Dynamic({_Dynamic::Incomplete}) {}
-
-    void FillData(IBB_Link* a, const std::string& s) { Another = a; FromKey = s; }
-
-    void DynamicCheck_Legal(const IBB_Project& Proj);
-    void DynamicCheck_UpdateNewLink(const IBB_Project& Proj);
-    bool ChangeAddress();
-
-    std::string GetText(const IBB_Project& Proj) const;//这个GetText自带换行符
-    IBB_Link_NameType GetNameType() const;
 };

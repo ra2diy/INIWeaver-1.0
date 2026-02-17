@@ -21,8 +21,9 @@ namespace LinkNodeContext
 bool LinkNodeSetting::Load(JsonObject Obj, bool* HasCustom)
 {
     if (!Obj)return false;
-    LinkType = Obj.ItemStringOr("Type", "_AnyType");
-    LinkLimit = Obj.ItemIntOr("Limit", 1);
+    auto LNS = IBB_DefaultRegType::GetDefaultLinkNodeSetting();
+    LinkType = Obj.ItemStringOr("Type", LNS.LinkType);
+    LinkLimit = Obj.ItemIntOr("Limit", LNS.LinkLimit);
     auto oDNC = Obj.GetObjectItem(u8"Color");
     if (oDNC.Available())
     {

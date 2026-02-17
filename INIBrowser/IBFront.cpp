@@ -225,32 +225,16 @@ bool IBF_Project::UpdateCreateSection(const IBB_Section_Desc& Desc)
     {
         if (sp.second.IsLinkGroup)
         {
-            for(auto& l:sp.second.LinkGroup_LinkTo)//Index不可能用于指向一个尚未存在的Section
-                if ((!l.To.Ini.UseIndex && l.To.Ini.Name == Desc.Ini) && (!l.To.Section.UseIndex && l.To.Section.Name == Desc.Sec))
-                {
-                    l.DynamicCheck_Legal(Project);
-                    pSec->LinkedBy.push_back(l);
-                    auto& b = pSec->LinkedBy.back();
-                    b.FillData(&l, l.FromKey);
-                    l.Another = &b;
-                }
+            for (auto& l : sp.second.LinkGroup_NewLinkTo)
+                if (l.To.GetSec(Project) == pSec)
+                    pSec->NewLinkedBy.push_back(l);
         }
         else
         {
             for (auto& ss : sp.second.SubSecs)
-            {
-                for (auto& l : ss.LinkTo)
-                {
-                    if ((!l.To.Ini.UseIndex && l.To.Ini.Name == Desc.Ini) && (!l.To.Section.UseIndex && l.To.Section.Name == Desc.Sec))
-                    {
-                        l.DynamicCheck_Legal(Project);
-                        pSec->LinkedBy.push_back(l);
-                        auto& b = pSec->LinkedBy.back();
-                        b.FillData(&l, l.FromKey);
-                        l.Another = &b;
-                    }
-                }
-            }
+                for (auto& l : ss.NewLinkTo)
+                    if (l.To.GetSec(Project) == pSec)
+                        pSec->NewLinkedBy.push_back(l);
         }
     }
     return Ret;
