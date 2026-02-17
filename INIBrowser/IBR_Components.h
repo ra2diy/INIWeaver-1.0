@@ -81,7 +81,9 @@ namespace IBR_PopupManager
     extern bool HasRightClickMenu;
     extern bool FirstRightClick;
     extern ImVec2 RightClickMenuPos;
-    inline void SetCurrentPopup(Popup&& sc) { HasPopup = true; CurrentPopup = std::move(sc); }
+    extern std::vector<StdMessage> DelayedPopupAction;
+    void SetCurrentPopup(Popup&& sc);
+    void UpdatePopupPosForResize();
     inline void ClearCurrentPopup() { HasPopup = false; }
     inline void ClearRightClickMenu() { HasRightClickMenu = false; }
     inline void SetRightClickMenu(Popup&& sc, ImVec2 Pos) { RightClickMenuPos = Pos; FirstRightClick = HasRightClickMenu = true; RightClickMenu = std::move(sc); }
@@ -92,6 +94,8 @@ namespace IBR_PopupManager
     bool IsMouseOnPopup();
     void AddJsonParseErrorPopup(std::string&& ErrorStr, const std::string& Info);
     void AddModuleParseErrorPopup(std::string&& ErrorStr, const std::string& Info);
+    void AddLoadConfigErrorPopup(std::string&& ErrorStr, const std::string& Info);
+    void CurrentPopupFixPos(int OldW, int OldH, int NewW, int NewH);
 }
 
 

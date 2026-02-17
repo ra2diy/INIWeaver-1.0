@@ -1302,10 +1302,6 @@ namespace ImGui
     ImVec2 GetLineBeginPos();
     bool IsWindowClicked(ImGuiMouseButton Button);
 }
-namespace IBR_PopupManager
-{
-    extern std::vector<StdMessage> DelayedPopupAction;
-}
 
 namespace IBB_ModuleAltDefault
 {

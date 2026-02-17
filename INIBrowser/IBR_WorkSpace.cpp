@@ -1302,6 +1302,50 @@ namespace IBR_WorkSpace
 
     void RenderUI_Links()
     {
+        auto EstimateLineWidth = [](ImVec2 pa, ImVec2 pb) -> float
+            {
+                //give up
+                return FontHeight / 5.0f;
+                /*
+                float Base = FontHeight / 5.0f;
+                float Dist = hypotf(pb.x - pa.x, pb.y - pa.y);
+                float ScrLin = (IBR_UICondition::CurrentScreenHeight + IBR_UICondition::CurrentScreenWidth) / 2.0F;
+                float Ratio = Dist / ScrLin;
+                float Mult;
+                if (Ratio < 1.2F) Mult = 1.0F;
+                else if (Ratio < 3.0F) Mult = Ratio / 1.2F;
+                else if (Ratio < 5.0F) Mult = (Ratio - 3.0F) * 1.5F + 2.5F;
+                else if (Ratio < 8.0F) Mult = (Ratio - 5.0F) * 2.5F + 5.5F;
+                else if (Ratio < 12.0F)Mult = (Ratio - 8.0F) * 4.0F + 13.0F;
+                else Mult = (Ratio - 12.0F) * 4.5F + 30.5F;
+                return Base * Mult;
+                */
+            };
+
+        if(LinkNodeContext::HasDragNow)
+        {
+            auto pa = LinkNodeContext::CurDragStart;
+            auto pb = ImGui::GetMousePos();
+            auto Col = LinkNodeContext::CurDragCol;
+            auto JList = (IBR_PopupManager::HasPopup) ? ImGui::GetBackgroundDrawList() : ImGui::GetForegroundDrawList();
+            float LineWidth = EstimateLineWidth(pa, pb);
+            JList->AddBezierCubic(
+                pa,
+                { (pa.x + 4 * pb.x) / 5,pa.y },
+                { (4 * pa.x + pb.x) / 5,pb.y },
+                pb,
+                IBR_Color::FocusLineColor,
+                LineWidth + 2.0F);
+            JList->AddBezierCubic(
+                pa,
+                { (pa.x + 4 * pb.x) / 5,pa.y },
+                { (4 * pa.x + pb.x) / 5,pb.y },
+                pb,
+                Col,
+                LineWidth);
+        }
+
+
         for (auto& Link : IBR_Inst_Project.LinkList)
         {
 
@@ -1328,10 +1372,11 @@ namespace IBR_WorkSpace
                 }
                 if (RSD->Dragging || Link.IsSrcDragging)
                     Col.Value.w *= IBF_Inst_Setting.TransparencyBase() * 0.625f;
+
                 {
                     ImVec2 pa = Link.BeginR;
                     ImVec2 pb = RSD->ReWindowUL + RSD->ReOffset;
-                    float LineWidth = FontHeight / 5.0f;
+                    float LineWidth = EstimateLineWidth(pa, pb);;
                     ImVec2 Mid = (pa + pb) / 2.0F;
                     bool Straight = (pb.x - pa.x >= FontHeight * 5.0F);
 
@@ -1674,6 +1719,9 @@ namespace IBR_WorkSpace
 
             if (!sd.IsOpen)IBRF_CoreBump.SendToR({ [D = sd.Desc]() {IBR_Inst_Project.DeleteSection(D); },nullptr });
         }
+
+        CurOnRender = nullptr;
+        CurOnRender_ID = UINT64_MAX;
 
         RenderUI_Links();
     }

@@ -6,6 +6,7 @@
 #include "IBB_ModuleAlt.h"
 #include "IBB_RegType.h"
 #include "IBR_Components.h"
+#include "IBR_LinkNode.h"
 #include <imgui_internal.h>
 #include <ranges>
 
@@ -61,6 +62,8 @@ void DrawCheckmark(ImVec2 pos, float size, ImU32 col) {
     drawList->AddLine(p2, p3, col, 2.0f);
 }
 
+
+
 namespace ImGui
 {
     ImVec2 GetLineEndPos();
@@ -72,7 +75,30 @@ extern wchar_t CurrentDirW[];
 extern const char* DefaultAltPropType;
 extern const char* LinkAltPropType;
 extern int RFontHeight;
+extern bool EnableDebugList;
 
+void DrawDragPreviewIcon()
+{
+    //ImGui::Text(u8"DRAWN");
+    if (ImGui::IsDragDropPayloadBeingAccepted())
+    {
+        auto& T = IBR_Inst_Project.DragConditionText;
+        auto P = ImGui::GetCursorScreenPos();
+        if (T.empty())DrawCross(P, float(RFontHeight), IBR_Color::ErrorTextColor);
+        else if (T == "HOLY_SHIT\nWHAT_HAD_JUST_HAPPENED\nONE_MINUTE_AGO")DrawNoEntrySymbol(P, float(RFontHeight), IBR_Color::ErrorTextColor);
+        else DrawCheckmark(P, float(RFontHeight), IBR_Color::CheckMarkColor);
+        ImGui::Dummy(ImVec2{ float(RFontHeight),float(RFontHeight) });
+        ImGui::SameLine();
+        if (T.empty())ImGui::TextColored(IBR_Color::ErrorTextColor, locc("GUI_Preview_InvalidLink"));
+        else if (T != "HOLY_SHIT\nWHAT_HAD_JUST_HAPPENED\nONE_MINUTE_AGO")
+        {
+            auto T2 = UTF8toUnicode(T);
+            ImGui::Text(UnicodetoUTF8(std::vformat(locw("GUI_Preview_LinkTo"), std::make_wformat_args(T2))).c_str());
+        }
+        else ImGui::Text(IBR_Inst_Project.DragConditionTextAlt.c_str());
+    }
+    //else ImGui::Text(u8"NOT ACCEPTED");
+}
 
 
 IBB_Section* IBR_SectionData::GetBack_Inl()
@@ -204,14 +230,13 @@ void IBR_SectionData::RenameRegisterImpl(const std::string& Name)
     BackPtr_Cached = nullptr;
 }
 
-bool IBR_SectionData::OnLineEdit(const std::string& OnShow, const std::string& Name, bool OnLink)
+bool IBR_SectionData::OnLineEdit(const std::string& OnShow, const std::string& Name)
 {
-
     auto& Line = ActiveLines[Name];
     bool HasInput{ false };
     if (Line.Edit.Input)HasInput = true;
     auto back = GetBack_Inl();
-    auto line = back->GetLineFromSubSecs(Name);
+    auto [line, idx] = back->GetLineFromSubSecsEx(Name);
     if (!line)
     {
         if (EnableLog)
@@ -223,8 +248,30 @@ bool IBR_SectionData::OnLineEdit(const std::string& OnShow, const std::string& N
         }
         return true;
     }
+    LinkNodeContext::LineIndex = idx;
+
+    const auto ShowInherit = [&]() {
+        auto it = ActiveLines.find(InheritKeyName);
+        if (it == ActiveLines.end()) return true;
+        auto& in = it->second.Edit.Input;
+        if (!in)return true;
+        auto& status = in->Form->GetComponentStatus();
+        if (status.empty())return true;
+        return status.front().InputMethod == IICStatus::Link;
+    };
+
+    const auto InheritStr = [&]() {
+        auto& Q = back->Inherit;
+        auto w = IBR_WorkSpace::ShowRegName ? UTF8toUnicode(Q) :
+            (IBR_Inst_Project.HasSection({ Desc.Ini, Q }) ? UTF8toUnicode(IBR_Inst_Project.GetSection({ Desc.Ini, Q }).GetDisplayName()) : UTF8toUnicode(Q));
+        std::wstring Nul;
+        if (w.empty()) return loc("GUI_NoInherit");
+        else return UnicodetoUTF8(std::vformat(locw("GUI_InheritFrom"), std::make_wformat_args(ShowInherit() ? w : Nul)));
+    };
+
     if (Line.Edit.NeedInit())
     {
+        //SYNC : WORKSPACE -> EDIT MENU
         IBR_IniLine::InitType It{ line->Data->GetString() ,
             "##" + RandStr(8),[Name, desc = this->Desc, line](const std::string& S)
                 {
@@ -232,17 +279,20 @@ bool IBR_SectionData::OnLineEdit(const std::string& OnShow, const std::string& N
                     line->Data->SetValue(S);
                     if (IBR_Inst_Project.IBR_Rev_SectionMap[desc] == IBR_EditFrame::CurSection.ID)
                     {
-                        IBR_EditFrame::EditLines[Name].Buffer = S;
+                        auto& L = IBR_EditFrame::EditLines[Name];
+                        auto& ed = L.Edit;
+                        L.Buffer = S;
+                        if (ed.Input && ed.Input->Form)
+                            ed.Input->Form->ParseFromString(S);
+                        //IBR_HintManager::SetHint("Sync : WS KNOWN -> EDIT", HintStayTimeMillis);
                     }
-                }, line->Default->Input->WorkSpace };
+                },
+            line->Default->Input->WorkSpace,
+            line->Default->GetNodeSetting()
+        };
         if (Name == InheritKeyName)
         {
-            auto Q = line->Data->GetString();
-            auto w = IBR_WorkSpace::ShowRegName ? UTF8toUnicode(Q) :
-                (IBR_Inst_Project.HasSection({ Desc.Ini, Q }) ? UTF8toUnicode(IBR_Inst_Project.GetSection({ Desc.Ini, Q }).GetDisplayName()) : UTF8toUnicode(Q));
-            std::wstring Nul;
-            if(w.empty())Line.Edit.RenderUI(locc("GUI_NoInherit"), line->Default->DescLong, &It);
-            else Line.Edit.RenderUI(UnicodetoUTF8(std::vformat(locw("GUI_InheritFrom"), std::make_wformat_args(Line.Edit.HasInput ? Nul : w))), line->Default->DescLong, &It);
+            Line.Edit.RenderUI(InheritStr(), loc("GUI_InheritDescLong"), &It);
         }
         else if (!IBR_WorkSpace::ShowRegName)
         {
@@ -256,12 +306,7 @@ bool IBR_SectionData::OnLineEdit(const std::string& OnShow, const std::string& N
     {
         if (Name == InheritKeyName)
         {
-            auto Q = line->Data->GetString();
-            auto w = IBR_WorkSpace::ShowRegName ? UTF8toUnicode(Q) :
-                (IBR_Inst_Project.HasSection({ Desc.Ini, Q }) ? UTF8toUnicode(IBR_Inst_Project.GetSection({ Desc.Ini, Q }).GetDisplayName()) : UTF8toUnicode(Q));
-            std::wstring Nul;
-            if (w.empty())Line.Edit.RenderUI(locc("GUI_NoInherit"), line->Default->DescLong);
-            else Line.Edit.RenderUI(UnicodetoUTF8(std::vformat(locw("GUI_InheritFrom"), std::make_wformat_args(Line.Edit.HasInput ? Nul : w))), line->Default->DescLong);
+            Line.Edit.RenderUI(InheritStr(), loc("GUI_InheritDescLong"));
         }
         else if (!IBR_WorkSpace::ShowRegName)
         {
@@ -328,29 +373,6 @@ bool IBR_SectionData::IsIncluded() const
     return IncludedByModule != INVALID_MODULE_ID && IBR_Inst_Project.HasSection(IncludedByModule);
 }
 
-void DrawDragPreviewIcon()
-{
-    //ImGui::Text(u8"DRAWN");
-    if (ImGui::IsDragDropPayloadBeingAccepted())
-    {
-        auto& T = IBR_Inst_Project.DragConditionText;
-        auto P = ImGui::GetCursorScreenPos();
-        if (T.empty())DrawCross(P, float(RFontHeight), IBR_Color::ErrorTextColor);
-        else if (T == "HOLY_SHIT\nWHAT_HAD_JUST_HAPPENED\nONE_MINUTE_AGO")DrawNoEntrySymbol(P, float(RFontHeight), IBR_Color::ErrorTextColor);
-        else DrawCheckmark(P, float(RFontHeight), IBR_Color::CheckMarkColor);
-        ImGui::Dummy(ImVec2{ float(RFontHeight),float(RFontHeight) });
-        ImGui::SameLine();
-        if (IBR_Inst_Project.DragConditionText.empty())ImGui::TextColored(IBR_Color::ErrorTextColor, locc("GUI_Preview_InvalidLink"));
-        else if (T != "HOLY_SHIT\nWHAT_HAD_JUST_HAPPENED\nONE_MINUTE_AGO")
-        {
-            auto T2 = UTF8toUnicode(T);
-            ImGui::Text(UnicodetoUTF8(std::vformat(locw("GUI_Preview_LinkTo"), std::make_wformat_args(T2))).c_str());
-        }
-        else ImGui::Text(IBR_Inst_Project.DragConditionTextAlt.c_str());
-    }
-    //else ImGui::Text(u8"NOT ACCEPTED");
-}
-
 void IBR_SectionData::RenderUI_TitleBar(bool &TriggeredRightMenu, float LastFinalY)
 {
     auto Rsec = IBR_Inst_Project.GetSection(Desc);
@@ -384,10 +406,7 @@ void IBR_SectionData::RenderUI_TitleBar(bool &TriggeredRightMenu, float LastFina
                         if (payload->IsDelivery())
                         {
                             IBG_Undo.SomethingShouldBeHere();
-                            IBRF_CoreBump.SendToF([=]{
-                                    back->MergeLine(Val, desc.Sec, IBB_IniMergeMode::Merge);
-                                    IBF_Inst_Project.UpdateAll();
-                                });
+                            back->MergeLine(Val, desc.Sec, IBB_IniMergeMode::Merge);
                         }
                     }
                     else if (payload->IsPreview())
@@ -411,19 +430,17 @@ void IBR_SectionData::RenderUI_TitleBar(bool &TriggeredRightMenu, float LastFina
         {
             if (payload->IsPreview() || payload->IsDelivery())
             {
-                std::string s = (char*)payload->Data;
-                const auto& lin = IBR_Inst_Project.IBR_LineDragMap[s];
+                const auto& lin = **(LineDragData**)(payload->Data);
                 auto sec = IBR_Inst_Project.GetSection(lin.Desc);
                 auto back = sec.GetBack();
                 auto tgback = GetBack_Inl();
-                auto Line = back->GetLineFromSubSecs(lin.Line);
 
                 if (back && tgback)
                 {
                     bool Check = true;
                     if (!back->Register.empty())
                     {
-                        auto& alt = Line->Default->Property.TypeAlt;
+                        auto& alt = lin.TypeAlt;
                         if (!alt.empty())
                         {
                             if (alt == "_MyType")Check = IBB_DefaultRegType::MatchType(back->Register, tgback->Register);
@@ -439,16 +456,14 @@ void IBR_SectionData::RenderUI_TitleBar(bool &TriggeredRightMenu, float LastFina
                         if (payload->IsDelivery())
                         {
                             IBG_Undo.SomethingShouldBeHere();
-                            IBRF_CoreBump.SendToF([=] {
-                                back->MergeLine(lin.Line, Desc.Sec, IBB_IniMergeMode::Merge);
-                                IBF_Inst_Project.UpdateAll();
-                                });
+                            lin.pSession->ValueToMerge = Desc.Sec;
+                            lin.pSession->NotifyValueToMerge = true;
                         }
                     }
                     else if (payload->IsPreview())
                     {
                         IBR_Inst_Project.DragConditionText = "HOLY_SHIT\nWHAT_HAD_JUST_HAPPENED\nONE_MINUTE_AGO";
-                        auto& alt = Line->Default->Property.TypeAlt;
+                        auto& alt = lin.TypeAlt;
                         std::wstring W1;
                         if (alt == "_MyType")W1 = UTF8toUnicode(back->Register);
                         else if (alt == "_AnyType")W1 = UTF8toUnicode(back->Register);
@@ -461,8 +476,6 @@ void IBR_SectionData::RenderUI_TitleBar(bool &TriggeredRightMenu, float LastFina
                 }
                 else if (payload->IsPreview())
                     IBR_Inst_Project.DragConditionText.clear();
-                if (payload->IsDelivery())
-                    IBR_Inst_Project.IBR_LineDragMap.erase(s);
             }
             ImGui::EndDragDropTarget();
         }
@@ -573,24 +586,27 @@ void IBR_SectionData::RenderUI_TitleBar(bool &TriggeredRightMenu, float LastFina
         ), ImGui::GetMousePos());
     }
 
-    {
-        auto Col = Rsec.GetRegTypeColor();
-        auto PPos = ImGui::GetWindowPos();
-        ImU32 UCol = Col.Value.w < 1e-6 ? ImGui::GetColorU32(ImGuiCol_TitleBg) : (ImU32)Col;
-        ImGui::GetWindowDrawList()->AddRectFilled(ImVec2{ PPos.x, PPos.y + CurL.y },
-            ImVec2{ PPos.x + ImGui::GetWindowWidth(), PPos.y + CurL.y + ImGui::GetTextLineHeightWithSpacing() * 1.1f }, UCol);
-        ImGui::SetCursorPos(CurL);
-    }
+    auto Col = Rsec.GetRegTypeColor();
+    auto PPos = ImGui::GetWindowPos();
+    ImU32 UCol = Col.Value.w < 1e-6 ? ImGui::GetColorU32(ImGuiCol_TitleBg) : (ImU32)Col;
+    ImGui::GetWindowDrawList()->AddRectFilled(ImVec2{ PPos.x, PPos.y + CurL.y },
+        ImVec2{ PPos.x + ImGui::GetWindowWidth(), PPos.y + CurL.y + ImGui::GetTextLineHeightWithSpacing() * 1.1f }, UCol);
+    ImGui::SetCursorPos(CurL);
 
     if (!IsComment && !Virtual)
     {
         if (Ignore)ImGui::PushStyleColor(ImGuiCol_CheckMark, IBR_WorkSpace::TempWbg);
         Rsec.SetReOffset(ImVec2{ FontHeight * 0.7f, HalfLine });
+        auto CPos = ImGui::GetCursorPos();
+        auto wpp = ImGui::GetWindowPos();
         ImGui::RadioButton(("##MODULE" + ModuleStrID).c_str(), true, GlobalNodeStyle);
         if (Ignore)ImGui::PopStyleColor();
         if (ImGui::BeginDragDropSource())
         {
-            //
+            LinkNodeContext::CurDragStart = { wpp.x + CPos.x + HalfLine, wpp.y + CPos.y + HalfLine };
+            LinkNodeContext::CurDragCol = UCol;
+            LinkNodeContext::HasDragNow = true;
+
             ImGui::Text((Desc.Ini + " -> " + DisplayName).c_str());
             DrawDragPreviewIcon();
             auto s = Desc.GetText();
@@ -629,7 +645,227 @@ void IBR_SectionData::RenderUI_TitleBar(bool &TriggeredRightMenu, float LastFina
     }
 }
 
-extern bool EnableDebugList;
+void IBR_SectionData::RenderUI_Error()
+{
+    ImGui::TextColored(IBR_Color::ErrorTextColor, locc("GUI_MissingSectionLink"));
+}
+
+void IBR_SectionData::RenderUI_Comment(IBB_Section* Bsec)
+{
+    if (!CommentEdit)ImGui::TextColored(IBR_Color::ErrorTextColor, locc("GUI_MissingCommentBuffer"));
+    else
+    {
+        auto TSize = ImGui::CalcTextSize(CommentEdit.get());
+        TSize.x = std::max(TSize.x + FontHeight * 1.2f, FontHeight * 14.6f);
+        TSize.y = std::max(TSize.y + FontHeight, FontHeight * 8.0f);
+        //IBR_HintManager::SetHint(std::to_string(TSize.x) + ","+ std::to_string(TSize.y),HintStayTimeMillis);
+        if (ImGui::InputTextMultiline(("##COMMENT" + ModuleStrID).c_str(), CommentEdit.get(), MAX_STRING_LENGTH,
+            TSize,
+            ImGuiInputTextFlags_NoHorizontalScroll | ImGuiInputTextFlags_WrappedText))
+        {
+            Bsec->Comment = CommentEdit.get();
+        }
+        if (ImGui::IsItemActive())IBR_WorkSpace::OperateOnText = true;
+        if (TSize.x > FontHeight * 14.6f)WidthFix = TSize.x;
+    }
+}
+
+void IBR_SectionData::RenderUI_Collapsed(IBB_Section* Bsec, ImVec2 HeadLineRN, IBR_Section Rsec)
+{
+    IM_UNUSED(Rsec);
+    auto gtd = Bsec->GetThisDesc();
+    for (auto i : Bsec->SubSecOrder)
+    {
+        const auto& sub = Bsec->SubSecs[i];
+        for (const auto& lt : sub.NewLinkTo)
+        {
+            IBB_Section_Desc _Desc = lt.To;
+            bool IsLinkingToSelf = (gtd == _Desc);
+            IBR_LinkNode::PushLinkForDraw(HeadLineRN, _Desc, lt.DefaultColor, IsLinkingToSelf);
+        }
+    }
+    ImGui::SetCursorPos({ ImGui::GetWindowWidth() - FontHeight * 4.0f, FinalY - FontHeight * 0.15f });
+    if (ImGui::SmallButton(("+##ExpandBtn" + ModuleStrID).c_str(), { FontHeight * 1.5f,FontHeight * 1.2f }))
+    {
+        CollapsedInComposed = false;
+    }
+    if (ImGui::IsItemHovered())
+    {
+        ImGui::BeginTooltip();
+        ImGui::Text(locc("GUI_UnfoldModule"));
+        ImGui::EndTooltip();
+    }
+}
+
+void IBR_SectionData::RenderUI_Virtual()
+{
+    int HiddenCount = 0;
+    FinalY += std::ranges::fold_left(IncludingModules, 0.0F, [&HiddenCount](float f, auto id) {
+        if (auto Data = IBR_Inst_Project.GetSectionFromID(id).GetSectionData(); Data)
+        {
+            auto PosUL = ImGui::GetCursorScreenPos();
+            PosUL.x -= ImGui::GetCurrentContext()->Style.ItemSpacing.x;
+            PosUL.y -= ImGui::GetCurrentContext()->Style.ItemSpacing.y;
+            Data->RenderUI();
+
+            if (!Data->CollapsedInComposed)
+            {
+                ImGui::SetCursorPosY(ImGui::GetCursorPosY() + ImGui::GetTextLineHeight() * 0.5f);
+                Data->FinalY += ImGui::GetTextLineHeight() * 0.5f;
+            }
+
+            if (Data->First)Data->First = false;
+            auto PosDR = ImVec2{ PosUL.x + ImGui::GetWindowWidth(), PosUL.y + Data->FinalY };
+            ImRect rc{ PosUL,PosDR };
+            if (Data->Hidden)++HiddenCount;
+            //For debug
+            /*
+            if (rc.Contains(ImGui::GetMousePos()))
+                ImGui::GetForegroundDrawList()->AddRectFilled(rc.Min, rc.Max,
+                    ImGui::GetColorU32(IBR_WorkSpace::CurOnRender_Clicked ? ImGuiCol_ButtonActive : ImGuiCol_Border, 0.7F), 0.0F, 0);
+            else
+                ImGui::GetForegroundDrawList()->AddRect(rc.Min, rc.Max, ImGui::
+                    GetColorU32(ImGuiCol_Border, 0.7F), 0.0F, 0, 3.0F);
+            */
+            if (Data->Frozen && !Data->Hidden)
+            {
+                auto FL = ImGui::GetWindowDrawList();
+                FL->AddRectFilled(PosUL, PosDR, IBR_Color::FrozenMaskColor, 5.0F);
+            }
+            if (!ImGui::GetCurrentContext()->OpenPopupStack.Size)
+            {
+                if (id == IBR_EditFrame::CurSection.ID)
+                {
+                    auto FL = ImGui::GetForegroundDrawList();
+                    FL->PushClipRect(IBR_RealCenter::WorkSpaceUL, IBR_RealCenter::WorkSpaceDR, true);
+                    //FL->AddRect(ImGui::GetWindowPos(), ImGui::GetWindowPos() + ImGui::GetWindowSize(), IBR_Color::FocusWindowColor, 5.0F, 0, 5.0F);
+                    FL->AddRect(PosUL, PosDR, IBR_Color::FocusWindowColor, 5.0F, 0, 5.0F);
+                    FL->PopClipRect();
+                }
+            }
+
+            if (IBR_WorkSpace::CurOnRender_Clicked && rc.Contains(ImGui::GetMousePos()))
+            {
+                IBR_EditFrame::ActivateAndEdit(id, false);
+                IBR_HintManager::SetHint(Data->DisplayName, HintStayTimeMillis);
+            }
+            return f + Data->FinalY;
+        }
+        else return f;
+        });
+
+    if (HiddenCount > 0)
+    {
+        auto BtnText = UnicodetoUTF8(std::vformat(locw("GUI_ShowAllIncludingBlocks"), std::make_wformat_args(HiddenCount)));
+        if (ImGui::SmallButton(BtnText.c_str()))
+        {
+            std::ranges::for_each(IncludingModules, [](auto id) {
+                if (auto Data = IBR_Inst_Project.GetSectionFromID(id).GetSectionData(); Data)Data->Hidden = false;
+                });
+        }
+    }
+}
+
+void IBR_SectionData::RenderUI_UnknownLine(const std::string& k, const std::string& l, IBB_Section* Bsec)
+{
+    auto _F = Bsec->OnShow.find(k);
+    if (_F == Bsec->OnShow.end() || _F->second.empty())return;
+    auto& Line = ActiveLines[k];
+    auto& V = Bsec->UnknownLines.Value[k];
+    {
+        if (!Line.Edit.Input)
+        {
+            //SYNC : WORKSPACE -> EDIT MENU
+            auto& InputType = IBB_DefaultRegType::SelectInputTypeByValue(V);
+            Line.Edit.Input.reset(new IBR_InputManager(l, "##" + RandStr(8), [desc = Desc, Bsec, Str = k](const std::string& S)
+                {
+                    IBG_Undo.SomethingShouldBeHere();
+                    Bsec->UnknownLines.Value[Str] = S;
+                    if (IBR_Inst_Project.IBR_Rev_SectionMap[desc] == IBR_EditFrame::CurSection.ID)
+                    {
+                        auto& ed = IBR_EditFrame::EditLines[Str].Edit;
+                        if (ed.Input && ed.Input->Form)
+                            ed.Input->Form->ParseFromString(S);
+                        //IBR_HintManager::SetHint("Sync : WS UNKNOWN -> EDIT", HintStayTimeMillis);
+                    }
+                },
+                InputType.WorkSpace->Duplicate(),
+                IBB_DefaultRegType::GetDefaultLinkNodeSetting()
+            ));
+        }
+
+        LinkNodeContext::CurLineChangeCompStatus = false;
+        ImGui::TextEx(k.c_str());
+        if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+            LinkNodeContext::CurLineChangeCompStatus = true;
+
+        ImGui::SameLine();
+        Line.Edit.Input->RenderUI();
+    }
+}
+
+void IBR_SectionData::RenderUI_Composed()
+{
+    ImGui::SetCursorPos({ ImGui::GetWindowWidth() - FontHeight * 4.0f, FinalY - FontHeight * 0.15f });
+    if (ImGui::SmallButton(("-##ExpandBtn" + ModuleStrID).c_str(), { FontHeight * 1.5f,FontHeight * 1.2f }))
+    {
+        CollapsedInComposed = true;
+    }
+    if (ImGui::IsItemHovered())
+    {
+        ImGui::BeginTooltip();
+        ImGui::Text(locc("GUI_FoldModule"));
+        ImGui::EndTooltip();
+    }
+}
+
+namespace IBR_LinkNode
+{
+    ImU32 AdjustLineCol(ImU32 Color)
+    {
+        bool HighLight = (IBR_EditFrame::CurSection.ID == IBR_WorkSpace::CurOnRender_ID
+            && !ImGui::GetCurrentContext()->OpenPopupStack.Size);
+        return HighLight ? (ImU32)IBR_Color::FocusLineColor : Color;
+    }
+
+    ImColor AdjustNodeCol(ImU32 Color, bool Empty, bool Inherit)
+    {
+        ImU32 BtnColorW = (Color >> IM_COL32_A_SHIFT) & 0xFF;
+        bool HasBtnCol = BtnColorW > 0;
+
+        bool Illegal = false;
+        if (!IBR_WorkSpace::CurOnRender)Illegal = true;
+        else
+        {
+            auto R = IBR_Inst_Project.GetSectionFromID(IBR_WorkSpace::CurOnRender_ID);
+            if(!R.HasBack())Illegal = true;
+        }
+        if (Illegal)
+        {
+            if(Inherit)return Color;
+            else return IBR_Color::IllegalLineColor;
+        }
+
+        if (IBR_WorkSpace::CurOnRender->Ignore)
+            return IBR_WorkSpace::TempWbg;
+
+        if (Empty)
+        {
+            if (Inherit) return IBR_Color::FocusLineColor;
+            else return IBR_Color::IllegalLineColor;
+        }
+
+        if (HasBtnCol)
+            return Color;
+
+        return ImGui::GetStyleColorVec4(ImGuiCol_CheckMark);
+    }
+
+    void PushLinkForDraw(ImVec2 Center, const IBB_Section_Desc& Target, ImU32 LineCol, bool SelfLink, bool SrcDragging)
+    {
+        IBR_Inst_Project.LinkList.push_back({ Center, Target, AdjustLineCol(LineCol), SelfLink, SrcDragging });
+    }
+}
 
 void IBR_SectionData::RenderUI()
 {
@@ -655,440 +891,42 @@ void IBR_SectionData::RenderUI()
         IBD_RInterruptF(x);
         auto Bsec = GetBack_Inl();
         if (Bsec == nullptr)
-        {
-            ImGui::TextColored(IBR_Color::ErrorTextColor, locc("GUI_MissingSectionLink"));
-        }
+            RenderUI_Error();
         else if (IsComment)
-        {
-            if(!CommentEdit)ImGui::TextColored(IBR_Color::ErrorTextColor, locc("GUI_MissingCommentBuffer"));
-            else
-            {
-                auto TSize = ImGui::CalcTextSize(CommentEdit.get());
-                TSize.x = std::max(TSize.x + FontHeight * 1.2f , FontHeight * 14.6f);
-                TSize.y = std::max(TSize.y + FontHeight, FontHeight * 8.0f);
-                //IBR_HintManager::SetHint(std::to_string(TSize.x) + ","+ std::to_string(TSize.y),HintStayTimeMillis);
-                if (ImGui::InputTextMultiline(("##COMMENT" + ModuleStrID).c_str(), CommentEdit.get(), MAX_STRING_LENGTH, 
-                    TSize,
-                    ImGuiInputTextFlags_NoHorizontalScroll | ImGuiInputTextFlags_WrappedText))
-                {
-                    Bsec->Comment = CommentEdit.get();
-                }
-                if(ImGui::IsItemActive())IBR_WorkSpace::OperateOnText = true;
-                if (TSize.x > FontHeight * 14.6f)WidthFix = TSize.x;
-            }
-        }
+            RenderUI_Comment(Bsec);
         else if (Included && CollapsedInComposed && !First)
-        {
-            for (auto i : Bsec->SubSecOrder)
-            {
-                const auto& sub = Bsec->SubSecs[i];
-                for (const auto& lt : sub.LinkTo)
-                {
-                    IBB_Section_Desc _Desc = lt.To;
-                    auto TypeAlt = IBF_Inst_DefaultTypeList.GetDefault(lt.FromKey);
-                    ImU32 LineCol = TypeAlt ? TypeAlt->Color : 0;
-                    ImU32 LineColII = (IBR_EditFrame::CurSection.ID == Rsec.ID
-                        && !ImGui::GetCurrentContext()->OpenPopupStack.Size) ? (ImU32)IBR_Color::FocusLineColor : LineCol;
-                    bool IsLinkingToSelf = (Bsec->GetThisDesc() == _Desc);
-                    IBR_Inst_Project.LinkList.push_back({ HeadLineRN, _Desc, LineColII, IsLinkingToSelf, Rsec.Dragging() });
-                }
-            }
-            auto FrameBgCol = ImGui::GetStyleColorVec4(ImGuiCol_FrameBg);
-            ImGui::SetCursorPos({ ImGui::GetWindowWidth() - FontHeight * 4.0f, FinalY - FontHeight * 0.15f });
-            if (ImGui::SmallButton(("+##ExpandBtn" + ModuleStrID).c_str(), {FontHeight * 1.5f,FontHeight * 1.2f}))
-            {
-                CollapsedInComposed = false;
-            }
-            if (ImGui::IsItemHovered())
-            {
-                ImGui::BeginTooltip();
-                ImGui::Text(locc("GUI_UnfoldModule"));
-                ImGui::EndTooltip();
-            }
-            
-            //CANCEL THE CHECKBOX APPEARANCE
-            // 2025/09/23
-            //ImGui::SetCursorPos({ ImGui::GetWindowWidth() - FontHeight * 2.0f, FinalY - FontHeight * 0.15f });
-            //ImGui::PushStyleColor(ImGuiCol_CheckMark, IBR_WorkSpace::TempWbg);
-            //ImGui::PushStyleColor(ImGuiCol_FrameBgActive, FrameBgCol);
-            //ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, FrameBgCol);
-            //ImGui::RadioButton(("##" + ModuleStrID).c_str(), true, GlobalNodeStyle);
-            //ImGui::PopStyleColor(3);
-        }
+            RenderUI_Collapsed(Bsec, HeadLineRN, Rsec);
         else
         {
-            if (IsIncluded())
-            {
-                ImGui::SetCursorPos({ ImGui::GetWindowWidth() - FontHeight * 4.0f, FinalY - FontHeight * 0.15f });
-                if (ImGui::SmallButton(("-##ExpandBtn" + ModuleStrID).c_str(), { FontHeight * 1.5f,FontHeight * 1.2f }))
-                {
-                    CollapsedInComposed = true;
-                }
-                if (ImGui::IsItemHovered())
-                {
-                    ImGui::BeginTooltip();
-                    ImGui::Text(locc("GUI_FoldModule"));
-                    ImGui::EndTooltip();
-                }
-            }
-            
-            //GlobalLog.AddLog(( Desc.GetText() + ":" + DisplayName).c_str());
-            if (Bsec->SubSecOrder.size() != Bsec->SubSecs.size())
-            {
-                Bsec->SubSecOrder.clear();
-                for (size_t i = 0; i < Bsec->SubSecs.size(); i++)Bsec->SubSecOrder.push_back(i);
-                std::ranges::sort(Bsec->SubSecOrder, [&](size_t a, size_t b) {
-                        return Bsec->SubSecs[a].Default->Name < Bsec->SubSecs[b].Default->Name;
-                    });
-            }
+            if (IsIncluded())RenderUI_Composed();
+            Bsec->CheckSubsecOrder();
+
             for (auto i : Bsec->SubSecOrder)
             {
                 auto& sub = Bsec->SubSecs[i];
-                std::string Last{};
-                std::unordered_set<std::string> Used;
-                bool IsInheritSubSec = (sub.Default->Name == "  INHERIT_SUBSEC__");
+                LinkNodeContext::CurSub = &sub;
+                LinkNodeContext::CollapsedCenter = { HeadLineRN.x , FinalY + HalfLine };
 
-                if (IsInheritSubSec && Bsec->Inherit.empty())
-                    continue;
-
-                auto BLinkCmp = [](const IBB_Link& a, const IBB_Link& b) { return a.FromKey < b.FromKey; };
-                if (!std::ranges::is_sorted(sub.LinkTo, BLinkCmp))
-                    std::ranges::sort(sub.LinkTo, BLinkCmp);
-
-                for (const auto& lt : sub.LinkTo)
-                {
-                    Used.insert(lt.FromKey);
-                    auto _F = Bsec->OnShow.find(lt.FromKey);
-                    IBB_Section_Desc _Desc = lt.To;
-                    bool IsLinkingToSelf = (Bsec->GetThisDesc() == _Desc);
-                    auto TypeAlt = IBF_Inst_DefaultTypeList.GetDefault(lt.FromKey);
-                    ImU32 LineCol = TypeAlt ? TypeAlt->Color : 0;
-                    ImU32 LineColII = (IBR_EditFrame::CurSection.ID == Rsec.ID
-                        && !ImGui::GetCurrentContext()->OpenPopupStack.Size) ? (ImU32)IBR_Color::FocusLineColor : LineCol;
-
-                    float _w = FinalY + ImGui::GetWindowPos().y + HalfLine;
-
-#define _PB IBR_Inst_Project.LinkList.push_back({(ImVec2{(float)_G.x, IsInheritSubSec?_w:(float)_G.y}), _Desc, LineColII, IsLinkingToSelf, Rsec.Dragging()});
-                    if (_F != Bsec->OnShow.end() && _F->second.empty())
-                    {
-                        auto _G = HeadLineRN;
-                        _PB;continue;
-                    }
-                    else if (Last == lt.FromKey)
-                    {
-                        auto _G = ImGui::GetLineEndPos() - ImVec2{ FontHeight * 1.5f, HalfLine };
-                        _PB;continue;
-                    }
-                    else
-                    {
-                        auto _G = ImGui::GetLineEndPos() + ImVec2{ -FontHeight * 1.5f, HalfLine };
-                        _PB;
-                    }
-#undef _PB
-
-                    bool HasInput{ OnLineEdit((_F == Bsec->OnShow.end() ? "" : _F->second), lt.FromKey, true) };
-                    if (!HasInput)
-                    {
-                        auto NewLineCursor = ImGui::GetCursorPos();
-                        ImGui::SameLine();
-                        ImGui::SetCursorPosX(ImGui::GetWindowWidth() - FontHeight * 2.0f);
-
-                        auto rsc = IBR_Inst_Project.GetSection(lt.To);
-
-                        ImColor BtnColor{ LineCol };
-                        ImU32 BtnColorW = (LineCol >> IM_COL32_A_SHIFT) & 0xFF;
-
-                        bool Illegal = !rsc.HasBack();
-                        bool HasBtnCol = BtnColorW > 0;
-                        if (Ignore)ImGui::PushStyleColor(ImGuiCol_CheckMark, IBR_WorkSpace::TempWbg);
-                        else if (Illegal)
-                        {
-                            if (IsInheritSubSec) ImGui::PushStyleColor(ImGuiCol_CheckMark, BtnColor.Value);
-                            else ImGui::PushStyleColor(ImGuiCol_CheckMark, IBR_Color::IllegalLineColor.Value);
-                        }
-                        else if(HasBtnCol)ImGui::PushStyleColor(ImGuiCol_CheckMark, BtnColor.Value);
-
-                        if (IsInheritSubSec)ImGui::SetCursorPosY(FinalY);
-                        bool _K = ImGui::RadioButton(("##" + lt.FromKey + "\n" + ModuleStrID).c_str(), true,
-                            IsInheritSubSec ? ImGuiRadioButtonFlags_RoundedSquare : GlobalNodeStyle );
-                        if (_K)
-                        {
-                            auto sec = IBR_Inst_Project.GetSection(Desc);
-                            auto back = sec.GetBack();
-                            {
-                                IBRF_CoreBump.SendToR({ [back,K = lt.FromKey]()
-                                    {
-                                        auto Line = back->GetLineFromSubSecs(K);
-                                        IBG_Undo.SomethingShouldBeHere();
-                                        if (Line && Line->Default->Property.Type == LinkAltPropType && reinterpret_cast<int>(Line->Default->Property.Lim.GetRaw()) == 1)
-                                        {
-                                            Line->Data->Clear();
-                                            IBF_Inst_Project.UpdateAll();
-                                        }
-                                    } });
-                            }
-                        }
-                        if (!Illegal && ImGui::IsItemHovered())
-                        {
-                            auto Sec = rsc.GetSectionData();
-                            if (Sec)
-                            {
-                                ImGui::BeginTooltip();
-                                auto wd = UTF8toUnicode(Sec->DisplayName);
-                                ImGui::Text(UnicodetoUTF8(std::vformat(locw("GUI_Preview_LinkTo"), std::make_wformat_args(wd))).c_str());
-                                ImGui::EndTooltip();
-                            }
-                        }
-                        if (ImGui::IsItemClicked(ImGuiMouseButton_Right))
-                        {
-                            TriggeredRightMenu = true;
-                            auto sec = IBR_Inst_Project.GetSection(Desc);
-                            auto back = sec.GetBack();
-                            auto Line = back->GetLineFromSubSecs(lt.FromKey);
-                            if (Line && Line->Default->Property.Type == LinkAltPropType && reinterpret_cast<int>(Line->Default->Property.Lim.GetRaw()) == 1)
-                            {
-                                IBR_PopupManager::SetRightClickMenu(std::move(
-                                    IBR_PopupManager::Popup{}.Create(DisplayName + "__LINK__" + lt.FromKey).PushMsgBack([this, Line]() {
-                                        if (ImGui::SmallButtonAlignLeft(locc("GUI_Unlink"), ImVec2{FontHeight * 7.0f, ImGui::GetTextLineHeight()}))
-                                        {
-                                            IBG_Undo.SomethingShouldBeHere();
-                                            Line->Data->Clear();
-                                            IBF_Inst_Project.UpdateAll();
-                                            IBR_PopupManager::ClearRightClickMenu();
-                                        }
-                                        })), ImGui::GetMousePos());
-
-                            }
-                            else if (Line)
-                            {
-                                auto li = Line->GetData<IBB_IniLine_DataList>();
-                                auto& Vals = li->GetValue();
-                                std::vector<uint8_t> Res;
-                                std::vector<std::string> Dis;
-                                Res.resize(Vals.size(), true);
-                                Dis.reserve(Vals.size());
-                                auto& Reg = IBB_DefaultRegType::GetRegType(Line->Default->Property.TypeAlt);
-                                for (auto& v : Vals)
-                                {
-                                    IBB_Section_Desc ds = { Reg.IniType, v };
-                                    if (IBR_Inst_Project.HasSection(ds))Dis.push_back(IBR_Inst_Project.GetSection(ds).GetSectionData()->DisplayName);
-                                    else Dis.push_back("");
-                                }
-                                IBR_PopupManager::SetRightClickMenu(std::move(
-                                    IBR_PopupManager::Popup{}.Create(DisplayName + "__LINK__" + lt.FromKey).PushMsgBack([this, li, V = Vals, Res, Dis]() mutable {
-
-                                        for (size_t i = 0; i < V.size(); i++)
-                                        {
-                                            if (Dis[i].empty())ImGui::PushStyleColor(ImGuiCol_CheckMark, IBR_Color::IllegalLineColor.Value);
-                                            if (ImGui::RadioButton(("##POP_RIGHT_" + std::to_string(i)).c_str(), Res[i], GlobalNodeStyle))
-                                            {
-                                                if (Res[i])
-                                                {
-                                                    IBG_Undo.SomethingShouldBeHere();
-                                                    size_t idx = 0;
-                                                    for (size_t j = 0; j < i; j++)if (Res[j])++idx;
-                                                    li->RemoveValue(idx);
-                                                }
-                                                else
-                                                {
-                                                    IBG_Undo.SomethingShouldBeHere();
-                                                    size_t idx = 0;
-                                                    for (size_t j = 0; j < i; j++)if (Res[j])++idx;
-                                                    li->InsertValue(V[i], idx);
-                                                }
-                                                Res[i] ^= 1;
-                                                IBF_Inst_Project.UpdateAll();
-                                            }
-                                            ImGui::SameLine();
-                                            if (Dis[i].empty())
-                                            {
-                                                ImGui::PopStyleColor();
-                                                ImGui::Text(V[i].c_str());
-                                            }
-                                            else if(IBR_WorkSpace::ShowRegName)
-                                                ImGui::Text(V[i].c_str());
-                                            else
-                                                ImGui::Text(Dis[i].c_str());
-                                        }
-                                        if (ImGui::SmallButtonAlignLeft(locc("GUI_UnlinkAll"), ImVec2{ FontHeight * 8.0f, ImGui::GetTextLineHeight() }))
-                                        {
-                                            IBG_Undo.SomethingShouldBeHere();
-                                            li->Clear();
-                                            IBF_Inst_Project.UpdateAll();
-                                            IBR_PopupManager::ClearRightClickMenu();
-                                        }
-                                        }))
-                                    , ImGui::GetMousePos());
-                            }
-
-                        }
-                        if (ImGui::BeginDragDropSource())
-                        {
-                            if (lt.FromKey == InheritKeyName)
-                            {
-                                auto w = UTF8toUnicode((Desc.Ini + " -> " + DisplayName));
-                                ImGui::Text(UnicodetoUTF8(std::vformat(locw("GUI_InheritTo"), std::make_wformat_args(w))).c_str());
-                            }
-                            else ImGui::Text((Desc.Ini + " -> " + DisplayName + " : " + lt.FromKey).c_str());
-                            DrawDragPreviewIcon();
-                            auto s = Desc.GetText() + " : " + lt.FromKey;
-                            ImGui::SetDragDropPayload("IBR_LineDrag", s.c_str(), s.size() + 1);
-                            IBR_Inst_Project.IBR_LineDragMap[s] = { Desc, lt.FromKey };
-                            ImGui::EndDragDropSource();
-                        }
-                        if (Ignore || Illegal || HasBtnCol)ImGui::PopStyleColor(1);
-
-                        ImGui::SetCursorPos(NewLineCursor);
-                    }
-                    Last = lt.FromKey;
-                }
+                if (sub.Default->IsInherit && Bsec->Inherit.empty())continue;
                 for (const auto& k : sub.Lines_ByName)
                 {
-                    //const auto& l = sub.Lines.at(k);
-                    if (Used.count(k) > 0)continue;
-                    auto _F = Bsec->OnShow.find(k);
-                    if (_F != Bsec->OnShow.end() && _F->second.empty())continue;
-                    bool HasInput{ OnLineEdit((_F == Bsec->OnShow.end() ? "" : _F->second), k, false)};
-                    if (!HasInput)
-                    {
-                        auto NewLineCursor = ImGui::GetCursorPos();
-                        ImGui::SameLine();
-                        ImGui::SetCursorPosX(ImGui::GetWindowWidth() - FontHeight * 2.0f);
-                        if (Ignore)ImGui::PushStyleColor(ImGuiCol_CheckMark, IBR_WorkSpace::TempWbg);
-                        else
-                        {
-                            if (IsInheritSubSec) ImGui::PushStyleColor(ImGuiCol_CheckMark, IBR_Color::FocusLineColor.Value);
-                            else ImGui::PushStyleColor(ImGuiCol_CheckMark, IBR_Color::IllegalLineColor.Value);
-                        }
-                        if (IsInheritSubSec)ImGui::SetCursorPosY(FinalY);
-                        ImGui::RadioButton(("##" + k + "\n" + ModuleStrID).c_str(), true,
-                            IsInheritSubSec ? ImGuiRadioButtonFlags_RoundedSquare : GlobalNodeStyle);
-                        if (ImGui::BeginDragDropSource())
-                        {
-                            if (k == InheritKeyName)
-                            {
-                                auto w = UTF8toUnicode((Desc.Ini + " -> " + DisplayName));
-                                ImGui::Text(UnicodetoUTF8(std::vformat(locw("GUI_InheritTo"), std::make_wformat_args(w))).c_str());
-                            }
-                            else ImGui::Text((Desc.Ini + " -> " + DisplayName + " : " + k).c_str());
-                            DrawDragPreviewIcon();
-                            auto s = RandStr(16);
-                            ImGui::SetDragDropPayload("IBR_LineDrag", s.c_str(), 17);
-                            IBR_Inst_Project.IBR_LineDragMap[s] = { Desc, k };
-                            ImGui::EndDragDropSource();
-                        }
-                        ImGui::PopStyleColor(1);
-                        ImGui::SetCursorPos(NewLineCursor);
-                    }
+                    if(!Bsec->IsOnShow(k))continue;
+                    OnLineEdit(Bsec->GetOnShow(k), k);
                 }
-            }
-            for (const auto& [k, l] : Bsec->UnknownLines.Value)
-            {
 
-                auto _F = Bsec->OnShow.find(k);
-                if (_F == Bsec->OnShow.end() || _F->second.empty())continue;
-                auto& Line = ActiveLines[k];
-                auto& V = Bsec->UnknownLines.Value[k];
-                Line.Buffer = V;
-                {
-                    if (!Line.Edit.Input)
-                    {
-                        auto& InputType = IBB_DefaultRegType::SelectInputTypeByValue(V);
-                        Line.Edit.Input.reset(new IBR_InputManager(l, "##" + RandStr(8), [desc = Desc, Bsec, Str = k](const std::string& S)
-                            {
-                                IBG_Undo.SomethingShouldBeHere();
-                                Bsec->UnknownLines.Value[Str] = S;
-                                if (IBR_Inst_Project.IBR_Rev_SectionMap[desc] == IBR_EditFrame::CurSection.ID)
-                                {
-                                    auto& ed = IBR_EditFrame::EditLines[Str].Edit;
-                                    if (ed.Input && ed.Input->Form)
-                                        ed.Input->Form->ParseFromString(S);
-                                }
-                            },
-                            InputType.WorkSpace->Duplicate()));
-                    }
-                    ImGui::TextEx(k.c_str());
-                    ImGui::SameLine();
-                    Line.Edit.Input->RenderUI();
-                }
+                IBR_LinkNode::PushInactiveLines(sub, LinkNodeContext::CollapsedCenter + ImGui::GetWindowPos());
             }
+            LinkNodeContext::CurSub = nullptr;
+
+            for (const auto& [k, l] : Bsec->UnknownLines.Value)
+                RenderUI_UnknownLine(k, l, Bsec);
         }
     }
-    //TODO
 
     FinalY = ImGui::GetCursorPosY() - FinalY;
     
-
     if (IsVirtualBlock())
-    {
-        int HiddenCount = 0;
-        FinalY += std::ranges::fold_left(IncludingModules, 0.0F, [&HiddenCount](float f, auto id) {
-            if (auto Data = IBR_Inst_Project.GetSectionFromID(id).GetSectionData(); Data)
-            {
-                auto PosUL = ImGui::GetCursorScreenPos();
-                PosUL.x -= ImGui::GetCurrentContext()->Style.ItemSpacing.x;
-                PosUL.y -= ImGui::GetCurrentContext()->Style.ItemSpacing.y;
-                Data->RenderUI();
-
-                if (!Data->CollapsedInComposed)
-                {
-                    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + ImGui::GetTextLineHeight() * 0.5f);
-                    Data->FinalY += ImGui::GetTextLineHeight() * 0.5f;
-                }
-
-                if (Data->First)Data->First = false;
-                auto PosDR = ImVec2{ PosUL.x + ImGui::GetWindowWidth(), PosUL.y + Data->FinalY };
-                ImRect rc{ PosUL,PosDR };
-                if (Data->Hidden)++HiddenCount;
-                //For debug
-                /*
-                if (rc.Contains(ImGui::GetMousePos()))
-                    ImGui::GetForegroundDrawList()->AddRectFilled(rc.Min, rc.Max,
-                        ImGui::GetColorU32(IBR_WorkSpace::CurOnRender_Clicked ? ImGuiCol_ButtonActive : ImGuiCol_Border, 0.7F), 0.0F, 0);
-                else
-                    ImGui::GetForegroundDrawList()->AddRect(rc.Min, rc.Max, ImGui::
-                        GetColorU32(ImGuiCol_Border, 0.7F), 0.0F, 0, 3.0F);
-                */
-                if (Data->Frozen && !Data->Hidden)
-                {
-                    auto FL = ImGui::GetWindowDrawList();
-                    FL->AddRectFilled(PosUL, PosDR, IBR_Color::FrozenMaskColor, 5.0F);
-                }
-                if (!ImGui::GetCurrentContext()->OpenPopupStack.Size)
-                {
-                    if (id == IBR_EditFrame::CurSection.ID)
-                    {
-                        auto FL = ImGui::GetForegroundDrawList();
-                        FL->PushClipRect(IBR_RealCenter::WorkSpaceUL, IBR_RealCenter::WorkSpaceDR, true);
-                        //FL->AddRect(ImGui::GetWindowPos(), ImGui::GetWindowPos() + ImGui::GetWindowSize(), IBR_Color::FocusWindowColor, 5.0F, 0, 5.0F);
-                        FL->AddRect(PosUL, PosDR, IBR_Color::FocusWindowColor, 5.0F, 0, 5.0F);
-                        FL->PopClipRect();
-                    }
-                }
-                
-                if (IBR_WorkSpace::CurOnRender_Clicked && rc.Contains(ImGui::GetMousePos()))
-                {
-                    IBR_EditFrame::ActivateAndEdit(id, false);
-                    IBR_HintManager::SetHint(Data->DisplayName, HintStayTimeMillis);
-                }
-                return f + Data->FinalY;
-            }
-            else return f;
-            });
-
-        if (HiddenCount > 0)
-        {
-            auto BtnText = UnicodetoUTF8(std::vformat(locw("GUI_ShowAllIncludingBlocks"), std::make_wformat_args(HiddenCount)));
-            if (ImGui::SmallButton(BtnText.c_str()))
-            {
-                std::ranges::for_each(IncludingModules, [](auto id) {
-                    if (auto Data = IBR_Inst_Project.GetSectionFromID(id).GetSectionData(); Data)Data->Hidden = false;
-                });
-            }
-        }
-    }
+        RenderUI_Virtual();
     else if(IBR_WorkSpace::CurOnRender_Clicked && !Included)
-    {
         IBR_EditFrame::ActivateAndEdit(IBR_WorkSpace::CurOnRender_ID, false);
-    }
 }

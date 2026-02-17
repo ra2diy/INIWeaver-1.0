@@ -3,6 +3,7 @@
 #include "FromEngine/RFBump.h"
 #include "IBSave.h"
 #include "IBG_InputType.h"
+#include "IBR_IniLine.h"
 #include <any>
 
 extern int HintStayTimeMillis;
@@ -21,56 +22,6 @@ public:
     void RenderUI();
 };
 
-struct IBR_InputManager
-{
-    using AfterInputType = std::function<void(const std::string&)>;
-    IIFPtr Form;
-    std::string ID;
-    AfterInputType AfterInput;
-    
-    IBR_InputManager(const std::string& InitialText, const std::string& id, const AfterInputType& Fn, IIFPtr&& InitialForm);
-    bool RenderUI();
-    ~IBR_InputManager() = default;
-};
-
-struct IBR_IniLine
-{
-    std::shared_ptr<IBR_InputManager> Input;
-    bool HasInput{ false }, UseInput{ false };
-    struct InitType
-    {
-        std::string InitText;
-        std::string ID;
-        IBR_InputManager::AfterInputType AfterInput;
-        const IIFPtr& InitialForm;
-
-        InitType(const std::string& Text,
-            const std::string& id,
-            const IBR_InputManager::AfterInputType& Fn,
-            const IIFPtr& Form)
-            :InitText(Text), ID(id), AfterInput(Fn), InitialForm(Form) {
-        }
-    };
-    bool NeedInit() { return HasInput && !Input; }
-    void RenderUI(const std::string& Line, const std::string& Hint, const InitType* Init = nullptr);
-    void CloseInput();
-};
-
-struct BufferedLine
-{
-    IBR_IniLine Edit;
-    const IBG_InputType* InputType;
-    std::string Buffer;
-    std::string Hint;
-    bool Known;
-    bool AltRes;
-};
-
-struct ActiveLine
-{
-    IBR_IniLine Edit;
-    std::string Buffer;
-};
 
 dImVec2 operator+(const dImVec2 a, const dImVec2 b);
 dImVec2 operator-(const dImVec2 a, const dImVec2 b);
@@ -145,9 +96,17 @@ struct IBR_SectionData
     void RenameRegisterImpl(const std::string& Name);
     void RenameDisplay();
     void RenameRegister();
-    bool OnLineEdit(const std::string& OnShow, const std::string& Name, bool OnLink);
+    bool OnLineEdit(const std::string& OnShow, const std::string& Name);
+
     void RenderUI();
     void RenderUI_TitleBar(bool& TriggeredRightMenu, float LastFinalY);
+    void RenderUI_Error();
+    void RenderUI_Comment(IBB_Section*);
+    void RenderUI_Collapsed(IBB_Section*, ImVec2 HeadLineRN, IBR_Section Rsec);
+    void RenderUI_Virtual();
+    void RenderUI_UnknownLine(const std::string& k, const std::string& l, IBB_Section* Bsec);
+    void RenderUI_Composed();
+
     void CopyToClipBoard();
     bool Decomposable() const;
     void Decompose();
@@ -222,7 +181,8 @@ struct SectionDragData
 struct LineDragData
 {
     IBB_Section_Desc Desc;
-    std::string Line;
+    std::string TypeAlt;
+    IBR_NodeSession::SessionValue* pSession;
 };
 
 struct IBB_ModuleAlt;
@@ -242,7 +202,6 @@ struct IBR_Project
     std::map<ModuleID_t, IBR_SectionData> IBR_SectionMap;
     std::map<IBB_Section_Desc, ModuleID_t> IBR_Rev_SectionMap;
     std::unordered_map<std::string, SectionDragData> IBR_SecDragMap;
-    std::unordered_map<std::string, LineDragData> IBR_LineDragMap;
     std::unordered_map<std::string, std::string> CopyTransform;
     std::string DragConditionText;
     std::string DragConditionTextAlt;
@@ -439,6 +398,7 @@ namespace IBR_WorkSpace
     extern IBR_SectionData* MouseOverSecData;
     extern bool CurOnRender_Clicked;
     extern ModuleID_t CurOnRender_ID;
+    extern IBR_SectionData* CurOnRender;
 
     void UpdatePrev();
     void  _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE UpdatePrevII();
@@ -483,7 +443,6 @@ namespace IBR_EditFrame
     extern std::unordered_map<std::string, BufferedLine> EditLines;
     void SetActive(ModuleID_t id);
     void ActivateAndEdit(ModuleID_t id, bool TextMode);
-    void UpdateSection();
     void UpdateLine(const std::string& Line, const std::string& NewValue);
     void RenderUI();
     void Clear();

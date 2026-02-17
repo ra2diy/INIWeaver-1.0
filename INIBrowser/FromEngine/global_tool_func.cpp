@@ -24,6 +24,7 @@
 #include <Windows.h>
 #include <ctime>
 #include <regex>
+#include "..\IBB_CustomBool.h"
 
 extern LogClass GlobalLogB;
 extern bool EnableLog;
@@ -431,6 +432,33 @@ std::vector<std::string> JsonObject::GetArrayKey() const
     return Ret;
 }
 
+JsonObject JsonObject::GetObjectItem(const std::string& Str) const
+{
+#if 1
+    return { Object ? cJSON_GetObjectItem(Object, Str.c_str()) : nullptr };
+#else
+    
+    cJSON* Val;
+    if (!Object)
+    {
+        GlobalLogB.AddLog("Object NULL");
+        return nullptr;
+    }
+    else
+    {
+        Val = cJSON_GetObjectItem(Object, Str.c_str());
+        sprintf_s(LogBuf, "Object %p Child %s -> Object %p", Object, Str.c_str(), Val);
+        GlobalLogB.AddLog(LogBuf);
+        sprintf_s(LogBuf, "Object %p : ", Val);
+        GlobalLogB.AddLog(LogBuf, false);
+        auto o = JsonObject(Val);
+        if(Val)GlobalLogB.AddLog(o.PrintData().c_str());
+        else GlobalLogB.AddLog("NULL");
+        return o;
+    }
+#endif
+}
+
 std::string JsonObject::PrintData() const
 {
     if (!Available())return "";
@@ -475,6 +503,8 @@ std::string StrBoolImpl(bool Val, StrBoolType Type)
 }
 const char* CStrBoolImpl(bool Val, StrBoolType Type)
 {
+    if (IsCustomStrBoolType(Type))
+        return CustomStrBoolType(Type, Val);
     return (Val ? StrBool_TrueList : StrBool_FalseList)[(size_t)Type];
 }
 
@@ -504,6 +534,9 @@ bool AcceptStrAsBool(const std::string& Str, StrBoolType Type)
         if (!_stricmp(Str.c_str(), "yeah"))return true;
         if (!_stricmp(Str.c_str(), "fuck"))return true;
     }
+    if (AcceptAsCustomStrBoolType(Str, Type))
+        return true;
+
     return false;
 }
 

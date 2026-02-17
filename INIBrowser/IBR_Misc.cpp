@@ -18,6 +18,7 @@
 #include <unordered_map>
 #include <utility>
 #include <imgui.h>
+#include "IBR_Components.h"
 #include "FromEngine/global_tool_func.h"
 
 bool ImGui_TextDisabled_Helper(const char* Text);
@@ -32,12 +33,12 @@ int HintStayTimeMillis = 3000;
 
 
 
-std::shared_ptr<IBR_InputManager> NewInput(const std::string& InitialText, const std::string& id, const IBR_InputManager::AfterInputType& Fn, IIFPtr&& InitialForm)
+std::shared_ptr<IBR_InputManager> NewInput(const std::string& InitialText, const std::string& id, const IBR_InputManager::AfterInputType& Fn, IIFPtr&& InitialForm, LinkNodeSetting&& LNS)
 {
-    return std::make_shared<IBR_InputManager>(InitialText, id, Fn, std::move(InitialForm));
+    return std::make_shared<IBR_InputManager>(InitialText, id, Fn, std::move(InitialForm), std::move(LNS));
 }
-IBR_InputManager::IBR_InputManager(const std::string& InitialText, const std::string& id, const AfterInputType& Fn, IIFPtr&& InitialForm)
-    :ID(id), AfterInput(Fn), Form(std::move(InitialForm))
+IBR_InputManager::IBR_InputManager(const std::string& InitialText, const std::string& id, const AfterInputType& Fn, IIFPtr&& InitialForm, LinkNodeSetting&& LNS)
+    :ID(id), AfterInput(Fn), Form(std::move(InitialForm)), LinkNode(std::move(LNS))
 {
     if (!Form)DebugBreak();
     Form->ParseFromString(InitialText);
@@ -46,7 +47,7 @@ bool IBR_InputManager::RenderUI()
 {
     ImGui::BeginGroup();
     ImGui::PushID(Form.get());
-    auto Result = Form->RenderUI();
+    auto Result = Form->RenderUI(LinkNode);
     ImGui::PopID();
     ImGui::EndGroup();
     if (Result.Changed)
@@ -57,9 +58,22 @@ bool IBR_InputManager::RenderUI()
     return Result.Active;
 }
 
-void IBR_IniLine::RenderUI(const std::string& Line, const std::string& Hint, const InitType* Init)
+//std::unordered_set<IBR_InputManager*> AllInputs;
+
+IBR_InputManager::~IBR_InputManager()
 {
+    //if (AllInputs.contains(this))GlobalLogB.AddLog("DOUBLE FREE!");
+    //else AllInputs.insert(this);
+    //GlobalLogB.AddLog(this);
+}
+
+void IBR_IniLine::RenderUI(const std::string& Line, const std::string& Hint, InitType* Init)
+{
+    LinkNodeContext::CurLineChangeCompStatus = false;
     ImGui::TextWrappedEx(Line.c_str());
+
+    if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+        LinkNodeContext::CurLineChangeCompStatus = true;
     //ImGui::TextEx(Line.c_str(), nullptr, ImGuiTextFlags_NoWidthForLargeClippedText);
     if (!Hint.empty() && ImGui::IsItemHovered())
     {
@@ -82,7 +96,7 @@ void IBR_IniLine::RenderUI(const std::string& Line, const std::string& Hint, con
         }
         else
         {
-            Input = NewInput(Init->InitText , Init->ID, Init->AfterInput, Init->InitialForm->Duplicate());
+            Input = NewInput(Init->InitText , Init->ID, Init->AfterInput, Init->InitialForm->Duplicate(), std::move(Init->LinkNode));
         }
     }
 }
@@ -302,6 +316,7 @@ namespace IBR_EditFrame
                 Line.Known = true;
                 Line.Hint = V.Default->DescLong;
                 Line.InputType = V.Default->Input;
+                Line.LinkNode = V.Default->GetNodeSetting();
             }
         }
         for (auto& [K, V] : rsc->UnknownLines.Value)
@@ -311,6 +326,7 @@ namespace IBR_EditFrame
             Line.Known = false;
             Line.Hint = "";
             Line.InputType = &IBB_DefaultRegType::SelectInputTypeByValue(V);
+            Line.LinkNode = IBB_DefaultRegType::GetDefaultLinkNodeSetting();
         }
     }
 
@@ -379,10 +395,6 @@ namespace IBR_EditFrame
         IBR_Inst_Project.UpdateAll();
     }
 
-    void UpdateSection()
-    {
-        //TODO
-    }
 
     void UpdateLine(const std::string& Line, const std::string& NewValue)
     {
@@ -404,12 +416,12 @@ namespace IBR_EditFrame
         auto data = CurSection.GetSectionData();
         if (L.Known)
         {
-            auto Line = back->GetLineFromSubSecs(s);
+            auto [Line, Sub] = back->GetLineFromSubSecsEx2(s);
             if (Line)
             {
                 IBG_Undo.SomethingShouldBeHere();
                 Line->Data->SetValue(L.Buffer);
-                IBF_Inst_Project.UpdateAll();
+                Sub->UpdateAll();
             }
             else
             {
@@ -421,13 +433,15 @@ namespace IBR_EditFrame
             back->UnknownLines.Value[s] = L.Buffer;
         }
         {
+            //SYNC : EDIT MENU -> WORKSPACE
             auto it = data->ActiveLines.find(s);
             if (it != data->ActiveLines.end())
             {
-                it->second.Buffer = L.Buffer;
                 if (it->second.Edit.Input && it->second.Edit.Input->Form)
                     it->second.Edit.Input->Form->ParseFromString(L.Buffer);
+                //IBR_HintManager::SetHint("Sync : EDIT -> WS ACTIVE", HintStayTimeMillis);
             }
+            //else IBR_HintManager::SetHint("Sync : EDIT -> WS INACTIVE", HintStayTimeMillis);
         }
     }
 
@@ -443,15 +457,14 @@ namespace IBR_EditFrame
         if (ImGui::Button(" + "))
         {
             IBG_Undo.SomethingShouldBeHere();
-            IBRF_CoreBump.SendToF([NLK = NewLineKey, NLV = NewLineValue, pbk] {
-                pbk->OnShow[NLK] = EmptyOnShowDesc;//默认在画布上显示
-                pbk->MergeLine(NLK, NLV, IBB_IniMergeMode::Replace);//添加或替换
-                pbk->OrderKey(NLK, 0);//调整到最前面，方便用户看到
+            {
+                IBD_RInterruptF(x);
+                pbk->OnShow[NewLineKey] = EmptyOnShowDesc;//默认在画布上显示
+                pbk->MergeLine(NewLineKey, NewLineValue, IBB_IniMergeMode::Replace);//添加或替换
+                pbk->OrderKey(NewLineKey, 0);//调整到最前面，方便用户看到
                 IBF_Inst_Project.UpdateAll();
-                IBRF_CoreBump.SendToR({ [=] {
-                    ResetEdit(pbk);
-                    } });
-                });
+            }
+            ResetEdit(pbk);
             NewLineKey.clear();
             NewLineValue.clear();
         }
@@ -484,6 +497,9 @@ namespace IBR_EditFrame
     {
         for (auto& K : pbk->LineOrder)
         {
+            //like Waiting for SYNC
+            if (!EditLines.contains(K))continue;
+
             //if (K == InheritKeyName)continue;
             auto& V = EditLines.at(K);
 
@@ -498,12 +514,15 @@ namespace IBR_EditFrame
 
             if (V.Edit.NeedInit())
             {
+                auto L = V.LinkNode;
                 IBR_IniLine::InitType It{ V.Buffer ,"##" + RandStr(8),[Str = K](const std::string& S)
                          {
                              IBG_Undo.SomethingShouldBeHere();
                              EditLines[Str].Buffer = S;
                              Modify(Str, EditLines[Str]);
-                         } , V.InputType->Sidebar };
+                         } ,
+                    V.InputType->Sidebar,
+                    std::move(L)};
                 V.Edit.RenderUI(K, V.Hint, &It);
             }
             else

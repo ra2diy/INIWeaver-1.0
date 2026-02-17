@@ -66,7 +66,7 @@ struct IBB_Project
     const IBB_Section* GetSec(const IBB_Project_Index& Index) const;
     IBB_Ini* GetIni(IBB_Project_Index& Index) const;
     IBB_Section* GetSec(IBB_Project_Index& Index) const;
-    IBB_Project_Index GetSecIndex(const std::string& Name) const;
+    IBB_Project_Index GetSecIndex(const std::string& Name, const std::string& PriorIni) const;
 
     bool CreateIni(const std::string& Name);
     bool AddIni(const IBB_Ini& Ini, bool IsDuplicate);

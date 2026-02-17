@@ -10,11 +10,14 @@
 
 struct IniToken;
 struct ModuleClipData;
+struct LinkNodeSetting;
 
 struct IBB_IniLine_Data_Base;
 struct IBB_RegType;
 struct IBG_InputType;
+enum class ValidateResult;
 using LineData = std::shared_ptr<IBB_IniLine_Data_Base>;
+struct IIFWrapper_Wrapper;
 
 enum class IBB_IniMergeMode
 {
@@ -56,6 +59,8 @@ struct IBB_IniLine_Default
     bool IsLinkAlt() const;
     const IBB_RegType& GetRegType() const;
     const IBG_InputType& GetInputType() const;
+    LinkNodeSetting GetNodeSetting() const;
+    int GetLinkLimit() const;
     //bool Load(JsonObject FromJson);
 };
 
@@ -71,6 +76,7 @@ struct IBB_SubSec_Default
     std::vector<std::string> Platform;
     std::vector<std::string> Lines_ByName;
     std::unordered_map<std::string, IBB_IniLine_Default> Lines;
+    bool IsInherit;
 
     bool Load(JsonObject FromJson, const std::unordered_map<std::string, IBB_IniLine_Default>& LineMap);
 };
@@ -132,14 +138,7 @@ struct IBB_IniLine
     IBB_IniLine_Default* Default{ nullptr };
     LineData Data;
 
-    //校验逻辑暂时空挂在这
-    enum ValidateResult
-    {
-        Normal,//值通过校验
-        Abnormal,//值未通过校验，但可以接受
-        Refused,//拒绝这个值
-        Unknown//校验无法进行
-    };
+    
     ValidateResult ValidateValue() const;
     ValidateResult ValidateAndSet(const std::string& Value);
     ValidateResult ValidateAndMerge(const std::string& Another, IBB_IniMergeMode Mode);
@@ -164,6 +163,14 @@ struct IBB_IniLine
     ~IBB_IniLine() = default;
 };
 
+struct IBB_NewLink
+{
+    IBB_Project_Index From, To;
+    std::string FromKey;
+    ImU32 DefaultColor;
+
+    std::string GetText() const;
+};
 
 struct IBB_SubSec
 {
@@ -173,6 +180,8 @@ struct IBB_SubSec
     std::vector<std::string> Lines_ByName;//KeyName
     std::unordered_map<std::string, IBB_IniLine> Lines;//<KeyName,LineData>
     std::vector<IBB_Link> LinkTo;
+    std::vector<IBB_NewLink> NewLinkTo;
+    std::multimap<uint64_t, size_t> LinkSrc;
     //Key复制了2遍：Lines_ByName / Lines.find(x)->first
 
     IBB_SubSec() {}
@@ -188,10 +197,13 @@ struct IBB_SubSec
     std::string GetFullVariable(const std::string& Name) const;
     IBB_SubSec Duplicate() const;//这个才是深复制，鉴于深复制用处远低浅复制，故默认浅复制
     void GenerateAsDuplicate(const IBB_SubSec& Src);//从Src深复制
+    std::pair< std::multimap<uint64_t, size_t>::const_iterator, std::multimap<uint64_t, size_t>::const_iterator>
+        GetLink(size_t LineIdx, size_t ComponentIdx) const;
+    void ClaimLink(size_t LineIdx, size_t ComponentIdx, size_t LinkIdx);
 
     bool UpdateAll();
 
-    bool AddLine(const std::pair<std::string, std::string>& Line, bool InitOnShow);
+    bool AddLine(const std::pair<std::string, std::string>& Line, bool InitOnShow, IBB_IniMergeMode Mode);
     bool ChangeRoot(IBB_Section* NewRoot);
     IBB_SubSec& ChangeRootAndBack(IBB_Section* NewRoot) { ChangeRoot(NewRoot); return *this; }
 };
@@ -248,6 +260,7 @@ struct IBB_Section
     bool GenerateLines(const IBB_VariableList& Lines, const std::vector<std::string>& Order = {}, bool InitOnShow = true);
     bool GenerateAsDuplicate(const IBB_Section& Src);
     void OrderKey(const std::string& Key, size_t NewOrder);
+    void CheckSubsecOrder();
 
     bool UpdateAll();
     bool UpdateLineOrder();
@@ -265,10 +278,12 @@ struct IBB_Section
     bool Isolate();//切断所有Link
     void RedirectLinkAsDupicate();
 
-    IBB_IniLine* GetLineFromSubSecs(const std::string& Name) const;
+    const IBB_IniLine* GetLineFromSubSecs(const std::string& Name) const;
+    IBB_IniLine* GetLineFromSubSecs(const std::string& Name);
+    std::pair <IBB_IniLine*, IBB_SubSec*> GetLineFromSubSecsEx2(const std::string& Name);
+    std::pair <IBB_IniLine*, size_t> GetLineFromSubSecsEx(const std::string& Name);
     IBB_Project_Index GetThisIndex() const;
     IBB_Section_Desc GetThisDesc() const;
-    std::vector<IBB_Link> GetLinkTo() const;//RARELY USED
     std::vector<std::string> GetKeys(bool PrintExtraData) const;//RARELY USED
     IBB_VariableList GetLineList(bool PrintExtraData, bool FromExport) const;//RARELY USED
     IBB_VariableList GetSimpleLines() const;//RARELY USED
@@ -278,8 +293,11 @@ struct IBB_Section
     std::vector<size_t> GetRegisteredPosition() const;//Project的RegList序号
     std::vector<std::pair<size_t, size_t>> GetRegisteredPositionAlt() const;//pair<Project的RegList序号,RegList的Sec*序号>
     IBB_Section_NameType GetNameType() const;
+    IIFWrapper_Wrapper GetLineIIF(const std::string& Key) const;
     bool IsComment() const { return CreateAsCommentBlock || !Comment.empty(); }
-    bool HasLine(const std::string& Key)const;
+    bool HasLine(const std::string& Key) const;
+    bool IsOnShow(const std::string& Key) const;
+    const std::string& GetOnShow(const std::string& Key) const;
 
     bool SetText(char* Text);//mess Text up
     bool SetText(const std::vector<IniToken>& Tokens);//do not consider section&inherit
@@ -348,6 +366,7 @@ struct IBB_Link
     IBB_Link* Another{ nullptr };
     std::string FromKey;
     size_t Order{ 0 }, OrderEx{ 0 };//OrderEx=INT_MAX to a linkgroup
+    ImU32 DefaultColor{};
 
     bool operator==(const IBB_Link& A) const
     {

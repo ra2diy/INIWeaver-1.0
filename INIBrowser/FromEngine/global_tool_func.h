@@ -108,7 +108,8 @@ enum class StrBoolType :size_t
     Str_y_n,
     Str_Y_N,
     Str_1_0,
-    Str_yeah_fuck
+    Str_yeah_fuck,
+    Str_Custom_Start
 };
 std::string StrBoolImpl(bool Val, StrBoolType Type);
 const char* CStrBoolImpl(bool Val, StrBoolType Type);
@@ -199,7 +200,7 @@ public:
     const char* GetCString() const { return Object->valuestring; }
     bool GetBool() const { return ((Object->type & 0xFF) == cJSON_True) ? true : false; }
     bool GetStrBool() const { return (Object->valuestring != nullptr && IsTrueString(Object->valuestring)) ? true : false; }
-    JsonObject GetObjectItem(const std::string& Str) const { return { cJSON_GetObjectItem(Object, Str.c_str()) }; }
+    JsonObject GetObjectItem(const std::string& Str) const;
     size_t ArraySize() const { return (size_t)cJSON_GetArraySize(Object); }
     JsonObject GetArrayItem(size_t N) const { return { cJSON_GetArrayItem(Object, N) }; }
     std::vector<int> GetArrayInt() const { return cJSON_GetVectorInt(Object); }

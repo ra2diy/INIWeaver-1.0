@@ -38,6 +38,7 @@
     <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
+    <EnableASAN>false</EnableASAN>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
@@ -118,6 +119,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>shlwapi.lib;opengl32.lib;glfw3.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreSpecificDefaultLibraries>libcmt.lib</IgnoreSpecificDefaultLibraries>
+      <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -182,6 +184,7 @@
     <ClInclude Include="FromEngine\InfoStack.h" />
     <ClInclude Include="FromEngine\RFBump.h" />
     <ClInclude Include="FromEngine\types.h" />
+    <ClInclude Include="IBB_CustomBool.h" />
     <ClInclude Include="IBB_Index.h" />
     <ClInclude Include="IBB_Components.h" />
     <ClInclude Include="IBB_Ini.h" />
@@ -198,6 +201,8 @@
     <ClInclude Include="IBR_Debug.h" />
     <ClInclude Include="IBR_Font.h" />
     <ClInclude Include="IBR_HotKey.h" />
+    <ClInclude Include="IBR_IniLine.h" />
+    <ClInclude Include="IBR_LinkNode.h" />
     <ClInclude Include="IBR_ListView.h" />
     <ClInclude Include="IBR_Localization.h" />
     <ClInclude Include="IBR_Components.h" />
@@ -257,6 +262,7 @@
     <ClCompile Include="INIBrowser.cpp" />
     <ClCompile Include="IBS_File.cpp" />
     <ClCompile Include="Initialize.cpp" />
+    <ClCompile Include="IBB_CustomBool.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="icon1.ico" />

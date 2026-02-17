@@ -116,6 +116,8 @@ void ControlPanel()
     IBR_UICondition::UpdateWindowTitle();
     IBR_WorkSpace::UpdatePrev();
     ClearComboRects();
+    LinkNodeContext::HasDragNow = false;
+
     if (First)
     {
         DynamicDataXDelta = ScrX - (FinalWP.right - FinalWP.left);
@@ -127,12 +129,14 @@ void ControlPanel()
         }
         First = false;
     }
+
     IBR_UICondition::CurrentScreenWidth = FinalWP.right - FinalWP.left + DynamicDataXDelta;
     IBR_UICondition::CurrentScreenHeight = FinalWP.bottom - FinalWP.top + DynamicDataYDelta;
 
     //use glfw to check if the window is maximized
     if (!glfwGetWindowAttrib(PreLink::window, GLFW_MAXIMIZED))
         IBR_DynamicData::Save();
+    IBR_PopupManager::UpdatePopupPosForResize();
     IBRF_CoreBump.IBR_AutoProc();
 
 

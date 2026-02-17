@@ -4,6 +4,8 @@
 #include "IBB_Index.h"
 #include "IBG_InputType.h"
 #include "IBR_Components.h"
+#include "IBB_CustomBool.h"
+#include "IBR_LinkNode.h"
 
 std::string IBB_RegType::GetNoName()
 {
@@ -23,7 +25,6 @@ std::string IBB_RegType::GetNoName(const std::string& Reg)
 
 std::wstring FileName(const std::wstring& ss);
 std::vector<std::wstring> FindFileVec(const std::wstring& pattern);
-
 void subreplace(std::string& dst_str, const std::string& sub_str, const std::string& new_str);
 
 namespace IBB_DefaultRegType
@@ -40,10 +41,15 @@ namespace IBB_DefaultRegType
         DefaultColorD, DefaultColorD, DefaultColorD, DefaultColorD,
         false, false, false, false, u8"模块", 0};
     StrBoolType DefaultStrBoolType;
+    ImColor DefaultNodeColor;
 
     std::unordered_map<_TEXT_UTF8 std::string, IBG_InputType> InputTypes;
     void InitInputTypes(const std::string& S_StrBool)
     {
+        static bool CALLED = false;
+        if (!CALLED) CALLED = true;
+        else return;
+
         static std::string StrTypeJSON =
 R"({
     "Type" : "Form",
@@ -61,7 +67,7 @@ R"({
     "Type" : "Form",
     "Form" : {
         "Input" : [
-            {"Type": "Bool", "ValueID": 0, "InitialValue": false, "Fmt": "<DEFAULT_FORMAT>" }
+            {"Type": "Bool", "ValueID": 0, "InitialValue": false, "Fmt": <DEFAULT_FORMAT> }
         ],
         "Format" : [
             {"ValueIDToString": 0}
@@ -73,7 +79,7 @@ R"({
     "Type" : "Link",
     "Form" : {
         "Input" : [
-            {"Type": "InputText", "ValueID": 0}
+            {"Type": "Link", "ValueID": 0}
         ],
         "Format" : [
             {"ValueIDToString": 0}
@@ -85,9 +91,22 @@ R"({
         JsonFile StrObj; StrObj.Parse(StrTypeJSON);
         JsonFile BoolObj; BoolObj.Parse(BoolTypeJSON);
         JsonFile LinkObj; LinkObj.Parse(LinkTypeJSON);
-        InputTypes[u8"String"].Load(StrObj);
-        InputTypes[u8"Bool"].Load(BoolObj);
-        InputTypes[u8"Link"].Load(LinkObj);
+
+        auto rttpt = [](const wchar_t* wcs, const std::string& Info)
+            {
+                auto ws = std::vformat(locw("Error_CannotLoadPresetType"), std::make_wformat_args(wcs));
+                auto wss = UnicodetoUTF8(std::vformat(locw("Log_LoadConfigErrorInfo"), std::make_wformat_args(ws)));
+                IBR_PopupManager::AddLoadConfigErrorPopup(wss + "\n" + loc("Log_PresetTypeInfo") + "\n" + Info, "");
+            };
+
+        if (!InputTypes[u8"String"].Load(StrObj))
+            rttpt(L"String", StrTypeJSON);
+        if (!InputTypes[u8"Bool"].Load(BoolObj))
+            rttpt(L"Bool", BoolTypeJSON);
+        if (!InputTypes[u8"Link"].Load(LinkObj))
+            rttpt(L"Link", LinkTypeJSON);
+
+
     }
 
     void ClearModuleCount()
@@ -223,8 +242,20 @@ R"({
         if (S.Available())
         {
             LoadReg(__Default, S);
-            S_StrBool = S.ItemStringOr("BoolFmt", "yes_no");
-            DefaultStrBoolType = StrBoolTypeFromString(S_StrBool, StrBoolType::Str_yes_no);
+
+            auto oBoolFmt = S.GetObjectItem("BoolFmt");
+            DefaultStrBoolType = StrBoolTypeFromJSON(oBoolFmt, StrBoolType::Str_yes_no);
+            if (oBoolFmt) S_StrBool = oBoolFmt.PrintUnformatted();
+            else S_StrBool = "\"yes_no\"";
+
+            auto oDNC = S.GetObjectItem(u8"DefaultNodeColor");
+            if (oDNC.Available())
+            {
+                auto V = oDNC.GetArrayInt();
+                if (V.size() == 3)DefaultNodeColor = ImColor(V[0], V[1], V[2]);
+                else if (V.size() >= 4)DefaultNodeColor = ImColor(V[0], V[1], V[2], V[3]);
+                else DefaultNodeColor = 0;
+            }
         }
 
         S = Obj.GetObjectItem(u8"RegisterTypes");
@@ -324,6 +355,16 @@ R"({
     IBG_InputType& GetDefaultInputType()
     {
         return InputTypes[u8"String"];
+    }
+    ImColor GetDefaultNodeColor()
+    {
+        return DefaultNodeColor;
+    }
+    LinkNodeSetting GetDefaultLinkNodeSetting()
+    {
+        return LinkNodeSetting{
+            "_AnyType", -1, DefaultNodeColor
+        };
     }
     IBG_InputType& SelectInputTypeByValue(const _TEXT_UTF8 std::string& Value)
     {

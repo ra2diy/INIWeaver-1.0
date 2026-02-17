@@ -195,6 +195,15 @@
     <ClInclude Include="IBR_Components.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="IBB_CustomBool.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="IBR_LinkNode.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="IBR_IniLine.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="INIBrowser.cpp">
@@ -340,6 +349,9 @@
     </ClCompile>
     <ClCompile Include="IBR_LinkNode.cpp">
       <Filter>头文件</Filter>
+    </ClCompile>
+    <ClCompile Include="IBB_CustomBool.cpp">
+      <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

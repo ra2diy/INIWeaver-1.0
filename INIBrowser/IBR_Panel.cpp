@@ -62,14 +62,24 @@ void ControlPanel_WaitOpen()
 
 void ControlPanel_File()
 {
-    if (ImGui::Button(locc("GUI_Save")))IBR_ProjectManager::SaveOptAction();//
-    if (ImGui::Button(locc("GUI_SaveAs")))IBR_ProjectManager::SaveAsAction();//
-    if (IBR_Inst_Project.IBR_SectionMap.empty())ImGui::TextDisabled(locc("GUI_Output"));
-    else if (ImGui::Button(locc("GUI_Output")))IBR_ProjectManager::OutputAction();//
+    auto lw = ImGui::GetWindowContentRegionWidth() - FontHeight * 0.5F;
+    auto lh = FontHeight * 2.0F;
 
+    if (ImGui::Button(locc("GUI_Save"), { lw / 3.0f, lh }))IBR_ProjectManager::SaveOptAction();//
+    ImGui::SameLine();
+    if (ImGui::Button(locc("GUI_SaveAs"), { lw / 3.0f, lh }))IBR_ProjectManager::SaveAsAction();//
+    ImGui::SameLine();
+    if (IBR_Inst_Project.IBR_SectionMap.empty())
+    {
+        ImGui::BeginDisabled();
+        ImGui::Button(locc("GUI_Output"), { lw / 3.0f, lh });
+        ImGui::EndDisabled();
+    }
+    else if (ImGui::Button(locc("GUI_Output"), { lw / 3.0f, lh }))IBR_ProjectManager::OutputAction();//
     ImGui::NewLine();
-    if (ImGui::Button(locc("GUI_CloseProject")))IBR_ProjectManager::ProjOpen_CreateAction(); //王德发你猜为什么是CreateAction
-    if (ImGui::Button(locc("GUI_OpenProject")))IBR_ProjectManager::ProjOpen_OpenAction();//
+    if (ImGui::Button(locc("GUI_CloseProject"), { lw / 2.0f, lh }))IBR_ProjectManager::ProjOpen_CreateAction(); //王德发你猜为什么是CreateAction
+    ImGui::SameLine();
+    if (ImGui::Button(locc("GUI_OpenProject"), { lw / 2.0f, lh }))IBR_ProjectManager::ProjOpen_OpenAction();//
     ImGui::NewLine();
     IBR_RecentManager::RenderUI();//
     /*
@@ -134,7 +144,6 @@ void ControlPanel_Edit()
     if (IBR_EditFrame::CurSection.ID != IBR_EditFrame::PrevId)
     {
         IBR_EditFrame::PrevId = IBR_EditFrame::CurSection.ID;
-        IBR_EditFrame::UpdateSection();
     }
     if (!IBR_EditFrame::Empty)if (!IBR_EditFrame::CurSection.HasBack())
     {

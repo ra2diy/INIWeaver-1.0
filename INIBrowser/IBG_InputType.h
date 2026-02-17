@@ -1,6 +1,8 @@
 ﻿#pragma once
 #include "FromEngine/Include.h"
 #include "IBB_OutputFormat.h"
+#include "IBR_LinkNode.h"
+#include <variant>
 
 struct IBB_InputFormat
 {
@@ -60,8 +62,12 @@ struct IBG_InputComponent : public std::enable_shared_from_this<IBG_InputCompone
     virtual void ParseValue(IBB_ValueContainer& Cont, const IBB_InputFormat& Format) = 0;
     virtual bool CanProvideState(IBB_ValueContainer& Cont) const = 0;
     virtual void ResetState(IBB_ValueContainer& Cont) const = 0;
+    virtual int GetCurrentTargetValueID() const = 0;
+    virtual bool SupportLinks() const = 0;
 
     IICStatus InitialStatus;
+    LinkNodeSetting NodeSetting;
+    bool UseCustomSetting;//true : 保持自定义值 false : NodeSetting会随时刷新
 };
 
 struct IBB_FormatComponent : public std::enable_shared_from_this<IBB_FormatComponent>
@@ -147,6 +153,7 @@ struct IBG_InputFormUIResult
 };
 
 struct IBG_InputForm;
+struct LinkNodeSetting;
 using IIFPtr = std::unique_ptr<IBG_InputForm>;
 
 struct IBG_InputForm
@@ -155,7 +162,8 @@ struct IBG_InputForm
     std::shared_ptr<std::vector<IFCPtr>> FormatComponents;
     
     IBB_InputValue& GetValue(int ValueID);
-    IBG_InputFormUIResult RenderUI(); //returns whether any value changed
+    IBG_InputFormUIResult RenderUI(const LinkNodeSetting& Default); //returns whether any value changed
+    void CheckStatus();
     const std::string& GetFormattedString();
     void ParseFromString(const std::string& Str);
     void ResetState();
@@ -169,8 +177,17 @@ private:
     std::vector<IICStatus> ComponentStatus;
     bool Dirty{ true };
     bool LinkNodeEnabled{ false };
+
+public:
+    std::vector<IICStatus>& GetComponentStatus() { return ComponentStatus; }
+    IBB_ValueContainer& GetValues() { return ValueContainer; }
 };
 
+using IIFWrapper = std::variant< IIFPtr, IIFPtr*, std::monostate >;
+struct IIFWrapper_Wrapper
+{
+    IIFWrapper _;
+};
 
 
 struct IBG_InputType
@@ -298,6 +315,8 @@ struct IIC_PureText final : public IBG_InputComponent
     void ParseValue(IBB_ValueContainer&, const IBB_InputFormat&) {}
     bool CanProvideState(IBB_ValueContainer&) const { return true; }
     void ResetState(IBB_ValueContainer&) const {}
+    int GetCurrentTargetValueID() const { return -1; }
+    bool SupportLinks() const { return false; }
 };
 
 struct IIC_LocalizedText final : public IBG_InputComponent
@@ -315,6 +334,8 @@ struct IIC_LocalizedText final : public IBG_InputComponent
     void ParseValue(IBB_ValueContainer&, const IBB_InputFormat&) {}
     bool CanProvideState(IBB_ValueContainer&) const { return true; }
     void ResetState(IBB_ValueContainer&) const {}
+    int GetCurrentTargetValueID() const { return -1; }
+    bool SupportLinks() const { return false; }
 };
 
 struct IIC_SameLine final : public IBG_InputComponent
@@ -324,6 +345,8 @@ struct IIC_SameLine final : public IBG_InputComponent
     void ParseValue(IBB_ValueContainer&, const IBB_InputFormat&) {}
     bool CanProvideState(IBB_ValueContainer&) const { return true; }
     void ResetState(IBB_ValueContainer&) const {}
+    int GetCurrentTargetValueID() const { return -1; }
+    bool SupportLinks() const { return false; }
 };
 
 struct IIC_NewLine final : public IBG_InputComponent
@@ -333,6 +356,8 @@ struct IIC_NewLine final : public IBG_InputComponent
     void ParseValue(IBB_ValueContainer&, const IBB_InputFormat&) {}
     bool CanProvideState(IBB_ValueContainer&) const { return true; }
     void ResetState(IBB_ValueContainer&) const {}
+    int GetCurrentTargetValueID() const { return -1; }
+    bool SupportLinks() const { return false; }
 };
 
 struct IIC_Separator final : public IBG_InputComponent
@@ -342,6 +367,8 @@ struct IIC_Separator final : public IBG_InputComponent
     void ParseValue(IBB_ValueContainer&, const IBB_InputFormat&) {}
     bool CanProvideState(IBB_ValueContainer&) const { return true; }
     void ResetState(IBB_ValueContainer&) const {}
+    int GetCurrentTargetValueID() const { return -1; }
+    bool SupportLinks() const { return false; }
 };
 
 struct IIC_InputText final : public IBG_InputComponent
@@ -355,6 +382,8 @@ struct IIC_InputText final : public IBG_InputComponent
     void ParseValue(IBB_ValueContainer& Cont, const IBB_InputFormat& Format);
     bool CanProvideState(IBB_ValueContainer& Cont) const;
     void ResetState(IBB_ValueContainer& Cont) const;
+    int GetCurrentTargetValueID() const { return ValueID; }
+    bool SupportLinks() const { return true; }
 };
 
 struct IIC_EnumCombo final : public IBG_InputComponent
@@ -370,6 +399,8 @@ struct IIC_EnumCombo final : public IBG_InputComponent
     void ParseValue(IBB_ValueContainer& Cont, const IBB_InputFormat& Format);
     bool CanProvideState(IBB_ValueContainer& Cont) const;
     void ResetState(IBB_ValueContainer& Cont) const;
+    int GetCurrentTargetValueID() const { return ValueID; }
+    bool SupportLinks() const { return false; }
 };
 
 struct IIC_EnumRadio final : public IBG_InputComponent
@@ -386,6 +417,8 @@ struct IIC_EnumRadio final : public IBG_InputComponent
     void ParseValue(IBB_ValueContainer& Cont, const IBB_InputFormat& Format);
     bool CanProvideState(IBB_ValueContainer& Cont) const;
     void ResetState(IBB_ValueContainer& Cont) const;
+    int GetCurrentTargetValueID() const { return ValueID; }
+    bool SupportLinks() const { return false; }
 };
 
 struct IIC_Bool final : public IBG_InputComponent
@@ -400,6 +433,8 @@ struct IIC_Bool final : public IBG_InputComponent
     void ParseValue(IBB_ValueContainer& Cont, const IBB_InputFormat& Format);
     bool CanProvideState(IBB_ValueContainer& Cont) const;
     void ResetState(IBB_ValueContainer& Cont) const;
+    int GetCurrentTargetValueID() const { return ValueID; }
+    bool SupportLinks() const { return false; }
 };
 
 struct IIC_InputInt final : public IBG_InputComponent
@@ -414,6 +449,8 @@ struct IIC_InputInt final : public IBG_InputComponent
     void ParseValue(IBB_ValueContainer& Cont, const IBB_InputFormat& Format);
     bool CanProvideState(IBB_ValueContainer& Cont) const;
     void ResetState(IBB_ValueContainer& Cont) const;
+    int GetCurrentTargetValueID() const { return ValueID; }
+    bool SupportLinks() const { return false; }
 };
 
 struct IIC_SliderInt final : public IBG_InputComponent
@@ -430,6 +467,8 @@ struct IIC_SliderInt final : public IBG_InputComponent
     void ParseValue(IBB_ValueContainer& Cont, const IBB_InputFormat& Format);
     bool CanProvideState(IBB_ValueContainer& Cont) const;
     void ResetState(IBB_ValueContainer& Cont) const;
+    int GetCurrentTargetValueID() const { return ValueID; }
+    bool SupportLinks() const { return false; }
 };
 
 struct IIC_Error final : public IBG_InputComponent
@@ -441,6 +480,8 @@ struct IIC_Error final : public IBG_InputComponent
     void ParseValue(IBB_ValueContainer&, const IBB_InputFormat&) {}
     bool CanProvideState(IBB_ValueContainer&) const { return true; }
     void ResetState(IBB_ValueContainer&) const {}
+    int GetCurrentTargetValueID() const { return -1; }
+    bool SupportLinks() const { return false; }
 };
 
 

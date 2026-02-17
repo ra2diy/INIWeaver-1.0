@@ -4,6 +4,7 @@
 #include "IBB_Index.h"
 #include "Global.h"
 #include "IBB_RegType.h"
+#include "IBR_LinkNode.h"
 
 const char* Internal_IniName = "_LINKGROUP_INI_FILE";
 extern const char* LinkAltPropType;
@@ -312,6 +313,19 @@ const IBG_InputType& IBB_IniLine_Default::GetInputType() const
     return *Input;
 }
 
+int IBB_IniLine_Default::GetLinkLimit() const
+{
+    return *reinterpret_cast<const int*>(&Property.Lim);
+}
+
+LinkNodeSetting IBB_IniLine_Default::GetNodeSetting() const
+{
+    return LinkNodeSetting{
+        Property.TypeAlt,
+        GetLinkLimit(),
+        Color
+    };
+}
 
 
 const IBB_Ini* IBB_Project::GetIni(const IBB_Project_Index& Index) const
@@ -330,13 +344,22 @@ IBB_Section* IBB_Project::GetSec(IBB_Project_Index& Index)const
 {
     return Index.GetSec(*(IBB_Project*)this);
 }
-IBB_Project_Index IBB_Project::GetSecIndex(const std::string& Name) const
+IBB_Project_Index IBB_Project::GetSecIndex(const std::string& Name, const std::string& PriorIni) const
 {
+    if(!PriorIni.empty())
+        for (auto& I : Inis)
+    {
+        if (I.Name != PriorIni)continue;
+        auto it = I.Secs.find(Name);
+        if (it != I.Secs.end())return { I.Name, it->second.Name };
+    }
+
     for (auto& I : Inis)
     {
         auto it = I.Secs.find(Name);
         if (it != I.Secs.end())return { I.Name, it->second.Name };
     }
+
     return { "","" };
 }
 
@@ -417,7 +440,7 @@ bool IBB_Ini::Merge(const IBB_Ini& Another, bool IsDuplicate)
 }
 
 
-IBB_IniLine::ValidateResult IBB_IniLine::ValidateValue() const
+ValidateResult IBB_IniLine::ValidateValue() const
 {
     if (!Default)return ValidateResult::Unknown;
 
@@ -429,7 +452,7 @@ IBB_IniLine::ValidateResult IBB_IniLine::ValidateValue() const
     else
         return ValidateResult::Abnormal;
 }
-IBB_IniLine::ValidateResult IBB_IniLine::ValidateAndSet(const std::string& Value)
+ValidateResult IBB_IniLine::ValidateAndSet(const std::string& Value)
 {
     //Backup -> Set -> Validate -> Accept or Recover
 
@@ -453,7 +476,7 @@ IBB_IniLine::ValidateResult IBB_IniLine::ValidateAndSet(const std::string& Value
 
     return VR;
 }
-IBB_IniLine::ValidateResult IBB_IniLine::ValidateAndMerge(const std::string& Another, IBB_IniMergeMode Mode)
+ValidateResult IBB_IniLine::ValidateAndMerge(const std::string& Another, IBB_IniMergeMode Mode)
 {
     //Backup -> Set -> Validate -> Accept or Recover
 
@@ -477,7 +500,7 @@ IBB_IniLine::ValidateResult IBB_IniLine::ValidateAndMerge(const std::string& Ano
 
     return VR;
 }
-IBB_IniLine::ValidateResult IBB_IniLine::ValidateAndMerge(const IBB_IniLine& Another, IBB_IniMergeMode Mode)
+ValidateResult IBB_IniLine::ValidateAndMerge(const IBB_IniLine& Another, IBB_IniMergeMode Mode)
 {
     //Backup -> Set -> Validate -> Accept or Recover
 

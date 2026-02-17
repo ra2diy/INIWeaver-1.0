@@ -39,6 +39,7 @@ std::string GetVersionStr(int Ver)
 //统一的文件头
 const int32_t SaveFileHeaderSign = 0x00114514;
 const char* EmptyOnShowDesc = "\r\n\r\n\r\n";
+const char* EmptyBoolStrDesc = "\r\n\r\n\r\n";
 
 //设置的实例
 IBF_Setting IBF_Inst_Setting;

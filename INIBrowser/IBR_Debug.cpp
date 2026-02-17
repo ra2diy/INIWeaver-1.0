@@ -106,8 +106,9 @@ void IBR_Debug::RenderUI()
     if(ImGui::TreeNode(u8"UI状态参数"))
     {
         ImGui::Text("MousePos = (%.1f,%.1f)", msp.x, msp.y);
-        if (mardp.x == -FLT_MAX || mardp.y == -FLT_MAX)ImGui::Text("MassAfter_RightDownPos = INVALID");
+        if (mardp.x == FLT_MAX || mardp.y == FLT_MAX || mardp.x == -FLT_MAX || mardp.y == -FLT_MAX)ImGui::Text("MassAfter_RightDownPos = INVALID");
         else ImGui::Text("MassAfter_RightDownPos = (%.1f,%.1f)", mardp.x, mardp.y);
+        ImGui::Text("ScreenSize = (%d, %d)", IBR_UICondition::CurrentScreenWidth, IBR_UICondition::CurrentScreenHeight);
         ImGui::Text("IsBgDragging = %s", IBR_WorkSpace::IsBgDragging ? "true" : "false");
         ImGui::Text("HoldingModules = %s", IBR_WorkSpace::HoldingModules ? "true" : "false");
         ImGui::Text("IsMassSelecting = %s", IBR_WorkSpace::IsMassSelecting ? "true" : "false");

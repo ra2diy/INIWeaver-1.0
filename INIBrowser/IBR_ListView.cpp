@@ -90,33 +90,46 @@ namespace IBR_ListView
         bool Freeze{ false }, Unfreeze{ false }, Hide{ false }, Show{ false };
         const bool UseUnfreeze = SelectN && (SelAndFrozenN == SelectN);
         const bool UseShow = SelectN && (SelAndHiddenN == SelectN);
-        
+
+        auto lw = ImGui::GetWindowContentRegionWidth() - FontHeight * 0.9F;
+        auto lh = FontHeight * 1.6F;
+        auto BUTTON = [&](const char* Str, bool Disabled) -> bool
+            {
+                if (Disabled)
+                {
+                    ImGui::BeginDisabled();
+                    ImGui::Button(Str, { lw / 5.0F, lh });
+                    ImGui::EndDisabled();
+                    return false;
+                }
+                else return ImGui::Button(Str, { lw / 5.0F, lh });
+            };
 
         {
             if (FullSelected)
             {
-                if (SelectN == 0)ImGui::TextDisabled(locc("GUI_SelectAll"));
-                else if (ImGui::Button(locc("GUI_SelectNone")))SelectNone = true;
+                if (SelectN == 0)BUTTON(locc("GUI_SelectAll"), true);
+                else if (BUTTON(locc("GUI_SelectNone"), false))SelectNone = true;
             }
-            else if (ImGui::Button(locc("GUI_SelectAll")))SelectAll = true;
+            else if (BUTTON(locc("GUI_SelectAll"), false))SelectAll = true;
             ImGui::SameLine();
             if (SelectN == 0)
             {
-                ImGui::TextDisabled(locc("GUI_Delete")); ImGui::SameLine();
-                ImGui::TextDisabled(locc("GUI_Duplicate"));  ImGui::SameLine();
-                ImGui::TextDisabled(locc("GUI_FreezeSec"));  ImGui::SameLine();
-                ImGui::TextDisabled(locc("GUI_HideSec"));
+                BUTTON(locc("GUI_Delete"), true); ImGui::SameLine();
+                BUTTON(locc("GUI_Duplicate"), true);  ImGui::SameLine();
+                BUTTON(locc("GUI_FreezeSec"), true);  ImGui::SameLine();
+                BUTTON(locc("GUI_HideSec"), true);
             }
             else
             {
-                if (ImGui::Button(locc("GUI_Delete")))Delete = true; ImGui::SameLine();
-                if (ImGui::Button(locc("GUI_Duplicate")))Duplicate = true; ImGui::SameLine();
+                if (BUTTON(locc("GUI_Delete"), false))Delete = true; ImGui::SameLine();
+                if (BUTTON(locc("GUI_Duplicate"), false))Duplicate = true; ImGui::SameLine();
 
-                if (UseUnfreeze) { if (ImGui::Button(locc("GUI_UnfreezeSec"))) Unfreeze = true; }
-                else { if (ImGui::Button(locc("GUI_FreezeSec")))Freeze = true; }
+                if (UseUnfreeze) { if (BUTTON(locc("GUI_UnfreezeSec"), false)) Unfreeze = true; }
+                else { if (BUTTON(locc("GUI_FreezeSec"), false))Freeze = true; }
                 ImGui::SameLine();
-                if (UseShow) { if (ImGui::Button(locc("GUI_ShowSec"))) Show = true; }
-                else { if (ImGui::Button(locc("GUI_HideSec"))) Hide = true; }
+                if (UseShow) { if (BUTTON(locc("GUI_ShowSec"), false)) Show = true; }
+                else { if (BUTTON(locc("GUI_HideSec"), false)) Hide = true; }
             }
             
             if (TotalSections)

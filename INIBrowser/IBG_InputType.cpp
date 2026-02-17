@@ -1,4 +1,5 @@
 ﻿#include "IBG_InputType.h"
+#include "IBB_CustomBool.h"
 #include "imgui_internal.h"
 #include "IBRender.h"
 #include "IBR_Combo.h"
@@ -36,7 +37,8 @@ namespace ImGui
 }
 
 IBB_InputValue::IBB_InputValue(const IBB_InputValue& rhs)
-    : Value(rhs.Value), Dirty(rhs.Dirty), LastUpdate(rhs.LastUpdate)
+    : Value(rhs.Value), Dirty(rhs.Dirty), LastUpdate(rhs.LastUpdate),
+    StateValPtr(rhs.StateValPtr ? rhs.StateValPtr->Duplicate() : nullptr)
 { }
 
 void IBB_InputValue::NeedsUpdate(IBB_ValueContainer& Cont, IBG_InputComponent& Source)
@@ -69,39 +71,99 @@ IBB_InputValue& IBG_InputForm::GetValue(int ValueID)
     return ValueContainer.GetValue(ValueID);
 }
 
-IBG_InputFormUIResult IBG_InputForm::RenderUI()
+void IBG_InputForm::CheckStatus()
 {
-    bool Changed = false;
-    bool Active = false;
-
     if (ComponentStatus.size() < InputComponents->size())
         for (size_t i = ComponentStatus.size(); i < InputComponents->size(); i++)
             ComponentStatus.push_back(InputComponents->at(i)->InitialStatus);
 
-    for (auto& CS : ComponentStatus)
+    bool TryUpdateLink = LinkNodeEnabled && LinkNodeContext::CurSub;
+    if (!TryUpdateLink)
     {
-        if (!LinkNodeEnabled)
+        for (auto& CS : ComponentStatus)
         {
             if (CS.InputMethod == IICStatus::Link)
                 CS.InputMethod = IICStatus::Input;
         }
     }
-
-    for (auto&& [IC, CS] : std::views::zip(*InputComponents, ComponentStatus))
+    else if (LinkNodeContext::CurLineChangeCompStatus)
     {
+        for (auto& CS : ComponentStatus)
+        {
+            if (CS.InputMethod == IICStatus::Link)CS.InputMethod = IICStatus::Input;
+            else if (CS.InputMethod == IICStatus::Input)CS.InputMethod = IICStatus::Link;
+        }
+    }
+    
+}
+
+#include "Global.h"
+
+IBG_InputFormUIResult IBG_InputForm::RenderUI(const LinkNodeSetting& Default)
+{
+    bool Changed = false;
+    bool Active = false;
+
+    CheckStatus();
+
+    bool TryUpdateLink = LinkNodeEnabled && LinkNodeContext::CurSub;
+    std::unordered_set<uint64_t> UsedLinks;
+    bool NeedsUpdateLink = IBR_LinkNode::UpdateLinkInitial();
+
+    for (auto&& [CompIdx, IC, CS] : std::views::zip(std::views::iota(0u), *InputComponents, ComponentStatus))
+    {
+        LinkNodeContext::CompIndex = CompIdx;
         //存在不可缓存的状态
         if (!IC->CanProvideState(ValueContainer))
             GetFormattedString();//确保状态正确
 
+        if (CS.InputMethod == IICStatus::Link && !IC->UseCustomSetting)
+            IC->NodeSetting = Default;
+
         ImGui::PushID(IC.get());
         auto R = IC->RenderUI(ValueContainer, CS);
         ImGui::PopID();
+
+        if (TryUpdateLink)
+            IBR_LinkNode::UpdateLink(*LinkNodeContext::CurSub, LinkNodeContext::LineIndex, CompIdx, &UsedLinks);
+
         Changed |= R.Updated;
         Active |= R.Active;
         if (R.Updated)
+        {
             GetValue(R.ValueID).NeedsUpdate(ValueContainer, *IC);
+            if (
+                !NeedsUpdateLink && (
+                    IC->UseCustomSetting ||
+                    IC->InitialStatus.InputMethod == IICStatus::Link ||
+                    CS.InputMethod == IICStatus::Link
+                    )
+                )NeedsUpdateLink = true;
+        }
     }
-    if (Changed) Dirty = true;
+
+    LinkNodeContext::CompIndex = UINT_MAX;
+
+    if (TryUpdateLink)
+    {
+        IBR_LinkNode::PushRestLinkForDraw(
+            *LinkNodeContext::CurSub,
+            UsedLinks,
+            LinkNodeContext::LineIndex,
+            IBR_LinkNode::DefaultCenterInWindow()
+        );
+    }
+
+    if (Changed)
+    {
+        Dirty = true;
+        if (TryUpdateLink && NeedsUpdateLink)
+        {
+            IBRF_CoreBump.SendToR({ [cs = LinkNodeContext::CurSub] {
+                cs->UpdateAll();
+            } });
+        }
+    }
     return { Changed, Active };
 }
 
@@ -135,8 +197,10 @@ const std::string& IBG_InputForm::GetFormattedString()
 
 void IBG_InputForm::ParseFromString(const std::string& Str)
 {
-    //Clear State
+    //Clear State & Save Status
+    auto CC = std::move(ComponentStatus);
     ResetState();
+    ComponentStatus = std::move(CC);
     auto S = Str;
 
     //按照*FormatComponents的格式化组件来解析字符串
@@ -971,26 +1035,36 @@ IIC_InputText::IIC_InputText(IBB_ValueContainer& Cont, int valueid, const std::s
     Cont.GetValue(ValueID).ResetState<IIS_String>(InitialText);
 }
 
-IBB_UpdateResult IIC_InputText::RenderUI(IBB_ValueContainer& Cont, IICStatus&) {
-
-    //TODO STATUS
-
+IBB_UpdateResult IIC_InputText::RenderUI(IBB_ValueContainer& Cont, IICStatus& Status)
+{
     auto& Var = Cont.GetValue(ValueID);
-    static const IBB_InputFormat Fmt = { IBB_InputFormat::ToString, "" };
-    auto CurrentValue = Var.Dirty ? Var.StateValPtr->Format(Fmt) : Var.Value;
+    auto mf = [&Var, vid = ValueID](const std::string& NewValue, bool Active) ->IBB_UpdateResult
+        {
+            auto State = Var.StateValue<IIS_String>();
+            if (State) State->Text = NewValue;
+            else Var.ResetState<IIS_String>(NewValue);
+            return { true, Active, vid };
+        };
 
-    auto Size = ImGui::CalcTextSize(Hint.c_str(), NULL, true);
-    ImGui::SetNextItemWidth(ImGui::GetWindowContentRegionWidth() - ImGui::GetCursorPosX() - Size.x);
-    auto Changed = InputTextStdString(Hint.c_str(), CurrentValue);
-
-    if (Changed)
+    if (Status.InputMethod == IICStatus::Link)  
     {
-        auto State = Var.StateValue<IIS_String>();
-        if (State) State->Text = CurrentValue;
-        else Var.ResetState<IIS_String>(CurrentValue);
+        IBB_UpdateResult def = { false, false, -1 };
+        return IBR_LinkNode::RenderUI_Node(Hint, def, NodeSetting, mf);
     }
+    else
+    {
+        static const IBB_InputFormat Fmt = { IBB_InputFormat::ToString, "" };
+        auto CurrentValue = Var.Dirty ? Var.StateValPtr->Format(Fmt) : Var.Value;
 
-    return { Changed, ImGui::IsItemActive(), ValueID };
+        auto Size = ImGui::CalcTextSize(Hint.c_str(), NULL, true);
+        ImGui::SetNextItemWidth(ImGui::GetWindowContentRegionWidth() - ImGui::GetCursorPosX() - Size.x);
+        auto Changed = InputTextStdString(Hint.c_str(), CurrentValue);
+
+        auto Active = ImGui::IsItemActive();
+        if (Changed)return mf(CurrentValue, Active);
+        else return { false, Active, -1 };
+        
+    }
 }
 
 std::string IIC_InputText::FormatValue(IBB_ValueContainer& Cont, const IBB_InputFormat& Format)
@@ -1341,37 +1415,6 @@ std::string IIC_Error::FormatValue(IBB_ValueContainer& ,const IBB_InputFormat& )
 }
 
 // ======== InputFormComponentFactory ==========
-StrBoolType StrBoolTypeFromString(const std::string& str, StrBoolType Default)
-{
-    /*
-    Str_true_false,
-    Str_True_False,
-    Str_TRUE_FALSE,
-    Str_yes_no,
-    Str_Yes_No,
-    Str_YES_NO,
-    Str_t_f,
-    Str_T_F,
-    Str_y_n,
-    Str_Y_N,
-    Str_1_0,
-    Str_yeah_fuck
-    */
-
-    if (str == "true_false")return StrBoolType::Str_true_false;
-    else if (str == "True_False")return StrBoolType::Str_True_False;
-    else if (str == "TRUE_FALSE")return StrBoolType::Str_TRUE_FALSE;
-    else if (str == "yes_no")return StrBoolType::Str_yes_no;
-    else if (str == "Yes_No")return StrBoolType::Str_Yes_No;
-    else if (str == "YES_NO")return StrBoolType::Str_YES_NO;
-    else if (str == "t_f")return StrBoolType::Str_t_f;
-    else if (str == "T_F")return StrBoolType::Str_T_F;
-    else if (str == "y_n")return StrBoolType::Str_y_n;
-    else if (str == "Y_N")return StrBoolType::Str_Y_N;
-    else if (str == "1_0")return StrBoolType::Str_1_0;
-    else if (str == "yeah_fuck")return StrBoolType::Str_yeah_fuck;
-    else return Default;
-}
 
 IICPtr InputFormComponentFactory::CreateInputComponent(IBB_ValueContainer& Cont, const JsonObject& Obj)
 {
@@ -1382,6 +1425,9 @@ IICPtr InputFormComponentFactory::CreateInputComponent(IBB_ValueContainer& Cont,
     // { "InitialStatus" : <IICStatus> }
     // <IICStatus> :
     // "InitialLink" / "InitialInput"
+    // { "LinkNode" : <LinkNodeSetting> }
+    // <LinkNodeSetting> :
+    // { "Type": <string>, "Limit": <int>, "Color": <Color> }
 
     auto piic = CreateInputComponent_Special(Cont, Obj);
 
@@ -1393,6 +1439,17 @@ IICPtr InputFormComponentFactory::CreateInputComponent(IBB_ValueContainer& Cont,
     {
         if (!piic->InitialStatus.Load(oInitialStatus))
             return nullptr;
+    }
+
+    auto oLinkNode = Obj.GetObjectItem("LinkNode");
+
+    if (oLinkNode)
+    {
+        piic->NodeSetting.Load(oInitialStatus, &piic->UseCustomSetting);
+    }
+    else
+    {
+        piic->UseCustomSetting = false;
     }
 
     return piic; 
@@ -1420,6 +1477,8 @@ IICPtr InputFormComponentFactory::CreateInputComponent_Special(IBB_ValueContaine
     // {"Type": "Separator"}
     //IIC_InputText(int valueid, const std::string& InitialText, const std::string& hint)
     // {"Type": "InputText", "ValueID": <int> 【, "InitialValue": <string>】【, "Hint": <string>】}
+    // While Link shares the class but with preset initial status
+    // {"Type": "Link", "ValueID": <int> 【, "InitialValue": <string>】【, "Hint": <string>】}
     //IIC_EnumCombo(int valueid, const std::string& InitialValue, const std::string& hint, const std::unordered_map<std::string, std::string>& options)
     // {"Type": "EnumCombo", "ValueID": <int>, "InitialValue": <string>, "Options": { <AllowedValue1>: <DisplayName1>, <AllowedValue2>: <DisplayName2>, ... } 【, "Hint": <string>】}
     //IIC_EnumRadio(int valueid, const std::string& InitialValue, const std::unordered_map<std::string, std::string>& options, bool sameline)
@@ -1521,6 +1580,26 @@ IICPtr InputFormComponentFactory::CreateInputComponent_Special(IBB_ValueContaine
 
             return std::make_unique<IIC_InputText>(Cont, ValueID, InitValue, Hint);
         }
+        else if (typeStr == "Link")
+        {
+            //Another IIC_InputText
+            //IIC_InputText(int valueid, const std::string& InitialText, const std::string& hint)
+            // While Link shares the class but with preset initial status
+            // {"Type": "Link", "ValueID": <int> 【, "InitialValue": <string>】【, "Hint": <string>】}
+            auto oValueID = Obj.GetObjectItem("ValueID");
+            if (!oValueID || !oValueID.IsTypeNumber())
+                return nullptr;
+            int ValueID = oValueID.GetInt();
+
+            auto InitValue = Obj.ItemStringOr("InitialValue", "");
+            auto Hint = Obj.ItemStringOr("Hint", "");
+
+            auto q = std::make_unique<IIC_InputText>(Cont, ValueID, InitValue, Hint);
+
+            if (q)q->InitialStatus.InputMethod = IICStatus::Link;
+
+            return q;
+        }
         else if (typeStr == "EnumCombo")
         {
             //IIC_EnumCombo(int valueid, const std::string& InitialValue, const std::string& hint, const std::unordered_map<std::string, std::string>& options)
@@ -1568,10 +1647,10 @@ IICPtr InputFormComponentFactory::CreateInputComponent_Special(IBB_ValueContaine
             int ValueID = oValueID.GetInt();
 
             auto InitValue = Obj.ItemBoolOr("InitialValue", false);
-            auto FmtString = Obj.ItemStringOr("Fmt", "yes_no");
             auto Hint = Obj.ItemStringOr("Hint", "");
 
-            StrBoolType fmt = StrBoolTypeFromString(FmtString, StrBoolType::Str_yes_no);
+            auto oFmt = Obj.GetObjectItem("Fmt");
+            StrBoolType fmt = StrBoolTypeFromJSON(oFmt, StrBoolType::Str_yes_no);
 
             return std::make_unique<IIC_Bool>(Cont, ValueID, InitValue, fmt, Hint);
 

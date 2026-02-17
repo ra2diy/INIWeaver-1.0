@@ -5,6 +5,7 @@
 #include "Global.h"
 #include "IBB_ModuleAlt.h"
 #include "IBB_RegType.h"
+#include "IBG_InputType.h"
 #include <ranges>
 
 bool IBB_Section::Generate(const ModuleClipData& Clip)
@@ -80,7 +81,6 @@ bool IBB_Section::Generate(const ModuleClipData& Clip)
             std::vector<std::string> Order;
             VL.Value[InheritKeyName] = Inherit;
             OnShow[InheritKeyName] = "\n";
-            OutputDebugStringA("----------\n");
             for (auto& L : Clip.Lines)
             {
                 VL.Value[L.Key] = L.Value;
@@ -90,18 +90,6 @@ bool IBB_Section::Generate(const ModuleClipData& Clip)
             }
             
             GenerateLines(VL, Order, false);
-
-            /*
-            OutputDebugStringA("----------\n");
-            OutputDebugStringA((Name + "\n").c_str());
-            for (auto& [k, v] : OnShow)
-            {
-                if (!v.empty())
-                {
-                    OutputDebugStringA((k + "\n").c_str());
-                }
-            }
-            */
         }
     }
     return true;
@@ -256,7 +244,7 @@ bool IBB_Section::SetText(const std::vector<IniToken>& Tokens)
             }
             auto& Sub = SubSecs.at(It->second);
             {
-                if (!Sub.AddLine({ tok.Key,tok.Value }, false))Ret = false;
+                if (!Sub.AddLine({ tok.Key,tok.Value }, false, IBB_IniMergeMode::Replace))Ret = false;
                 if (tok.HasDesc)
                 {
                     if (tok.Desc.empty())OnShow[tok.Key] = EmptyOnShowDesc;
@@ -284,20 +272,6 @@ bool IBB_Section::SetText(const std::vector<IniToken>& Tokens)
     return Ret;
 }
 
-std::vector<IBB_Link> IBB_Section::GetLinkTo() const
-{
-    if (IsLinkGroup)
-    {
-        return LinkGroup_LinkTo;
-    }
-    else
-    {
-        std::vector<IBB_Link> Ret;
-        for (const auto& Sub : SubSecs)
-            Ret.insert(Ret.end(), Sub.LinkTo.begin(), Sub.LinkTo.end());
-        return Ret;
-    }
-}
 std::vector<std::string> IBB_Section::GetKeys(bool PrintExtraData) const
 {
     std::vector<std::string> Ret;
@@ -504,6 +478,64 @@ IBB_Section_NameType IBB_Section::GetNameType() const
     return Ret;
 }
 
+IIFWrapper_Wrapper IBB_Section::GetLineIIF(const std::string& Key) const
+{
+    auto NewIIF = [&] () -> IIFWrapper {
+        auto pLine = GetLineFromSubSecs(Key);
+        if (pLine)
+        {
+            if (pLine->Default)
+            {
+                auto& piif = pLine->Default->GetInputType().Sidebar;
+                if (piif) {
+                    auto dup = piif->Duplicate();
+                    dup->ParseFromString(pLine->Data->GetString());
+                    return dup;
+                }
+                else return std::monostate{};
+            }
+            else return std::monostate{};
+        }
+        else if (UnknownLines.HasValue(Key))
+        {
+            auto& Value = UnknownLines.GetVariable(Key);
+            auto& piif = IBB_DefaultRegType::SelectInputTypeByValue(Value).Sidebar;
+            if (piif) {
+                auto dup = piif->Duplicate();
+                dup->ParseFromString(Value);
+                return dup;
+            }
+            else return std::monostate{};
+        }
+        else return std::monostate{};
+    };
+
+    auto pbk = IBR_EditFrame::CurSection.GetBack();
+    if (pbk == this)
+    {
+        auto it = IBR_EditFrame::EditLines.find(Key);
+        if (it == IBR_EditFrame::EditLines.end())
+            return { std::monostate{} };// FUCK YOU IF IT HAPPENS
+        if (it->second.Edit.Input)
+            return { &(it->second.Edit.Input->Form) };
+        else
+            return { NewIIF() };
+    }
+    auto Rsec = IBR_Inst_Project.GetSection(GetThisDesc());
+    auto pSD = Rsec.GetSectionData();
+    if (pSD)
+    {
+        auto it = pSD->ActiveLines.find(Key);
+        if (it == pSD->ActiveLines.end())
+            return { NewIIF() };
+        if (it->second.Edit.Input)
+            return { &(it->second.Edit.Input->Form) };
+        else
+            return { NewIIF() };
+    }
+    return { NewIIF() };
+}
+
 std::string IBB_Section::GetFullVariable(const std::string& _Name) const
 {
     if (VarList.HasValue(_Name))return VarList.GetVariable(_Name);
@@ -559,7 +591,21 @@ bool IBB_Section::HasLine(const std::string& Key) const
     return false;
 }
 
-IBB_IniLine* IBB_Section::GetLineFromSubSecs(const std::string& KeyName) const
+bool IBB_Section::IsOnShow(const std::string& Key) const
+{
+    auto _F = this->OnShow.find(Key);
+    if (_F != this->OnShow.end() && _F->second.empty())return false;
+    else return true;
+}
+
+const std::string& IBB_Section::GetOnShow(const std::string& Key) const
+{
+    const static std::string Empty{};
+    auto _F = this->OnShow.find(Key);
+    return _F == this->OnShow.end() ? Empty : _F->second;
+}
+
+const IBB_IniLine* IBB_Section::GetLineFromSubSecs(const std::string& KeyName) const
 {
     if (SubSecs.empty())return nullptr;
     for (auto& Sub : SubSecs)
@@ -567,10 +613,58 @@ IBB_IniLine* IBB_Section::GetLineFromSubSecs(const std::string& KeyName) const
         auto It = Sub.Lines.find(KeyName);
         if (It != Sub.Lines.end())
         {
-            return const_cast<IBB_IniLine*>(std::addressof(It->second));
+            return std::addressof(It->second);
         }
     }
     return nullptr;
+}
+
+IBB_IniLine* IBB_Section::GetLineFromSubSecs(const std::string& KeyName)
+{
+    if (SubSecs.empty())return nullptr;
+    for (auto& Sub : SubSecs)
+    {
+        auto It = Sub.Lines.find(KeyName);
+        if (It != Sub.Lines.end())
+        {
+            return std::addressof(It->second);
+        }
+    }
+    return nullptr;
+}
+
+std::pair <IBB_IniLine*, IBB_SubSec*> IBB_Section::GetLineFromSubSecsEx2(const std::string& KeyName)
+{
+    if (SubSecs.empty())return { nullptr, nullptr };
+    for (auto& Sub : SubSecs)
+    {
+        auto It = Sub.Lines.find(KeyName);
+        if (It != Sub.Lines.end())
+        {
+            return {
+                std::addressof(It->second),
+                std::addressof(Sub)
+            };
+        }
+    }
+    return { nullptr, nullptr };
+}
+
+std::pair<IBB_IniLine*, size_t> IBB_Section::GetLineFromSubSecsEx(const std::string& KeyName)
+{
+    if (SubSecs.empty())return { nullptr, 0 };
+    for (auto& Sub : SubSecs)
+    {
+        auto It = Sub.Lines.find(KeyName);
+        if (It != Sub.Lines.end())
+        {
+            return {
+                std::addressof(It->second),
+                std::ranges::find(Sub.Lines_ByName, KeyName) - Sub.Lines_ByName.begin()
+            };
+        }
+    }
+    return { nullptr, 0 };
 }
 
 IBB_Project_Index IBB_Section::GetThisIndex() const
@@ -603,7 +697,7 @@ bool IBB_Section::GenerateLines(const IBB_VariableList& Par, const std::vector<s
                  SubSecs.emplace_back(ptr, this);
             }
             auto& Sub = SubSecs.at(It->second);
-            if (!Sub.AddLine(L, InitOnShow))Ret = false;
+            if (!Sub.AddLine(L, InitOnShow, IBB_IniMergeMode::Replace))Ret = false;
             if (RemakeOrder)LineOrder.push_back(L.first);
         }
     }
@@ -710,39 +804,89 @@ bool IBB_Section::Merge(const IBB_Section& Another, IBB_IniMergeMode MergeType, 
     //LinkedBy : Refresh from Update !
 }
 
+const std::vector<std::string>& SplitParamCached(const std::string& Text);
+
 bool IBB_Section::MergeLine(const std::string& Key, const std::string& Value, IBB_IniMergeMode Mode)
 {
-    //find in subsecs
-    auto K = GetLineFromSubSecs(Key);
-    if (K)
+    switch (Mode)
     {
-        auto R = K->Merge(Value, Mode);
-        IBRF_CoreBump.SendToR({ [=] {IBR_EditFrame::UpdateLine(Key, K->Data->GetString()); } });
-        return R;
+    case IBB_IniMergeMode::Replace:
+    {
+        auto ptr = IBF_Inst_DefaultTypeList.List.KeyBelongToSubSec(Key);
+        bool Unique = std::ranges::all_of(LineOrder, [&](const auto& elem) { return elem != Key; });
+        if (Unique)LineOrder.push_back(Key);
+        if (ptr == nullptr)
+        {
+            UnknownLines.Value[Key] = Value;
+            IBRF_CoreBump.SendToR({ [=] {IBR_EditFrame::UpdateLine(Key, Value); } });
+            return true;
+        }
+        else
+        {
+            auto It = std::find_if(SubSecs.begin(), SubSecs.end(), [&](const IBB_SubSec& su) {return su.Default == ptr; });
+            if (It == SubSecs.end())
+            {
+                SubSecs.emplace_back(ptr, this);
+                It = std::prev(SubSecs.end());
+            }
+            auto& Sub = *It;
+            IBRF_CoreBump.SendToR({ [=] {IBR_EditFrame::UpdateLine(Key, Value); } });
+            return Sub.AddLine({ Key, Value }, true, IBB_IniMergeMode::Replace);
+        }
     }
-
-    //not found, add to subsecs or unknownlines
-    auto ptr = IBF_Inst_DefaultTypeList.List.KeyBelongToSubSec(Key);
-    if (ptr == nullptr)
+    case IBB_IniMergeMode::Merge:
     {
-        UnknownLines.Value[Key] = Value;
-        LineOrder.push_back(Key);
-        IBRF_CoreBump.SendToR({ [=] {IBR_EditFrame::UpdateLine(Key, Value); } });
+        auto ptr = IBF_Inst_DefaultTypeList.List.KeyBelongToSubSec(Key);
+        bool Unique = std::ranges::all_of(LineOrder, [&](const auto& elem) { return elem != Key; });
+        if (Unique)LineOrder.push_back(Key);
+
+        const auto MergeVal = [](const std::string & Orig, const std::string & Value)->std::string
+        {
+            auto & pv = SplitParamCached(Orig);
+            bool Unique = std::ranges::all_of(pv, [&](const auto& elem) { return elem != Value; });
+            auto str = pv |
+                std::views::join_with(',') |
+                std::ranges::to<std::string>();
+            if (Unique)
+            {
+                if (!str.empty())str += ",";
+                str += Value;
+            }
+            return str;
+        };
+
+        if (ptr == nullptr)
+        {
+            UnknownLines.Value[Key] = MergeVal(UnknownLines.Value[Key], Value);
+            IBRF_CoreBump.SendToR({ [=] {IBR_EditFrame::UpdateLine(Key, Value); } });
+            return true;
+        }
+        else
+        {
+            auto It = std::find_if(SubSecs.begin(), SubSecs.end(), [&](const IBB_SubSec& su) {return su.Default == ptr; });
+            if (It == SubSecs.end())
+            {
+                SubSecs.emplace_back(ptr, this);
+                It = std::prev(SubSecs.end());
+            }
+            auto& Sub = *It;
+            auto LineIt = Sub.Lines.find(Key);
+            std::string NewVal;
+            if (LineIt == Sub.Lines.end())NewVal = Value;
+            else NewVal = MergeVal(LineIt->second.Data->GetString(), Value);
+            IBRF_CoreBump.SendToR({ [=] {IBR_EditFrame::UpdateLine(Key, NewVal); } });
+            return Sub.AddLine({ Key, NewVal }, true, IBB_IniMergeMode::Replace);
+        }
         return true;
     }
-    else
+    case IBB_IniMergeMode::Reserve:
     {
-        auto It = std::find_if(SubSecs.begin(), SubSecs.end(), [&](const IBB_SubSec& su) {return su.Default == ptr; });
-        if (It == SubSecs.end())
-        {
-            SubSecs.emplace_back(ptr, this);
-            It = std::prev(SubSecs.end());
-        } 
-        auto& Sub = *It;
-        LineOrder.push_back(Key);
-        IBRF_CoreBump.SendToR({ [=] {IBR_EditFrame::UpdateLine(Key, Value); } });
-        return Sub.AddLine({ Key, Value }, true);
+        if (HasLine(Key))return true;
+        return MergeLine(Key, Value, IBB_IniMergeMode::Replace);
     }
+    }
+
+    std::unreachable();
 }
 
 
@@ -765,6 +909,18 @@ void IBB_Section::OrderKey(const std::string& Key, size_t NewOrder)
     {
         LineOrder.erase(it);
         LineOrder.insert(LineOrder.begin() + NewOrder, Key);
+    }
+}
+
+void IBB_Section::CheckSubsecOrder()
+{
+    if (this->SubSecOrder.size() != this->SubSecs.size())
+    {
+        this->SubSecOrder.clear();
+        for (size_t i = 0; i < this->SubSecs.size(); i++)this->SubSecOrder.push_back(i);
+        std::ranges::sort(this->SubSecOrder, [&](size_t a, size_t b) {
+            return this->SubSecs[a].Default->Name < this->SubSecs[b].Default->Name;
+            });
     }
 }
 

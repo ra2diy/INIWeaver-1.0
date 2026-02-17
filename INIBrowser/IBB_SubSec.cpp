@@ -4,7 +4,8 @@
 #include "FromEngine/RFBump.h"
 #include "FromEngine/global_timer.h"
 #include "IBB_RegType.h"
-#include<imgui_internal.h>
+#include <imgui_internal.h>
+#include <ranges>
 
 extern const char* Internal_IniName;
 
@@ -153,8 +154,13 @@ void IBB_IniLine_DataList::ReplaceValue(const std::string& Old, const std::strin
 extern const char* DefaultAltPropType;
 extern const char* LinkAltPropType;
 
+std::string IBB_NewLink::GetText() const
+{
+    return "FROM " + From.operator IBB_Section_Desc().GetText() + "." + FromKey + " TO " + To.operator IBB_Section_Desc().GetText();
+}
+
 IBB_SubSec::IBB_SubSec(IBB_SubSec&& A) :
-    Root(A.Root), Default(A.Default), Lines_ByName(std::move(A.Lines_ByName)), Lines(std::move(A.Lines)), LinkTo(std::move(A.LinkTo))
+    Root(A.Root), Default(A.Default), Lines_ByName(std::move(A.Lines_ByName)), Lines(std::move(A.Lines)), LinkTo(std::move(A.LinkTo)), NewLinkTo(std::move(A.NewLinkTo))
 {}
 
 bool IBB_SubSec::Merge(const IBB_SubSec& Another, const std::unordered_map<std::string, IBB_IniMergeMode>& MergeType, bool IsDuplicate)
@@ -187,6 +193,11 @@ bool IBB_SubSec::Merge(const IBB_SubSec& Another, const std::unordered_map<std::
         {
             LinkTo.push_back(p);
             LinkTo.back().From = ti;
+        }
+        for (const auto& p : Another.NewLinkTo)
+        {
+            NewLinkTo.push_back(p);
+            NewLinkTo.back().From = ti;
         }
     }
     return Ret;
@@ -225,11 +236,18 @@ bool IBB_SubSec::Merge(const IBB_SubSec& Another, IBB_IniMergeMode Mode, bool Is
             LinkTo.back().From = ti;
 
         }
+        for (const auto& p : Another.NewLinkTo)
+        {
+            NewLinkTo.push_back(p);
+            NewLinkTo.back().From = ti;
+
+        }
     }
     return Ret;
 }
-bool IBB_SubSec::AddLine(const std::pair<std::string, std::string>& Line, bool InitOnShow)
+bool IBB_SubSec::AddLine(const std::pair<std::string, std::string>& Line, bool InitOnShow, IBB_IniMergeMode Mode)
 {
+    bool Ret = true;
     auto it = Lines.find(Line.first);
     if (it == Lines.end())
     {
@@ -242,12 +260,20 @@ bool IBB_SubSec::AddLine(const std::pair<std::string, std::string>& Line, bool I
             if (!Def->Property.TypeAlt.empty() && Def->Property.TypeAlt != "bool")
                 Root->OnShow[Line.first] = EmptyOnShowDesc;
         }
-        return true;
     }
     else
     {
-        return it->second.Merge(Line.second, IBB_IniMergeMode::Merge);
+        Ret = it->second.Merge(Line.second, Mode);
     }
+
+    auto RootRData = IBR_Inst_Project.GetSection(Root->GetThisDesc()).GetSectionData();
+    if (RootRData && RootRData->ActiveLines.contains(Line.first))
+    {
+        auto& in = RootRData->ActiveLines[Line.first].Edit.Input;
+        if (in)in->Form->ParseFromString(Line.second);
+    }
+
+    return UpdateAll() && Ret;
 }
 
 bool IBB_SubSec::ChangeRoot(IBB_Section* NewRoot)
@@ -256,6 +282,7 @@ bool IBB_SubSec::ChangeRoot(IBB_Section* NewRoot)
     {
         auto ti = NewRoot->GetThisIndex();
         for (auto& L : LinkTo)L.From = ti;
+        for (auto& L : NewLinkTo)L.From = ti;
     }
     Root = NewRoot;
     return true;
@@ -333,9 +360,26 @@ IBB_SubSec IBB_SubSec::Duplicate() const
     Ret.Default = Default;
     Ret.Lines_ByName = Lines_ByName;
     Ret.LinkTo = LinkTo;
+    Ret.NewLinkTo = NewLinkTo;
     Ret.Lines.reserve(Lines.size());
     for (const auto& p : Lines)Ret.Lines.insert({ p.first,p.second.Duplicate() });
     return Ret;
+}
+
+std::pair< std::multimap<uint64_t, size_t>::const_iterator, std::multimap<uint64_t, size_t>::const_iterator>
+IBB_SubSec::GetLink(size_t LineIdx, size_t ComponentIdx) const
+{
+    uint64_t l = LineIdx;
+    uint64_t c = ComponentIdx;
+    uint64_t i = (l << 32) | c;
+    return LinkSrc.equal_range(i);
+}
+void IBB_SubSec::ClaimLink(size_t LineIdx, size_t ComponentIdx, size_t LinkIdx)
+{
+    uint64_t l = LineIdx;
+    uint64_t c = ComponentIdx;
+    uint64_t i = (l << 32) | c;
+    LinkSrc.insert({ i, LinkIdx });
 }
 
 void IBB_SubSec::GenerateAsDuplicate(const IBB_SubSec& Src)
@@ -344,10 +388,161 @@ void IBB_SubSec::GenerateAsDuplicate(const IBB_SubSec& Src)
     Default = Src.Default;
     Lines_ByName = Src.Lines_ByName;
     LinkTo = Src.LinkTo;
+    NewLinkTo = Src.NewLinkTo;
     Lines.reserve(Src.Lines.size());
     for (const auto& p : Src.Lines)Lines.insert({ p.first,p.second.Duplicate() });
 }
 
+const std::vector<std::string>& SplitParamCached(const std::string& Text);
+
+bool IBB_SubSec::UpdateAll()
+{
+    bool Ret = true;
+    if (Default == nullptr)Ret = false;
+    std::vector<IBB_NewLink> NewLT;
+    NewLT.reserve(NewLinkTo.size() + 1);
+    LinkSrc.clear();
+    bool LimitFix = false;
+
+    for (auto&& [LineIdx, L] : std::views::zip(std::views::iota(0u), Lines_ByName))
+    {
+        if (EnableLogEx)
+        {
+            GlobalLogB.AddLog_CurTime(false); GlobalLogB.AddLog("IBB_SubSec::UpdateAll Line : ", false); GlobalLogB.AddLog(L.c_str());
+        }
+
+        auto wpw = Root->GetLineIIF(L);
+        auto& wp = wpw._;
+        if (std::holds_alternative<std::monostate>(wp))
+            continue;
+        else
+        {
+            IIFPtr* piif;
+            if (std::holds_alternative<IIFPtr>(wp))
+                piif = &std::get<0>(wp);
+            else
+                piif = std::get<1>(wp);
+            auto& iif = *piif;
+
+            if (!iif)
+            {
+                Ret = false;
+                continue;
+            }
+
+            auto& KeyName = L;
+            auto& Line = Lines[L];
+            auto ldd = Line.Default && IBB_DefaultRegType::HasRegType(Line.Default->Property.TypeAlt);
+            std::set<std::pair<int, int>> SelectValues;
+
+            int i = 0;
+            for (auto& iic : *iif->InputComponents)
+            {
+                if (!iic->SupportLinks())continue;
+                auto id = iic->GetCurrentTargetValueID();
+                if(ldd)
+                    SelectValues.insert({ id, i });
+                else if (iic->UseCustomSetting)//确实是常驻的Node
+                    SelectValues.insert({ id, i });
+                else if(iic->InitialStatus.InputMethod == IICStatus::Link)
+                    SelectValues.insert({ id, i });
+                else if(iif->GetComponentStatus()[i].InputMethod == IICStatus::Link)
+                    SelectValues.insert({ id, i });
+                i++;
+            }
+
+            auto& val = iif->GetValues();
+            auto DefaultLinkLimit = Line.Default ? Line.Default->GetLinkLimit() : -1;
+            auto CurrentEditBSec = IBR_EditFrame::CurSection.GetBack();
+            auto RootRData = IBR_Inst_Project.GetSection(Root->GetThisDesc()).GetSectionData();
+
+            iif->GetFormattedString();
+            for (auto&& [id, cidx] : SelectValues)
+            {
+                if (!val.Values.contains(id))continue;
+                auto& V = val.Values[id];
+                //GlobalLogB.AddLog("IBB_SubSec::UpdateAll Line : ", false);
+                //GlobalLogB.AddLog(L.c_str(), false);
+                //GlobalLogB.AddLog("=", false);
+                //GlobalLogB.AddLog(V.Value.c_str());
+                //GlobalLogB.AddLog("Result : ", false);
+                
+                auto& piic = iif->InputComponents->at(cidx);
+                auto LinkLimit = piic->UseCustomSetting ? piic->NodeSetting.LinkLimit : DefaultLinkLimit;
+                auto& spc = SplitParamCached(V.Value);
+                if (LinkLimit != -1 && (int)spc.size() > LinkLimit)
+                {
+                    LimitFix = true;
+                    std::string NewStr;
+                    if (LinkLimit == 1)NewStr = spc.back();
+                    else NewStr = spc |
+                        std::views::take(LinkLimit) |
+                        std::views::join_with(',') |
+                        std::ranges::to<std::string>();
+                    Line.Data->SetValue(NewStr);
+                    if (CurrentEditBSec == Root)
+                    {
+                        auto& Input = IBR_EditFrame::EditLines[KeyName].Edit.Input;
+                        if (Input)Input->Form->ParseFromString(NewStr);
+                    }
+                    if (RootRData && RootRData->ActiveLines.contains(KeyName))
+                    {
+                        auto& Input = RootRData->ActiveLines[KeyName].Edit.Input;
+                        if (Input)Input->Form->ParseFromString(NewStr);
+                    }
+                }
+                else if (!LimitFix)
+                    for (auto&& str : spc)
+                    {
+                        auto toidx = IBF_Inst_Project.Project.GetSecIndex(str, "");
+                        //sprintf_s(LogBufB, "<%p->%u:%u>%s, ", this, LineIdx, cidx, toidx.operator IBB_Section_Desc().GetText().c_str());
+                        //GlobalLogB.AddLog(LogBufB, false);
+                        ClaimLink(LineIdx, cidx, NewLT.size());
+
+                        ImU32 Col = piic->UseCustomSetting ? piic->NodeSetting.LinkCol :
+                            (Line.Default ? Line.Default->Color : (ImU32)IBB_DefaultRegType::GetDefaultNodeColor());
+                        NewLT.emplace_back(
+                            Root->GetThisIndex(),
+                            toidx,
+                            KeyName,
+                            Col
+                        );
+                    }
+                
+
+                
+                //GlobalLogB.AddLog("");
+            }
+        }
+    }
+
+    if (Default->IsInherit)
+    {
+        auto it = Lines.find(InheritKeyName);
+        if (it != Lines.end())Root->Inherit = it->second.Data->GetString(); 
+    }
+    NewLinkTo = NewLT;
+
+    if (LimitFix)Ret &= UpdateAll();
+
+    return Ret;
+}
+
+/*
+{
+    bool TemporaryCheck = true;
+    if (Lines.size() != Lines_ByName.size())
+        TemporaryCheck = false;
+    else for (auto& L : Lines_ByName)
+    {
+        if (!Lines.contains(L))TemporaryCheck = false;
+    }
+    if (!TemporaryCheck)
+        throw std::exception("wo yao yan pai", 1);
+}
+*/
+
+/*
 bool IBB_SubSec::UpdateAll()
 {
     bool Ret = true;
@@ -406,3 +601,4 @@ bool IBB_SubSec::UpdateAll()
     LinkTo = NewLT;
     return Ret;
 }
+*/

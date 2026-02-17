@@ -115,6 +115,9 @@ namespace IBR_DynamicData
                     Sleep(5);
                     continue;
                 }
+                //caonima neng cun cun bu cun gun
+                else break;
+                /*
                 else if (Error == ERROR_SUCCESS)
                 {
                     break;
@@ -128,6 +131,8 @@ namespace IBR_DynamicData
                         (L"IBR_DynamicData::Open " + locw("Error_ErrorOccurred")).c_str(), MB_OK);
                     ExitProcess(0);
                 }
+                */
+                
             }
             else break;
         }
@@ -179,7 +184,7 @@ namespace IBR_RecentManager
     void RenderUI()
     {
         ImGui::Text(locc("GUI_Recent"));
-        if (ImGui::Button(locc("GUI_ClearRecent")))
+        if (ImGui::Button(locc("GUI_ClearRecent"), { ImGui::GetWindowContentRegionWidth() , FontHeight * 1.5F }))
         {
             IBR_PopupManager::SetCurrentPopup(std::move(
                 IBR_PopupManager::Popup{}
@@ -270,13 +275,82 @@ namespace IBR_PopupManager
     ImVec2 RightClickMenuPos{ 0,0 };
     bool IsMouseOnPopupCond{ false };
 
+    ImVec2 CurrentPopupSize;
+    ImVec2 CurrentPopupPos;
+    bool CurrentPopupExtraMove;
+    ImVec2 CurrentPopupNewPos;
+
     std::vector<StdMessage> DelayedPopupAction;
+
+    //注意：IBR_DD在最大化时不会更新
+    //这个单独分离出来以应对最大化时的弹窗修正
+    int LastCSWForPopup{0}, LastCSHForPopup{0};
+    void UpdatePopupPosForResize()
+    {
+        auto CSW = IBR_UICondition::CurrentScreenWidth;
+        auto CSH = IBR_UICondition::CurrentScreenHeight;
+        if (LastCSWForPopup && LastCSHForPopup)
+        {
+            if ((LastCSWForPopup != CSW) || (LastCSHForPopup != CSH))
+                IBR_PopupManager::CurrentPopupFixPos(LastCSWForPopup, LastCSHForPopup, CSW, CSH);
+            LastCSWForPopup = CSW;
+            LastCSHForPopup = CSH;
+        }
+        else
+        {
+            LastCSWForPopup = IBR_DynamicData::LastCSW;
+            LastCSHForPopup = IBR_DynamicData::LastCSH;
+        }
+    }
+
+    void CurrentPopupFixPos(int OldW, int OldH, int NewW, int NewH)
+    {
+        sprintf_s(LogBuf, "From (%d, %d) to (%d, %d)", OldW, OldH, NewW, NewH);
+        IBR_HintManager::SetHint(LogBuf, HintStayTimeMillis);
+
+        CurrentPopupExtraMove = true;
+
+        // 将窗口尺寸转换为浮点数，避免整数除法
+        float oldWf = static_cast<float>(OldW);
+        float oldHf = static_cast<float>(OldH);
+        float newWf = static_cast<float>(NewW);
+        float newHf = static_cast<float>(NewH);
+
+        // 弹窗尺寸（固定）
+        float popupW = CurrentPopupSize.x;
+        float popupH = CurrentPopupSize.y;
+
+        // 弹窗中心在旧窗口中的坐标
+        float popupCenterX = CurrentPopupPos.x + popupW * 0.5f;
+        float popupCenterY = CurrentPopupPos.y + popupH * 0.5f;
+
+        // 弹窗中心相对于旧窗口中心的偏移
+        float offsetX = popupCenterX - oldWf * 0.5f;
+        float offsetY = popupCenterY - oldHf * 0.5f;
+
+        // 按窗口缩放比例调整偏移
+        float newOffsetX = offsetX * (newWf / oldWf);
+        float newOffsetY = offsetY * (newHf / oldHf);
+
+        // 新窗口中心
+        float newCenterX = newWf * 0.5f;
+        float newCenterY = newHf * 0.5f;
+
+        // 弹窗中心在新窗口中的位置
+        float newPopupCenterX = newCenterX + newOffsetX;
+        float newPopupCenterY = newCenterY + newOffsetY;
+
+        // 计算弹窗左上角在新窗口中的位置
+        CurrentPopupNewPos.x = newPopupCenterX - popupW * 0.5f;
+        CurrentPopupNewPos.y = newPopupCenterY - popupH * 0.5f;
+    }
 
     struct JsonParseErrorPopup
     {
         std::string Title;
         std::string ErrorStr;
         std::string Info;
+        bool ForJson;
     };
     std::vector<JsonParseErrorPopup> JsonParseErrorList;
     size_t JsonParseErrorListShown = 0;
@@ -296,16 +370,21 @@ namespace IBR_PopupManager
                     {
                         auto& W = JsonParseErrorList[JsonParseErrorListShown];
                         ImGui::Text(W.Info.c_str());
+                        if (!W.ForJson)
+                        {
+                            ImGui::Text(W.ErrorStr.c_str());
+                            return;
+                        }
                         auto V = W.ErrorStr | std::views::split('\n');
                         int TgIdx = 0;
                         int Idx = 1;
                         for (auto L : V)
                         {
                             auto R = std::string_view{ L.data(), L.size() };
-                            if (R.find(u8"【出错位置】") != R.npos)
+                            if (R.find(loc("Error_JsonParseErrorPos")) != R.npos)
                             {
                                 TgIdx = Idx;
-                                ImGui::Text(u8"第%d行：", Idx);
+                                ImGui::Text(locc("Error_JsonParseErrorLine"), Idx);
                                 break;
                             }
                             Idx++;
@@ -324,7 +403,7 @@ namespace IBR_PopupManager
         }
         else ClearPopupDelayed();
     }
-    void AddErrorPopup(std::string&& ErrorStr, const std::string& Title, const std::string& Info, const std::wstring& LogFormat)
+    void AddErrorPopup(std::string&& ErrorStr, const std::string& Title, const std::string& Info, const std::wstring& LogFormat, bool ForJson)
     {
         if (ErrorStr.empty())return;
         if (JsonParseErrorListShown != 0)
@@ -339,15 +418,19 @@ namespace IBR_PopupManager
             auto V = UTF8toUnicode(ErrorStr);
             GlobalLog.AddLog(std::vformat(LogFormat, std::make_wformat_args(V)));
         }
-        JsonParseErrorList.push_back({ Title, std::move(ErrorStr), Info });
+        JsonParseErrorList.push_back({ Title, std::move(ErrorStr), Info, ForJson });
     }
     void AddJsonParseErrorPopup(std::string&& ErrorStr, const std::string& Info)
     {
-        AddErrorPopup(std::move(ErrorStr), loc("GUI_JsonParseError"), Info, locw("Log_JsonParseErrorInfo"));
+        AddErrorPopup(std::move(ErrorStr), loc("GUI_JsonParseError"), Info, locw("Log_JsonParseErrorInfo"), true);
     }
     void AddModuleParseErrorPopup(std::string&& ErrorStr, const std::string& Info)
     {
-        AddErrorPopup(std::move(ErrorStr), loc("GUI_ModuleParseError"), Info, locw("Log_ModuleParseErrorInfo"));
+        AddErrorPopup(std::move(ErrorStr), loc("GUI_ModuleParseError"), Info, locw("Log_ModuleParseErrorInfo"), false);
+    }
+    void AddLoadConfigErrorPopup(std::string&& ErrorStr, const std::string& Info)
+    {
+        AddErrorPopup(std::move(ErrorStr), loc("GUI_LoadConfigError"), Info, locw("Log_LoadConfigErrorInfo"), false);
     }
 
     bool IsMouseOnPopup()
@@ -457,6 +540,14 @@ namespace IBR_PopupManager
             });
         return P;
     }
+
+    void SetCurrentPopup(Popup&& sc)
+    {
+        HasPopup = true;
+        CurrentPopup = std::move(sc);
+        CurrentPopupExtraMove = false;
+    }
+
     void RenderUI()
     {
         IsMouseOnPopupCond = false;
@@ -468,12 +559,19 @@ namespace IBR_PopupManager
             DelayedPopupAction.clear();
             bool HPPrev = HasPopup;
             if (CurrentPopup.Size.x >= 1.0F && CurrentPopup.Size.y >= 1.0F)ImGui::SetNextWindowSize(CurrentPopup.Size);
+            if (CurrentPopupExtraMove)
+            {
+                CurrentPopupExtraMove = false;
+                ImGui::SetNextWindowPos(CurrentPopupNewPos);
+            }
             if (CurrentPopup.Modal)
             {
                 if (ImGui::BeginPopupModal(CurrentPopup.Title.c_str(), CurrentPopup.CanClose ? (&HasPopup) : nullptr), CurrentPopup.Flag)
                 {
                     IsMouseOnPopupCond |= ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows);
                     CurrentPopup.Show();
+                    CurrentPopupSize = ImGui::GetWindowSize();
+                    CurrentPopupPos = ImGui::GetWindowPos();
                     ImGui::EndPopup();
                 }
             }
@@ -483,6 +581,8 @@ namespace IBR_PopupManager
                 {
                     IsMouseOnPopupCond |= ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows);
                     CurrentPopup.Show();
+                    CurrentPopupSize = ImGui::GetWindowSize();
+                    CurrentPopupPos = ImGui::GetWindowPos();
                     ImGui::EndPopup();
                 }
             }

@@ -88,6 +88,7 @@ bool IBB_DefaultTypeList::LoadFromAlt(const IBB_DefaultTypeAltList& AltList)
     TheOnlySubSec.Lines = IniLine_Default;
     TheOnlySubSec.Require.RequiredValues.clear();
     TheOnlySubSec.Require.ForbiddenValues.clear();
+    TheOnlySubSec.IsInherit = false;
 
     IBB_DefaultTypeAlt b;
     b.Name = InheritKeyName;
@@ -97,8 +98,9 @@ bool IBB_DefaultTypeList::LoadFromAlt(const IBB_DefaultTypeAltList& AltList)
     b.DescLong = "";
     b.Color = ImColor(50, 80, 255);
     EnsureType(b, &UsedStrings);
-    auto& InheritSubSec = SubSec_Default["  INHERIT_SUBSEC__"];
-    InheritSubSec.Name = "  INHERIT_SUBSEC__";
+    const char* InheritSubSecName = "  INHERIT_SUBSEC__";
+    auto& InheritSubSec = SubSec_Default[InheritSubSecName];
+    InheritSubSec.Name = InheritSubSecName;
     InheritSubSec.DescShort = "";
     InheritSubSec.DescLong = "";
     InheritSubSec.Platform = { "" };
@@ -106,6 +108,7 @@ bool IBB_DefaultTypeList::LoadFromAlt(const IBB_DefaultTypeAltList& AltList)
     InheritSubSec.Lines[InheritKeyName] = IniLine_Default[InheritKeyName];
     InheritSubSec.Require.RequiredValues.clear();
     InheritSubSec.Require.ForbiddenValues.clear();
+    InheritSubSec.IsInherit = true;
 
     for (const auto& s : UsedStrings)
     {
@@ -529,6 +532,9 @@ bool IBB_Project::AddModule(const ModuleClipData& Module)
     return Sc->Generate(Module);
 }
 
+size_t& SPCacheSize();
+void RecalcSPCacheSize(IBB_Project&, size_t&);
+
 //我也不太确定就这吗
 bool IBB_Project::UpdateAll()
 {
@@ -544,8 +550,6 @@ bool IBB_Project::UpdateAll()
         for (auto& ss : sp.second.SubSecs)ss.LinkTo.clear();
     }
     for (auto& Ini : Inis)if (!Ini.UpdateAll())Ret = false;
-    //GlobalLogB.AddLog_CurTime(false); GlobalLogB.AddLog("——IBB_Project::UpdateAll——");//BREAKPOINT
-    //GlobalLogB.AddLog_CurTime(false); GlobalLogB.AddLog("——测试：触发Update——");//BREAKPOINT
     for (auto& Ini : Inis)for (auto& sp : Ini.Secs)
     {
         if (sp.second.IsLinkGroup)
@@ -583,6 +587,7 @@ bool IBB_Project::UpdateAll()
             }
         }
     }
+    RecalcSPCacheSize(*this, SPCacheSize());
     if (EnableLogEx)
     {
         GlobalLogB.AddLog_CurTime(false);
@@ -624,6 +629,15 @@ _TEXT_UTF8 std::string IBB_Project::GetText(bool PrintExtraData) const
         Text.push_back('\n');
     }
     return Text;
+}
+
+void RecalcSPCacheSize(IBB_Project& Proj, size_t& Sz)
+{
+    size_t NewSz = 0;
+    for (auto& ini : Proj.Inis)
+        for (auto& [secname, sec] : ini.Secs)
+            NewSz += sec.LineOrder.size();
+    Sz = NewSz;
 }
 
 void IBB_Project::Clear()

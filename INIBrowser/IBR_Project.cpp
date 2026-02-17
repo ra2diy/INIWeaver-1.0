@@ -448,12 +448,14 @@ bool _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE IBR_Project::DeleteSect
 
 bool _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE IBR_Project::DeleteSection(const std::vector<IBB_Section_Desc>& Descs)
 {
+    int UpdateCount = 0;
     bool Ret = true;
     for (auto& Desc : Descs)
     {
         if (Desc.Ini.empty() || Desc.Sec.empty())continue;
         {
             IBD_RInterruptF(x);
+            UpdateCount++;
             if (IBF_Inst_Project.Project.GetSec(IBB_Project_Index{ Desc }) == nullptr)continue;
             auto ci = const_cast<IBB_Ini*>(IBF_Inst_Project.Project.GetIni(IBB_Project_Index{ Desc }));
             Ret &= ci->DeleteSection(Desc.Sec);
@@ -465,6 +467,7 @@ bool _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE IBR_Project::DeleteSect
         IBR_SectionMap.erase(RS.ID);
         IBR_Rev_SectionMap.erase(Desc);
     }
+    if(UpdateCount)
     {
         IBD_RInterruptF(x);
         IBF_Inst_Project.UpdateAll();
@@ -615,7 +618,6 @@ void IBR_Project::Clear()
     IBR_SectionMap.clear();
     IBR_Rev_SectionMap.clear();
     IBR_SecDragMap.clear();
-    IBR_LineDragMap.clear();
     CopyTransform.clear();
     DragConditionText.clear();
     DragConditionTextAlt.clear();

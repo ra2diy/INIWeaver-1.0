@@ -1,4 +1,4 @@
-#include "FromEngine/Include.h"
+﻿#include "FromEngine/Include.h"
 #include <ranges>
 #include <filesystem>
 
@@ -151,7 +151,7 @@ namespace IBR_Font
             valueIndex++;
             if (result != ERROR_SUCCESS || valueType != REG_SZ)continue;
             std::wstring wsValueName(valueName, valueNameSize);
-            std::wstring wsFontFile((LPWSTR)valueData, valueDataSize);
+            std::wstring wsFontFile((LPWSTR)valueData, valueDataSize / sizeof(wchar_t));
             ToUpper(wsFontFile);
             ToUpper(wsValueName);
             if (wsFontFile.ends_with(L".TTF") || wsFontFile.ends_with(L".TTC"))
@@ -222,7 +222,7 @@ namespace IBR_Font
             valueIndex++;
             if (result != ERROR_SUCCESS || valueType != REG_SZ)continue;
             std::wstring wsValueName(valueName, valueNameSize);
-            std::wstring wsFontFile((LPWSTR)valueData, valueDataSize);
+            std::wstring wsFontFile((LPWSTR)valueData, valueDataSize / sizeof(wchar_t));
             ToUpper(wsFontFile);
             ToUpper(wsValueName);
             //remove , and after:
