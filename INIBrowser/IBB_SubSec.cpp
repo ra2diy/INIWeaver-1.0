@@ -175,9 +175,9 @@ bool IBB_SubSec::Merge(const IBB_SubSec& Another, IBB_IniMergeMode Mode, bool Is
 }
 bool IBB_SubSec::AddLine(const std::pair<std::string, std::string>& Line, bool InitOnShow, IBB_IniMergeMode Mode, bool NoUpdate)
 {
-    sprintf_s(LogBufB, __FUNCTION__ ":  %s=%s Mode=%d InitOnShow=%s NoUpdate=%s",
+    /*sprintf_s(LogBufB, __FUNCTION__ ":  %s=%s Mode=%d InitOnShow=%s NoUpdate=%s",
         Line.first.c_str(), Line.second.c_str(), Mode, IBD_BoolStr(InitOnShow), IBD_BoolStr(NoUpdate));
-    GlobalLogB.AddLog(LogBufB);
+    GlobalLogB.AddLog(LogBufB);*/
 
     bool Ret = true;
     auto it = Lines.find(Line.first);
@@ -366,12 +366,25 @@ bool IBB_SubSec::TriggerUpdate()
 {
     auto Ret = true;
     auto& Proj = *Root->Root->Root;
-    Ret &= Root->UpdateAll();
+    Ret &= UpdateAll();
+    auto SubLinkTo =  Root->SubSecs |
+        std::views::transform([&](auto& ss) {return ss.NewLinkTo; }) |
+        std::views::join;
     for (auto& Link : NewLinkTo)
     {
         auto pSec = Link.To.GetSec(Proj);
         if (pSec != Root && pSec)
+        {
             Ret &= pSec->UpdateAll();
+            pSec->NewLinkedBy = pSec->NewLinkedBy |
+                std::views::filter([&](auto& l) { return l.From != Root->GetThisIndex(); }) |
+                std::ranges::to<std::vector>();
+            if (Root->IsLinkGroup)
+                pSec->NewLinkedBy.append_range(Root->LinkGroup_NewLinkTo);
+            else
+                pSec->NewLinkedBy.append_range(SubLinkTo);
+
+        }
     }
     return Ret;
 }
@@ -441,11 +454,11 @@ bool IBB_SubSec::UpdateAll()
             {
                 if (!val.Values.contains(id))continue;
                 auto& V = val.Values[id];
-                GlobalLogB.AddLog("IBB_SubSec::UpdateAll Line : ", false);
+                /*GlobalLogB.AddLog("IBB_SubSec::UpdateAll Line : ", false);
                 GlobalLogB.AddLog(L.c_str(), false);
                 GlobalLogB.AddLog("=", false);
                 GlobalLogB.AddLog(V.Value.c_str());
-                GlobalLogB.AddLog("Result : ", false);
+                GlobalLogB.AddLog("Result : ", false);*/
                 
                 auto& piic = iif->InputComponents->at(cidx);
                 auto LinkLimit = piic->UseCustomSetting ? piic->NodeSetting.LinkLimit : DefaultLinkLimit;
@@ -475,8 +488,8 @@ bool IBB_SubSec::UpdateAll()
                     for (auto&& str : spc)
                     {
                         auto toidx = IBF_Inst_Project.Project.GetSecIndex(str, "");
-                        sprintf_s(LogBufB, "New Link <%s->%u:%u> to %s, ", Root->Name.c_str(), LineIdx, cidx, toidx.operator IBB_Section_Desc().GetText().c_str());
-                        GlobalLogB.AddLog(LogBufB, false);
+                        //sprintf_s(LogBufB, "New Link <%s->%u:%u> to %s, ", Root->Name.c_str(), LineIdx, cidx, toidx.operator IBB_Section_Desc().GetText().c_str());
+                        //GlobalLogB.AddLog(LogBufB, false);
                         ClaimLink(LineIdx, cidx, NewLT.size());
 
                         ImU32 Col = piic->UseCustomSetting ? piic->NodeSetting.LinkCol :

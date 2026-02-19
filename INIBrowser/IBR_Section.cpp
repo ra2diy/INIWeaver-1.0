@@ -221,6 +221,7 @@ bool _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE IBR_Section::Rename(con
         if (pSec == nullptr || npSec != nullptr)Ret = false;
         else
         {
+            IBF_Inst_Project.UpdateAll();
             auto OldName = pSec->Name;
             Ret = pSec->Rename(NewName);
 

@@ -542,13 +542,17 @@ bool IBB_Project::UpdateAll()
         for (auto& [sn, Sec] : Ini.Secs)
         {
             if (Sec.IsLinkGroup)
+            {
                 for (auto& Link1 : Sec.LinkGroup_NewLinkTo)
                     if (auto To1 = Link1.To.GetSec(*this); To1)
                         To1->NewLinkedBy.push_back(Link1);
+            }
             else for (auto& Sub : Sec.SubSecs)
+            {
                 for (auto& Link : Sub.NewLinkTo)
                     if (auto To = Link.To.GetSec(*this); To)
                         To->NewLinkedBy.push_back(Link);
+            }
         }
     RecalcSPCacheSize(*this, SPCacheSize());
     if (EnableLogEx)

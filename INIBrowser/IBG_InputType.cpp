@@ -159,7 +159,8 @@ IBG_InputFormUIResult IBG_InputForm::RenderUI(const LinkNodeSetting& Default)
         Dirty = true;
         if (TryUpdateLink && NeedsUpdateLink)
         {
-            LinkNodeContext::CurSub->TriggerUpdate();
+            auto& KeyName = LinkNodeContext::CurSub->Lines_ByName[LinkNodeContext::LineIndex];
+            LinkNodeContext::CurSub->Root->MergeLine(KeyName, GetFormattedString(), IBB_IniMergeMode::Replace);
         }
     }
     return { Changed, Active };

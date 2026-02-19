@@ -808,9 +808,9 @@ const std::vector<std::string>& SplitParamCached(const std::string& Text);
 
 bool IBB_Section::MergeLine(const std::string& Key, const std::string& Value, IBB_IniMergeMode Mode, bool NoUpdate)
 {
-    sprintf_s(LogBufB, __FUNCTION__ ": Section %s : Merge %s=%s Mode=%d NoUpdate=%s",
+    /*sprintf_s(LogBufB, __FUNCTION__ ": Section %s : Merge %s=%s Mode=%d NoUpdate=%s",
         GetThisDesc().GetText().c_str(), Key.c_str(), Value.c_str(), Mode, IBD_BoolStr(NoUpdate));
-    GlobalLogB.AddLog(LogBufB);
+    GlobalLogB.AddLog(LogBufB);*/
     switch (Mode)
     {
     case IBB_IniMergeMode::Replace:
