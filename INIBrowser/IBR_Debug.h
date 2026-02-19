@@ -4,10 +4,6 @@
 
 struct IBR_Debug
 {
-    struct _UICond
-    {
-        bool LoopShow{ true }, OnceShow{ true };
-    }UICond;
     struct _Data
     {
         bool Nope;

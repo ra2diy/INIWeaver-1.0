@@ -134,15 +134,18 @@ void IBR_Debug::RenderUI()
         ImGui::TreePop();
     }
 
-    if (UICond.LoopShow) { if (ImGui::ArrowButton("loopc", ImGuiDir_Down))UICond.LoopShow = false; }
-    else { if (ImGui::ArrowButton("loopa", ImGuiDir_Right))UICond.LoopShow = true; }
-    if (UICond.LoopShow)for (auto x : DebugVec)x();
+    if (ImGui::TreeNode(u8"实时更新的消息"))
+    {
+        for (auto x : DebugVec)x();
+        ImGui::TreePop();
+    }
 
-    if (UICond.OnceShow) { if (ImGui::ArrowButton("loopd", ImGuiDir_Down))UICond.OnceShow = false; }
-    else { if (ImGui::ArrowButton("loopb", ImGuiDir_Right))UICond.OnceShow = true; }
-    ImGui::SameLine();
-    if (ImGui::Button(u8"CLEAR##clear"))DebugVecOnce.clear();
-    if (UICond.OnceShow)for (auto x : DebugVecOnce)x();
+    if (ImGui::Button(u8"清空单次消息"))DebugVecOnce.clear();
+    if (ImGui::TreeNode(u8"单次消息"))
+    {
+        for (auto x : DebugVecOnce)x();
+        ImGui::TreePop();
+    }
 }
 
 void IBR_Debug::RenderUIOnce()

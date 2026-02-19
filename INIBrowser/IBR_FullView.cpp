@@ -10,19 +10,30 @@ namespace IBR_FullView
 {
     ImVec2 CurrentEqMax;
 
-    ImVec2 ViewSize;//Set in INIBrowser.cpp
+    ImVec2 ViewSize;//Set in Initialize Stage IV
     double ViewScale = 20;
 
-    void UpdateCurrentEqMax() {}
-    
-    ImVec2 GetEqMin() { return (ImVec2)(ViewSize * ViewScale * (-0.5)); }
-    ImVec2 GetEqMax() { return (ImVec2)(ViewSize * ViewScale * (0.5)); }
-    ImVec2 GetCurrentEqMax() { return (ImVec2)(ViewSize * ViewScale * (0.5)); }
     ImVec2 GetDefaultEqMax() { return (ImVec2)(ViewSize * ViewScale * (0.5)); }
+    ImVec2 GetEqMax() { return CurrentEqMax; }
+    ImVec2 GetEqMin() { auto Max = GetEqMax(); return { -Max.x, -Max.y }; }
+
+    void UpdateCurrentEqMax()
+    {
+        auto EqMax = GetDefaultEqMax();
+        for (auto& sp : IBR_Inst_Project.IBR_SectionMap)
+        {
+            if (!IBR_Inst_Project.GetSectionFromID(sp.first).HasBack())continue;
+            auto& sd = sp.second;
+            if (sd.IsIncluded())continue;
+            EqMax.x = std::max({ EqMax.x, fabsf(sd.EqPos.x), fabsf(sd.EqPos.x + sd.EqSize.x) });
+            EqMax.y = std::max({ EqMax.y, fabsf(sd.EqPos.y), fabsf(sd.EqPos.y + sd.EqSize.y) });
+        }
+        CurrentEqMax = EqMax;
+    }
 
     int EqXRange(const ImVec2& V)
     {
-        auto MaxXY = (ImVec2)(ViewSize * ViewScale * 0.5);
+        auto MaxXY = GetEqMax();
         if (V.x < -MaxXY.x)return -1;
         if (V.x > MaxXY.x)return 1;
         return 0;
@@ -30,7 +41,7 @@ namespace IBR_FullView
 
     int EqYRange(const ImVec2& V)
     {
-        auto MaxXY = (ImVec2)(ViewSize * ViewScale * 0.5);
+        auto MaxXY = GetEqMax();
         if (V.y < -MaxXY.y)return -1;
         if (V.y > MaxXY.y)return 1;
         return 0;
@@ -38,7 +49,7 @@ namespace IBR_FullView
 
     void EqPosFixRange(ImVec2& V)
     {
-        auto MaxXY = (ImVec2)(ViewSize * ViewScale * 0.5);
+        auto MaxXY = GetEqMax();
         V.x = std::min(V.x, MaxXY.x);
         V.x = std::max(V.x, -MaxXY.x);
         V.y = std::min(V.y, MaxXY.y);
@@ -47,16 +58,22 @@ namespace IBR_FullView
 
     bool EqPosInRange(ImVec2 V)
     {
-        auto MaxXY = (ImVec2)(ViewSize * ViewScale * 0.5);
+        auto MaxXY = GetEqMax();
         return V.x <= MaxXY.x && V.x >= -MaxXY.x && V.y <= MaxXY.y && V.y >= -MaxXY.y;
+    }
+
+    ImVec2 ViewSizeOnDraw()
+    {
+        return GetEqMax() * 2.0 / ViewScale;
     }
 
     void DrawView(ImDrawList* dl, ImVec2 Pos)
     {
-        ImVec2 CPos = Pos + (ViewSize * 0.5);
+        auto VS = ViewSizeOnDraw();
+        ImVec2 CPos = Pos + (VS * 0.5);
         dImVec2 VOffset = dImVec2(IBR_FullView::EqCenter) / ViewScale;
-        dl->AddRectFilled(Pos, Pos + ViewSize, IBR_Color::BackgroundColor);
-        dImVec2 CC = Pos + (ViewSize / 2);//中心
+        dl->AddRectFilled(Pos, Pos + VS, IBR_Color::BackgroundColor);
+        dImVec2 CC = Pos + (VS * 0.5);//中心
         /*
         for (int i = 0; i < CurrentNSec; i++)
         {
@@ -108,7 +125,7 @@ namespace IBR_FullView
             {
                 dl->AddRectFilled(WUL, WDR, RSec.GetRegTypeColor());
             }
-            dl->AddRect(WUL, WDR, ImColor(ImGui::GetStyleColorVec4(ImGuiCol_Border)), 0.0f, 0, 1.0f);
+            dl->AddRect(WUL, WDR, ImColor(ImGui::GetStyleColorVec4(ImGuiCol_WindowBg)), 0.0f, 0, 1.0f);
         }
         if (psd != nullptr)
         {
@@ -116,7 +133,7 @@ namespace IBR_FullView
             ImVec2 WUL = CC + sd.EqPos / ViewScale;
             ImVec2 WDR = CC + (sd.EqPos + sd.EqSize) / ViewScale;
             dl->AddRectFilled(WUL, WDR, IBR_Color::ViewFocusWindowColor);
-            dl->AddRect(WUL, WDR, ImColor(ImGui::GetStyleColorVec4(ImGuiCol_Border)), 0.0f, 0, 1.0f);
+            dl->AddRect(WUL, WDR, ImColor(ImGui::GetStyleColorVec4(IBR_Color::FocusLineColor)), 0.0f, 0, 2.0f);
         }
 
         /*
@@ -145,7 +162,7 @@ namespace IBR_FullView
 
     void ChangeOffsetPos(ImVec2 ClickRel)
     {
-        IBR_FullView::EqCenter = (ClickRel - ViewSize * 0.5) * ViewScale;
+        IBR_FullView::EqCenter = (ClickRel - ViewSizeOnDraw() * 0.5) * ViewScale;
     }
 
     ImVec2 EqCenter = { 0.0f,0.0f };
@@ -158,18 +175,12 @@ namespace IBR_FullView
         TmpScale = floor(TmpScale / 5.0f) * 5.0f;
         IBR_FullView::Ratio = TmpScale / 100.0f;
 
+        auto VS = ViewSizeOnDraw();
         ImGui::Text(locc("GUI_ViewTitle"));
-        ImGui::BeginChildFrame(114514 + 2, ViewSize + ImVec2{ 5, 8 });
+        ImGui::BeginChildFrame(114514 + 2, VS + ImVec2{ 5, 8 });
         auto CRect = ImGui::GetCursorScreenPos();
-        ImGui::Dummy(ViewSize);
-        ///*
-        {
-            bool CHover = ImGui::IsItemHovered();
-            IBR_Inst_Debug.AddMsgCycle([=]() {ImGui::Text("View Hovered = %s", (CHover ? "true" : "false")); });
-            IBR_Inst_Debug.AddMsgCycle([=]() {ImGui::Text("View Pos = ( %.2f, %.2f )", CRect.x, CRect.y); });
-            IBR_Inst_Debug.AddMsgCycle([=]() {ImGui::Text("Offset Pos = ( %.2f, %.2f )", IBR_FullView::EqCenter.x, IBR_FullView::EqCenter.y); });
-        }
-        //*/
+        ImGui::Dummy(VS);
+
         if (ImGui::IsItemHovered() && ImGui::IsMouseDown(ImGuiMouseButton_Left))
         {
             auto MP = ImGui::GetIO().MousePos;

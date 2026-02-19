@@ -537,7 +537,7 @@ namespace IBR_EditFrame
     {
         if (Empty)
         {
-            //IBR_Inst_Menu.ChooseMenu(MenuItemID_FILE);
+            IBR_Inst_Menu.ChooseMenu(MenuItemID_FILE);
             return;
         }
 

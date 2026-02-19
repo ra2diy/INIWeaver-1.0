@@ -43,14 +43,17 @@ void ControlPanel_Debug()
 
     IBR_Inst_Debug.RenderUI();
 
-    int ii = 0;
-    for (auto& s : IBG_Undo.Stack)
+    if (ImGui::TreeNode(u8"撤销栈信息："))
     {
-        ImGui::Text(s.Id.c_str());
-        if (ii == IBG_Undo.Cursor)ImGui::Separator();
-        ++ii;
+        int ii = 0;
+        for (auto& s : IBG_Undo.Stack)
+        {
+            ImGui::Text(s.Id.c_str());
+            if (ii == IBG_Undo.Cursor)ImGui::Separator();
+            ++ii;
+        }
+        ImGui::TreePop();
     }
-
 }
 
 void ControlPanel_About();
