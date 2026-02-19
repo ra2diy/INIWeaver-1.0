@@ -421,7 +421,7 @@ namespace IBR_EditFrame
             {
                 IBG_Undo.SomethingShouldBeHere();
                 Line->Data->SetValue(L.Buffer);
-                Sub->UpdateAll();
+                Sub->TriggerUpdate();
             }
             else
             {

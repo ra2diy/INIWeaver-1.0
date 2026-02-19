@@ -193,6 +193,7 @@ struct IBB_SubSec
     bool RenameInLinkTo(size_t LinkIdx, const std::string& NewName);
 
     bool UpdateAll();
+    bool TriggerUpdate();
 
     bool AddLine(const std::pair<std::string, std::string>& Line, bool InitOnShow, IBB_IniMergeMode Mode, bool NoUpdate = false);
     bool ChangeRoot(IBB_Section* NewRoot);
@@ -293,6 +294,8 @@ struct IBB_Section
     bool HasLine(const std::string& Key) const;
     bool IsOnShow(const std::string& Key) const;
     const std::string& GetOnShow(const std::string& Key) const;
+    void SetOnShow(const std::string& Key, const std::string& Value, bool AllowReapply);
+    void SetOnShow(const std::string& Key);
 
     bool SetText(char* Text);//mess Text up
     bool SetText(const std::vector<IniToken>& Tokens);//do not consider section&inherit

@@ -159,9 +159,7 @@ IBG_InputFormUIResult IBG_InputForm::RenderUI(const LinkNodeSetting& Default)
         Dirty = true;
         if (TryUpdateLink && NeedsUpdateLink)
         {
-            IBRF_CoreBump.SendToR({ [cs = LinkNodeContext::CurSub] {
-                cs->UpdateAll();
-            } });
+            LinkNodeContext::CurSub->TriggerUpdate();
         }
     }
     return { Changed, Active };

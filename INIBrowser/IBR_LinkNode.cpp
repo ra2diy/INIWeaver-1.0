@@ -223,6 +223,11 @@ namespace IBR_LinkNode
         auto& Session = IBR_NodeSession::GetSessionValue(
             Data.Desc.Ini, Data.Desc.Sec, FromSub.Default->Name, LineIdx, CompIdx
         );
+        auto ModifyAndShow = [&](const std::string& NewValue, bool Active) -> auto
+            {
+                FromSub.Root->SetOnShow(KeyName);
+                return ModifyFunc(NewValue, Active);
+            };
 
         ImGui::PushStyleColor(ImGuiCol_CheckMark, Col.Value);
 
@@ -243,7 +248,7 @@ namespace IBR_LinkNode
         if (Clicked && !Empty)
         {
             if (LinkNode.LinkLimit == 1)
-                UR = ModifyFunc("", UR.Active);
+                UR = ModifyAndShow("", UR.Active);
         }
         else if (RightClicked && !Empty)
         {
@@ -358,7 +363,7 @@ namespace IBR_LinkNode
 
         if (Session.NotifyNewValue)
         {
-            UR = ModifyFunc(Session.NewValue, UR.Active);
+            UR = ModifyAndShow(Session.NewValue, UR.Active);
             Session.NotifyNewValue = false;
         }
         if (Session.NotifyValueToMerge)
@@ -377,7 +382,7 @@ namespace IBR_LinkNode
             auto str = s |
                 std::views::join_with(',') |
                 std::ranges::to<std::string>();
-            UR = ModifyFunc(str, UR.Active);
+            UR = ModifyAndShow(str, UR.Active);
             Session.NotifyValueToMerge = false;
         }
 

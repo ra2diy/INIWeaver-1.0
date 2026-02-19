@@ -486,11 +486,13 @@ bool _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE IBR_Project::DeleteSect
         Ret = ci->DeleteSection(Desc.Sec);
         IBF_Inst_Project.UpdateAll();
     }
+    //Desc这个入参可能是这些map里面的引用，所以必须提前复制一份
+    auto _Desc = Desc;
     IBG_Undo.SomethingShouldBeHere();
-    auto RS = GetSection(Desc);
+    auto RS = GetSection(_Desc);
     IBF_Inst_Project.DisplayNames.erase(IBR_SectionMap[RS.ID].DisplayName);
     IBR_SectionMap.erase(RS.ID);
-    IBR_Rev_SectionMap.erase(Desc);
+    IBR_Rev_SectionMap.erase(_Desc);
     return Ret;
 }//TODO
 /*

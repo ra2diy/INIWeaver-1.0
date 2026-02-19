@@ -233,6 +233,8 @@ void IBR_SectionData::RenameRegisterImpl(const std::string& Name)
 
 bool IBR_SectionData::OnLineEdit(const std::string& OnShow, const std::string& Name)
 {
+    if (OnShow.empty())return true;
+
     auto& Line = ActiveLines[Name];
     bool HasInput{ false };
     if (Line.Edit.Input)HasInput = true;
@@ -408,6 +410,7 @@ void IBR_SectionData::RenderUI_TitleBar(bool &TriggeredRightMenu, float LastFina
                         {
                             IBG_Undo.SomethingShouldBeHere();
                             back->MergeLine(Val, desc.Sec, IBB_IniMergeMode::Merge);
+                            back->SetOnShow(Val);
                         }
                     }
                     else if (payload->IsPreview())

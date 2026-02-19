@@ -594,6 +594,17 @@ const std::string& IBB_Section::GetOnShow(const std::string& Key) const
     return _F == this->OnShow.end() ? Empty : _F->second;
 }
 
+void IBB_Section::SetOnShow(const std::string& Key, const std::string& Value, bool AllowReapply)
+{
+    if (!IsOnShow(Key))OnShow[Key] = Value;
+    else if(AllowReapply)OnShow[Key] = Value;
+}
+
+void IBB_Section::SetOnShow(const std::string& Key)
+{
+    if (!IsOnShow(Key))OnShow[Key] = EmptyOnShowDesc;
+}
+
 const IBB_IniLine* IBB_Section::GetLineFromSubSecs(const std::string& KeyName) const
 {
     if (SubSecs.empty())return nullptr;
@@ -713,7 +724,7 @@ bool IBB_Section::Generate(const IBB_Section_NameType& Par)
     }
     else
     {
-        return GenerateLines(Par.Lines, {}, true);
+        return GenerateLines(Par.Lines, {}, false);
     }
 }
 
@@ -797,6 +808,9 @@ const std::vector<std::string>& SplitParamCached(const std::string& Text);
 
 bool IBB_Section::MergeLine(const std::string& Key, const std::string& Value, IBB_IniMergeMode Mode, bool NoUpdate)
 {
+    sprintf_s(LogBufB, __FUNCTION__ ": Section %s : Merge %s=%s Mode=%d NoUpdate=%s",
+        GetThisDesc().GetText().c_str(), Key.c_str(), Value.c_str(), Mode, IBD_BoolStr(NoUpdate));
+    GlobalLogB.AddLog(LogBufB);
     switch (Mode)
     {
     case IBB_IniMergeMode::Replace:
@@ -820,7 +834,7 @@ bool IBB_Section::MergeLine(const std::string& Key, const std::string& Value, IB
             }
             auto& Sub = *It;
             IBRF_CoreBump.SendToR({ [=] {IBR_EditFrame::UpdateLine(Key, Value); } });
-            return Sub.AddLine({ Key, Value }, true, IBB_IniMergeMode::Replace, NoUpdate);
+            return Sub.AddLine({ Key, Value }, false, IBB_IniMergeMode::Replace, NoUpdate);
         }
     }
     case IBB_IniMergeMode::Merge:
@@ -864,7 +878,7 @@ bool IBB_Section::MergeLine(const std::string& Key, const std::string& Value, IB
             if (LineIt == Sub.Lines.end())NewVal = Value;
             else NewVal = MergeVal(LineIt->second.Data->GetString(), Value);
             IBRF_CoreBump.SendToR({ [=] {IBR_EditFrame::UpdateLine(Key, NewVal); } });
-            return Sub.AddLine({ Key, NewVal }, true, IBB_IniMergeMode::Replace, NoUpdate);
+            return Sub.AddLine({ Key, NewVal }, false, IBB_IniMergeMode::Replace, NoUpdate);
         }
         return true;
     }
@@ -1337,6 +1351,12 @@ bool IBB_Section::UpdateAll()
         }
 
         Ret &= UpdateLineOrder();
+
+        //移除不存在的键的OnShow
+        OnShow = GetKeys(false) |
+            std::views::transform([&](auto&& k) {return std::make_pair(k, OnShow.contains(k) ? OnShow.at(k) : ""); }) |
+            std::views::filter([&](auto&& s) {return !s.second.empty(); }) |
+            std::ranges::to<std::unordered_map>();
     }
     return Ret;
 }

@@ -62,9 +62,12 @@ void IBB_FileCheck(const std::wstring& FileName, bool AllowNotExist, bool PopupO
         }
     }
 
-    sprintf_s(LogBufB, "IBB_FileCheck : <- FileName=%s, IsFile = %s, Exists = %s, HasAccess = %s", UnicodetoUTF8(FileName).c_str(), IBD_BoolStr(IsFile), IBD_BoolStr(Exists), IBD_BoolStr(HasAccess));
-    GlobalLogB.AddLog_CurTime(false);
-    GlobalLogB.AddLog(LogBufB);
+    if (EnableLogEx)
+    {
+        sprintf_s(LogBufB, "IBB_FileCheck : <- FileName=%s, IsFile = %s, Exists = %s, HasAccess = %s", UnicodetoUTF8(FileName).c_str(), IBD_BoolStr(IsFile), IBD_BoolStr(Exists), IBD_BoolStr(HasAccess));
+        GlobalLogB.AddLog_CurTime(false);
+        GlobalLogB.AddLog(LogBufB);
+    }
 
     const auto ReportError = [&](const std::wstring& Info) {
         if (PopupOnError)

@@ -175,6 +175,10 @@ bool IBB_SubSec::Merge(const IBB_SubSec& Another, IBB_IniMergeMode Mode, bool Is
 }
 bool IBB_SubSec::AddLine(const std::pair<std::string, std::string>& Line, bool InitOnShow, IBB_IniMergeMode Mode, bool NoUpdate)
 {
+    sprintf_s(LogBufB, __FUNCTION__ ":  %s=%s Mode=%d InitOnShow=%s NoUpdate=%s",
+        Line.first.c_str(), Line.second.c_str(), Mode, IBD_BoolStr(InitOnShow), IBD_BoolStr(NoUpdate));
+    GlobalLogB.AddLog(LogBufB);
+
     bool Ret = true;
     auto it = Lines.find(Line.first);
     if (it == Lines.end())
@@ -183,7 +187,7 @@ bool IBB_SubSec::AddLine(const std::pair<std::string, std::string>& Line, bool I
         if (Def == nullptr)return false;
         Lines_ByName.push_back(Line.first);
         auto rp = Lines.insert({ Line.first,IBB_IniLine(Line.second, Def) });
-        if (InitOnShow)
+        if (InitOnShow && Root->OnShow[Line.first].empty())
         {
             if (!Def->Property.TypeAlt.empty() && Def->Property.TypeAlt != "bool")
                 Root->OnShow[Line.first] = EmptyOnShowDesc;
@@ -358,6 +362,20 @@ void IBB_SubSec::GenerateAsDuplicate(const IBB_SubSec& Src)
     for (const auto& p : Src.Lines)Lines.insert({ p.first,p.second.Duplicate() });
 }
 
+bool IBB_SubSec::TriggerUpdate()
+{
+    auto Ret = true;
+    auto& Proj = *Root->Root->Root;
+    Ret &= Root->UpdateAll();
+    for (auto& Link : NewLinkTo)
+    {
+        auto pSec = Link.To.GetSec(Proj);
+        if (pSec != Root && pSec)
+            Ret &= pSec->UpdateAll();
+    }
+    return Ret;
+}
+
 bool IBB_SubSec::UpdateAll()
 {
     bool Ret = true;
@@ -374,7 +392,7 @@ bool IBB_SubSec::UpdateAll()
             GlobalLogB.AddLog_CurTime(false); GlobalLogB.AddLog("IBB_SubSec::UpdateAll Line : ", false); GlobalLogB.AddLog(L.c_str());
         }
 
-        auto wpw = Root->GetLineIIF(L);
+        auto wpw = Root->GetNewLineIIF(L);
         auto& wp = wpw._;
         if (std::holds_alternative<std::monostate>(wp))
             continue;
@@ -419,16 +437,15 @@ bool IBB_SubSec::UpdateAll()
             auto CurrentEditBSec = IBR_EditFrame::CurSection.GetBack();
             auto RootRData = IBR_Inst_Project.GetSection(Root->GetThisDesc()).GetSectionData();
 
-            iif->GetFormattedString();
             for (auto&& [id, cidx] : SelectValues)
             {
                 if (!val.Values.contains(id))continue;
                 auto& V = val.Values[id];
-                //GlobalLogB.AddLog("IBB_SubSec::UpdateAll Line : ", false);
-                //GlobalLogB.AddLog(L.c_str(), false);
-                //GlobalLogB.AddLog("=", false);
-                //GlobalLogB.AddLog(V.Value.c_str());
-                //GlobalLogB.AddLog("Result : ", false);
+                GlobalLogB.AddLog("IBB_SubSec::UpdateAll Line : ", false);
+                GlobalLogB.AddLog(L.c_str(), false);
+                GlobalLogB.AddLog("=", false);
+                GlobalLogB.AddLog(V.Value.c_str());
+                GlobalLogB.AddLog("Result : ", false);
                 
                 auto& piic = iif->InputComponents->at(cidx);
                 auto LinkLimit = piic->UseCustomSetting ? piic->NodeSetting.LinkLimit : DefaultLinkLimit;
@@ -458,8 +475,8 @@ bool IBB_SubSec::UpdateAll()
                     for (auto&& str : spc)
                     {
                         auto toidx = IBF_Inst_Project.Project.GetSecIndex(str, "");
-                        //sprintf_s(LogBufB, "<%p->%u:%u>%s, ", this, LineIdx, cidx, toidx.operator IBB_Section_Desc().GetText().c_str());
-                        //GlobalLogB.AddLog(LogBufB, false);
+                        sprintf_s(LogBufB, "New Link <%s->%u:%u> to %s, ", Root->Name.c_str(), LineIdx, cidx, toidx.operator IBB_Section_Desc().GetText().c_str());
+                        GlobalLogB.AddLog(LogBufB, false);
                         ClaimLink(LineIdx, cidx, NewLT.size());
 
                         ImU32 Col = piic->UseCustomSetting ? piic->NodeSetting.LinkCol :
