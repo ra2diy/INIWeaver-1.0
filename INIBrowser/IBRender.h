@@ -369,6 +369,7 @@ namespace IBR_FullView
     extern ImVec2 EqCenter;
     extern float Ratio;
     extern ImVec2 ViewSize;
+    extern ImVec2 CurrentEqMax;
     const float RatioMax = 200.0, RatioMin = 25.0;
     void ChangeOffsetPos(ImVec2 ClickRel);
     int EqXRange(const ImVec2& V);
@@ -378,6 +379,8 @@ namespace IBR_FullView
     void RenderUI();
     ImVec2 GetEqMin();
     ImVec2 GetEqMax();
+    ImVec2 GetDefaultEqMax();
+    void UpdateCurrentEqMax();
 }
 
 struct IBB_ClipBoardData;

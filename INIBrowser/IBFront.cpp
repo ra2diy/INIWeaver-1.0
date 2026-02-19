@@ -5,6 +5,7 @@
 #include "Global.h"
 #include "IBSave.h"
 #include "IBB_ModuleAlt.h"
+#include "IBB_FileChecker.h"
 
 extern int ScrX;//extern everything in Browser.h
 
@@ -194,10 +195,12 @@ bool IBF_DefaultTypeList::ReadAltSetting(const wchar_t* Name)
 
     for (auto& CSV : FindFileVec(Name + L".csv"s))
     {
+        IBB_FileCheck(CSV, false, true, false);
         if (!Alt.LoadFromCSVFile(CSV.c_str()))Ret = false;
     }
     for (auto& JSON : FindFileVec(Name + L".json"s))
     {
+        IBB_FileCheck(JSON, false, true, false);
         if (!Alt.LoadFromJsonFile(JSON.c_str()))Ret = false;
     }
 

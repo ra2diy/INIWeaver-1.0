@@ -6,6 +6,7 @@
 #include "IBR_Components.h"
 #include "IBB_CustomBool.h"
 #include "IBR_LinkNode.h"
+#include "IBB_FileChecker.h"
 
 std::string IBB_RegType::GetNoName()
 {
@@ -323,6 +324,7 @@ R"({
         bool Available = true;
         for(auto&& File : FindFileVec(FileName))
         {
+            IBB_FileCheck(File, false, true, false);
             JsonFile F;
             auto WFN = ::FileName(File);
             IBR_PopupManager::AddJsonParseErrorPopup(F.ParseFromFileChecked(UnicodetoUTF8(File).c_str(), loc("Error_JsonParseErrorPos"), nullptr),

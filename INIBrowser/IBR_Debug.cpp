@@ -6,6 +6,7 @@
 #include<imgui_internal.h>
 #include "IBB_ModuleAlt.h"
 #include "IBR_Debug.h"
+#include "IBR_LinkNode.h"
 
 namespace PreLink
 {
@@ -86,6 +87,7 @@ void IBR_Debug::RenderUI()
 
     ImGui::Checkbox(u8"模块的属性菜单", &UseModuleProperties);
     ImGui::Checkbox(u8"显示画布上窗口判定框", &ShowWorkspaceWindowFrame);
+    ImGui::Checkbox(u8"选中模块不跳转编辑", &DontGoToEdit);
 
     if (ImGui::Button(u8"剪贴板 -> JSON"))
     {
@@ -107,7 +109,8 @@ void IBR_Debug::RenderUI()
     {
         ImGui::Text("MousePos = (%.1f,%.1f)", msp.x, msp.y);
         if (mardp.x == FLT_MAX || mardp.y == FLT_MAX || mardp.x == -FLT_MAX || mardp.y == -FLT_MAX)ImGui::Text("MassAfter_RightDownPos = INVALID");
-        else ImGui::Text("MassAfter_RightDownPos = (%.1f,%.1f)", mardp.x, mardp.y);
+        else ImGui::Text("MassAfter_RightDownPos = (%.1f, %.1f)", mardp.x, mardp.y);
+        ImGui::Text("Current EqMax = (%.1f, %.1f)", IBR_FullView::CurrentEqMax.x, IBR_FullView::CurrentEqMax.y);
         ImGui::Text("ScreenSize = (%d, %d)", IBR_UICondition::CurrentScreenWidth, IBR_UICondition::CurrentScreenHeight);
         ImGui::Text("IsBgDragging = %s", IBR_WorkSpace::IsBgDragging ? "true" : "false");
         ImGui::Text("HoldingModules = %s", IBR_WorkSpace::HoldingModules ? "true" : "false");
@@ -121,6 +124,7 @@ void IBR_Debug::RenderUI()
         ImGui::Text("LastCont = %s", IBR_WorkSpace::LastCont ? "true" : "false");
         ImGui::Text("OnCombo = %s", IBR_WorkSpace::OnCombo ? "true" : "false");
         ImGui::Text("OnPopupMenu = %s", IBR_WorkSpace::OnPopupMenu ? "true" : "false");
+        ImGui::Text("HasDragNow = %s", LinkNodeContext::HasDragNow ? "true" : "false");
         ImGui::Text("DblClickLeft = %s", ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left) ? "true" : "false");
         ImGui::Text("CTRL = %s", ImGui::GetIO().KeyCtrl ? "true" : "false");
         ImGui::Text("SHIFT = %s", ImGui::GetIO().KeyShift ? "true" : "false");

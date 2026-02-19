@@ -4,6 +4,7 @@
 #include "IBB_Ini.h"
 #include <ranges>
 #include "IBR_Components.h"
+#include "IBR_Combo.h"
 
 namespace LinkNodeContext
 {
@@ -14,6 +15,7 @@ namespace LinkNodeContext
     bool CurLineChangeCompStatus;
     LineDragData CurDragData;
     ImVec2 CurDragStart;
+    ImVec2 CurDragStartEqCenter;
     ImU32 CurDragCol;
     bool HasDragNow;
 }
@@ -203,7 +205,7 @@ namespace IBR_LinkNode
             auto Len = End - Hint.c_str();
             if (Len)
             {
-                ImGui::TextUnformatted(Hint.c_str());
+                ImGui::TextUnformatted(Hint.c_str(), End);
                 ImGui::SameLine();
             }
         }
@@ -294,7 +296,7 @@ namespace IBR_LinkNode
                             ImGui::PopID();
                             if (PushCol)ImGui::PopStyleColor();
                             ImGui::SameLine();
-                            ImGui::TextUnformatted((IBR_WorkSpace::ShowRegName ? ll.Section : ll.Display).c_str());
+                            ImGui::Text((IBR_WorkSpace::ShowRegName ? ll.Section : ll.Display).c_str());
                         }
                         if (ImGui::SmallButtonAlignLeft(locc("GUI_UnlinkAll"), ImVec2{ FontHeight * 8.0f, ImGui::GetTextLineHeight() }))
                         {
@@ -326,9 +328,7 @@ namespace IBR_LinkNode
                     if (!Str.empty())
                     {
                         auto W = UTF8toUnicode(Str);
-                        ImGui::BeginTooltip();
-                        ImGui::Text(UnicodetoUTF8(std::vformat(locw("GUI_Preview_LinkTo"), std::make_wformat_args(W))).c_str());
-                        ImGui::EndTooltip();
+                        IBR_ToolTip(std::vformat(locw("GUI_Preview_LinkTo"), std::make_wformat_args(W)));
                     }
         }
 
@@ -337,14 +337,15 @@ namespace IBR_LinkNode
             if (IsInherit)
             {
                 auto w = UTF8toUnicode((Data.Desc.Ini + " -> " + Data.DisplayName));
-                ImGui::TextUnformatted(UnicodetoUTF8(std::vformat(locw("GUI_InheritTo"), std::make_wformat_args(w))).c_str());
+                ImGui::Text(UnicodetoUTF8(std::vformat(locw("GUI_InheritTo"), std::make_wformat_args(w))).c_str());
             }
-            else ImGui::TextUnformatted((Data.Desc.Ini + " -> " + Data.DisplayName + " : " + KeyName).c_str());
+            else ImGui::Text((Data.Desc.Ini + " -> " + Data.DisplayName + " : " + KeyName).c_str());
 
             DrawDragPreviewIcon();
 
             LinkNodeContext::CurDragStart = { DC.x , DC.y + ImGui::GetTextLineHeight() };
             LinkNodeContext::CurDragCol = LinkNode.LinkCol;
+            LinkNodeContext::CurDragStartEqCenter = IBR_WorkSpace::RePosToEqPos(IBR_RealCenter::Center);
             LinkNodeContext::HasDragNow = true;
 
             auto& cdd = LinkNodeContext::CurDragData;

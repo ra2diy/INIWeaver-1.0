@@ -115,11 +115,12 @@ void ControlPanel()
     GetWindowRect(MainWindowHandle, &FinalWP);
     IBR_UICondition::UpdateWindowTitle();
     IBR_WorkSpace::UpdatePrev();
-    ClearComboRects();
-    LinkNodeContext::HasDragNow = false;
+    IBR_FullView::UpdateCurrentEqMax();
 
     if (First)
     {
+        if (ScrX > RScrX)ScrX = RScrX;
+        if (ScrY > RScrY)ScrY = RScrY;
         DynamicDataXDelta = ScrX - (FinalWP.right - FinalWP.left);
         DynamicDataYDelta = ScrY - (FinalWP.bottom - FinalWP.top);
         if (EnableLog)
@@ -204,6 +205,7 @@ void ControlPanel()
     if (!IBR_PopupManager::HasPopup && IBR_ProjectManager::IsOpen())IBR_WorkSpace::ProcessBackgroundOpr();
     if (!IBR_PopupManager::HasPopup)IBR_ProjectManager::ProjActionByKey();
     IBR_WorkSpace::UpdateNewRatio();
+    ClearComboRects();
 
     ChangeWithFontSize = (fabs(IBR_WorkSpace::RatioPrev - IBR_FullView::Ratio) > 0.001f);
     IBR_Inst_Debug.ClearMsgCycle();
@@ -220,6 +222,7 @@ void ControlPanel()
     IBR_Inst_Debug.AddMsgCycle([=]() {ImGui::Text("PrevSet = %s", (PrevSet?"true":"false")); });
     IBR_Inst_Project.DataCheck();
 
+    LinkNodeContext::HasDragNow = false;
     IBR_WorkSpace::RenderUI();
     IBR_Inst_Debug.RenderOnWorkSpace();
     

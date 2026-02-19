@@ -72,12 +72,7 @@ namespace SearchModuleAlt
         ImRect R{ ImGui::GetCursorScreenPos(), ImGui::GetCursorScreenPos() + ImVec2{ ImGui::GetWindowWidth(), ImGui::GetTextLineHeightWithSpacing() } };
         ImGui::Text(pModule->DescShort.c_str());
         if (ImGui::IsItemHovered())
-        {
-            ImGui::BeginTooltip();
-            ImGui::Text(pModule->DescLong.c_str());
-            ImGui::EndTooltip();
-        }
-
+            IBR_ToolTip(pModule->DescLong);
         
         if (IBR_Inst_Debug.UseModuleProperties)
         {
@@ -1222,6 +1217,15 @@ namespace IBR_WorkSpace
             }
         }
 
+        // STATE : Normal & DraggingLink
+        else if(LinkNodeContext::HasDragNow && MousePos.x != -FLT_MAX)
+        {
+            DragStartMouse = LinkNodeContext::CurDragStart;
+            DragStartEqMouse = RePosToEqPos(LinkNodeContext::CurDragStart);
+            DragStartEqCenter = LinkNodeContext::CurDragStartEqCenter;
+            UpdateScrollMassSelect(MousePos);
+        }
+
         //POSTPROCESSING : Update Mouse State
         LastOnWindow = OnWindow;
         LastClickable = !OnWindow && !ImGui::IsMouseDown(ImGuiMouseButton_Left);
@@ -1331,6 +1335,7 @@ namespace IBR_WorkSpace
             auto Col = LinkNodeContext::CurDragCol;
             auto JList = (IBR_PopupManager::HasPopup) ? ImGui::GetBackgroundDrawList() : ImGui::GetForegroundDrawList();
             float LineWidth = EstimateLineWidth(pa, pb);
+            JList->PushClipRect(IBR_RealCenter::WorkSpaceUL, IBR_RealCenter::WorkSpaceDR, true);
             JList->AddBezierCubic(
                 pa,
                 { (pa.x + 4 * pb.x) / 5,pa.y },
@@ -1345,6 +1350,7 @@ namespace IBR_WorkSpace
                 pb,
                 Col,
                 LineWidth);
+            JList->PopClipRect();
         }
 
 

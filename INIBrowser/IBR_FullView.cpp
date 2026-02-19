@@ -8,13 +8,17 @@
 
 namespace IBR_FullView
 {
-
+    ImVec2 CurrentEqMax;
 
     ImVec2 ViewSize;//Set in INIBrowser.cpp
     double ViewScale = 20;
 
+    void UpdateCurrentEqMax() {}
+    
     ImVec2 GetEqMin() { return (ImVec2)(ViewSize * ViewScale * (-0.5)); }
     ImVec2 GetEqMax() { return (ImVec2)(ViewSize * ViewScale * (0.5)); }
+    ImVec2 GetCurrentEqMax() { return (ImVec2)(ViewSize * ViewScale * (0.5)); }
+    ImVec2 GetDefaultEqMax() { return (ImVec2)(ViewSize * ViewScale * (0.5)); }
 
     int EqXRange(const ImVec2& V)
     {

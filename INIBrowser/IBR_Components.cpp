@@ -184,6 +184,8 @@ namespace IBR_RecentManager
     void RenderUI()
     {
         ImGui::Text(locc("GUI_Recent"));
+        auto re = RecentName.empty();
+        if (re)ImGui::BeginDisabled();
         if (ImGui::Button(locc("GUI_ClearRecent"), { ImGui::GetWindowContentRegionWidth() , FontHeight * 1.5F }))
         {
             IBR_PopupManager::SetCurrentPopup(std::move(
@@ -217,6 +219,7 @@ namespace IBR_RecentManager
                     }))
             );
         }
+        if (re)ImGui::EndDisabled();
         RecentList.RenderUI();
     }
     void Load()

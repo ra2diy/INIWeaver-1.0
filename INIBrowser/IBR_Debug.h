@@ -14,6 +14,7 @@ struct IBR_Debug
     }Data;
     bool UseModuleProperties{ false };
     bool ShowWorkspaceWindowFrame{ false };
+    bool DontGoToEdit{ false };
     std::vector<StdMessage>DebugVec, DebugVecOnce;
     void AddMsgCycle(const StdMessage& Msg);
     void ClearMsgCycle();

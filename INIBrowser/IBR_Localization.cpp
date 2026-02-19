@@ -45,6 +45,57 @@ namespace IBR_L10n
         return ImGui::IsItemHovered();
     }
 
+    std::string ProcessEscape(const std::string& v)
+    {
+        if (v.empty()) return "";
+        std::string NewStr;
+        NewStr.reserve(v.size());
+        for (size_t i = 0; i < v.size(); i++)
+        {
+            if (v[i] == '\\')
+            {
+                i++;
+                if (i >= v.size())break;
+                switch (v[i])
+                {
+                case 'n':NewStr.push_back('\n'); break;
+                case 't':NewStr.push_back('\t'); break;
+                case 'r':NewStr.push_back('\r'); break;
+                case '\\':NewStr.push_back('\\'); break;
+                case '\"':NewStr.push_back('\"'); break;
+                case '0':NewStr.push_back('\0'); break;
+                case 'a':NewStr.push_back('\a'); break;
+                case 'b':NewStr.push_back('\b'); break;
+                case 'f':NewStr.push_back('\f'); break;
+                case 'v':NewStr.push_back('\v'); break;
+                case 'x':
+                {
+                    i++;
+                    if (i >= v.size())break;
+                    int Hex = 0;
+                    int j = 0;
+                    while (i < v.size() && isxdigit(v[i]) && j < 2)
+                    {
+                        Hex <<= 4;
+                        if (isdigit(v[i]))Hex += v[i] - '0';
+                        else if (isupper(v[i]))Hex += v[i] - 'A' + 10;
+                        else Hex += v[i] - 'a' + 10;
+                        i++; j++;
+                    }
+                    NewStr.push_back((char)Hex);
+                    i--;
+                }
+                default:break;
+                }
+            }
+            else
+            {
+                NewStr.push_back(v[i]);
+            }
+        }
+        return NewStr;
+    }
+
     void ConvertLocMap()
     {
         for (auto& [k0, v0] : LocalizationMap)
@@ -55,53 +106,7 @@ namespace IBR_L10n
                 for (auto& [k, v] : v0)
                 {
                     //handle \n \t \r \\ etc
-                    if (v.empty())continue;
-                    std::string NewStr;
-                    NewStr.reserve(v.size());
-                    for (size_t i = 0; i < v.size(); i++)
-                    {
-                        if (v[i] == '\\')
-                        {
-                            i++;
-                            if (i >= v.size())break;
-                            switch (v[i])
-                            {
-                            case 'n':NewStr.push_back('\n'); break;
-                            case 't':NewStr.push_back('\t'); break;
-                            case 'r':NewStr.push_back('\r'); break;
-                            case '\\':NewStr.push_back('\\'); break;
-                            case '\"':NewStr.push_back('\"'); break;
-                            case '0':NewStr.push_back('\0'); break;
-                            case 'a':NewStr.push_back('\a'); break;
-                            case 'b':NewStr.push_back('\b'); break;
-                            case 'f':NewStr.push_back('\f'); break;
-                            case 'v':NewStr.push_back('\v'); break;
-                            case 'x':
-                            {
-                                i++;
-                                if (i >= v.size())break;
-                                int Hex = 0;
-                                int j = 0;
-                                while (i < v.size() && isxdigit(v[i]) && j < 2)
-                                {
-                                    Hex <<= 4;
-                                    if (isdigit(v[i]))Hex += v[i] - '0';
-                                    else if (isupper(v[i]))Hex += v[i] - 'A' + 10;
-                                    else Hex += v[i] - 'a' + 10;
-                                    i++; j++;
-                                }
-                                NewStr.push_back((char)Hex);
-                                i--;
-                            }
-                            default:break;
-                            }
-                        }
-                        else
-                        {
-                            NewStr.push_back(v[i]);
-                        }
-                    }
-                    v = NewStr;
+                    v = ProcessEscape(v);
                 }
             }
         }

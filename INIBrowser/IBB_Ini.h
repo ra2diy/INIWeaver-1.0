@@ -13,10 +13,12 @@ struct ModuleClipData;
 struct LinkNodeSetting;
 
 struct IBB_IniLine_Data_Base;
+struct IBB_IniLine_Data_String;
 struct IBB_RegType;
 struct IBG_InputType;
 enum class ValidateResult;
-using LineData = std::shared_ptr<IBB_IniLine_Data_Base>;
+//using LineData = std::shared_ptr<IBB_IniLine_Data_Base>;
+using LineData = std::shared_ptr<IBB_IniLine_Data_String>;
 struct IIFWrapper_Wrapper;
 
 enum class IBB_IniMergeMode
@@ -56,7 +58,6 @@ struct IBB_IniLine_Default
     const IBG_InputType* Input;
 
     LineData Create() const;
-    bool IsLinkAlt() const;
     const IBB_RegType& GetRegType() const;
     const IBG_InputType& GetInputType() const;
     LinkNodeSetting GetNodeSetting() const;
@@ -101,36 +102,26 @@ struct IBB_IniLine_Data_Base
     virtual ~IBB_IniLine_Data_Base() {}
 };
 
-
-struct IBB_IniLine_DataList : public IBB_IniLine_Data_Base
+struct IBB_IniLine_Data_String final : public IBB_IniLine_Data_Base
 {
-    static constexpr const char* TypeName{ "List" };
-    std::vector<std::string> Value{};
+    static constexpr const char* TypeName{ "String" };
+    std::string Value{};
 
-    IBB_IniLine_DataList() {}
+    IBB_IniLine_Data_String() {}
 
-    virtual bool SetValue(const std::string& Val);
-    virtual bool MergeValue(const std::string& Val);
-    virtual void UpdateAsDuplicate();
-    virtual bool MergeData(const IBB_IniLine_Data_Base* Data);
-    virtual LineData Duplicate() const;
-    virtual bool Clear();
+    bool SetValue(const std::string& Val);
+    bool MergeValue(const std::string& Val);
+    bool MergeData(const IBB_IniLine_Data_Base* data);
+    bool Clear();
+    void UpdateAsDuplicate();
+    LineData Duplicate() const;
 
-    virtual std::string GetString() const;
-    virtual std::string GetStringForExport() const;
+    std::string GetString() const { return Value; }
+    std::string GetStringForExport() const { return GetString(); }
 
-    void RemoveValue(const std::string& Val);
-    void RemoveValue(size_t Idx);
-    void InsertValue(const std::string& Val, size_t Idx);
-    void ReplaceValue(const std::string& Old, const std::string& New);
-
-    typedef std::vector<std::string> type;
-    typedef size_t alt_type;
-    type& GetValue() { return Value; }
-    alt_type GetAltValue() { return Value.size(); }
     virtual const char* GetName() const { return TypeName; }
 
-    virtual ~IBB_IniLine_DataList() {}
+    virtual ~IBB_IniLine_Data_String() {}
 };
 
 struct IBB_IniLine
@@ -138,11 +129,11 @@ struct IBB_IniLine
     IBB_IniLine_Default* Default{ nullptr };
     LineData Data;
 
-    
-    ValidateResult ValidateValue() const;
-    ValidateResult ValidateAndSet(const std::string& Value);
-    ValidateResult ValidateAndMerge(const std::string& Another, IBB_IniMergeMode Mode);
-    ValidateResult ValidateAndMerge(const IBB_IniLine& Another, IBB_IniMergeMode Mode);
+    //暂时不需要Validate
+    //ValidateResult ValidateValue() const;
+    //ValidateResult ValidateAndSet(const std::string& Value);
+    //ValidateResult ValidateAndMerge(const std::string& Another, IBB_IniMergeMode Mode);
+    //ValidateResult ValidateAndMerge(const IBB_IniLine& Another, IBB_IniMergeMode Mode);
 
     void MakeKVForExport(IBB_VariableList&) const;
 

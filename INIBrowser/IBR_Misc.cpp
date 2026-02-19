@@ -20,6 +20,8 @@
 #include <imgui.h>
 #include "IBR_Components.h"
 #include "FromEngine/global_tool_func.h"
+#include "IBR_Combo.h"
+#include "IBR_Debug.h"
 
 bool ImGui_TextDisabled_Helper(const char* Text);
 bool SmallButton_Disabled_Helper(bool cond, const char* Text);
@@ -77,9 +79,7 @@ void IBR_IniLine::RenderUI(const std::string& Line, const std::string& Hint, Ini
     //ImGui::TextEx(Line.c_str(), nullptr, ImGuiTextFlags_NoWidthForLargeClippedText);
     if (!Hint.empty() && ImGui::IsItemHovered())
     {
-        ImGui::BeginTooltip();
-        ImGui::TextEx(Hint.c_str());
-        ImGui::EndTooltip();
+        IBR_ToolTip(Hint);
     }
     if (!HasInput)
     {
@@ -361,7 +361,7 @@ namespace IBR_EditFrame
     {
         SetActive(id);
         if (TextMode)SwitchToText();
-        IBR_Inst_Menu.ChooseMenu(MenuItemID_EDIT);
+        if(!IBR_Inst_Debug.DontGoToEdit)IBR_Inst_Menu.ChooseMenu(MenuItemID_EDIT);
     }
 
     void SwitchToText()
@@ -537,7 +537,7 @@ namespace IBR_EditFrame
     {
         if (Empty)
         {
-            //TODO
+            //IBR_Inst_Menu.ChooseMenu(MenuItemID_FILE);
             return;
         }
 

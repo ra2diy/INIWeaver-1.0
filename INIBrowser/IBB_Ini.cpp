@@ -11,7 +11,8 @@ extern const char* LinkAltPropType;
 
 
 
-struct IBB_IniLine_Data_Int : public IBB_IniLine_Data_Base
+/*
+struct IBB_IniLine_Data_Int final : public IBB_IniLine_Data_Base
 {
     static constexpr const char* TypeName{ "Int" };
     int Value{};
@@ -80,66 +81,48 @@ struct IBB_IniLine_Data_Int : public IBB_IniLine_Data_Base
     virtual std::string GetString() const { return _Empty ? "" : std::to_string(Value); }
     virtual std::string GetStringForExport() const { return GetString(); }
 
-    typedef int type;
-    typedef int alt_type;
-    type GetValue() { return _Empty ? 0 : Value; }
-    alt_type GetAltValue() { return _Empty ? 0 : Value; }
     virtual const char* GetName() const { return TypeName; }
-    
+
 
     virtual ~IBB_IniLine_Data_Int() {}
 };
-struct IBB_IniLine_Data_String : public IBB_IniLine_Data_Base
+*/
+
+bool IBB_IniLine_Data_String::SetValue(const std::string& Val)
 {
-    static constexpr const char* TypeName{ "String" };
-    std::string Value{};
+    Value = Val;
+    _Empty = Val.empty();
+    return true;
+}
+bool IBB_IniLine_Data_String::MergeValue(const std::string& Val) { return SetValue(Val); }
+bool IBB_IniLine_Data_String::MergeData(const IBB_IniLine_Data_Base* data)
+{
+    auto Data = dynamic_cast<const IBB_IniLine_Data_String*>(data);
+    if (Data == nullptr)return false;
+    if (Data->_Empty)return true;
+    Value = Data->Value;
+    return true;
+}
+bool IBB_IniLine_Data_String::Clear()
+{
+    _Empty = true;
+    Value.clear();
+    return true;
+}
+void IBB_IniLine_Data_String::UpdateAsDuplicate()
+{
+    auto it = IBR_Inst_Project.CopyTransform.find(Value);
+    if (it != IBR_Inst_Project.CopyTransform.end())
+        Value = it->second;
+}
+LineData IBB_IniLine_Data_String::Duplicate() const
+{
+    LineData R{ new IBB_IniLine_Data_String };
+    R->MergeData(this);
+    return R;
+}
 
-    IBB_IniLine_Data_String() {}
 
-    virtual bool SetValue(const std::string& Val)
-    {
-        Value = Val;
-        _Empty = Val.empty();
-        return true;
-    }
-    virtual bool MergeValue(const std::string& Val) { return SetValue(Val); }
-    virtual bool MergeData(const IBB_IniLine_Data_Base* data)
-    {
-        auto Data = dynamic_cast<const IBB_IniLine_Data_String*>(data);
-        if (Data == nullptr)return false;
-        if (Data->_Empty)return true;
-        Value = Data->Value;
-        return true;
-    }
-    virtual bool Clear()
-    {
-        _Empty = true;
-        Value.clear();
-        return true;
-    }
-    virtual void UpdateAsDuplicate()
-    {
-        auto it = IBR_Inst_Project.CopyTransform.find(Value);
-        if (it != IBR_Inst_Project.CopyTransform.end())
-            Value = it->second;
-    }
-    virtual LineData Duplicate() const
-    {
-        std::shared_ptr<IBB_IniLine_Data_Base> R{ new IBB_IniLine_Data_String };
-        R->MergeData(this);
-        return R;
-    }
-    virtual std::string GetString() const { return Value; }
-    virtual std::string GetStringForExport() const { return GetString(); }
-
-    typedef std::string type;
-    typedef std::string alt_type;
-    type GetValue() { return Value; }
-    alt_type GetAltValue() { return Value; }
-    virtual const char* GetName() const { return TypeName; }
-
-    virtual ~IBB_IniLine_Data_String() {}
-};
 /*
 struct IBB_IniLine_Data_Double : public IBB_IniLine_Data_Base
 {
@@ -273,12 +256,6 @@ bool IBB_SubSec_Default::Load(JsonObject FromJson, const std::unordered_map<std:
 }
 
 
-bool IBB_IniLine_Default::IsLinkAlt() const
-{
-    return Property.Type == LinkAltPropType
-        || Property.Type == IBB_IniLine_DataList::TypeName;
-}
-
 LineData IBB_IniLine_Default::Create() const
 {
     /*if (Property.Type == IBB_IniLine_Data_Int::TypeName)
@@ -286,8 +263,9 @@ LineData IBB_IniLine_Default::Create() const
     else if (Property.Type == IBB_IniLine_Data_String::TypeName)
         return LineData(new IBB_IniLine_Data_String);
     else if (IsLinkAlt())
-        return LineData(new IBB_IniLine_DataList);*/
-    return LineData(new IBB_IniLine_Data_String);
+        return LineData(new IBB_IniLine_DataList);
+    return LineData(new IBB_IniLine_Data_String);*/
+    return std::make_shared<IBB_IniLine_Data_String>();
 }
 
 const IBB_RegType& IBB_IniLine_Default::GetRegType() const
@@ -426,7 +404,7 @@ bool IBB_Ini::Merge(const IBB_Ini& Another, bool IsDuplicate)
     return Ret;
 }
 
-
+/*
 ValidateResult IBB_IniLine::ValidateValue() const
 {
     if (!Default)return ValidateResult::Unknown;
@@ -511,7 +489,7 @@ ValidateResult IBB_IniLine::ValidateAndMerge(const IBB_IniLine& Another, IBB_Ini
 
     return VR;
 }
-
+*/
 
 bool IBB_IniLine::Merge(const IBB_IniLine& Another, IBB_IniMergeMode Mode)
 {

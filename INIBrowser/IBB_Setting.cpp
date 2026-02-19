@@ -1,4 +1,4 @@
-#include "FromEngine/Include.h"
+ï»¿#include "FromEngine/Include.h"
 #include "FromEngine/global_tool_func.h"
 #include "IBB_Setting.h"
 #include "Global.h"
@@ -38,7 +38,7 @@ WriteFileHeader IBB_WSetting
         if (EnableLog)
         {
             GlobalLogB.AddLog_CurTime(false);
-            GlobalLogB.AddLog("µ÷ÓÃÁËIBB_WSetting.Action¡£");
+            GlobalLogB.AddLog("è°ƒç”¨äº†IBB_WSetting.Actionã€‚");
         }*/
         return WriteSettingFileGen(File, 0);
      }
@@ -215,6 +215,16 @@ IBB_SettingTypeList::IBB_SettingTypeList()
             }
         },
         {
+            IBB_SettingType::IntA,
+                "Back_DescShort_AutoWrapThreshold", "Back_DescLong_AutoWrapThreshold",
+                (void*)&Pack.AutoWrapThreshold,
+            {
+                (const void*)&IBG_SettingPack::____AutoWrapThreshold_Def,
+                (const void*)&IBG_SettingPack::____AutoWrapThreshold_Min,(const void*)&IBG_SettingPack::____AutoWrapThreshold_Max,
+                (const void*)&IBG_SettingPack::____AutoWrapThreshold_SpV,(const void*)&IBG_SettingPack::____AutoWrapThreshold_SpV,
+            }
+        },
+        {
             IBB_SettingType::IntB,
                 "Back_DescShort_ScrollRate","Back_DescLong_ScrollRate",
                 (void*)&Pack.ScrollRateLevel,
@@ -268,8 +278,11 @@ IBB_SettingTypeList::IBB_SettingTypeList()
         }
     };
 }
-std::vector<int> RW_ReadOrder = { 0,1,2,5,3,6,7,4,8 };
-std::vector<int> RW_WriteOrder = { 0,1,2,5,3,6,7,4,8 };
+//9 -> 3
+std::vector<int> RW_ReadOrder = { 0,1,2,6,4,7,8,5,9,3 };
+std::vector<int> RW_WriteOrder = { 0,1,2,6,4,7,8,5,9,3 };
+//std::vector<int> RW_ReadOrder = { 0,1,2,5,3,6,7,4,8,9 };
+//std::vector<int> RW_WriteOrder = { 0,1,2,5,3,6,7,4,8,9 };
 
 
 void IBB_SettingTypeList::PackSetDefault()
@@ -289,7 +302,7 @@ void IBB_SetGlobalSetting(const IBG_SettingPack& Pack)
 }
 
 /*
-°æ±¾ÍØÕ¹£º
+ç‰ˆæœ¬æ‹“å±•ï¼š
 
 ReadFileHeader IBB_RSetting2
 {

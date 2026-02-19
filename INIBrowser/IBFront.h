@@ -25,6 +25,8 @@ public:
     bool OutputOnSave() { return List.Pack.OutputOnSave; }
     float TransparencyBase() { return List.Pack.GetTransparencyBase(); }
     float ScrollRate() { return List.Pack.GetScrollRate(); }
+    int AutoWrapThreshold() { return List.Pack.AutoWrapThreshold; }
+    int FrameRateLimit() { return List.Pack.FrameRateLimit; }
     std::string _TEXT_UTF8& OutputDir() { return List.LastOutputDir; }
 };
 

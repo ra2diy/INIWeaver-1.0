@@ -40,116 +40,55 @@ void MergeList(std::vector<std::string>& Value, const std::string& Str)
     //Value.erase(std::remove_if(Value.begin(), Value.end(), [&](const std::string& s)->bool {return !SS.insert(s).second; }), Value.end());
 }
 
-std::string DecodeListForExport(const std::string& Val)
-{
-    if (Val.empty())return "";
-    IBB_Section_Desc Desc{ Internal_IniName, Val };
-    auto pSec = IBF_Inst_Project.Project.GetSec(Desc);
-    if (pSec && pSec->IsLinkGroup)
-    {
-        std::string R;
-        for (auto& V : pSec->LinkGroup_NewLinkTo)
-        {
-            auto pp = V.To.GetSec(IBF_Inst_Project.Project);
-            if (pp)
-            {
-                R += pp->Name;
-                R += ',';
-            }
-        }
-        if (!R.empty())R.pop_back();
-        return R;
-    }
-    else
-    {
-        return Val;
-    }
-}
 
-LineData IBB_IniLine_DataList::Duplicate() const
-{
-    std::shared_ptr<IBB_IniLine_Data_Base> R{ new IBB_IniLine_DataList };
-    R->MergeData(this);
-    return R;
-}
-
-bool IBB_IniLine_DataList::SetValue(const std::string& Val)
-{
-    Value = SplitParam(Val);
-    _Empty = Value.empty();
-    return true;
-}
-bool IBB_IniLine_DataList::MergeValue(const std::string& Val)
-{
-    if (!Val.empty())MergeList(Value, Val);
-    _Empty = Value.empty();
-    return true;
-}
-void IBB_IniLine_DataList::UpdateAsDuplicate()
-{
-    for (auto& V : Value)
-    {
-        auto it = IBR_Inst_Project.CopyTransform.find(V);
-        if (it != IBR_Inst_Project.CopyTransform.end())
-            V = it->second;
-    }
-}
-bool IBB_IniLine_DataList::MergeData(const IBB_IniLine_Data_Base* data)
-{
-    auto Data = dynamic_cast<const IBB_IniLine_DataList*>(data);
-    if (Data == nullptr)return false;
-    if (Data->_Empty)return true;
-    Value.insert(Value.end(), Data->Value.begin(), Data->Value.end());
-    _Empty = Value.empty();
-    return true;
-}
-bool IBB_IniLine_DataList::Clear()
-{
-    _Empty = true;
-    Value.clear();
-    return true;
-}
-
-std::string IBB_IniLine_DataList::GetString() const
-{
-    std::string Ret;
-    for (auto& V : Value)
-    {
-        Ret += V;
-        Ret.push_back(',');
-    }
-    if (!Ret.empty())Ret.pop_back();
-    return Ret;
-}
-std::string IBB_IniLine_DataList::GetStringForExport() const
-{
-    std::string Ret;
-    for (auto& V : Value)
-    {
-        Ret += DecodeListForExport(V);
-        Ret.push_back(',');
-    }
-    if (!Ret.empty())Ret.pop_back();
-    return Ret;
-}
-
-void IBB_IniLine_DataList::RemoveValue(const std::string& Val)
-{
-    Value.erase(std::remove_if(Value.begin(), Value.end(), [&](const std::string& V)->bool {return V == Val; }), Value.end());
-}
-void IBB_IniLine_DataList::RemoveValue(size_t Idx)
-{
-    Value.erase(Value.begin() + Idx);
-}
-void IBB_IniLine_DataList::InsertValue(const std::string& Val, size_t Idx)
-{
-    Value.insert(Value.begin() + Idx, Val);
-}
-void IBB_IniLine_DataList::ReplaceValue(const std::string& Old, const std::string& New)
-{
-    for (auto& s : Value)if (s == Old)s = New;
-}
-
+//std::string DecodeListForExport(const std::string& Val)
+//{
+//    if (Val.empty())return "";
+//    IBB_Section_Desc Desc{ Internal_IniName, Val };
+//    auto pSec = IBF_Inst_Project.Project.GetSec(Desc);
+//    if (pSec && pSec->IsLinkGroup)
+//    {
+//        std::string R;
+//        for (auto& V : pSec->LinkGroup_NewLinkTo)
+//        {
+//            auto pp = V.To.GetSec(IBF_Inst_Project.Project);
+//            if (pp)
+//            {
+//                R += pp->Name;
+//                R += ',';
+//            }
+//        }
+//        if (!R.empty())R.pop_back();
+//        return R;
+//    }
+//    else
+//    {
+//        return Val;
+//    }
+//}
+//
+//std::string IBB_IniLine_DataList::GetString() const
+//{
+//    std::string Ret;
+//    for (auto& V : Value)
+//    {
+//        Ret += V;
+//        Ret.push_back(',');
+//    }
+//    if (!Ret.empty())Ret.pop_back();
+//    return Ret;
+//}
+//std::string IBB_IniLine_DataList::GetStringForExport() const
+//{
+//    std::string Ret;
+//    for (auto& V : Value)
+//    {
+//        Ret += DecodeListForExport(V);
+//        Ret.push_back(',');
+//    }
+//    if (!Ret.empty())Ret.pop_back();
+//    return Ret;
+//}
 
 extern const char* DefaultAltPropType;
 extern const char* LinkAltPropType;

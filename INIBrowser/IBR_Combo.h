@@ -20,3 +20,6 @@ bool IBR_Combo(const char* label, const char* preview_value, ImGuiComboFlags fla
 
 struct ImRect;
 std::vector<ImRect>& GetComboRects();
+
+void IBR_ToolTip(const std::string& Str);
+void IBR_ToolTip(const std::wstring& Str);

@@ -1089,7 +1089,7 @@ void IIC_InputText::ResetState(IBB_ValueContainer& Cont) const
 }
 
 // ========== IIC_EnumCombo ==========
-IIC_EnumCombo::IIC_EnumCombo(IBB_ValueContainer& Cont, int valueid, const std::string& InitialValue, const std::string& hint, const std::unordered_map<std::string, std::string>& options, const std::vector<std::string>& order)
+IIC_EnumCombo::IIC_EnumCombo(IBB_ValueContainer& Cont, int valueid, const std::string& InitialValue, const std::string& hint, const std::unordered_map<std::string, IICDescStr>& options, const std::vector<std::string>& order)
     : Options(options), Hint(hint), ValueID(valueid), OptionOrder(order) {
     Hint += "##";
     Hint += RandStr(12);
@@ -1109,12 +1109,12 @@ IBB_UpdateResult IIC_EnumCombo::RenderUI(IBB_ValueContainer& Cont, IICStatus&) {
     auto Active = false;
     auto Size = ImGui::CalcTextSize(Hint.c_str(), NULL, true);
     ImGui::SetNextItemWidth(ImGui::GetWindowContentRegionWidth() - ImGui::GetCursorPosX() - Size.x);
-    IBR_Combo(Hint.c_str(), (Options.contains(CurrentValue) ? Options[CurrentValue] : CurrentValue).c_str(), 0,
+    IBR_Combo(Hint.c_str(), (Options.contains(CurrentValue) ? Options[CurrentValue].Short : CurrentValue).c_str(), 0,
         [&] {
             Active = ImGui::IsItemActive();
             for (auto& Key : OptionOrder)
             {
-                auto& DisplayName = Options[Key];
+                auto& [DisplayName, DescLong] = Options[Key];
                 auto Equal = (CurrentValue == Key);
                 if (ImGui::Selectable(DisplayName.c_str(), Equal))
                 {
@@ -1124,6 +1124,8 @@ IBB_UpdateResult IIC_EnumCombo::RenderUI(IBB_ValueContainer& Cont, IICStatus&) {
                         CurrentValue = Key;
                     }
                 }
+                if (ImGui::IsItemHovered() && !DescLong.empty())
+                    IBR_ToolTip(DescLong.c_str());
                 Active |= ImGui::IsItemActive();
             }
         }
@@ -1161,7 +1163,7 @@ void IIC_EnumCombo::ResetState(IBB_ValueContainer& Cont) const
 }
 
 // ========== IIC_EnumRadio ==========
-IIC_EnumRadio::IIC_EnumRadio(IBB_ValueContainer& Cont, int valueid, const std::string& InitialValue, const std::unordered_map<std::string, std::string>& options, bool sameline, const std::vector<std::string>& order)
+IIC_EnumRadio::IIC_EnumRadio(IBB_ValueContainer& Cont, int valueid, const std::string& InitialValue, const std::unordered_map<std::string, IICDescStr>& options, bool sameline, const std::vector<std::string>& order)
     : Options(options), ValueID(valueid), Hint(RandStr(12)), SameLine(sameline), OptionOrder(order) {
     Cont.GetValue(ValueID).ResetState<IIS_String>(InitialValue);
 }
@@ -1181,7 +1183,7 @@ IBB_UpdateResult IIC_EnumRadio::RenderUI(IBB_ValueContainer& Cont, IICStatus&) {
 
     for (auto& Key : OptionOrder)
     {
-        auto& DisplayName = Options[Key];
+        auto& [DisplayName, DescLong] = Options[Key];
         auto Equal = (CurrentValue == Key);
         if (ImGui::RadioButton(DisplayName.c_str(), Equal))
         {
@@ -1191,6 +1193,8 @@ IBB_UpdateResult IIC_EnumRadio::RenderUI(IBB_ValueContainer& Cont, IICStatus&) {
                 CurrentValue = Key;
             }
         }
+        if (ImGui::IsItemHovered() && !DescLong.empty())
+            IBR_ToolTip(DescLong.c_str());
         Active |= ImGui::IsItemActive();
         if(SameLine)ImGui::SameLine();
     }
@@ -1612,7 +1616,9 @@ IICPtr InputFormComponentFactory::CreateInputComponent_Special(IBB_ValueContaine
 
             auto InitValue = Obj.ItemStringOr("InitialValue", "");
             auto Hint = Obj.ItemStringOr("Hint", "");
-            auto Options = Obj.ItemMapStringOr("Options");
+            auto Options = Obj.ItemMapObjectOr("Options") |
+                std::views::transform([](auto&& p) {return std::make_pair(p.first, IICDescStr::Load(p.second));}) |
+                std::ranges::to<std::unordered_map<std::string, IICDescStr>>();
             auto OptionOrder = Obj.ItemArrayKeyOr("Options");
 
             return std::make_unique<IIC_EnumCombo>(Cont, ValueID, InitValue, Hint, Options, OptionOrder);
@@ -1629,7 +1635,9 @@ IICPtr InputFormComponentFactory::CreateInputComponent_Special(IBB_ValueContaine
 
             auto InitValue = Obj.ItemStringOr("InitialValue", "");
             auto Hint = Obj.ItemStringOr("Hint", "");
-            auto Options = Obj.ItemMapStringOr("Options");
+            auto Options = Obj.ItemMapObjectOr("Options") |
+                std::views::transform([](auto&& p) {return std::make_pair(p.first, IICDescStr::Load(p.second)); }) |
+                std::ranges::to<std::unordered_map<std::string, IICDescStr>>();
             auto SameLine = Obj.ItemBoolOr("SameLine", false);
             auto OptionOrder = Obj.ItemArrayKeyOr("Options");
 
@@ -1882,4 +1890,16 @@ bool IBG_InputType::Load(const JsonObject& Obj)
     return Ret1 && Ret2;
 }
 
-
+IICDescStr IICDescStr::Load(JsonObject Obj)
+{
+    if (!Obj)return { "", "" };
+    else if (Obj.IsTypeString())return { Obj.GetString(), "" };
+    else if (Obj.IsTypeArray())
+    {
+        auto V = Obj.GetArrayString();
+        if (V.size() >= 2)return { V[0], V[1] };
+        else if (V.size() == 1)return { V[0], "" };
+        else return { "", "" };
+    }
+    else return { "", "" };
+}

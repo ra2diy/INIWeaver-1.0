@@ -185,6 +185,7 @@
     <ClInclude Include="FromEngine\RFBump.h" />
     <ClInclude Include="FromEngine\types.h" />
     <ClInclude Include="IBB_CustomBool.h" />
+    <ClInclude Include="IBB_FileChecker.h" />
     <ClInclude Include="IBB_Index.h" />
     <ClInclude Include="IBB_Components.h" />
     <ClInclude Include="IBB_Ini.h" />
@@ -229,6 +230,7 @@
     <ClCompile Include="FromEngine\global_tool_func.cpp" />
     <ClCompile Include="FromEngine\RFBump.cpp" />
     <ClCompile Include="Global.cpp" />
+    <ClCompile Include="IBB_FileChecker.cpp" />
     <ClCompile Include="IBB_Ini.cpp" />
     <ClCompile Include="IBB_Components.cpp" />
     <ClCompile Include="IBB_Index.cpp" />

@@ -14,6 +14,7 @@ namespace IBR_L10n
     const std::wstring& _TEXT_WIDE GetWStringOr(const std::string& Key, const std::wstring& Fallback);
     void SetLanguage(const std::string& Language);
     bool RenderUI(std::string_view Title);
+    std::string ProcessEscape(const std::string& v);
 }
 
 #define loc(x) IBR_L10n::GetString((x))

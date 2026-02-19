@@ -6,7 +6,7 @@
 #include "IBB_ModuleAlt.h"
 #include "IBB_RegType.h"
 #include "IBB_Index.h"
-#include<imgui_internal.h>
+#include <imgui_internal.h>
 
 const char* DefaultSubSecName = "_DEFAULT_SUBSEC";
 const char* DefaultAltPropType = "\"D\"";
@@ -153,8 +153,8 @@ bool IBB_DefaultTypeAlt::Load(const std::vector<std::string>& FromCSV)
     Name = FromCSV[0];
     LinkType = FromCSV[1];
     LinkLimit = atoi(FromCSV[2].c_str());
-    DescShort = FromCSV[3];
-    DescLong = FromCSV[4];
+    DescShort = IBR_L10n::ProcessEscape(FromCSV[3]);
+    DescLong = IBR_L10n::ProcessEscape(FromCSV[4]);
     Color = StrToCol(FromCSV.size() > 5 ? FromCSV[5].c_str() : "00000000");
     Input = FromCSV.size() > 6 ? FromCSV[6] : SelectDefaultInput(LinkType);
     return true;

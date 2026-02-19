@@ -33,6 +33,7 @@
 #include "IBG_Ini.h"
 #include "IBR_Components.h"
 #include "IBR_Localization.h"
+#include "IBB_FileChecker.h"
 
 #pragma comment(lib, "crypt32.lib")
 
@@ -1415,6 +1416,7 @@ namespace IBB_ModuleAltDefault
                 }
                 else
                 {
+                    IBB_FileCheck(File.FullPath, false, true, false);
                     //MessageBoxW(NULL, File.FullPath.c_str(), L"File", MB_OK);
                     IBB_ModuleAlt Mod;
                     Mod.LoadFromFile(File.FullPath.c_str());
@@ -1486,6 +1488,7 @@ namespace IBB_ModuleAltDefault
         AllModules.LoadFromDir(FileRange);
         for (auto& File : FindFileRange(FileRange2))
         {
+            IBB_FileCheck(File.FullPath, false, true, false);
             IBB_ModuleAlt Mod;
             Mod.LoadFromFile(File.FullPath.c_str());
             NewModuleII(std::move(Mod));

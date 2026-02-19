@@ -136,6 +136,7 @@ namespace LinkNodeContext
     extern bool CurLineChangeCompStatus;
     extern LineDragData CurDragData;
     extern ImVec2 CurDragStart;
+    extern ImVec2 CurDragStartEqCenter;
     extern ImU32 CurDragCol;
     extern bool HasDragNow;
 }

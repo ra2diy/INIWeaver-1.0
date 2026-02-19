@@ -12,6 +12,7 @@
 #include "IBR_HotKey.h"
 #include "IBR_Debug.h"
 #include <dbghelp.h>
+#include "IBB_FileChecker.h"
 
 #pragma comment(lib, "Dbghelp.lib")
 
@@ -19,6 +20,7 @@ bool ShouldCloseShellLoop = false;
 bool GotoCloseShellLoop = false;
 bool EnableDebugList = false;
 bool NoTopExceptionHandler = false;
+bool NoVSync = false;
 std::atomic_bool LoadDatabaseComplete{ false };
 JsonFile Cfg;//Config.json
 
@@ -72,6 +74,8 @@ namespace Initialize
 
     void InitConfigJson()
     {
+        IBB_FileCheck(".\\Resources\\config.json", false, true, false);
+
         IBR_PopupManager::AddJsonParseErrorPopup(Cfg.ParseFromFileChecked(".\\Resources\\config.json", loc("Error_JsonParseErrorPos"), nullptr)
             , UnicodetoUTF8(std::vformat(locw("Error_JsonSyntaxError"), std::make_wformat_args(L"Config.json"))));
         if (!Cfg.Available())
@@ -126,6 +130,8 @@ namespace Initialize
         }
 
         A0 = UTF8toUnicode(FontPath);
+
+        IBB_FileCheck(A0, false, true, false);
 
         if (FontPath.empty())
         {
@@ -297,9 +303,10 @@ namespace Initialize
 
         while (!ShouldCloseShellLoop)
         {
-            if (IBG_GetSetting().FrameRateLimit != -1)
+            if (IBF_Inst_Setting.FrameRateLimit() != -1)
             {
-                int Uax = 1000000 / IBG_GetSetting().FrameRateLimit;
+                int Uax = 1000000 / IBF_Inst_Setting.FrameRateLimit();
+                while (GetSysTimeMicros() > TimeWait + 5000000) TimeWait += 1000000;
                 while (GetSysTimeMicros() < TimeWait)Sleep(Uax / 1000);
                 TimeWait += Uax;
             }
@@ -546,6 +553,10 @@ namespace Initialize
             {
                 NoTopExceptionHandler = true;
             }
+            else if (!_wcsicmp(szArglist[i], L"-novsync"))
+            {
+                NoVSync = true;
+            }
             else if (!_wcsnicmp(szArglist[i], L"-width=", 7))
             {
                 auto W = _wtoi(szArglist[i] + 7);
@@ -618,8 +629,8 @@ namespace Initialize
         TEMPLOG("glfwMakeContextCurrent(window);");
         glfwMakeContextCurrent(window);
 
-        TEMPLOG("glfwSwapInterval(1); ");
-        glfwSwapInterval(1); // Enable vsync
+        TEMPLOG("if(!NoVSync) glfwSwapInterval(1); ");
+        if(!NoVSync) glfwSwapInterval(1); // Enable vsync
 
         if (EnableLog)
         {
@@ -646,8 +657,11 @@ namespace Initialize
         using namespace PreLink;
 
         IBR_FullView::ViewSize = { FontHeight * 12.0f, FontHeight * 12.0f };
+        IBR_FullView::CurrentEqMax = IBR_FullView::GetDefaultEqMax();
 
         IBR_Inst_Setting.SetSettingName(SettingFileName);
+
+        IBB_FileCheck(SettingFileName, true, true, false);
 
         IBR_Inst_Setting.CallReadSetting();
 
@@ -657,6 +671,8 @@ namespace Initialize
 
         TEMPLOG(" InitConfigJson();");
         InitConfigJson();
+
+        IBB_FileCheck(".\\Resources\\hint.txt", false, true, false);
 
         TEMPLOG("IBR_HintManager::Load();");
         IBR_HintManager::Load();
@@ -675,6 +691,8 @@ namespace Initialize
         //ImGui::StyleColorsClassic();
         //ImGui::StyleColorsLight();
 
+        IBB_FileCheck(IBR_RecentManager::Path, true, true, false);
+
         TEMPLOG("IBR_RecentManager::Load();");
         IBR_RecentManager::Load();
         if (EnableLog)
@@ -686,6 +704,7 @@ namespace Initialize
         ImGuiIO& io = ImGui::GetIO();
         ExtFileClass GetHint;
 
+        IBB_FileCheck(".\\Resources\\load.txt", false, true, false);
 
         if (GetHint.Open(".\\Resources\\load.txt", "rb"))
         {

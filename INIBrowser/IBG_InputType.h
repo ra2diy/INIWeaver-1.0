@@ -208,6 +208,11 @@ struct IBG_InputType
     IBG_InputType(IBG_InputType&&) = default;
 };
 
+struct IICDescStr
+{
+    std::string Short, Long;
+    static IICDescStr Load(JsonObject Obj);
+};
 
 
 
@@ -388,11 +393,11 @@ struct IIC_InputText final : public IBG_InputComponent
 
 struct IIC_EnumCombo final : public IBG_InputComponent
 {
-    std::unordered_map<std::string, std::string> Options;//AllowedValue : DisplayName ; if empty then any value allowed
+    std::unordered_map<std::string, IICDescStr> Options;//AllowedValue : DisplayName ; if empty then any value allowed
     std::vector<std::string> OptionOrder;
     std::string Hint;
     int ValueID;
-    IIC_EnumCombo(IBB_ValueContainer& Cont, int valueid, const std::string& InitialValue, const std::string& hint, const std::unordered_map<std::string, std::string>& options, const std::vector<std::string>& OptionOrder);
+    IIC_EnumCombo(IBB_ValueContainer& Cont, int valueid, const std::string& InitialValue, const std::string& hint, const std::unordered_map<std::string, IICDescStr>& options, const std::vector<std::string>& OptionOrder);
 
     IBB_UpdateResult RenderUI(IBB_ValueContainer& Cont, IICStatus& Status);
     std::string FormatValue(IBB_ValueContainer& Cont, const IBB_InputFormat& Format);
@@ -405,12 +410,12 @@ struct IIC_EnumCombo final : public IBG_InputComponent
 
 struct IIC_EnumRadio final : public IBG_InputComponent
 {
-    std::unordered_map<std::string, std::string> Options;//AllowedValue : DisplayName ; if empty then any value allowed
+    std::unordered_map<std::string, IICDescStr> Options;//AllowedValue : DisplayName ; if empty then any value allowed
     std::vector<std::string> OptionOrder;
     std::string Hint;
     bool SameLine;
     int ValueID;
-    IIC_EnumRadio(IBB_ValueContainer& Cont, int valueid, const std::string& InitialValue, const std::unordered_map<std::string, std::string>& options, bool sameline, const std::vector<std::string>& OptionOrder);
+    IIC_EnumRadio(IBB_ValueContainer& Cont, int valueid, const std::string& InitialValue, const std::unordered_map<std::string, IICDescStr>& options, bool sameline, const std::vector<std::string>& OptionOrder);
 
     IBB_UpdateResult RenderUI(IBB_ValueContainer& Cont, IICStatus& Status);
     std::string FormatValue(IBB_ValueContainer& Cont, const IBB_InputFormat& Format);

@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "FromEngine/Include.h"
 #include "cjson/cJSON.h"
 
@@ -37,6 +37,12 @@ struct IBG_SettingPack
     static constexpr int32_t ____MenuLinePerPage_Max = INT_MAX;
     static constexpr int32_t ____MenuLinePerPage_Def = 10;
 
+    int32_t AutoWrapThreshold;
+    static constexpr int32_t ____AutoWrapThreshold_Min = 10;
+    static constexpr int32_t ____AutoWrapThreshold_Max = INT_MAX;
+    static constexpr int32_t ____AutoWrapThreshold_SpV = -1;
+    static constexpr int32_t ____AutoWrapThreshold_Def = 40;
+
     int32_t ScrollRateLevel;
     static constexpr int32_t ____ScrollRate_Min = 1;
     static constexpr int32_t ____ScrollRate_Max = 6;
@@ -61,6 +67,7 @@ struct IBG_SettingPack
         FrameRateLimit = ____FrameRateLimit_Def;
         FontSize = ____FontSize_Def;
         MenuLinePerPage = ____MenuLinePerPage_Def;
+        AutoWrapThreshold = ____AutoWrapThreshold_Def;
         ScrollRateLevel = ____ScrollRate_Def;
         DarkMode = ____DarkMode_Def;
         OpenFolderOnOutput = ____OpenFolderOnOutput_Def;

@@ -7,6 +7,7 @@
 #include "IBB_RegType.h"
 #include "IBR_Components.h"
 #include "IBR_LinkNode.h"
+#include "IBR_Combo.h"
 #include <imgui_internal.h>
 #include <ranges>
 
@@ -690,11 +691,7 @@ void IBR_SectionData::RenderUI_Collapsed(IBB_Section* Bsec, ImVec2 HeadLineRN, I
         CollapsedInComposed = false;
     }
     if (ImGui::IsItemHovered())
-    {
-        ImGui::BeginTooltip();
-        ImGui::Text(locc("GUI_UnfoldModule"));
-        ImGui::EndTooltip();
-    }
+        IBR_ToolTip(loc("GUI_UnfoldModule"));
 }
 
 void IBR_SectionData::RenderUI_Virtual()
@@ -812,11 +809,7 @@ void IBR_SectionData::RenderUI_Composed()
         CollapsedInComposed = true;
     }
     if (ImGui::IsItemHovered())
-    {
-        ImGui::BeginTooltip();
-        ImGui::Text(locc("GUI_FoldModule"));
-        ImGui::EndTooltip();
-    }
+        IBR_ToolTip(loc("GUI_FoldModule"));
 }
 
 namespace IBR_LinkNode
