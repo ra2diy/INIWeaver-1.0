@@ -341,15 +341,6 @@ namespace Initialize
 
             ControlPanel();
 
-            {
-                static bool __First = true;
-                if (__First)
-                {
-                    __First = false;
-                    IBR_Inst_Debug.RenderUIOnce();
-                }
-            }
-
             // Rendering
             ImGui::Render();
             int display_w, display_h;
