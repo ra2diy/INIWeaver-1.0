@@ -308,8 +308,8 @@ namespace IBR_PopupManager
 
     void CurrentPopupFixPos(int OldW, int OldH, int NewW, int NewH)
     {
-        sprintf_s(LogBuf, "From (%d, %d) to (%d, %d)", OldW, OldH, NewW, NewH);
-        IBR_HintManager::SetHint(LogBuf, HintStayTimeMillis);
+        //sprintf_s(LogBuf, "From (%d, %d) to (%d, %d)", OldW, OldH, NewW, NewH);
+        //IBR_HintManager::SetHint(LogBuf, HintStayTimeMillis);
 
         CurrentPopupExtraMove = true;
 

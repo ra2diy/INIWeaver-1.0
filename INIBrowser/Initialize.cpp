@@ -295,22 +295,73 @@ namespace Initialize
         CloseHandle(hThread);
     }
 
-    void ShellLoop_Unprotected()
+    void CheckFontAtlas()
     {
         using namespace PreLink;
 
-        uint64_t TimeWait = GetSysTimeMicros();
+        if (font->ContainerAtlas == NULL)
+        {
+            if (EnableLog)
+            {
+                GlobalLog.AddLog_CurTime(false);
+                GlobalLog.AddLog("font->ContainerAtlas == NULL");
+                GlobalLog.AddLog_CurTime(false);
+                GlobalLog.AddLog(locc("Log_PleaseRestart"));
+            }
+            MessageBoxW(nullptr, L"font->ContainerAtlas == NULL", locwc("Error_FailedToLoadFont"), MB_ICONERROR);
+            MessageBoxW(nullptr, locwc("Log_PleaseRestart"), locwc("Error_FailedToLaunch"), MB_ICONERROR);
+            CleanUp();
+            exit(0);
+        }
+    }
+
+    uint64_t TimeWait;
+    void AdjustFrameRate()
+    {
+        if (IBF_Inst_Setting.FrameRateLimit() != -1)
+        {
+            int Uax = 1000000 / IBF_Inst_Setting.FrameRateLimit();
+            while (GetSysTimeMicros() > TimeWait + 5000000) TimeWait += 1000000;
+            while (GetSysTimeMicros() < TimeWait)Sleep(Uax / 1000);
+            TimeWait += Uax;
+        }
+        ShellLoopLastTime = GetSysTimeMicros();
+    }
+
+    void DrawBackground()
+    {
+        using namespace PreLink;
+
+        int display_w, display_h;
+        glfwGetFramebufferSize(window, &display_w, &display_h);
+        glViewport(0, 0, display_w, display_h);
+        auto& cc = IBR_Color::BackgroundColor.Value;
+        glClearColor(cc.x * cc.w, cc.y * cc.w, cc.z * cc.w, cc.w);
+        glClear(GL_COLOR_BUFFER_BIT);
+    }
+
+    void CheckIfClose()
+    {
+        if (glfwWindowShouldClose(PreLink::window))
+        {
+            if (IBR_ProjectManager::IsOpen())
+            {
+                GotoCloseShellLoop = true;
+                IBR_ProjectManager::CloseAction();
+            }
+            else ShouldCloseShellLoop = true;
+        }
+    }
+
+    void ShellLoop_Unprotected()
+    {
+        
+
+        TimeWait = GetSysTimeMicros();
 
         while (!ShouldCloseShellLoop)
         {
-            if (IBF_Inst_Setting.FrameRateLimit() != -1)
-            {
-                int Uax = 1000000 / IBF_Inst_Setting.FrameRateLimit();
-                while (GetSysTimeMicros() > TimeWait + 5000000) TimeWait += 1000000;
-                while (GetSysTimeMicros() < TimeWait)Sleep(Uax / 1000);
-                TimeWait += Uax;
-            }
-            ShellLoopLastTime = GetSysTimeMicros();
+            AdjustFrameRate();
             // Poll and handle events (inputs, window resize, etc.)
             // You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to tell if dear imgui wants to use your inputs.
             // - When io.WantCaptureMouse is true, do not dispatch mouse input data to your main application, or clear/overwrite your copy of the mouse data.
@@ -322,20 +373,7 @@ namespace Initialize
             ImGui_ImplOpenGL2_NewFrame();
             ImGui_ImplGlfw_NewFrame();
 
-            if (font->ContainerAtlas == NULL)
-            {
-                if (EnableLog)
-                {
-                    GlobalLog.AddLog_CurTime(false);
-                    GlobalLog.AddLog("font->ContainerAtlas == NULL");
-                    GlobalLog.AddLog_CurTime(false);
-                    GlobalLog.AddLog(locc("Log_PleaseRestart"));
-                }
-                MessageBoxW(nullptr, L"font->ContainerAtlas == NULL", locwc("Error_FailedToLoadFont"), MB_ICONERROR);
-                MessageBoxW(nullptr, locwc("Log_PleaseRestart"), locwc("Error_FailedToLaunch"), MB_ICONERROR);
-                CleanUp();
-                exit(0);
-            }
+            CheckFontAtlas();
 
             ImGui::NewFrame();
 
@@ -343,12 +381,7 @@ namespace Initialize
 
             // Rendering
             ImGui::Render();
-            int display_w, display_h;
-            glfwGetFramebufferSize(window, &display_w, &display_h);
-            glViewport(0, 0, display_w, display_h);
-            auto& cc = IBR_Color::BackgroundColor.Value;
-            glClearColor(cc.x * cc.w, cc.y * cc.w, cc.z * cc.w, cc.w);
-            glClear(GL_COLOR_BUFFER_BIT);
+            if(!IBR_Inst_Debug.DontDrawBg) DrawBackground();
 
             // If you are using this code with non-legacy OpenGL header/contexts (which you should not, prefer using imgui_impl_opengl3.cpp!!),
             // you may need to backup/reset/restore other state, e.g. for current shader using the commented lines below.
@@ -358,18 +391,10 @@ namespace Initialize
             ImGui_ImplOpenGL2_RenderDrawData(ImGui::GetDrawData());
             //glUseProgram(last_program);
 
-            glfwMakeContextCurrent(window);
-            glfwSwapBuffers(window);
+            glfwMakeContextCurrent(PreLink::window);
+            glfwSwapBuffers(PreLink::window);
 
-            if (glfwWindowShouldClose(window))
-            {
-                if (IBR_ProjectManager::IsOpen())
-                {
-                    GotoCloseShellLoop = true;
-                    IBR_ProjectManager::CloseAction();
-                }
-                else ShouldCloseShellLoop = true;
-            }
+            CheckIfClose();
         }
     }
 

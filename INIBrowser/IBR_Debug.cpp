@@ -88,6 +88,7 @@ void IBR_Debug::RenderUI()
     ImGui::Checkbox(u8"模块的属性菜单", &UseModuleProperties);
     ImGui::Checkbox(u8"显示画布上窗口判定框", &ShowWorkspaceWindowFrame);
     ImGui::Checkbox(u8"选中模块不跳转编辑", &DontGoToEdit);
+    ImGui::Checkbox(u8"有益精神的渲染模式", &DontDrawBg);
 
     if (ImGui::Button(u8"剪贴板 -> JSON"))
     {
