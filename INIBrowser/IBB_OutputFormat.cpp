@@ -6,10 +6,18 @@
 
 namespace KVFormatter
 {
+    void AddUniqueTmpLine(std::vector<std::string>* TmpLineOrder, const std::string& Key)
+    {
+        if (!TmpLineOrder)return;
+        if (std::find(TmpLineOrder->begin(), TmpLineOrder->end(), Key) == TmpLineOrder->end())
+            TmpLineOrder->push_back(Key);
+    }
+
     KVFormatter_t Default()
     {
-        return [](IBB_VariableList& Dest, const std::string& Key, const std::string& Value)
+        return [](IBB_VariableList& Dest, const std::string& Key, const std::string& Value, std::vector<std::string>* TmpLineOrder)
             {
+                IM_UNUSED(TmpLineOrder);
                 Dest.Value[Key] = Value;
             };
     }
@@ -28,7 +36,7 @@ namespace KVFormatter
 
     KVFormatter_t SplitValue(const std::string& delim )
     {
-        return [=](IBB_VariableList& Dest, const std::string& Key, const std::string& Value)
+        return [=](IBB_VariableList& Dest, const std::string& Key, const std::string& Value, std::vector<std::string>* TmpLineOrder)
             {
                 IM_UNUSED(Key);
                 auto List = Value | ToSVs(delim);
@@ -38,19 +46,20 @@ namespace KVFormatter
                 ++Iter;
                 if (Iter == List.end())return;
                 Dest.Value[K] = *Iter;
+                AddUniqueTmpLine(TmpLineOrder, K);
             };
     }
 
     KVFormatter_t ImportAllModules(const std::string& delim , const std::string& INIType)
     {
-        return [=](IBB_VariableList& Dest, const std::string& Key, const std::string& Value)
+        return [=](IBB_VariableList& Dest, const std::string& Key, const std::string& Value, std::vector<std::string>* TmpLineOrder)
             {
                 IM_UNUSED(Key);
                 for (auto sv : Value | ToSVs(delim))
                 {
                     IBB_Project_Index idx(INIType, std::string(sv));
                     auto pSec = idx.GetSec(IBF_Inst_Project.Project);
-                    auto Lines = pSec->GetLineList(false, true);
+                    auto Lines = pSec->GetLineList(false, true, TmpLineOrder);
                     Dest.Merge(Lines, true);
                 }
             };

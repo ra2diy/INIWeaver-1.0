@@ -829,6 +829,45 @@ bool IBB_ModuleAlt::SaveToFile()
     E.PutStr("ParamDescLong = " + ParamDescLong); E.Ln();
 
     IBB_ClipBoardData Clip;
+    Clip.Modules = Modules;
+    Clip.ProjectRID = IBF_Inst_Project.CurrentProjectRID;
+
+    if (!Clip.Modules.empty())E.PutStr("Data = " + Clip.GetString()); E.Ln();
+    E.Ln(); E.Ln();
+
+    return true;
+}
+
+/*
+bool IBB_ModuleAlt::SaveToFile()
+{
+    using namespace std::string_literals;
+    if (!Available)return false;
+    ExtFileClass E;
+    E.Open(Path.c_str(), L"w");
+    if (!E.Available())return false;
+    auto cwa = locw("AppName");
+    auto cwb = UTF8toUnicode(TimeNowU8());
+    E.PutStr(";" + UnicodetoUTF8(std::vformat(locw("Back_SaveModuleAltLine1"), std::make_wformat_args(cwa, VersionW)))); E.Ln();
+    E.PutStr(";" + loc("Back_SaveModuleAltLine2")); E.Ln();
+    E.PutStr(";" + UnicodetoUTF8(std::vformat(locw("Back_SaveModuleAltLine3"), std::make_wformat_args(cwb)))); E.Ln();
+    E.Ln();
+
+    for (size_t i = 0; i < Modules.size(); i++)
+    {
+        auto S = Modules[i].Desc.B;
+        for (auto& N : Modules)
+            N.Replace(S, Parameter + std::to_string(i));
+    }
+
+    E.PutStr("[Info]"); E.Ln();
+    E.PutStr("Name = " + Name); E.Ln();
+    E.PutStr("DescShort = " + DescShort); E.Ln();
+    E.PutStr("DescLong = " + DescLong); E.Ln();
+    E.PutStr("ParamDescShort = " + ParamDescShort); E.Ln();
+    E.PutStr("ParamDescLong = " + ParamDescLong); E.Ln();
+
+    IBB_ClipBoardData Clip;
     for (auto& M : Modules)
         if (M.IsComment || M.IsLinkGroup)
             Clip.Modules.push_back(M);
@@ -857,7 +896,7 @@ bool IBB_ModuleAlt::SaveToFile()
         {
             E.PutStr(M.Desc.A + "#[" + M.Desc.B + "]:[" + M.Inherit + "]"); E.Ln();//INI#[SEC]:[INHERIT]
         }
-        
+
         {
             //EqDelta
             E.PutStr("ImportDeltaX = " + std::to_string(M.EqDelta.x / RFontHeight)); E.Ln();
@@ -873,6 +912,17 @@ bool IBB_ModuleAlt::SaveToFile()
         {
             if (D.A == "_Local_AtFile")continue;
             E.PutStr(D.A + "#Var = " + D.B); E.Ln();
+        }
+
+        if (M.Frozen)
+        {
+            E.PutStr("Frozen#Prop = true");
+            E.Ln();
+        }
+        if (M.Hidden)
+        {
+            E.PutStr("Hidden#Prop = true");
+            E.Ln();
         }
 
         for (auto& L : M.Lines)
@@ -892,6 +942,7 @@ bool IBB_ModuleAlt::SaveToFile()
 
     return true;
 }
+*/
 
 std::unordered_map<std::string, std::unordered_map<std::string, std::string>> IniToMap(std::vector<std::vector<IniToken>>&& Secs)
 {

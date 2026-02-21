@@ -135,7 +135,7 @@ struct IBB_IniLine
     //ValidateResult ValidateAndMerge(const std::string& Another, IBB_IniMergeMode Mode);
     //ValidateResult ValidateAndMerge(const IBB_IniLine& Another, IBB_IniMergeMode Mode);
 
-    void MakeKVForExport(IBB_VariableList&) const;
+    void MakeKVForExport(IBB_VariableList&, std::vector<std::string>* TmpLineOrder = nullptr) const;
 
     template<typename T> T* GetData() const { return dynamic_cast<T*>(Data.get()); }
 
@@ -183,7 +183,7 @@ struct IBB_SubSec
     bool Merge(const IBB_SubSec& Another, IBB_IniMergeMode Mode, bool IsDuplicate);
 
     std::vector<std::string> GetKeys(bool PrintExtraData) const;//RARELY USED
-    IBB_VariableList GetLineList(bool PrintExtraData, bool FromExport) const;//RARELY USED
+    IBB_VariableList GetLineList(bool PrintExtraData, bool FromExport, std::vector<std::string>* TmpLineOrder = nullptr) const;//RARELY USED
     std::string GetFullVariable(const std::string& Name) const;
     IBB_SubSec Duplicate() const;//这个才是深复制，鉴于深复制用处远低浅复制，故默认浅复制
     void GenerateAsDuplicate(const IBB_SubSec& Src);//从Src深复制
@@ -280,7 +280,7 @@ struct IBB_Section
     IBB_Project_Index GetThisIndex() const;
     IBB_Section_Desc GetThisDesc() const;
     std::vector<std::string> GetKeys(bool PrintExtraData) const;//RARELY USED
-    IBB_VariableList GetLineList(bool PrintExtraData, bool FromExport) const;//RARELY USED
+    IBB_VariableList GetLineList(bool PrintExtraData, bool FromExport, std::vector<std::string>* TmpLineOrder = nullptr) const;//RARELY USED
     IBB_VariableList GetSimpleLines() const;//RARELY USED
     std::string GetText(bool PrintExtraData, bool FromExport = false, bool ForEdit = false) const;
     std::string GetTextForEdit() const;

@@ -157,6 +157,7 @@ IBG_InputFormUIResult IBG_InputForm::RenderUI(const LinkNodeSetting& Default)
     if (Changed)
     {
         Dirty = true;
+        IBG_Undo.SomethingShouldBeHere();
         if (TryUpdateLink && NeedsUpdateLink)
         {
             auto& KeyName = LinkNodeContext::CurSub->Lines_ByName[LinkNodeContext::LineIndex];

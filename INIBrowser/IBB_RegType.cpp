@@ -56,7 +56,7 @@ R"({
     "Type" : "Form",
     "Form" : {
         "Input" : [
-            {"Type": "InputText", "ValueID": 0, "LinkNode": { "Type": "_AnyType" } }
+            {"Type": "InputText", "ValueID": 0 }
         ],
         "Format" : [
             {"ValueIDToString": 0}
@@ -87,11 +87,29 @@ R"({
         ]
     }
 })";
+        static std::string ImportTypeJSON =
+R"({
+    "Type" : "Link",
+    "Form": {
+        "Input" : [
+            {"Type": "Link", "ValueID": 0}
+        ],
+        "Format": [
+            { "ValueIDToString": 0 }
+        ]
+    },
+    "Formatter": {
+        "Type": "Import",
+        "IniType": "Rules"
+    }
+ })";
+
         subreplace(BoolTypeJSON, "<DEFAULT_FORMAT>", S_StrBool);
 
         JsonFile StrObj; StrObj.Parse(StrTypeJSON);
         JsonFile BoolObj; BoolObj.Parse(BoolTypeJSON);
         JsonFile LinkObj; LinkObj.Parse(LinkTypeJSON);
+        JsonFile ImportObj; ImportObj.Parse(ImportTypeJSON);
 
         auto rttpt = [](const wchar_t* wcs, const std::string& Info)
             {
@@ -106,6 +124,8 @@ R"({
             rttpt(L"Bool", BoolTypeJSON);
         if (!InputTypes[u8"Link"].Load(LinkObj))
             rttpt(L"Link", LinkTypeJSON);
+        if (!InputTypes[u8"Import"].Load(ImportObj))
+            rttpt(L"Import", ImportTypeJSON);
 
 
     }

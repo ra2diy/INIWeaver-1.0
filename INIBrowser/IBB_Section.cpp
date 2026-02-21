@@ -320,7 +320,7 @@ std::vector<std::string> IBB_Section::GetKeys(bool PrintExtraData) const
     }
     return Ret;
 }
-IBB_VariableList IBB_Section::GetLineList(bool PrintExtraData, bool FromExport) const
+IBB_VariableList IBB_Section::GetLineList(bool PrintExtraData, bool FromExport, std::vector<std::string>* TmpLineOrder) const
 {
     IBB_VariableList Ret;
     if (IsLinkGroup)
@@ -343,7 +343,7 @@ IBB_VariableList IBB_Section::GetLineList(bool PrintExtraData, bool FromExport) 
     else
     {
         for (const auto& Sub : SubSecs)
-            Ret.Merge(Sub.GetLineList(PrintExtraData, FromExport), false);
+            Ret.Merge(Sub.GetLineList(PrintExtraData, FromExport, TmpLineOrder), false);
         Ret.Merge(UnknownLines, false);
         if (PrintExtraData)
         {
@@ -387,8 +387,9 @@ std::string IBB_Section::GetText(bool PrintExtraData, bool FromExport, bool ForE
     }
     else
     {
-        auto LineList = GetLineList(PrintExtraData, FromExport);
-        for (auto& s : LineOrder)
+        auto TmpLineOrder = LineOrder;
+        auto LineList = GetLineList(PrintExtraData, FromExport, &TmpLineOrder);
+        for (auto& s : TmpLineOrder)
         {
             if (LineList.HasValue(s))
             {
@@ -583,7 +584,7 @@ bool IBB_Section::HasLine(const std::string& Key) const
 bool IBB_Section::IsOnShow(const std::string& Key) const
 {
     auto _F = this->OnShow.find(Key);
-    if (_F != this->OnShow.end() && _F->second.empty())return false;
+    if (_F == this->OnShow.end() || _F->second.empty())return false;
     else return true;
 }
 

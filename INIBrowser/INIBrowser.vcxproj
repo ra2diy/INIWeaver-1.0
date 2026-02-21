@@ -275,9 +275,9 @@
   <ItemGroup>
     <None Include="..\Release\Global\RegisterTypes.json" />
     <None Include="..\Release\Global\RegisterTypesCompound.json" />
-    <None Include="..\Release\Global\TypeAlt.csv" />
-    <None Include="..\Release\Global\TypeAltAAAStrings.csv" />
-    <None Include="..\Release\Global\TypeAltCompound.csv" />
+    <None Include="..\Release\Global\TypeAlt2.csv" />
+    <None Include="..\Release\Global\TypeAlt3Compound.csv" />
+    <None Include="..\Release\Global\TypeAlt9.csv" />
     <None Include="..\Release\Resources\config.json" />
     <None Include="..\Release\Resources\language.ini" />
   </ItemGroup>

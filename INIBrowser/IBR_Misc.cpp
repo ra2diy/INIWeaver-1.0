@@ -262,6 +262,7 @@ void IBG_UndoStack::SomethingShouldBeHere()
 {
     if (IBF_Inst_Project.Project.IsEmpty())return;
     Release();
+    IBF_Inst_Project.Project.ChangeAfterSave = true;
 }
 void IBG_UndoStack::Push(const _Item& a)
 {

@@ -11,7 +11,9 @@ struct IniToken
     void Tokenize(std::string_view, bool UseDesc = true);
     IniToken() = default;
     IniToken(const IniToken&) = default;
+    IniToken& operator=(const IniToken&) = default;
     IniToken(IniToken&&) noexcept = default;
+    IniToken& operator=(IniToken&&) noexcept = default;
     IniToken(std::string_view Line, bool UseDesc = true)
     {
         Tokenize(Line, UseDesc);

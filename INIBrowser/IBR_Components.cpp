@@ -54,6 +54,8 @@ namespace IBR_DynamicData
 
     void Read(int DefaultResX, int DefaultResY)
     {
+        if (DynamicData.Available())
+            DynamicData.Close();
         if (DynamicData.Open(".\\Resources\\dynamic.dat", "rb"))
         {
             int64_t ScrXR, ScrYR;
@@ -139,6 +141,7 @@ namespace IBR_DynamicData
     }
     void SaveData()
     {
+        if (!DynamicData.Available())return;
         DynamicData.Rewind();
         DynamicData.WriteData((int64_t)(IBR_UICondition::CurrentScreenWidth));
         DynamicData.WriteData((int64_t)(IBR_UICondition::CurrentScreenHeight));
@@ -159,6 +162,7 @@ namespace IBR_DynamicData
     }
     void Close()
     {
+        if (!DynamicData.Available())return;
         DynamicData.Close();
     }
 }

@@ -242,7 +242,7 @@ std::vector<std::string> IBB_SubSec::GetKeys(bool PrintExtraData) const
     }
     return Ret;
 }
-IBB_VariableList IBB_SubSec::GetLineList(bool PrintExtraData, bool FromExport) const
+IBB_VariableList IBB_SubSec::GetLineList(bool PrintExtraData, bool FromExport, std::vector<std::string>* TmpLineOrder) const
 {
     IBB_VariableList Ret;
     if (PrintExtraData)Ret.Value["_DEFAULT_NAME"] = (Default == nullptr ? std::string{ "MISSING SubSec Default" } : Default->Name);
@@ -260,7 +260,7 @@ IBB_VariableList IBB_SubSec::GetLineList(bool PrintExtraData, bool FromExport) c
         if (FromExport)
         {
             if (sn == InheritKeyName)continue;
-            L.MakeKVForExport(Ret);
+            L.MakeKVForExport(Ret, TmpLineOrder);
         }
         else
         {

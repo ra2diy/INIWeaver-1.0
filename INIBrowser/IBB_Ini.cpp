@@ -578,12 +578,12 @@ bool IBB_IniLine::Generate(const std::string& Value, IBB_IniLine_Default* Def)
     return Ret;
 }
 
-void IBB_IniLine::MakeKVForExport(IBB_VariableList& vl) const
+void IBB_IniLine::MakeKVForExport(IBB_VariableList& vl, std::vector<std::string>* TmpLineOrder) const
 {
     auto& input = Default->GetInputType();
     auto& key = Default->Name;
     auto value = Data->GetStringForExport();
-    input.KVFmt(vl, key, value);
+    input.KVFmt(vl, key, value, TmpLineOrder);
 }
 
 

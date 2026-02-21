@@ -374,9 +374,6 @@
     <None Include="..\Release\Global\RegisterTypes.json">
       <Filter>资源文件</Filter>
     </None>
-    <None Include="..\Release\Global\TypeAlt.csv">
-      <Filter>资源文件</Filter>
-    </None>
     <None Include="..\Release\Resources\language.ini">
       <Filter>资源文件</Filter>
     </None>
@@ -386,10 +383,13 @@
     <None Include="..\Release\Global\RegisterTypesCompound.json">
       <Filter>资源文件</Filter>
     </None>
-    <None Include="..\Release\Global\TypeAltCompound.csv">
+    <None Include="..\Release\Global\TypeAlt2.csv">
       <Filter>资源文件</Filter>
     </None>
-    <None Include="..\Release\Global\TypeAltAAAStrings.csv">
+    <None Include="..\Release\Global\TypeAlt3Compound.csv">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="..\Release\Global\TypeAlt9.csv">
       <Filter>资源文件</Filter>
     </None>
   </ItemGroup>
