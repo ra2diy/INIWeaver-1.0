@@ -376,6 +376,31 @@ bool IBR_SectionData::IsIncluded() const
     return IncludedByModule != INVALID_MODULE_ID && IBR_Inst_Project.HasSection(IncludedByModule);
 }
 
+bool IBR_SectionData::IsComposedAllFold() const
+{
+    return std::ranges::all_of(IncludingModules, [this](auto id) {
+        auto pData = IBR_Inst_Project.GetSectionFromID(id).GetSectionData();
+        if (pData) return pData->CollapsedInComposed;
+        else return false;
+    });
+}
+void IBR_SectionData::FoldComposed()
+{
+    std::ranges::for_each(IncludingModules, [this](auto id) {
+        auto pData = IBR_Inst_Project.GetSectionFromID(id).GetSectionData();
+        if (pData) pData->CollapsedInComposed = true;
+    });
+}
+void IBR_SectionData::UnfoldComposed()
+{
+    std::ranges::for_each(IncludingModules, [this](auto id) {
+        auto pData = IBR_Inst_Project.GetSectionFromID(id).GetSectionData();
+        if (pData) pData->CollapsedInComposed = false;
+    });
+}
+
+// ---------- RENDER UI ----------
+
 void IBR_SectionData::RenderUI_TitleBar(bool &TriggeredRightMenu, float LastFinalY)
 {
     auto Rsec = IBR_Inst_Project.GetSection(Desc);
@@ -554,6 +579,58 @@ void IBR_SectionData::RenderUI_TitleBar(bool &TriggeredRightMenu, float LastFina
                         IBR_PopupManager::ClearRightClickMenu();
                     }
                 }
+                if (Frozen)
+                {
+                    if (ImGui::SmallButtonAlignLeft(locc("GUI_UnfreezeSec"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
+                    {
+                        Frozen = false;
+                        IBR_PopupManager::ClearRightClickMenu();
+                    }
+                }
+                else
+                {
+                    if (ImGui::SmallButtonAlignLeft(locc("GUI_FreezeSec"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
+                    {
+                        Frozen = true;
+                        IBR_PopupManager::ClearRightClickMenu();
+                    }
+                }
+                if (Hidden)
+                {
+                    if (ImGui::SmallButtonAlignLeft(locc("GUI_ShowSec"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
+                    {
+                        Hidden = false;
+                        IBR_PopupManager::ClearRightClickMenu();
+                    }
+                }
+                else
+                {
+                    if (ImGui::SmallButtonAlignLeft(locc("GUI_HideSec"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
+                    {
+                        Hidden = true;
+                        IBR_PopupManager::ClearRightClickMenu();
+                    }
+                }
+                if (IsVirtualBlock())
+                {
+                    if (IsComposedAllFold())
+                    {
+                        if (ImGui::SmallButtonAlignLeft(locc("GUI_UnfoldComposed"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
+                        {
+                            UnfoldComposed();
+                            IBR_PopupManager::ClearRightClickMenu();
+                        }
+                    }
+                    else
+                    {
+                        if (ImGui::SmallButtonAlignLeft(locc("GUI_FoldComposed"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
+                        {
+                            FoldComposed();
+                            IBR_PopupManager::ClearRightClickMenu();
+                        }
+                    }
+                }
+
                 if (ImGui::SmallButtonAlignLeft(locc("GUI_Rename"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
                 {
                     RenameDisplay();

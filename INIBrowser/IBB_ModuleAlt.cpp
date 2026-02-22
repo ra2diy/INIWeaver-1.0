@@ -800,45 +800,44 @@ const std::string ClipMagicEnd = "EndOfClipData";
 std::string TimeNowU8();
 extern int RFontHeight;
 
-bool IBB_ModuleAlt::SaveToFile()
-{
-    using namespace std::string_literals;
-    if (!Available)return false;
-    ExtFileClass E;
-    E.Open(Path.c_str(), L"w");
-    if (!E.Available())return false;
-    auto cwa = locw("AppName");
-    auto cwb = UTF8toUnicode(TimeNowU8());
-    E.PutStr(";" + UnicodetoUTF8(std::vformat(locw("Back_SaveModuleAltLine1"), std::make_wformat_args(cwa, VersionW)))); E.Ln();
-    E.PutStr(";" + loc("Back_SaveModuleAltLine2")); E.Ln();
-    E.PutStr(";" + UnicodetoUTF8(std::vformat(locw("Back_SaveModuleAltLine3"), std::make_wformat_args(cwb)))); E.Ln();
-    E.Ln();
+//bool IBB_ModuleAlt::SaveToFile()
+//{
+//    using namespace std::string_literals;
+//    if (!Available)return false;
+//    ExtFileClass E;
+//    E.Open(Path.c_str(), L"w");
+//    if (!E.Available())return false;
+//    auto cwa = locw("AppName");
+//    auto cwb = UTF8toUnicode(TimeNowU8());
+//    E.PutStr(";" + UnicodetoUTF8(std::vformat(locw("Back_SaveModuleAltLine1"), std::make_wformat_args(cwa, VersionW)))); E.Ln();
+//    E.PutStr(";" + loc("Back_SaveModuleAltLine2")); E.Ln();
+//    E.PutStr(";" + UnicodetoUTF8(std::vformat(locw("Back_SaveModuleAltLine3"), std::make_wformat_args(cwb)))); E.Ln();
+//    E.Ln();
+//
+//    for (size_t i = 0; i < Modules.size(); i++)
+//    {
+//        auto S = Modules[i].Desc.B;
+//        for (auto& N : Modules)
+//            N.Replace(S, Parameter + std::to_string(i));
+//    }
+//
+//    E.PutStr("[Info]"); E.Ln();
+//    E.PutStr("Name = " + Name); E.Ln();
+//    E.PutStr("DescShort = " + DescShort); E.Ln();
+//    E.PutStr("DescLong = " + DescLong); E.Ln();
+//    E.PutStr("ParamDescShort = " + ParamDescShort); E.Ln();
+//    E.PutStr("ParamDescLong = " + ParamDescLong); E.Ln();
+//
+//    IBB_ClipBoardData Clip;
+//    Clip.Modules = Modules;
+//    Clip.ProjectRID = IBF_Inst_Project.CurrentProjectRID;
+//
+//    if (!Clip.Modules.empty())E.PutStr("Data = " + Clip.GetString()); E.Ln();
+//    E.Ln(); E.Ln();
+//
+//    return true;
+//}
 
-    for (size_t i = 0; i < Modules.size(); i++)
-    {
-        auto S = Modules[i].Desc.B;
-        for (auto& N : Modules)
-            N.Replace(S, Parameter + std::to_string(i));
-    }
-
-    E.PutStr("[Info]"); E.Ln();
-    E.PutStr("Name = " + Name); E.Ln();
-    E.PutStr("DescShort = " + DescShort); E.Ln();
-    E.PutStr("DescLong = " + DescLong); E.Ln();
-    E.PutStr("ParamDescShort = " + ParamDescShort); E.Ln();
-    E.PutStr("ParamDescLong = " + ParamDescLong); E.Ln();
-
-    IBB_ClipBoardData Clip;
-    Clip.Modules = Modules;
-    Clip.ProjectRID = IBF_Inst_Project.CurrentProjectRID;
-
-    if (!Clip.Modules.empty())E.PutStr("Data = " + Clip.GetString()); E.Ln();
-    E.Ln(); E.Ln();
-
-    return true;
-}
-
-/*
 bool IBB_ModuleAlt::SaveToFile()
 {
     using namespace std::string_literals;
@@ -888,6 +887,7 @@ bool IBB_ModuleAlt::SaveToFile()
     for (auto& M : Modules)
     {
         if (M.IsComment || M.IsLinkGroup)continue;
+
         if (M.Inherit.empty())
         {
             E.PutStr(M.Desc.A + "#[" + M.Desc.B + "]"); E.Ln();//INI#[SEC]
@@ -924,6 +924,29 @@ bool IBB_ModuleAlt::SaveToFile()
             E.PutStr("Hidden#Prop = true");
             E.Ln();
         }
+        if (M.CollapsedInComposed)
+        {
+            E.PutStr("CollapsedInComposed#Prop = true");
+            E.Ln();
+        }
+        if (M.Ignore)
+        {
+            E.PutStr("Ignore#Prop = true");
+            E.Ln();
+        }
+        if (!M.IncludedBySection.A.empty() && !M.IncludedBySection.B.empty())
+        {
+            E.PutStr("Included#Prop = " + M.IncludedBySection.A + ", " + M.IncludedBySection.B);
+            E.Ln();
+        }
+        for (auto& P : M.IncludingSections)
+        {
+            if (!P.A.empty() && !P.B.empty())
+            {
+                E.PutStr("Including#Prop = " + P.A + ", " + P.B);
+                E.Ln();
+            }
+        }
 
         for (auto& L : M.Lines)
         {
@@ -942,7 +965,8 @@ bool IBB_ModuleAlt::SaveToFile()
 
     return true;
 }
-*/
+
+std::vector<std::string> SplitView_ToSV(const std::string_view Text);
 
 std::unordered_map<std::string, std::unordered_map<std::string, std::string>> IniToMap(std::vector<std::vector<IniToken>>&& Secs)
 {
@@ -1045,6 +1069,10 @@ void IBB_ModuleAlt::LoadFromString(std::wstring_view FileName, std::string&& Fil
             M.LinkGroup_LinkTo.clear();
             M.EqDelta.x = (float)1e100;
             M.EqDelta.y = (float)1e100;
+            M.Frozen = false;
+            M.Hidden = false;
+            M.CollapsedInComposed = false;
+            M.Ignore = false;
 
             for (size_t i = 1; i < sec.size(); i++)
             {
@@ -1072,6 +1100,35 @@ void IBB_ModuleAlt::LoadFromString(std::wstring_view FileName, std::string&& Fil
                 {
                     M.EqDelta.y = FontHeight * (float)std::strtod(sec[i].Value.c_str(), nullptr);
                     //Sleep(10);
+                }
+                else if (sec[i].Key == "Prop")
+                {
+                    if (sec[i].Desc == "Frozen")
+                    {
+                        M.Frozen = IsTrueString(sec[i].Value);
+                    }
+                    else if (sec[i].Desc == "Hidden")
+                    {
+                        M.Hidden = IsTrueString(sec[i].Value);
+                    }
+                    else if (sec[i].Desc == "CollapsedInComposed")
+                    {
+                        M.CollapsedInComposed = IsTrueString(sec[i].Value);
+                    }
+                    else if (sec[i].Desc == "Ignore")
+                    {
+                        M.Ignore = IsTrueString(sec[i].Value);
+                    }
+                    else if (sec[i].Desc == "Included")
+                    {
+                        auto sv = SplitView_ToSV(sec[i].Value);
+                        if (sv.size() >= 2)M.IncludedBySection = { sv[0], sv[1] };
+                    }
+                    else if (sec[i].Desc == "Including")
+                    {
+                        auto sv = SplitView_ToSV(sec[i].Value);
+                        if (sv.size() >= 2)M.IncludingSections.emplace_back(sv[0], sv[1]);
+                    }
                 }
                 else
                 {
@@ -1189,6 +1246,20 @@ inline std::vector<std::string_view> SplitView(const std::string_view Text)//ORI
     size_t cur = 0, crl;
     std::vector<std::string_view> ret;
     while ((crl = Text.find_first_of(' ', cur)) != Text.npos)
+    {
+        ret.push_back(trim(Text.substr(cur, crl - cur)));
+        cur = crl + 1;
+    }
+    ret.push_back(trim(Text.substr(cur)));
+    return ret;
+}
+
+inline std::vector<std::string_view> SplitViewComma(const std::string_view Text)//ORIG
+{
+    if (Text.empty())return {};
+    size_t cur = 0, crl;
+    std::vector<std::string_view> ret;
+    while ((crl = Text.find_first_of(',', cur)) != Text.npos)
     {
         ret.push_back(trim(Text.substr(cur, crl - cur)));
         cur = crl + 1;

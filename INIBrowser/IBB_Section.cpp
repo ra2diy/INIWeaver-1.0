@@ -360,6 +360,12 @@ IBB_VariableList IBB_Section::GetLineList(bool PrintExtraData, bool FromExport, 
             }
         }
     }
+
+    if (FromExport)
+        Ret.Value = Ret.Value |
+        std::views::filter([&](auto& p) { return !p.second.empty(); }) |
+        std::ranges::to<std::unordered_map>();
+
     return Ret;
 }
 IBB_VariableList IBB_Section::GetSimpleLines() const
@@ -393,6 +399,7 @@ std::string IBB_Section::GetText(bool PrintExtraData, bool FromExport, bool ForE
         {
             if (LineList.HasValue(s))
             {
+                auto& Val = LineList.GetVariable(s);
                 if (ForEdit && OnShow.find(s) != OnShow.end())
                 {
                     auto& ons = OnShow.at(s);
@@ -400,7 +407,7 @@ std::string IBB_Section::GetText(bool PrintExtraData, bool FromExport, bool ForE
                     else if (ons == EmptyOnShowDesc) Text += "#" + s + "=" + LineList.GetVariable(s) + "\n";
                     else Text += ons + "#" + s + "=" + LineList.GetVariable(s) + "\n";
                 }
-                else Text += s + "=" + LineList.GetVariable(s) + "\n";
+                else Text += s + "=" + Val + "\n";
                 LineList.Value.erase(s);
             }
         }

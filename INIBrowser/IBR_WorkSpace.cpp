@@ -336,6 +336,33 @@ namespace IBR_WorkSpace
         }
         return true;
     }
+    bool SelectedAllFrozen()
+    {
+        for (auto& v : MassTarget)
+        {
+            auto sc = IBR_Inst_Project.GetSectionFromID(v);
+            auto Data = sc.GetSectionData();
+            if (Data && !Data->Frozen)
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+    bool SelectedAllHidden()
+    {
+        for (auto& v : MassTarget)
+        {
+            auto sc = IBR_Inst_Project.GetSectionFromID(v);
+            auto Data = sc.GetSectionData();
+            if (Data && !Data->Hidden)
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
     void IgnoreSelected()
     {
         for (auto& v : MassTarget)
@@ -360,6 +387,57 @@ namespace IBR_WorkSpace
             }
         }
     }
+    
+    void FreezeSelected()
+    {
+        for (auto& v : MassTarget)
+        {
+            auto sc = IBR_Inst_Project.GetSectionFromID(v);
+            auto Data = sc.GetSectionData();
+            if (Data)
+            {
+                Data->Frozen = true;
+            }
+        }
+    }
+    void UnfreezeSelected()
+    {
+        for (auto& v : MassTarget)
+        {
+            auto sc = IBR_Inst_Project.GetSectionFromID(v);
+            auto Data = sc.GetSectionData();
+            if (Data)
+            {
+                Data->Frozen = false;
+            }
+        }
+    }
+
+    void HideSelected()
+    {
+        for (auto& v : MassTarget)
+        {
+            auto sc = IBR_Inst_Project.GetSectionFromID(v);
+            auto Data = sc.GetSectionData();
+            if (Data)
+            {
+                Data->Hidden = true;
+            }
+        }
+    }
+    void ShowSelected()
+    {
+        for (auto& v : MassTarget)
+        {
+            auto sc = IBR_Inst_Project.GetSectionFromID(v);
+            auto Data = sc.GetSectionData();
+            if (Data)
+            {
+                Data->Hidden = false;
+            }
+        }
+    }
+
     void DeleteSelected()
     {
         IBRF_CoreBump.SendToR({ [=]() {
@@ -1097,6 +1175,7 @@ namespace IBR_WorkSpace
 
                             if (CreateOnWindow)
                             {
+                                /*
                                 auto sd = MouseOverSection.GetSectionData();
                                 if (sd)
                                 {
@@ -1111,6 +1190,7 @@ namespace IBR_WorkSpace
                                         IBR_PopupManager::ClearRightClickMenu();
                                     }
                                 }
+                                */
                             }
                             if (ImGui::SmallButtonAlignLeft(locc("GUI_Copy"), ImVec2{FontHeight * 7.0f, ImGui::GetTextLineHeight()}))
                             {
@@ -1142,6 +1222,38 @@ namespace IBR_WorkSpace
                                 if (ImGui::SmallButtonAlignLeft(locc("GUI_IgnoreAll"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
                                 {
                                     IgnoreSelected();
+                                    IBR_PopupManager::ClearRightClickMenu();
+                                }
+                            }
+                            if (SelectedAllFrozen())
+                            {
+                                if (ImGui::SmallButtonAlignLeft(locc("GUI_UnfreezeAll"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
+                                {
+                                    UnfreezeSelected();
+                                    IBR_PopupManager::ClearRightClickMenu();
+                                }
+                            }
+                            else
+                            {
+                                if (ImGui::SmallButtonAlignLeft(locc("GUI_FreezeAll"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
+                                {
+                                    FreezeSelected();
+                                    IBR_PopupManager::ClearRightClickMenu();
+                                }
+                            }
+                            if (SelectedAllHidden())
+                            {
+                                if (ImGui::SmallButtonAlignLeft(locc("GUI_ShowAll"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
+                                {
+                                    ShowSelected();
+                                    IBR_PopupManager::ClearRightClickMenu();
+                                }
+                            }
+                            else
+                            {
+                                if (ImGui::SmallButtonAlignLeft(locc("GUI_HideAll"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
+                                {
+                                    HideSelected();
                                     IBR_PopupManager::ClearRightClickMenu();
                                 }
                             }

@@ -207,6 +207,9 @@
     <ClInclude Include="IBB_FileChecker.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="IBG_InputType_Derived.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="INIBrowser.cpp">
@@ -357,6 +360,9 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="IBB_FileChecker.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="IBG_InputType_Factory.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

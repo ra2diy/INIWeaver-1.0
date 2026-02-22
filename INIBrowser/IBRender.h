@@ -107,6 +107,10 @@ struct IBR_SectionData
     void RenderUI_UnknownLine(const std::string& k, const std::string& l, IBB_Section* Bsec);
     void RenderUI_Composed();
 
+    bool IsComposedAllFold() const;
+    void FoldComposed();
+    void UnfoldComposed();
+
     void CopyToClipBoard();
     bool Decomposable() const;
     void Decompose();
