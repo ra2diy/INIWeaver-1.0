@@ -509,7 +509,7 @@ bool IBB_SubSec::UpdateAll()
         }
     }
 
-    if (Default->IsInherit)
+    if (Default->Type == IBB_SubSec_Default::Inherit)
     {
         auto it = Lines.find(InheritKeyName);
         if (it != Lines.end())Root->Inherit = it->second.Data->GetString(); 

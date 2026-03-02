@@ -277,9 +277,14 @@
   <ItemGroup>
     <None Include="..\Release\Global\RegisterTypes.json" />
     <None Include="..\Release\Global\RegisterTypesCompound.json" />
-    <None Include="..\Release\Global\TypeAlt2.csv" />
-    <None Include="..\Release\Global\TypeAlt3Compound.csv" />
-    <None Include="..\Release\Global\TypeAlt9.csv" />
+    <None Include="..\Release\Global\TypeAlt2Art.csv" />
+    <None Include="..\Release\Global\TypeAlt2PhobosB48.csv" />
+    <None Include="..\Release\Global\TypeAlt2Unit.csv" />
+    <None Include="..\Release\Global\TypeAlt2Weapon.csv" />
+    <None Include="..\Release\Global\TypeAlt3Kratos.csv" />
+    <None Include="..\Release\Global\TypeAlt8Compound.csv" />
+    <None Include="..\Release\Global\TypeAlt9Links.csv" />
+    <None Include="..\Release\Global\TypeAltSpecial.csv" />
     <None Include="..\Release\Resources\config.json" />
     <None Include="..\Release\Resources\language.ini" />
   </ItemGroup>

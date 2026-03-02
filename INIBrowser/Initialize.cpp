@@ -21,6 +21,7 @@ bool GotoCloseShellLoop = false;
 bool EnableDebugList = false;
 bool NoTopExceptionHandler = false;
 bool NoVSync = false;
+bool ConfigLoadLog = false;
 std::atomic_bool LoadDatabaseComplete{ false };
 JsonFile Cfg;//Config.json
 
@@ -572,6 +573,10 @@ namespace Initialize
             else if (!_wcsicmp(szArglist[i], L"-novsync"))
             {
                 NoVSync = true;
+            }
+            else if (!_wcsicmp(szArglist[i], L"-logconfig"))
+            {
+                ConfigLoadLog = true;
             }
             else if (!_wcsnicmp(szArglist[i], L"-width=", 7))
             {

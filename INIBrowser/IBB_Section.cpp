@@ -229,6 +229,7 @@ bool IBB_Section::SetText(const std::vector<IniToken>& Tokens)
     OnShow.clear();
     UnknownLines.Value.clear();
     std::unordered_map<IBB_SubSec_Default*, int> SubSecList;
+    std::unordered_set<std::string> UsedKeys;
     auto u = [&](const IniToken& tok) {
         //if (tok.Value.empty())MessageBoxA(MainWindowHandle, tok.Key.c_str(), "fff1", MB_OK);
 
@@ -253,7 +254,8 @@ bool IBB_Section::SetText(const std::vector<IniToken>& Tokens)
                 else OnShow.erase(tok.Key);
             }
         }
-        LineOrder.push_back(tok.Key);
+        if(!UsedKeys.contains(tok.Key))
+            LineOrder.push_back(tok.Key);
     };
 
     IniToken i;
@@ -613,6 +615,24 @@ void IBB_Section::SetOnShow(const std::string& Key)
     if (!IsOnShow(Key))OnShow[Key] = EmptyOnShowDesc;
 }
 
+void IBB_Section::PushLineOrder(const std::string& Key)
+{
+    if (std::find(LineOrder.begin(), LineOrder.end(), Key) == LineOrder.end())
+        LineOrder.push_back(Key);
+}
+
+void IBB_Section::RecheckLineOrder()
+{
+    return;
+    std::unordered_set<std::string> LineOrderKeys;
+    LineOrder =
+        LineOrder |
+        std::views::filter([&](const std::string& s) {
+            return LineOrderKeys.insert(s).second;
+        }) |
+        std::ranges::to<std::vector>();
+}
+
 const IBB_IniLine* IBB_Section::GetLineFromSubSecs(const std::string& KeyName) const
 {
     if (SubSecs.empty())return nullptr;
@@ -747,10 +767,7 @@ bool IBB_Section::Merge(const IBB_Section& Another, const std::unordered_map<std
     else
     {
         for (const auto& key : Another.LineOrder)
-        {
-            if (std::find(LineOrder.begin(), LineOrder.end(), key) == LineOrder.end())
-                LineOrder.push_back(key);
-        }
+            PushLineOrder(key);
 
         UnknownLines.Merge(Another.UnknownLines, false);
         VarList.Merge(Another.VarList, false);
@@ -784,10 +801,7 @@ bool IBB_Section::Merge(const IBB_Section& Another, IBB_IniMergeMode MergeType, 
     else
     {
         for (const auto& key : Another.LineOrder)
-        {
-            if (std::find(LineOrder.begin(), LineOrder.end(), key) == LineOrder.end())
-                LineOrder.push_back(key);
-        }
+            PushLineOrder(key);
 
         UnknownLines.Merge(Another.UnknownLines, false);
         VarList.Merge(Another.VarList, false);
@@ -824,8 +838,7 @@ bool IBB_Section::MergeLine(const std::string& Key, const std::string& Value, IB
     case IBB_IniMergeMode::Replace:
     {
         auto ptr = IBF_Inst_DefaultTypeList.List.KeyBelongToSubSec(Key);
-        bool Unique = std::ranges::all_of(LineOrder, [&](const auto& elem) { return elem != Key; });
-        if (Unique)LineOrder.push_back(Key);
+        PushLineOrder(Key);
         if (ptr == nullptr)
         {
             UnknownLines.Value[Key] = Value;
@@ -1396,11 +1409,10 @@ bool IBB_Section::UpdateLineOrder()
             ++it;
     }
     // add new lines to the back
+    for (auto& K : LineOrder)
+        NewLineOrder.erase(K);
     for (const auto& K : NewLineOrder)
-    {
-        if (std::find(LineOrder.begin(), LineOrder.end(), K) == LineOrder.end())
-            LineOrder.push_back(K);
-    }
+        LineOrder.push_back(K);
 
     return true;
 }

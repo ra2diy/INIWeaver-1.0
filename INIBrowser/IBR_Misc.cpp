@@ -308,6 +308,7 @@ namespace IBR_EditFrame
     void AFTER_INTERRUPT_F ResetEdit(IBB_Section* rsc)
     {
         EditLines.clear();
+        rsc->RecheckLineOrder();
         for (auto& Sub : rsc->SubSecs)
         {
             for (auto& [K, V] : Sub.Lines)
@@ -450,7 +451,12 @@ namespace IBR_EditFrame
     {
         auto FrameWidth = (ImGui::GetWindowWidth() - FontHeight * 4.0f) * 0.5f;
         ImGui::SetNextItemWidth(FrameWidth);
-        InputTextStdString("##NewLineKey", NewLineKey); ImGui::SameLine();
+
+        bool tf(const char* label, std::string & str, ImGuiInputTextFlags flags);
+        tf("##NewLineKey", NewLineKey, 0);
+        //InputTextStdString("##NewLineKey", NewLineKey);
+        ImGui::SameLine();
+
         ImGui::Text("="); ImGui::SameLine();
         ImGui::SetNextItemWidth(FrameWidth);
         InputTextStdString("##NewLineValue", NewLineValue); ImGui::SameLine();

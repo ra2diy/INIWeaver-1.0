@@ -52,7 +52,7 @@ void IBB_InputValue::UpdateValue(const IBB_InputFormat& Format)
     Dirty = false;
     if (LastUpdate.Cont && LastUpdate.Source)
     {
-        Value = LastUpdate.Source->FormatValue(*LastUpdate.Cont, Format);
+        Value = LastUpdate.Source->FormatValue(*this, Format);
     }
 }
 
@@ -936,7 +936,7 @@ IBB_UpdateResult IIC_PureText::RenderUI(IBB_ValueContainer&, IICStatus&) {
     return { false, ImGui::IsItemActive(), -1};
 }
 
-std::string IIC_PureText::FormatValue(IBB_ValueContainer& , const IBB_InputFormat& Format) {
+std::string IIC_PureText::FormatValue(IBB_InputValue&, const IBB_InputFormat& Format) {
     return IIC_Formatter(Text, Format);
 }
 
@@ -962,7 +962,7 @@ IBB_UpdateResult IIC_LocalizedText::RenderUI(IBB_ValueContainer&, IICStatus&) {
     return { false, ImGui::IsItemActive(), -1 };
 }
 
-std::string IIC_LocalizedText::FormatValue(IBB_ValueContainer& ,const IBB_InputFormat& Format) {
+std::string IIC_LocalizedText::FormatValue(IBB_InputValue&, const IBB_InputFormat& Format) {
     return IIC_Formatter(oloc(Key, FallbackText), Format);
 }
 
@@ -973,7 +973,7 @@ IBB_UpdateResult IIC_SameLine::RenderUI(IBB_ValueContainer&, IICStatus&)
     return { false, false, -1 };
 }
 
-std::string IIC_SameLine::FormatValue(IBB_ValueContainer& ,const IBB_InputFormat& )
+std::string IIC_SameLine::FormatValue(IBB_InputValue&, const IBB_InputFormat&)
 {
     return "";
 }
@@ -985,7 +985,7 @@ IBB_UpdateResult IIC_NewLine::RenderUI(IBB_ValueContainer&, IICStatus&)
     return { false, false, -1 };
 }
 
-std::string IIC_NewLine::FormatValue(IBB_ValueContainer& ,const IBB_InputFormat& )
+std::string IIC_NewLine::FormatValue(IBB_InputValue&, const IBB_InputFormat&)
 {
     return "";
 }
@@ -997,7 +997,7 @@ IBB_UpdateResult IIC_Separator::RenderUI(IBB_ValueContainer&, IICStatus&)
     return { false, false, -1 };
 }
 
-std::string IIC_Separator::FormatValue(IBB_ValueContainer& ,const IBB_InputFormat& )
+std::string IIC_Separator::FormatValue(IBB_InputValue&,  const IBB_InputFormat&)
 {
     return "";
 }
@@ -1044,9 +1044,9 @@ IBB_UpdateResult IIC_InputText::RenderUI(IBB_ValueContainer& Cont, IICStatus& St
     }
 }
 
-std::string IIC_InputText::FormatValue(IBB_ValueContainer& Cont, const IBB_InputFormat& Format)
+std::string IIC_InputText::FormatValue(IBB_InputValue& Val, const IBB_InputFormat& Format)
 {
-    return Cont.GetValue(ValueID).StateValPtr->Format(Format);
+    return Val.StateValPtr->Format(Format);
 }
 
 void IIC_InputText::ParseValue(IBB_ValueContainer& Cont, const IBB_InputFormat& Format)
@@ -1126,9 +1126,9 @@ IBB_UpdateResult IIC_MultipleChoice::RenderUI(IBB_ValueContainer& Cont, IICStatu
     else return { false, Active, -1 };
 }
 
-std::string IIC_MultipleChoice::FormatValue(IBB_ValueContainer& Cont, const IBB_InputFormat& Format)
+std::string IIC_MultipleChoice::FormatValue(IBB_InputValue& Val, const IBB_InputFormat& Format)
 {
-    return Cont.GetValue(ValueID).StateValPtr->Format(Format);
+    return Val.StateValPtr->Format(Format);
 }
 
 void IIC_MultipleChoice::ParseValue(IBB_ValueContainer& Cont, const IBB_InputFormat& Format)
@@ -1200,9 +1200,9 @@ IBB_UpdateResult IIC_EnumCombo::RenderUI(IBB_ValueContainer& Cont, IICStatus&) {
     return { Changed, Active, ValueID };
 }
 
-std::string IIC_EnumCombo::FormatValue(IBB_ValueContainer& Cont, const IBB_InputFormat& Format)
+std::string IIC_EnumCombo::FormatValue(IBB_InputValue& Val, const IBB_InputFormat& Format)
 {
-    return Cont.GetValue(ValueID).StateValPtr->Format(Format);
+    return Val.StateValPtr->Format(Format);
 }
 
 void IIC_EnumCombo::ParseValue(IBB_ValueContainer& Cont, const IBB_InputFormat& Format)
@@ -1270,9 +1270,9 @@ IBB_UpdateResult IIC_EnumRadio::RenderUI(IBB_ValueContainer& Cont, IICStatus&) {
     return { Changed, Active, ValueID };
 }
 
-std::string IIC_EnumRadio::FormatValue(IBB_ValueContainer& Cont, const IBB_InputFormat& Format)
+std::string IIC_EnumRadio::FormatValue(IBB_InputValue& Val, const IBB_InputFormat& Format)
 {
-    return Cont.GetValue(ValueID).StateValPtr->Format(Format);
+    return Val.StateValPtr->Format(Format);
 }
 
 void IIC_EnumRadio::ParseValue(IBB_ValueContainer& Cont, const IBB_InputFormat& Format)
@@ -1326,10 +1326,10 @@ IBB_UpdateResult IIC_Bool::RenderUI(IBB_ValueContainer& Cont, IICStatus&)
     return { Changed, ImGui::IsItemActive(), ValueID };
 }
 
-std::string IIC_Bool::FormatValue(IBB_ValueContainer& Cont, const IBB_InputFormat& Format)
+std::string IIC_Bool::FormatValue(IBB_InputValue& Val, const IBB_InputFormat& Format)
 {
-    auto& Ptr = Cont.GetValue(ValueID).StateValPtr;
-    auto StateVal = Cont.GetValue(ValueID).StateValue<IIS_Bool>();
+    auto& Ptr = Val.StateValPtr;
+    auto StateVal = Val.StateValue<IIS_Bool>();
     if (StateVal)StateVal->FmtType = FmtType;
     return Ptr->Format(Format);
 }
@@ -1385,9 +1385,9 @@ IBB_UpdateResult IIC_InputInt::RenderUI(IBB_ValueContainer& Cont, IICStatus&) {
     return { Changed, ImGui::IsItemActive(), ValueID };
 }
 
-std::string IIC_InputInt::FormatValue(IBB_ValueContainer& Cont, const IBB_InputFormat& Format)
+std::string IIC_InputInt::FormatValue(IBB_InputValue& Val, const IBB_InputFormat& Format)
 {
-    return Cont.GetValue(ValueID).StateValPtr->Format(Format);
+    return Val.StateValPtr->Format(Format);
 }
 
 void IIC_InputInt::ParseValue(IBB_ValueContainer& Cont, const IBB_InputFormat& Format)
@@ -1404,6 +1404,93 @@ bool IIC_InputInt::CanProvideState(IBB_ValueContainer& Cont) const
 void IIC_InputInt::ResetState(IBB_ValueContainer& Cont) const
 {
     Cont.GetValue(ValueID).ResetState<IIS_Int>();
+}
+
+// ========== IIC_ColorPanel ==========
+
+IBB_UpdateResult IIC_ColorPanel::RenderUI(IBB_ValueContainer& Cont, IICStatus& Status)
+{
+    const auto GetCol = [&](int v1, int v2, int v3) {
+        switch (Mode)
+        {
+        case IIC_ColorPanel::RGB:
+            return ImColor(v1, v2, v3);
+            break;
+        case IIC_ColorPanel::BGR:
+            return ImColor(v3, v2, v1);
+            break;
+        case IIC_ColorPanel::HSV:
+            return ImColor::HSV(float(v1) / 360.0f, float(v2) / 255.0f, float(v3) / 255.0f);
+            break;
+        default:
+            break;
+        }
+        return ImColor{};
+     };
+    const auto GetVal = [&](int vid) {
+        auto& Var = Cont.GetValue(vid);
+        auto State = Var.StateValue<IIS_Int>();
+        int Val;
+        if (State) Val = State->Value;
+        else
+        {
+            try { Val = std::stoi(Var.Value); }
+            catch (...) { Val = 0; }
+        }
+        return Val;
+    };
+    int Val1 = GetVal(ValueID1);
+    int Val2 = GetVal(ValueID1);
+    int Val3 = GetVal(ValueID1);
+    auto Col = GetCol(Val1, Val2, Val3);
+
+    if (Status.InputMethod == IICStatus::Link)
+    {
+        if (ImGui::ColorButton(u8"阿巴", Col))
+            Status.InputMethod = IICStatus::Input;
+
+        return { false, ImGui::IsItemActive(), -1 };
+
+    }
+    else
+    {
+        ImGui::PushID(114514);
+        if (ImGui::Button(u8"⇔"))Status.InputMethod = IICStatus::Link;
+        ImGui::ColorEdit3(Hint.c_str(), &Col.Value.x);
+        ImGui::PopID();
+        ImGui::ColorPicker3(Hint.c_str(), &Col.Value.x);
+    }
+
+}
+
+std::string IIC_ColorPanel::FormatValue(IBB_InputValue& Val, const IBB_InputFormat& Format)
+{
+    return Val.StateValPtr->Format(Format);
+}
+
+void IIC_ColorPanel::ParseValue(IBB_ValueContainer& Cont, const IBB_InputFormat& Format)
+{
+    auto& Val1 = Cont.GetValue(ValueID1);
+    Val1.StateValPtr->Parse(Format, Val1.Value);
+    auto& Val2 = Cont.GetValue(ValueID2);
+    Val2.StateValPtr->Parse(Format, Val2.Value);
+    auto& Val3 = Cont.GetValue(ValueID3);
+    Val3.StateValPtr->Parse(Format, Val3.Value);
+}
+
+bool IIC_ColorPanel::CanProvideState(IBB_ValueContainer& Cont) const
+{
+    return
+        Cont.GetValue(ValueID1).CorrectState<IIS_Int>() &&
+        Cont.GetValue(ValueID2).CorrectState<IIS_Int>() &&
+        Cont.GetValue(ValueID3).CorrectState<IIS_Int>();
+}
+
+void IIC_ColorPanel::ResetState(IBB_ValueContainer& Cont) const
+{
+    Cont.GetValue(ValueID1).ResetState<IIS_Int>();
+    Cont.GetValue(ValueID2).ResetState<IIS_Int>();
+    Cont.GetValue(ValueID3).ResetState<IIS_Int>();
 }
 
 // ========== IIC_SliderInt ==========
@@ -1442,9 +1529,9 @@ IBB_UpdateResult IIC_SliderInt::RenderUI(IBB_ValueContainer& Cont, IICStatus&) {
     return { Changed, ImGui::IsItemActive(), ValueID };
 }
 
-std::string IIC_SliderInt::FormatValue(IBB_ValueContainer& Cont, const IBB_InputFormat& Format)
+std::string IIC_SliderInt::FormatValue(IBB_InputValue& Val, const IBB_InputFormat& Format)
 {
-    return Cont.GetValue(ValueID).StateValPtr->Format(Format);
+    return Val.StateValPtr->Format(Format);
 }
 
 void IIC_SliderInt::ParseValue(IBB_ValueContainer& Cont, const IBB_InputFormat& Format)
@@ -1473,7 +1560,7 @@ IBB_UpdateResult IIC_Error::RenderUI(IBB_ValueContainer&, IICStatus&) {
     return { false, false, -1 };
 }
 
-std::string IIC_Error::FormatValue(IBB_ValueContainer& ,const IBB_InputFormat& ) {
+std::string IIC_Error::FormatValue(IBB_InputValue&, const IBB_InputFormat&) {
     return UnicodetoUTF8(std::vformat(locw("Error_FailedToParseComponent"), std::make_wformat_args(TextW)));
 }
 

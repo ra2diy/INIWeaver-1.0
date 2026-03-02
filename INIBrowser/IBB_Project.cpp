@@ -39,12 +39,10 @@ void IBB_DefaultTypeList::EnsureType(const IBB_DefaultTypeAlt& D, std::set<std::
             UsedStrings->insert(D.LinkType);
         else
         {
-            auto& TheOnlySubSec = SubSec_Default[DefaultSubSecName];
-            TheOnlySubSec.Lines_ByName.push_back(D.Name);
-            TheOnlySubSec.Lines[D.Name] = L;
-
+            auto& DefaultSubSec = SubSec_Default[DefaultSubSecName];
+            DefaultSubSec.Lines_ByName.push_back(D.Name);
+            DefaultSubSec.Lines[D.Name] = L;
             IBB_DefaultRegType::EnsureRegType(D.LinkType);
-
         }
     }
 }
@@ -74,38 +72,29 @@ bool IBB_DefaultTypeList::LoadFromAlt(const IBB_DefaultTypeAltList& AltList)
     std::set<std::string> UsedStrings;
     for (const auto& D : AltList.List)EnsureType(D, &UsedStrings);
 
-    auto& TheOnlySubSec = SubSec_Default[DefaultSubSecName];
-    TheOnlySubSec.Name = DefaultSubSecName;
-    TheOnlySubSec.DescShort = "";
-    TheOnlySubSec.DescLong = "";
-    TheOnlySubSec.Platform = { "" };
-    TheOnlySubSec.Lines_ByName.reserve(IniLine_Default.size());
-    for (auto& [k, v] : IniLine_Default)
-        TheOnlySubSec.Lines_ByName.push_back(k);
-    TheOnlySubSec.Lines = IniLine_Default;
-    TheOnlySubSec.Require.RequiredValues.clear();
-    TheOnlySubSec.Require.ForbiddenValues.clear();
-    TheOnlySubSec.IsInherit = false;
+    IBB_IniLine_Default& InheritLine = IniLine_Default[InheritKeyName];
+    IBB_IniLine_Default& ImportLine = IniLine_Default[ImportKeyName];
 
-    IBB_DefaultTypeAlt b;
-    b.Name = InheritKeyName;
-    b.LinkLimit = 1;
-    b.LinkType = "_AnyType";
-    b.DescShort = "__INHERIT_SHORT__";
-    b.DescLong = "";
-    b.Color = ImColor(50, 80, 255);
-    EnsureType(b, &UsedStrings);
+    auto& DefaultSubSec = SubSec_Default[DefaultSubSecName];
+    DefaultSubSec.Name = DefaultSubSecName;
+    DefaultSubSec.Lines_ByName.reserve(IniLine_Default.size());
+
+    {
+        for (auto& [k, v] : IniLine_Default)
+            if (k != InheritKeyName && k != ImportKeyName)DefaultSubSec.Lines_ByName.push_back(k);
+        DefaultSubSec.Lines = IniLine_Default;
+        DefaultSubSec.Lines.erase(InheritKeyName);
+        DefaultSubSec.Lines.erase(ImportKeyName);
+    }
+    
+    DefaultSubSec.Type = IBB_SubSec_Default::Default;
+
     const char* InheritSubSecName = "  INHERIT_SUBSEC__";
     auto& InheritSubSec = SubSec_Default[InheritSubSecName];
     InheritSubSec.Name = InheritSubSecName;
-    InheritSubSec.DescShort = "";
-    InheritSubSec.DescLong = "";
-    InheritSubSec.Platform = { "" };
     InheritSubSec.Lines_ByName = { InheritKeyName };
-    InheritSubSec.Lines[InheritKeyName] = IniLine_Default[InheritKeyName];
-    InheritSubSec.Require.RequiredValues.clear();
-    InheritSubSec.Require.ForbiddenValues.clear();
-    InheritSubSec.IsInherit = true;
+    InheritSubSec.Lines[InheritKeyName] = InheritLine;
+    InheritSubSec.Type = IBB_SubSec_Default::Inherit;
 
     for (const auto& s : UsedStrings)
         IBB_DefaultRegType::EnsureRegType(s);
@@ -155,8 +144,8 @@ bool IBB_DefaultTypeAlt::Load(const std::vector<std::string>& FromCSV)
     LinkLimit = atoi(FromCSV[2].c_str());
     DescShort = IBR_L10n::ProcessEscape(FromCSV[3]);
     DescLong = IBR_L10n::ProcessEscape(FromCSV[4]);
-    Color = StrToCol(FromCSV.size() > 5 ? FromCSV[5].c_str() : "00000000");
-    Input = FromCSV.size() > 6 ? FromCSV[6] : SelectDefaultInput(LinkType);
+    Color = StrToCol((FromCSV.size() > 5 && !FromCSV[5].empty()) ? FromCSV[5].c_str() : "00000000");
+    Input = (FromCSV.size() > 6 && !FromCSV[6].empty()) ? FromCSV[6] : SelectDefaultInput(LinkType);
     return true;
 }
 

@@ -38,6 +38,7 @@ struct IBB_FormatComponent;
 struct IBB_ValidateComponent;
 struct IBB_ValueContainer;
 struct IBB_InputState;
+struct IBB_InputValue;
 using IICPtr = std::shared_ptr<IBG_InputComponent>;
 using IFCPtr = std::shared_ptr<IBB_FormatComponent>;
 using IISPtr = std::unique_ptr<IBB_InputState>;
@@ -58,11 +59,11 @@ struct IBG_InputComponent : public std::enable_shared_from_this<IBG_InputCompone
 {
     virtual ~IBG_InputComponent() = default;
     virtual IBB_UpdateResult RenderUI(IBB_ValueContainer& Cont, IICStatus& Status) = 0;
-    virtual std::string FormatValue(IBB_ValueContainer& Cont, const IBB_InputFormat& Format) = 0;
+    virtual std::string FormatValue(IBB_InputValue&, const IBB_InputFormat&) = 0;
     virtual void ParseValue(IBB_ValueContainer& Cont, const IBB_InputFormat& Format) = 0;
     virtual bool CanProvideState(IBB_ValueContainer& Cont) const = 0;
     virtual void ResetState(IBB_ValueContainer& Cont) const = 0;
-    virtual int GetCurrentTargetValueID() const = 0;
+    virtual int GetCurrentTargetValueID() const = 0;//注意！这个函数目前仅用于链接节点，如果扩展用途需要修改函数！
     virtual bool SupportLinks() const = 0;
 
     IICStatus InitialStatus;

@@ -197,14 +197,12 @@ void ControlPanel_About()
     ImGui::TextWrapped(locc("GUI_About1"), _AppName, Version.c_str());
     ImGui::TextWrapped(u8"GLFW/Dear ImGui", Version.c_str());
     ImGui::Separator();
-    ImGui::TextWrapped((loc("GUI_About5") + u8"：钢铁之锤").c_str());
-    ImGui::TextWrapped(u8"QQ：2482911962");
-    ImGui::TextWrapped(u8"贴吧：笨030504");
-    ImGui::TextWrapped(u8"GitHub：Ironhammer Std");
-    ImGui::NewLine();
-    ImGui::TextWrapped((loc("GUI_About6") + u8"：").c_str());
+    ImGui::TextWrapped((loc("GUI_About5")).c_str());
+    ImGui::TextWrapped(u8"      钢铁之锤");
+    ImGui::TextWrapped((loc("GUI_About6")).c_str());
     ImGui::TextWrapped(u8"      Kenosis");
-    ImGui::Separator();
+    ImGui::TextWrapped((loc("GUI_About8")).c_str());
+    ImGui::TextWrapped(u8"      九千天华");
     ImGui::TextWrapped(locc("GUI_About2"));
 
     const char* Document_CN = "https://inibrowser-02-chinese.readthedocs.io/zh-cn/latest/Info.html";

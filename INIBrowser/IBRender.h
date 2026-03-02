@@ -106,6 +106,7 @@ struct IBR_SectionData
     void RenderUI_Virtual();
     void RenderUI_UnknownLine(const std::string& k, const std::string& l, IBB_Section* Bsec);
     void RenderUI_Composed();
+    void RenderUI_Lines(IBB_Section* Bsec);
 
     bool IsComposedAllFold() const;
     void FoldComposed();

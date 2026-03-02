@@ -77,8 +77,14 @@ struct IBB_SubSec_Default
     std::vector<std::string> Platform;
     std::vector<std::string> Lines_ByName;
     std::unordered_map<std::string, IBB_IniLine_Default> Lines;
-    bool IsInherit;
+    enum _Type
+    {
+        Default,
+        Inherit,
+        Import
+    }Type;
 
+    IBB_SubSec_Default();
     bool Load(JsonObject FromJson, const std::unordered_map<std::string, IBB_IniLine_Default>& LineMap);
 };
 
@@ -294,9 +300,11 @@ struct IBB_Section
     bool HasLine(const std::string& Key) const;
     bool IsOnShow(const std::string& Key) const;
     const std::string& GetOnShow(const std::string& Key) const;
+
     void SetOnShow(const std::string& Key, const std::string& Value, bool AllowReapply);
     void SetOnShow(const std::string& Key);
-
+    void PushLineOrder(const std::string& Key);
+    void RecheckLineOrder();
     bool SetText(char* Text);//mess Text up
     bool SetText(const std::vector<IniToken>& Tokens);//do not consider section&inherit
     void GetClipData(ModuleClipData& Clip);

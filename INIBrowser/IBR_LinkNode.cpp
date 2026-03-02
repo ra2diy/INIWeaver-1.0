@@ -211,7 +211,7 @@ namespace IBR_LinkNode
         }
 
 
-        bool IsInherit = FromSub.Default->IsInherit;
+        bool IsInherit = (FromSub.Default->Type == IBB_SubSec_Default::Inherit);
         auto UR = DefaultResult;
         auto&& [LinkBegin, LinkEnd] = FromSub.GetLink(LineIdx, CompIdx);
         auto Links =

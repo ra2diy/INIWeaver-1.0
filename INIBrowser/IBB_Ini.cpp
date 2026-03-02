@@ -240,6 +240,13 @@ bool IBB_IniLine_Default::Load(JsonObject FromJson)
     return Ret;
 }*/
 
+IBB_SubSec_Default::IBB_SubSec_Default() :
+    DescShort(""), DescLong(""), Platform({ "" })
+{
+    Require.RequiredValues.clear();
+    Require.ForbiddenValues.clear();
+}
+
 bool IBB_SubSec_Default::Load(JsonObject FromJson, const std::unordered_map<std::string, IBB_IniLine_Default>& LineMap)
 {
     Platform = FromJson.GetObjectItem(u8"Platform").GetArrayString();

@@ -389,13 +389,28 @@
     <None Include="..\Release\Global\RegisterTypesCompound.json">
       <Filter>资源文件</Filter>
     </None>
-    <None Include="..\Release\Global\TypeAlt2.csv">
+    <None Include="..\Release\Global\TypeAlt2Art.csv">
       <Filter>资源文件</Filter>
     </None>
-    <None Include="..\Release\Global\TypeAlt3Compound.csv">
+    <None Include="..\Release\Global\TypeAlt2PhobosB48.csv">
       <Filter>资源文件</Filter>
     </None>
-    <None Include="..\Release\Global\TypeAlt9.csv">
+    <None Include="..\Release\Global\TypeAlt2Unit.csv">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="..\Release\Global\TypeAlt2Weapon.csv">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="..\Release\Global\TypeAlt3Kratos.csv">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="..\Release\Global\TypeAlt8Compound.csv">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="..\Release\Global\TypeAlt9Links.csv">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="..\Release\Global\TypeAltSpecial.csv">
       <Filter>资源文件</Filter>
     </None>
   </ItemGroup>

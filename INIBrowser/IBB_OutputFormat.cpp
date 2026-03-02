@@ -4,6 +4,8 @@
 #include "IBB_Project.h"
 #include "Global.h"
 
+std::string_view TrimView(std::string_view Line);
+
 namespace KVFormatter
 {
     void AddUniqueTmpLine(std::vector<std::string>* TmpLineOrder, const std::string& Key)
@@ -31,7 +33,16 @@ namespace KVFormatter
                 }
                 return std::string_view(&*subrange.begin(),
                     std::ranges::distance(subrange));
+                }) |
+                std::views::transform([](std::string_view sv) {
+                    return TrimView(sv);
                 });
+        };
+
+    const auto ConcatSVs = [](auto delim) {
+        return
+            std::views::join_with(delim) |
+            std::ranges::to<std::string>();
         };
 
     KVFormatter_t SplitValue(const std::string& delim )
@@ -45,7 +56,9 @@ namespace KVFormatter
                 std::string K{ *Iter };
                 ++Iter;
                 if (Iter == List.end())return;
-                Dest.Value[K] = *Iter;
+                Dest.Value[K] =
+                    std::ranges::subrange(Iter, List.end()) |
+                    ConcatSVs(delim);
                 AddUniqueTmpLine(TmpLineOrder, K);
             };
     }

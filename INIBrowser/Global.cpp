@@ -51,6 +51,7 @@ std::atomic<bool> SettingSaveComplete{ false };
 const wchar_t* SettingFileName = L"./Resources/setting.dat";
 const char* DefaultIniName = "Rules";
 const char* InheritKeyName = "AresInherit";
+const char* ImportKeyName = "UseFlagPack";
 
 //日志
 LogClass GlobalLog{ "browser.log" };

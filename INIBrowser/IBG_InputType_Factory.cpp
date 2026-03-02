@@ -268,6 +268,10 @@ IICPtr InputFormComponentFactory::CreateInputComponent_Special(IBB_ValueContaine
             return std::make_unique<IIC_Bool>(Cont, ValueID, InitValue, fmt, Hint);
 
         }
+        else if (typeStr == "ColorPanel")
+        {
+            return std::make_unique<IIC_ColorPanel>();
+        }
         else if (typeStr == "InputInt")
         {
             //IIC_InputInt(int valueid, int InitialValue, int min, int max, const std::string& hint)

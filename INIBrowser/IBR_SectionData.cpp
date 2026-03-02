@@ -268,9 +268,29 @@ bool IBR_SectionData::OnLineEdit(const std::string& OnShow, const std::string& N
         auto w = IBR_WorkSpace::ShowRegName ? UTF8toUnicode(Q) :
             (IBR_Inst_Project.HasSection({ Desc.Ini, Q }) ? UTF8toUnicode(IBR_Inst_Project.GetSection({ Desc.Ini, Q }).GetDisplayName()) : UTF8toUnicode(Q));
         std::wstring Nul;
-        if (w.empty()) return loc("GUI_NoInherit");
-        else return UnicodetoUTF8(std::vformat(locw("GUI_InheritFrom"), std::make_wformat_args(ShowInherit() ? w : Nul)));
+        if (w.empty()) return std::make_pair(loc("GUI_NoInherit"), loc("GUI_NoInherit"));
+        else return std::make_pair(loc("GUI_InheritFrom"), UnicodetoUTF8(std::vformat(locw("GUI_InheritFrom"), std::make_wformat_args(ShowInherit() ? w : Nul))));
     };
+
+    auto& DescLong = (Name == InheritKeyName) ? loc("GUI_InheritDescLong") : line->Default->DescLong;
+    std::string DescShort;
+    std::string DescShort2;
+
+    if (Name == InheritKeyName)
+    {
+        std::tie(DescShort2, DescShort) = InheritStr();
+    }
+    else if (!IBR_WorkSpace::ShowRegName)
+    {
+        if (OnShow == EmptyOnShowDesc)
+            DescShort = DescShort2 = line->Default->DescShort;
+        else DescShort = DescShort2 = OnShow;
+    }
+    else DescShort = DescShort2 = Name;
+
+    float Width = ImGui::CalcTextSize(DescShort2.c_str()).x;
+    const float ReservedWidth = FontHeight * 5.0f;
+    WidthFix = std::max(WidthFix, Width + ReservedWidth);
 
     if (Line.Edit.NeedInit())
     {
@@ -293,31 +313,11 @@ bool IBR_SectionData::OnLineEdit(const std::string& OnShow, const std::string& N
             line->Default->Input->WorkSpace,
             line->Default->GetNodeSetting()
         };
-        if (Name == InheritKeyName)
-        {
-            Line.Edit.RenderUI(InheritStr(), loc("GUI_InheritDescLong"), &It);
-        }
-        else if (!IBR_WorkSpace::ShowRegName)
-        {
-            if(OnShow.empty() || OnShow == EmptyOnShowDesc)
-                Line.Edit.RenderUI(line->Default->DescShort, line->Default->DescLong, &It);
-            else Line.Edit.RenderUI(OnShow, line->Default->DescLong, &It);
-        }
-        else Line.Edit.RenderUI(Name, line->Default->DescLong, &It);
+        Line.Edit.RenderUI(DescShort, DescLong, &It);
     }
     else
     {
-        if (Name == InheritKeyName)
-        {
-            Line.Edit.RenderUI(InheritStr(), loc("GUI_InheritDescLong"));
-        }
-        else if (!IBR_WorkSpace::ShowRegName)
-        {
-            if (OnShow.empty() || OnShow == EmptyOnShowDesc)
-                Line.Edit.RenderUI(line->Default->DescShort, line->Default->DescLong);
-            else Line.Edit.RenderUI(OnShow, line->Default->DescLong);
-        }
-        else Line.Edit.RenderUI(Name, line->Default->DescLong);
+        Line.Edit.RenderUI(DescShort, DescLong);
     }
     return line->Default->Property.TypeAlt.empty() ? true : HasInput;
 }
@@ -892,6 +892,31 @@ void IBR_SectionData::RenderUI_Composed()
         IBR_ToolTip(loc("GUI_FoldModule"));
 }
 
+void IBR_SectionData::RenderUI_Lines(IBB_Section* Bsec)
+{
+    Bsec->CheckSubsecOrder();
+    for (auto i : Bsec->SubSecOrder)
+    {
+        auto& sub = Bsec->SubSecs[i];
+        LinkNodeContext::CurSub = &sub;
+
+        if (sub.Default->Type == IBB_SubSec_Default::Inherit && Bsec->Inherit.empty())continue;
+        for (const auto& k : sub.Lines_ByName)
+        {
+            if (!Bsec->IsOnShow(k))continue;
+            OnLineEdit(Bsec->GetOnShow(k), k);
+        }
+    }
+    LinkNodeContext::CurSub = nullptr;
+
+    for (const auto& [k, l] : Bsec->UnknownLines.Value)
+        RenderUI_UnknownLine(k, l, Bsec);
+
+    auto& cc = LinkNodeContext::CollapsedCenter;
+    for (auto& sub : Bsec->SubSecs)
+        IBR_LinkNode::PushInactiveLines(sub, { cc.x, cc.y + ImGui::GetWindowPos().y });
+}
+
 namespace IBR_LinkNode
 {
     ImU32 AdjustLineCol(ImU32 Color)
@@ -972,29 +997,8 @@ void IBR_SectionData::RenderUI()
         else
         {
             if (IsIncluded())RenderUI_Composed();
-            Bsec->CheckSubsecOrder();
-            auto& cc = LinkNodeContext::CollapsedCenter;
-
-            for (auto i : Bsec->SubSecOrder)
-            {
-                auto& sub = Bsec->SubSecs[i];
-                LinkNodeContext::CurSub = &sub;
-                cc = { HeadLineRN.x , FinalY + HalfLine };
-
-                if (sub.Default->IsInherit && Bsec->Inherit.empty())continue;
-                for (const auto& k : sub.Lines_ByName)
-                {
-                    if(!Bsec->IsOnShow(k))continue;
-                    OnLineEdit(Bsec->GetOnShow(k), k);
-                }
-            }
-            LinkNodeContext::CurSub = nullptr;
-
-            for (const auto& [k, l] : Bsec->UnknownLines.Value)
-                RenderUI_UnknownLine(k, l, Bsec);
-
-            for (auto& sub : Bsec->SubSecs)
-                IBR_LinkNode::PushInactiveLines(sub, { cc.x, cc.y + ImGui::GetWindowPos().y });
+            LinkNodeContext::CollapsedCenter = { HeadLineRN.x , FinalY + HalfLine };
+            RenderUI_Lines(Bsec);
         }
     }
 

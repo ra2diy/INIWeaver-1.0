@@ -5,6 +5,8 @@
 #include "Global.h"
 #include <filesystem>
 
+extern bool ConfigLoadLog;
+
 void IBB_FileCheck(const char* FileName, bool AllowNotExist, bool PopupOnError, bool Critical)
 {
     IBB_FileCheck(UTF8toUnicode(FileName), AllowNotExist, PopupOnError, Critical);
@@ -62,7 +64,7 @@ void IBB_FileCheck(const std::wstring& FileName, bool AllowNotExist, bool PopupO
         }
     }
 
-    if (EnableLogEx)
+    if (ConfigLoadLog)
     {
         sprintf_s(LogBufB, "IBB_FileCheck : <- FileName=%s, IsFile = %s, Exists = %s, HasAccess = %s", UnicodetoUTF8(FileName).c_str(), IBD_BoolStr(IsFile), IBD_BoolStr(Exists), IBD_BoolStr(HasAccess));
         GlobalLogB.AddLog_CurTime(false);
