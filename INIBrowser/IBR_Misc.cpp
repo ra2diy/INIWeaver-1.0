@@ -449,12 +449,12 @@ namespace IBR_EditFrame
 
     void RenderUI_NewLine(IBB_Section* pbk)
     {
-        auto FrameWidth = (ImGui::GetWindowWidth() - FontHeight * 4.0f) * 0.5f;
+        auto FrameWidth = (ImGui::GetWindowWidth() - FontHeight * 4.5f) * 0.5f;
         ImGui::SetNextItemWidth(FrameWidth);
 
-        bool tf(const char* label, std::string & str, ImGuiInputTextFlags flags);
-        tf("##NewLineKey", NewLineKey, 0);
-        //InputTextStdString("##NewLineKey", NewLineKey);
+        //InputTextStdStringWithOption("##NewLineKey", NewLineKey, 0, IBF_Inst_DefaultTypeList.List.Query.InputTextOptions);
+        InputTextStdString("##NewLineKey", NewLineKey);
+        bool Active = ImGui::IsItemActive();
         ImGui::SameLine();
 
         ImGui::Text("="); ImGui::SameLine();
@@ -475,6 +475,8 @@ namespace IBR_EditFrame
             NewLineKey.clear();
             NewLineValue.clear();
         }
+
+        EditStringWithOptions(Active, NewLineKey, IBF_Inst_DefaultTypeList.List.Query.InputTextOptions);
     }
 
     void RenderUI_TextEdit()

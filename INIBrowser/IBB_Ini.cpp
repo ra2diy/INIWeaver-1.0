@@ -843,6 +843,23 @@ bool IBB_DefaultTypeList::BuildQuery()
             Query.SubSec_Default_FromLineID.insert({ s,(IBB_SubSec_Default*)std::addressof(p.second) });
         }
     }
+    //InputTextOptions
+    for (const auto& p : IniLine_Default)
+    {
+        if (p.second.Name.empty())continue;
+        //Text, Desc, Hint
+        auto Pattern = p.second.Name + "\n" + p.second.DescShort;
+        for (auto& c : Pattern)if(isupper(c))c = (char)tolower(c);
+        Query.InputTextOptions.push_back({
+            p.second.Name,
+            p.second.DescShort,
+            p.second.DescLong,
+            Pattern
+        });
+
+    }
+    std::sort(Query.InputTextOptions.begin(), Query.InputTextOptions.end(),
+        [](const auto& a, const auto& b) { return a.Text < b.Text; });
     return Ret;
 }
 

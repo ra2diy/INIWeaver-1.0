@@ -623,14 +623,16 @@ void IBB_Section::PushLineOrder(const std::string& Key)
 
 void IBB_Section::RecheckLineOrder()
 {
-    return;
     std::unordered_set<std::string> LineOrderKeys;
-    LineOrder =
-        LineOrder |
-        std::views::filter([&](const std::string& s) {
-            return LineOrderKeys.insert(s).second;
-        }) |
-        std::ranges::to<std::vector>();
+    std::vector<std::string> NewLineOrder;
+    for (auto& s : LineOrder)
+    {
+        if (LineOrderKeys.insert(s).second)
+        {
+            NewLineOrder.push_back(s);
+        }
+    }
+    LineOrder = std::move(NewLineOrder);
 }
 
 const IBB_IniLine* IBB_Section::GetLineFromSubSecs(const std::string& KeyName) const

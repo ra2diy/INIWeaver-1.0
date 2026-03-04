@@ -164,6 +164,8 @@ namespace SearchModuleAlt
             if (ToUpdate)Update(IBB_ModuleAltDefault::Search(InputBuf, ConsiderRegName, ConsiderDescName, ConsiderDesc));
             void DDCC();
             DDCC();
+
+            PushComboRect();
         }
     }
 

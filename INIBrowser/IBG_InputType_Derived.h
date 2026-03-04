@@ -182,9 +182,10 @@ struct IIC_MultipleChoice final : public IBG_InputComponent
     std::unordered_map<std::string, IICDescStr> Options;//AllowedValue : DisplayName ; if empty then any value allowed
     std::vector<std::string> OptionOrder;
     bool SameLine;
+    int MaxInOneLine;//如果SameLine为true，设置每行最大选项数，超过则换行；如果SameLine为false，则此项无效
     std::string Hint;
     int ValueID;
-    IIC_MultipleChoice(IBB_ValueContainer& Cont, int valueid, const std::string& InitialText, bool sameline, const std::unordered_map<std::string, IICDescStr>& options, const std::vector<std::string>& OptionOrder);
+    IIC_MultipleChoice(IBB_ValueContainer& Cont, int valueid, const std::string& InitialText, bool sameline, int MaxInOneLine, const std::unordered_map<std::string, IICDescStr>& options, const std::vector<std::string>& OptionOrder);
 
     IBB_UpdateResult RenderUI(IBB_ValueContainer& Cont, IICStatus& Status);
     std::string FormatValue(IBB_InputValue& Val, const IBB_InputFormat& Format);
@@ -218,8 +219,9 @@ struct IIC_EnumRadio final : public IBG_InputComponent
     std::vector<std::string> OptionOrder;
     std::string Hint;
     bool SameLine;
+    int MaxInOneLine;//如果SameLine为true，设置每行最大选项数，超过则换行；如果SameLine为false，则此项无效
     int ValueID;
-    IIC_EnumRadio(IBB_ValueContainer& Cont, int valueid, const std::string& InitialValue, const std::unordered_map<std::string, IICDescStr>& options, bool sameline, const std::vector<std::string>& OptionOrder);
+    IIC_EnumRadio(IBB_ValueContainer& Cont, int valueid, const std::string& InitialValue, const std::unordered_map<std::string, IICDescStr>& options, bool sameline, int MaxInOneLine, const std::vector<std::string>& OptionOrder);
 
     IBB_UpdateResult RenderUI(IBB_ValueContainer& Cont, IICStatus& Status);
     std::string FormatValue(IBB_InputValue& Val, const IBB_InputFormat& Format);

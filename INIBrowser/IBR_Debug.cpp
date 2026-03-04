@@ -85,12 +85,12 @@ void IBR_Debug::RenderUI()
         ImGui::LogFinish();
     }
 
-    ImGui::Checkbox(u8"模块的属性菜单", &UseModuleProperties);
-    ImGui::Checkbox(u8"显示画布上窗口判定框", &ShowWorkspaceWindowFrame);
-    ImGui::Checkbox(u8"选中模块不跳转编辑", &DontGoToEdit);
-    ImGui::Checkbox(u8"有益精神的渲染模式", &DontDrawBg);
+    ImGui::Checkbox(locc("GUI_DebugModuleProperties"), &UseModuleProperties);
+    ImGui::Checkbox(locc("GUI_DebugShowDecisionBox"), &ShowWorkspaceWindowFrame);
+    ImGui::Checkbox(locc("GUI_DebugNoEnterEdit"), &DontGoToEdit);
+    ImGui::Checkbox(locc("GUI_DebugCrazyRendering"), &DontDrawBg);
 
-    if (ImGui::Button(u8"剪贴板 -> JSON"))
+    if (ImGui::Button(locc("GUI_DebugClipboard2Json")))
     {
         auto Clip = ImGui::GetClipboardText();
         IBB_ClipBoardData CB;
@@ -106,7 +106,7 @@ void IBR_Debug::RenderUI()
     auto& mardp = IBR_WorkSpace::MassAfter_RightDownPos;
     auto msp = ImGui::GetMousePos();
 
-    if(ImGui::TreeNode(u8"UI状态参数"))
+    if(ImGui::TreeNode(locc("GUI_DebugUIState")))
     {
         ImGui::Text("MousePos = (%.1f,%.1f)", msp.x, msp.y);
         if (mardp.x == FLT_MAX || mardp.y == FLT_MAX || mardp.x == -FLT_MAX || mardp.y == -FLT_MAX)ImGui::Text("MassAfter_RightDownPos = INVALID");

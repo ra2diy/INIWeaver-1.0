@@ -1646,6 +1646,11 @@ static float CalcMaxPopupHeightFromItemCount(int items_count)
 
 bool ImGui::BeginCombo(const char* label, const char* preview_value, ImGuiComboFlags flags)
 {
+    return BeginComboEx(label, preview_value, flags, false, ImVec2(0.0f, 0.0f));
+}
+
+bool ImGui::BeginComboEx(const char* label, const char* preview_value, ImGuiComboFlags flags, bool extra_active, ImVec2 popup_pos)
+{
     ImGuiContext& g = *GImGui;
     ImGuiWindow* window = GetCurrentWindow();
 
@@ -1672,7 +1677,7 @@ bool ImGui::BeginCombo(const char* label, const char* preview_value, ImGuiComboF
     bool pressed = ButtonBehavior(bb, id, &hovered, &held);
     const ImGuiID popup_id = ImHashStr("##ComboPopup", 0, id);
     bool popup_open = IsPopupOpen(popup_id, ImGuiPopupFlags_None);
-    if (pressed && !popup_open)
+    if ((pressed || extra_active) && !popup_open)
     {
         OpenPopupEx(popup_id, ImGuiPopupFlags_None);
         popup_open = true;
@@ -1716,6 +1721,18 @@ bool ImGui::BeginCombo(const char* label, const char* preview_value, ImGuiComboF
         return false;
 
     g.NextWindowData.Flags = backup_next_window_data_flags;
+
+    if(popup_pos.x > 0.0f && popup_pos.y > 0.0f)
+    {
+        // Set explicit position (we don't use SetNextWindowPos() because we don't want the position to be overridden by FindBestWindowPosForPopup())
+        //g.NextWindowData.PosVal = popup_pos;
+        //g.NextWindowData.PosPivotVal = ImVec2(0.0f, 0.0f);
+        //g.NextWindowData.Flags |= ImGuiNextWindowDataFlags_HasPos;
+        //SetNextWindowPos(popup_pos);
+        const ImRect new_bb(popup_pos, popup_pos + bb.GetSize());
+        return BeginComboPopup(popup_id, new_bb, flags);
+    }
+
     return BeginComboPopup(popup_id, bb, flags);
 }
 

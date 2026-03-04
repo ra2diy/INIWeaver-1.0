@@ -68,12 +68,12 @@ IICPtr InputFormComponentFactory::CreateInputComponent_Special(IBB_ValueContaine
     // {"Type": "InputText", "ValueID": <int> 【, "InitialValue": <string>】【, "Hint": <string>】}
     // While Link shares the class but with preset initial status
     // {"Type": "Link", "ValueID": <int> 【, "InitialValue": <string>】【, "Hint": <string>】}
-    //IIC_MultipleChoice(IBB_ValueContainer& Cont, int valueid, const std::string& InitialText, const std::string& hint, bool sameline, const std::unordered_map<std::string, IICDescStr>& options, const std::vector<std::string>& OptionOrder);
-    // {"Type": "MultipleChoice", "ValueID": <int>, "InitialValue": <string>, "Options": { <AllowedValue1>: <DisplayName1>, <AllowedValue2>: <DisplayName2>, ... } 【, "Hint": <string>】【, "SameLine": <bool>】}
+    //IIC_MultipleChoice(IBB_ValueContainer& Cont, int valueid, const std::string& InitialText, const std::string& hint, bool sameline, int MaxInOneLine, const std::unordered_map<std::string, IICDescStr>& options, const std::vector<std::string>& OptionOrder);
+    // {"Type": "MultipleChoice", "ValueID": <int>, "InitialValue": <string>, "Options": { <AllowedValue1>: <DisplayName1>, <AllowedValue2>: <DisplayName2>, ... } 【, "Hint": <string>】【, "SameLine": <bool>】【, "MaxInOneLine": <int>】}
     //IIC_EnumCombo(int valueid, const std::string& InitialValue, const std::string& hint, const std::unordered_map<std::string, std::string>& options)
     // {"Type": "EnumCombo", "ValueID": <int>, "InitialValue": <string>, "Options": { <AllowedValue1>: <DisplayName1>, <AllowedValue2>: <DisplayName2>, ... } 【, "Hint": <string>】}
-    //IIC_EnumRadio(int valueid, const std::string& InitialValue, const std::unordered_map<std::string, std::string>& options, bool sameline)
-    // {"Type": "EnumRadio", "ValueID": <int>, "InitialValue": <string>, "Options": { <AllowedValue1>: <DisplayName1>, <AllowedValue2>: <DisplayName2>, ... } 【, "Hint": <string>】【, "SameLine": <bool>】}
+    //IIC_EnumRadio(int valueid, const std::string& InitialValue, const std::unordered_map<std::string, std::string>& options, bool sameline, int MaxInOneLine)
+    // {"Type": "EnumRadio", "ValueID": <int>, "InitialValue": <string>, "Options": { <AllowedValue1>: <DisplayName1>, <AllowedValue2>: <DisplayName2>, ... } 【, "Hint": <string>】【, "SameLine": <bool>】【, "MaxInOneLine": <int>】}
     //IIC_Bool(int valueid, bool InitialValue, StrBoolType fmt, const std::string& hint)
     // {"Type": "Bool", "ValueID": <int>, "InitialValue": <bool> 【, "Fmt": <string>】【, "Hint": <string>】}
     //IIC_InputInt(int valueid, int InitialValue, int min, int max, const std::string& hint)
@@ -206,9 +206,10 @@ IICPtr InputFormComponentFactory::CreateInputComponent_Special(IBB_ValueContaine
                 std::views::transform([](auto&& p) {return std::make_pair(p.first, IICDescStr::Load(p.second)); }) |
                 std::ranges::to<std::unordered_map<std::string, IICDescStr>>();
             auto SameLine = Obj.ItemBoolOr("SameLine", false);
+            auto MaxInOneLine = Obj.ItemIntOr("MaxInOneLine", -1);
             auto OptionOrder = Obj.ItemArrayKeyOr("Options");
 
-            return std::make_unique<IIC_MultipleChoice>(Cont, ValueID, InitValue, SameLine, Options, OptionOrder);
+            return std::make_unique<IIC_MultipleChoice>(Cont, ValueID, InitValue, SameLine, MaxInOneLine, Options, OptionOrder);
         }
         else if (typeStr == "EnumCombo")
         {
@@ -244,9 +245,10 @@ IICPtr InputFormComponentFactory::CreateInputComponent_Special(IBB_ValueContaine
                 std::views::transform([](auto&& p) {return std::make_pair(p.first, IICDescStr::Load(p.second)); }) |
                 std::ranges::to<std::unordered_map<std::string, IICDescStr>>();
             auto SameLine = Obj.ItemBoolOr("SameLine", false);
+            auto MaxInOneLine = Obj.ItemIntOr("MaxInOneLine", -1);
             auto OptionOrder = Obj.ItemArrayKeyOr("Options");
 
-            return std::make_unique<IIC_EnumRadio>(Cont, ValueID, InitValue, Options, SameLine, OptionOrder);
+            return std::make_unique<IIC_EnumRadio>(Cont, ValueID, InitValue, Options, SameLine, MaxInOneLine, OptionOrder);
 
         }
         else if (typeStr == "Bool")

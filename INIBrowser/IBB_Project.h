@@ -3,6 +3,7 @@
 #include "cjson/cJSON.h"
 #include "IBB_Components.h"
 #include "IBB_Ini.h"
+#include "IBR_Combo.h"
 
 #ifndef _TEXT_UTF8
 #define _TEXT_UTF8
@@ -133,6 +134,9 @@ public:
 
         // <LineName,SubSec>
         std::unordered_map<std::string, IBB_SubSec_Default*> SubSec_Default_FromLineID;
+
+        // From TypeAlt built with IniLine_Default
+        std::vector<InputTextOption> InputTextOptions;
 
         _Query();
     }Query;

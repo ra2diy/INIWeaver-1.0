@@ -1067,8 +1067,8 @@ void IIC_InputText::ResetState(IBB_ValueContainer& Cont) const
 
 // ========== IIC_MultipleChoice ==========
 
-IIC_MultipleChoice::IIC_MultipleChoice(IBB_ValueContainer& Cont, int valueid, const std::string& InitialText, bool sameline, const std::unordered_map<std::string, IICDescStr>& options, const std::vector<std::string>& order)
-    : Hint(RandStr(12)), ValueID(valueid), SameLine(sameline), Options(options), OptionOrder(order)
+IIC_MultipleChoice::IIC_MultipleChoice(IBB_ValueContainer& Cont, int valueid, const std::string& InitialText, bool sameline, int maxInOneLine, const std::unordered_map<std::string, IICDescStr>& options, const std::vector<std::string>& order)
+    : Hint(RandStr(12)), ValueID(valueid), SameLine(sameline), MaxInOneLine(maxInOneLine), Options(options), OptionOrder(order)
 {
     Cont.GetValue(ValueID).ResetState<IIS_String>(InitialText);
 }
@@ -1090,7 +1090,7 @@ IBB_UpdateResult IIC_MultipleChoice::RenderUI(IBB_ValueContainer& Cont, IICStatu
         std::ranges::to<std::vector>();
     ImGui::PushID(Hint.c_str());
 
-    for (auto&& [Selected, Choice] : std::views::zip(SelectedCond, OptionOrder))
+    for (auto&& [idx, Selected, Choice] : std::views::zip(std::views::iota(1), SelectedCond, OptionOrder))
     {
         auto& [DisplayName, DescLong] = Options[Choice];
 
@@ -1105,7 +1105,11 @@ IBB_UpdateResult IIC_MultipleChoice::RenderUI(IBB_ValueContainer& Cont, IICStatu
         Active |= ImGui::IsItemActive();
         if (ImGui::IsItemHovered() && !DescLong.empty())
             IBR_ToolTip(DescLong.c_str());
-        if (SameLine)ImGui::SameLine();
+        if (SameLine)
+        {
+            if (MaxInOneLine <= 0 || (idx % MaxInOneLine))
+                ImGui::SameLine();
+        }
     }
     ImGui::PopID();
 
@@ -1222,8 +1226,8 @@ void IIC_EnumCombo::ResetState(IBB_ValueContainer& Cont) const
 }
 
 // ========== IIC_EnumRadio ==========
-IIC_EnumRadio::IIC_EnumRadio(IBB_ValueContainer& Cont, int valueid, const std::string& InitialValue, const std::unordered_map<std::string, IICDescStr>& options, bool sameline, const std::vector<std::string>& order)
-    : Options(options), ValueID(valueid), Hint(RandStr(12)), SameLine(sameline), OptionOrder(order) {
+IIC_EnumRadio::IIC_EnumRadio(IBB_ValueContainer& Cont, int valueid, const std::string& InitialValue, const std::unordered_map<std::string, IICDescStr>& options, bool sameline, int maxInOneLine, const std::vector<std::string>& order)
+    : Options(options), ValueID(valueid), Hint(RandStr(12)), SameLine(sameline), MaxInOneLine(maxInOneLine), OptionOrder(order) {
     Cont.GetValue(ValueID).ResetState<IIS_String>(InitialValue);
 }
 
@@ -1240,7 +1244,7 @@ IBB_UpdateResult IIC_EnumRadio::RenderUI(IBB_ValueContainer& Cont, IICStatus&) {
 
     bool Active = false;
 
-    for (auto& Key : OptionOrder)
+    for (auto&& [idx, Key] : std::views::zip(std::views::iota(1), OptionOrder))
     {
         auto& [DisplayName, DescLong] = Options[Key];
         auto Equal = (CurrentValue == Key);
@@ -1255,7 +1259,11 @@ IBB_UpdateResult IIC_EnumRadio::RenderUI(IBB_ValueContainer& Cont, IICStatus&) {
         if (ImGui::IsItemHovered() && !DescLong.empty())
             IBR_ToolTip(DescLong.c_str());
         Active |= ImGui::IsItemActive();
-        if(SameLine)ImGui::SameLine();
+        if (SameLine)
+        {
+            if (MaxInOneLine <= 0 || (idx % MaxInOneLine))
+                ImGui::SameLine();
+        }
     }
 
     ImGui::PopID();

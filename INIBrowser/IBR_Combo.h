@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include "FromEngine/Include.h"
 
+void PushComboRect();
 bool IBR_Combo_Stage_I(const char* label, const char* preview_value, ImGuiComboFlags flags);
 void IBR_Combo_Stage_II();
 void IBR_Combo_Stage_III();
@@ -23,3 +24,22 @@ std::vector<ImRect>& GetComboRects();
 
 void IBR_ToolTip(const std::string& Str);
 void IBR_ToolTip(const std::wstring& Str);
+
+struct InputTextOption
+{
+    std::string Text, Desc, Hint;
+    std::string Pattern;
+};
+
+bool InputTextStdStringWithOption(
+    const char* label,
+    std::string& str,
+    ImGuiInputTextFlags flags,
+    const std::vector<InputTextOption>& options
+);
+
+void EditStringWithOptions(
+    bool Active,
+    std::string& str,
+    const std::vector<InputTextOption>& options
+);

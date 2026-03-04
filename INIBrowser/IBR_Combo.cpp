@@ -20,6 +20,16 @@ void ClearComboRects()
     ComboRects.clear();
 }
 
+void PushComboRect(const ImRect& R)
+{
+    ComboRects.push_back(R);
+}
+
+void PushComboRect()
+{
+    ComboRects.push_back(ImGui::GetCurrentWindow()->Rect());
+}
+
 
 bool IBR_Combo_Stage_I(const char* label, const char* preview_value, ImGuiComboFlags flags)
 {
@@ -77,30 +87,73 @@ void IBR_ToolTip(const std::string& Str)
     
 }
 
-bool tf(const char* label, std::string& str, ImGuiInputTextFlags flags)
+bool Matches(std::string& str, const InputTextOption& opt)
 {
-    const ImVec2 label_size = ImGui::CalcTextSize(label, NULL);
-    const float iw = ImGui::CalcItemWidth();
-    const ImVec2 Cursor = ImGui::GetCursorScreenPos();
-    const ImVec2 Pad = ImGui::GetCurrentContext()->Style.FramePadding;
-    const ImRect bb(Cursor, { Cursor.x + iw, Cursor.y + label_size.y + Pad.y * 2.0f });
-    const ImGuiID popup_id = ImHashStr("##TYPEALT_DICT");
-    bool popup_open = ImGui::IsPopupOpen(popup_id, ImGuiPopupFlags_None);
+    //不分大小写，Text或者Desc包含str就算匹配
+    auto StrLower = str;
+    for (auto& c : StrLower)c = (char)tolower(c);
+    return opt.Pattern.contains(StrLower);
+}
 
+bool InputTextStdStringWithOption(
+    const char* label,
+    std::string& str,
+    ImGuiInputTextFlags flags,
+    const std::vector<InputTextOption>& options)
+{
+    const ImVec2 Cursor = ImGui::GetCursorScreenPos();
     auto Ret = InputTextStdString(label, str, flags);
-    if(ImGui::IsItemActive() && !popup_open)
+
+    ImGui::SameLine();
+    ImGui::SetCursorPosX(ImGui::GetCursorPosX() - ImGui::GetStyle().ItemSpacing.x);
+    if (ImGui::BeginComboEx("##TYPEALT_DICT", str.c_str(), ImGuiComboFlags_NoPreview, false, Cursor))
     {
-        popup_open = true;
-        ImGui::OpenPopupEx(popup_id, ImGuiPopupFlags_None);
         ComboRects.push_back(ImGui::GetCurrentWindow()->Rect());
-        ImGui::BeginComboPopup(popup_id, bb, 0);
-        //ComboRects.push_back(ImGui::GetCurrentWindow()->Rect());
-        //ImGui::PushOrderFront(ImGui::GetCurrentWindow());
-        //if (ImGui::Selectable("1", false))IBR_HintManager::SetHint("1", HintStayTimeMillis);
-        //if (ImGui::Selectable("2", false))IBR_HintManager::SetHint("2", HintStayTimeMillis);
-        //if (ImGui::Selectable("3", false))IBR_HintManager::SetHint("3", HintStayTimeMillis);
-        //if (ImGui::Selectable("4", false))IBR_HintManager::SetHint("4", HintStayTimeMillis);
+        ImGui::PushOrderFront(ImGui::GetCurrentWindow());
+
+        for (auto& opt : options)
+        {
+            if (!Matches(str, opt))
+                continue;
+            if (ImGui::Selectable((opt.Text + " : " + opt.Desc).c_str(), false))
+                str = opt.Text;
+            if (ImGui::IsItemHovered() && ImGui::IsMouseDown(ImGuiMouseButton_Left))
+                str = opt.Text;
+            if (ImGui::IsItemHovered())
+                IBR_ToolTip(opt.Hint);
+        }
         ImGui::EndCombo();
     }
+
     return Ret;
+}
+
+void EditStringWithOptions(
+    bool Active,
+    std::string& str,
+    const std::vector<InputTextOption>& options)
+{
+    static bool LastActive = false;
+    static bool LastActive2 = false;
+    if(Active || LastActive || LastActive2)
+    {
+        LastActive2 = LastActive;
+        LastActive = Active;
+
+        //Scrollbar cannot work properly here
+        ImGui::BeginChildFrame(ImGui::GetID("##TYPEALT_DICT"), { 0, FontHeight * 10.0f },
+            ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoScrollbar);
+        for (auto& opt : options)
+        {
+            if (!Matches(str, opt))
+                continue;
+            if (ImGui::Selectable((opt.Text + " : " + opt.Desc).c_str(), false))
+                str = opt.Text;
+            if (ImGui::IsItemHovered() && ImGui::IsMouseDown(ImGuiMouseButton_Left))
+                str = opt.Text;
+            if(ImGui::IsItemHovered())
+                IBR_ToolTip(opt.Hint);
+        }
+        ImGui::EndChildFrame();
+    }
 }
