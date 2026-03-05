@@ -45,6 +45,14 @@ namespace IBB_DefaultRegType
     ImColor DefaultNodeColor;
 
     std::unordered_map<_TEXT_UTF8 std::string, IBG_InputType> InputTypes;
+
+    auto rttpt = [](const std::wstring& wcs, const std::string& Info)
+        {
+            auto ws = std::vformat(locw("Error_CannotLoadPresetType"), std::make_wformat_args(wcs));
+            auto wss = UnicodetoUTF8(std::vformat(locw("Log_LoadConfigErrorInfo"), std::make_wformat_args(ws)));
+            IBR_PopupManager::AddLoadConfigErrorPopup(wss + "\n" + loc("Log_PresetTypeInfo") + "\n" + Info, "");
+        };
+
     void InitInputTypes(const std::string& S_StrBool)
     {
         static bool CALLED = false;
@@ -98,9 +106,27 @@ R"({
             { "ValueIDToString": 0 }
         ]
     },
-    "Formatter": {
+    "ExportMode": {
         "Type": "Import",
-        "IniType": "Rules"
+        "IniType": "_MyType",
+        "MergeTarget": false
+    }
+ })";
+                static std::string ImportAndMergeTypeJSON =
+R"({
+    "Type" : "Link",
+    "Form": {
+        "Input" : [
+            {"Type": "Link", "ValueID": 0}
+        ],
+        "Format": [
+            { "ValueIDToString": 0 }
+        ]
+    },
+    "ExportMode": {
+        "Type": "Import",
+        "IniType": "_MyType",
+        "MergeTarget": true
     }
  })";
 
@@ -110,13 +136,9 @@ R"({
         JsonFile BoolObj; BoolObj.Parse(BoolTypeJSON);
         JsonFile LinkObj; LinkObj.Parse(LinkTypeJSON);
         JsonFile ImportObj; ImportObj.Parse(ImportTypeJSON);
+        JsonFile IAMObj; IAMObj.Parse(ImportAndMergeTypeJSON);
 
-        auto rttpt = [](const wchar_t* wcs, const std::string& Info)
-            {
-                auto ws = std::vformat(locw("Error_CannotLoadPresetType"), std::make_wformat_args(wcs));
-                auto wss = UnicodetoUTF8(std::vformat(locw("Log_LoadConfigErrorInfo"), std::make_wformat_args(ws)));
-                IBR_PopupManager::AddLoadConfigErrorPopup(wss + "\n" + loc("Log_PresetTypeInfo") + "\n" + Info, "");
-            };
+        
 
         if (!InputTypes[u8"String"].Load(StrObj))
             rttpt(L"String", StrTypeJSON);
@@ -126,7 +148,8 @@ R"({
             rttpt(L"Link", LinkTypeJSON);
         if (!InputTypes[u8"Import"].Load(ImportObj))
             rttpt(L"Import", ImportTypeJSON);
-
+        if (!InputTypes[u8"ImportAndMerge"].Load(IAMObj))
+            rttpt(L"ImportAndMerge", ImportAndMergeTypeJSON);
 
     }
 
@@ -330,7 +353,8 @@ R"({
         S = Obj.GetObjectItem(u8"InputTypes");
         if (S.Available())
             for (auto& [N, V] : S.GetMapObject())
-                InputTypes[N].Load(V);
+                if (!InputTypes[N].Load(V))
+                    rttpt(UTF8toUnicode(N), V.PrintData());
 
         return true;
     }
@@ -364,6 +388,21 @@ R"({
         if (it == RegisterTypes.end())return __Default;
         else return it->second;
     }
+    const _TEXT_UTF8 std::string& GetIniTypeOfReg(const _TEXT_UTF8 std::string& Type)
+    {
+        if (CompoundTypes.contains(Type))
+        {
+            auto& Com = CompoundTypes.at(Type);
+            if (!Com.Regs.empty())
+            {
+                auto it = RegisterTypes.find(Com.Regs[0]);
+                if (it != RegisterTypes.end())
+                    return it->second.IniType;
+            }
+        }
+        return GetRegType(Type).IniType;
+    }
+
     bool HasInputType(const _TEXT_UTF8 std::string& Type)
     {
         return InputTypes.find(Type) != InputTypes.end();

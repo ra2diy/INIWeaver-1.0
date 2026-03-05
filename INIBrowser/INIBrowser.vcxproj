@@ -197,6 +197,7 @@
     <ClInclude Include="IBFront.h" />
     <ClInclude Include="IBG_Ini.h" />
     <ClInclude Include="IBG_InputType.h" />
+    <ClInclude Include="IBG_InputType_Defines.h" />
     <ClInclude Include="IBG_InputType_Derived.h" />
     <ClInclude Include="IBRender.h" />
     <ClInclude Include="IBR_Combo.h" />

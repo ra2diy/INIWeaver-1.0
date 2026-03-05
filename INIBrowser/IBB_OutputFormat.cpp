@@ -17,9 +17,10 @@ namespace KVFormatter
 
     KVFormatter_t Default()
     {
-        return [](IBB_VariableList& Dest, const std::string& Key, const std::string& Value, std::vector<std::string>* TmpLineOrder)
+        return [](IBB_VariableList& Dest, const std::string& Key, const std::string& Value, std::vector<std::string>* TmpLineOrder, IBB_Section* AtSec)
             {
                 IM_UNUSED(TmpLineOrder);
+                IM_UNUSED(AtSec);
                 Dest.Value[Key] = Value;
             };
     }
@@ -45,11 +46,12 @@ namespace KVFormatter
             std::ranges::to<std::string>();
         };
 
-    KVFormatter_t SplitValue(const std::string& delim )
+    KVFormatter_t SplitValue(const std::string& delim)
     {
-        return [=](IBB_VariableList& Dest, const std::string& Key, const std::string& Value, std::vector<std::string>* TmpLineOrder)
+        return [=](IBB_VariableList& Dest, const std::string& Key, const std::string& Value, std::vector<std::string>* TmpLineOrder, IBB_Section* AtSec)
             {
                 IM_UNUSED(Key);
+                IM_UNUSED(AtSec);
                 auto List = Value | ToSVs(delim);
                 auto Iter = List.begin();
                 if (Iter == List.end())return;
@@ -63,25 +65,73 @@ namespace KVFormatter
             };
     }
 
-    KVFormatter_t ImportAllModules(const std::string& delim , const std::string& INIType)
+    KVFormatter_t ImportAllModules(const std::string& delim , const std::string& INIType, bool MergeTargetOnExport)
     {
-        return [=](IBB_VariableList& Dest, const std::string& Key, const std::string& Value, std::vector<std::string>* TmpLineOrder)
+        bool IsMyType = (INIType == "_MyType");
+        bool IsLinkType = (INIType == "_LinkType");
+        return [=](IBB_VariableList& Dest, const std::string& Key, const std::string& Value, std::vector<std::string>* TmpLineOrder, IBB_Section* AtSec)
             {
                 IM_UNUSED(Key);
+                if (Value.empty())return;
                 for (auto sv : Value | ToSVs(delim))
                 {
-                    IBB_Project_Index idx(INIType, std::string(sv));
+                    const auto& INI = [&]() -> const auto& {
+                        if (IsMyType) return AtSec->Root->Name;
+                        if (IsLinkType) {
+                            auto Line = AtSec->GetLineFromSubSecs(Key);
+                            if(!Line || !Line->Default) return INIType;
+                            return Line->Default->GetIniType();
+                        }
+                        return INIType;
+                    }();
+                        
+                    IBB_Project_Index idx(INI, std::string(sv));
                     auto pSec = idx.GetSec(IBF_Inst_Project.Project);
+                    if (!pSec)continue;
+                    if (MergeTargetOnExport)ExportContext::MergedDescs.insert(idx);
                     auto Lines = pSec->GetLineList(false, true, TmpLineOrder);
                     Dest.Merge(Lines, true);
                 }
+            };
+    }
+
+    KVFormatter_t Recompose(IFCVPtr SaveFormat, IFCVPtr ExportKey, IFCVPtr ExportValue, IBB_ValueContainer&& Values)
+    {
+        static IICVPtr piicv = std::make_shared<std::vector<IICPtr>>();
+        return[=, Vals = std::move(Values)](IBB_VariableList& Dest, const std::string& Key, const std::string& Value, std::vector<std::string>* TmpLineOrder, IBB_Section* AtSec)
+            {
+                IM_UNUSED(AtSec);
+
+                //Set Context
+                ExportContext::Key = Key;
+
+                //Initialize InputForm
+                IBG_InputForm Form;
+                Form.InputComponents = piicv;
+                Form.ResetState();
+                Form.SetValues(Vals);
+
+                //Parse and recompose
+                Form.FormatComponents = SaveFormat;
+                Form.ParseFromString(Value);
+                Form.FormatComponents = ExportKey;
+                auto K = Form.GetFormattedString();
+                Form.FormatComponents = ExportValue;
+                auto V = Form.GetFormattedString();
+
+                //Add new line
+                Dest.Value[K] = V;
+                AddUniqueTmpLine(TmpLineOrder, K);
+
+                //Reset Context
+                ExportContext::Key.clear();
             };
     }
 }
 
 namespace KVFormatterFactory
 {
-    KVFormatter_t LoadFromJson(JsonObject j)
+    KVFormatter_t LoadFromJson(JsonObject j, IBG_InputType& AtType)
     {
         using namespace KVFormatter;
         if (j.IsTypeString())
@@ -103,7 +153,19 @@ namespace KVFormatterFactory
             {
                 auto Delim = j.ItemStringOr("Delim", ",");
                 auto IniType = j.ItemStringOr("IniType", DefaultIniName);
-                return ImportAllModules(Delim, IniType);
+                auto MergeTargetOnExport = j.ItemBoolOr("MergeTarget", false);
+                return ImportAllModules(Delim, IniType, MergeTargetOnExport);
+            }
+            else if (Type == "Recompose")
+            {
+                auto& SaveFormat = AtType.Sidebar->FormatComponents;
+                auto oExportKey = j.GetObjectItem("ExportKey");
+                auto oExportValue = j.GetObjectItem("ExportValue");
+                IBB_ValueContainer TmpCont;
+                bool HasError;
+                auto ExportKey = InputFormComponentFactory::CreateFormatComponentVector(TmpCont, oExportKey, HasError);
+                auto ExportValue = InputFormComponentFactory::CreateFormatComponentVector(TmpCont, oExportValue, HasError);
+                return Recompose(SaveFormat, ExportKey, ExportValue, std::move(TmpCont));
             }
             else return Default();
         }

@@ -64,6 +64,18 @@ namespace IBR_NodeSession
             LinkList.clear();
         }
     };
+
+    struct SourceNodeKey
+    {
+        std::string Ini, Sec, Line;
+        size_t Comp;
+        size_t ID() const;
+    };
+
+    struct SourceNodeValue
+    {
+        ImVec2 Center;
+    };
 }
 
 namespace IBR_LinkNode

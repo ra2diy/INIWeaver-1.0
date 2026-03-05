@@ -5,6 +5,7 @@
 #include <ranges>
 #include "IBR_Components.h"
 #include "IBR_Combo.h"
+#include "FromEngine/global_tool_func.h"
 
 namespace LinkNodeContext
 {
@@ -18,6 +19,13 @@ namespace LinkNodeContext
     ImVec2 CurDragStartEqCenter;
     ImU32 CurDragCol;
     bool HasDragNow;
+}
+
+namespace ExportContext
+{
+    std::string Key;
+    size_t SameKeyIdx;//用于当Key重复时区分不同的Key
+    std::set<IBB_Section_Desc> MergedDescs;//被Import而合并的Section列表
 }
 
 bool LinkNodeSetting::Load(JsonObject Obj, bool* HasCustom)
@@ -66,6 +74,14 @@ namespace IBR_NodeSession
         return a.Comp < b.Comp;
     }
 
+    bool operator<(const SourceNodeKey& a, const SourceNodeKey& b)
+    {
+        if (a.Ini != b.Ini)return a.Ini < b.Ini;
+        if (a.Sec != b.Sec)return a.Sec < b.Sec;
+        if (a.Line != b.Line)return a.Line < b.Line;
+        return a.Comp < b.Comp;
+    }
+
     std::map<SessionKey, SessionValue> SessionData;
 
     SessionValue& NewSessionValue(const std::string& Ini, const std::string& Sec, const std::string& Sub, size_t Line, size_t Comp)
@@ -80,6 +96,12 @@ namespace IBR_NodeSession
     {
         SessionKey key{ Ini, Sec, Sub, Line, Comp };
         return SessionData[key];
+    }
+
+    size_t SourceNodeKey::ID() const
+    {
+        auto S = Ini + "\n" + Sec + "\n" + Line + "\n" + std::to_string(Comp);
+        return std::hash<std::string>{}(S);
     }
 }
 
@@ -122,6 +144,25 @@ namespace IBR_LinkNode
         auto dd = DefaultCenter();
         auto wp = ImGui::GetWindowPos();
         return { dd.x - wp.x, dd.y - wp.y };
+    }
+
+    ImVec2 ImportCenter()
+    {
+        auto wp = ImGui::GetWindowPos();
+        return
+        {
+            wp.x + ImGui::GetWindowWidth() * 0.5f,
+            wp.y + ImGui::GetCursorPos().y - ImGui::GetTextLineHeightWithSpacing() * 0.5F
+        };
+    }
+
+    ImVec2 ImportCenterInWindow()
+    {
+        return
+        {
+            ImGui::GetWindowWidth() * 0.5f,
+            ImGui::GetCursorPos().y - ImGui::GetTextLineHeightWithSpacing() * 0.5F
+        };
     }
 
     void UpdateLink(
@@ -212,6 +253,7 @@ namespace IBR_LinkNode
 
 
         bool IsInherit = (FromSub.Default->Type == IBB_SubSec_Default::Inherit);
+        bool IsImport = (FromSub.Default->Type == IBB_SubSec_Default::Import);
         auto UR = DefaultResult;
         auto&& [LinkBegin, LinkEnd] = FromSub.GetLink(LineIdx, CompIdx);
         auto Links =
@@ -231,8 +273,8 @@ namespace IBR_LinkNode
 
         ImGui::PushStyleColor(ImGuiCol_CheckMark, Col.Value);
 
-        auto DC = DefaultCenter();
-        auto Center = DefaultCenterInWindow();
+        auto DC = IsImport ? ImportCenter() : DefaultCenter();
+        auto Center = IsImport ? ImportCenterInWindow() : DefaultCenterInWindow();
         auto Style = IsInherit ? ImGuiRadioButtonFlags_RoundedSquare : GlobalNodeStyle;
         ImGui::SetCursorPosX(Center.x - FontHeight * 0.5f);
 

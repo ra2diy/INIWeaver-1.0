@@ -219,10 +219,16 @@ bool IBF_Project::UpdateAll()
     return Project.UpdateAll();
 }
 
+extern const char* UnknownSubSecName;
+
 bool IBF_Project::UpdateCreateSection(const IBB_Section_Desc& Desc)
 {
     IBB_Section* pSec = const_cast<IBB_Section*>(Project.GetSec(Desc));
     if (pSec == nullptr)return false;
+
+    auto pUnkSub = &IBF_Inst_DefaultTypeList.List.SubSec_Default[UnknownSubSecName];
+    pSec->SubSecs.push_back(IBB_SubSec(pUnkSub, pSec));
+
     bool Ret = true;
     for (auto& Ini : Project.Inis)for (auto& sp : Ini.Secs)
     {

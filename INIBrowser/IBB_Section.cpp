@@ -5,7 +5,7 @@
 #include "Global.h"
 #include "IBB_ModuleAlt.h"
 #include "IBB_RegType.h"
-#include "IBG_InputType.h"
+#include "IBG_InputType_Defines.h"
 #include <ranges>
 
 bool IBB_Section::Generate(const ModuleClipData& Clip)
@@ -79,8 +79,13 @@ bool IBB_Section::Generate(const ModuleClipData& Clip)
             IBB_DefaultRegType::GenerateDLK(Clip.DefaultLinkKey, Register, DefaultLinkKey);
             IBB_VariableList VL;
             std::vector<std::string> Order;
+
+            //！注意：下面几行保证了新的模块生成时必然有继承和语句包！
             VL.Value[InheritKeyName] = Inherit;
-            OnShow[InheritKeyName] = "\n";
+            VL.Value[ImportKeyName] = "";
+            OnShow[InheritKeyName] = EmptyOnShowDesc;
+            OnShow[ImportKeyName] = EmptyOnShowDesc;
+
             for (auto& L : Clip.Lines)
             {
                 VL.Value[L.Key] = L.Value;
@@ -426,7 +431,7 @@ std::string IBB_Section::GetText(bool PrintExtraData, bool FromExport, bool ForE
 std::string IBB_Section::GetTextForEdit() const
 {
     std::string Ret;
-    if (!Inherit.empty())
+    if (!GetLineFromSubSecs(InheritKeyName) && !Inherit.empty())
     {
         Ret += InheritKeyName;
         Ret += "=";
@@ -940,7 +945,7 @@ void IBB_Section::OrderKey(const std::string& Key, size_t NewOrder)
 
 void IBB_Section::CheckSubsecOrder()
 {
-    if (this->SubSecOrder.size() != this->SubSecs.size())
+    if (this->SubSecOrder.size() != this->SubSecs.size() + 1)
     {
         this->SubSecOrder.clear();
         for (size_t i = 0; i < this->SubSecs.size(); i++)this->SubSecOrder.push_back(i);
@@ -1004,7 +1009,7 @@ bool IBB_Section::AcceptNewNameInLinkTo(IBB_Section* Target, const std::string& 
                 if (Link.To.GetSec(Proj) == Target)
                 {
                     //按照这个Link，找到所有from的地方并修改to到新name
-                    Ret &= Sub.RenameInLinkTo(idx, NewName);
+                    Ret &= Sub.RenameInLinkTo(idx, Target->Name, NewName);
                     //然后修改链接本身
                     Link.To.Section.Assign(NewName);
                 }
@@ -1036,7 +1041,7 @@ bool IBB_Section::RemoveNameInLinkTo(IBB_Section* Target)
             for (auto&& [idx, Link] : std::views::zip(std::views::iota(0u), Sub.NewLinkTo))
                 if (Link.To.GetSec(Proj) == Target)
                     //按照这个Link，找到所有from的地方并修改to到新name
-                    Ret &= Sub.RenameInLinkTo(idx, "");
+                    Ret &= Sub.RenameInLinkTo(idx, Target->Name, "");
                 else
                 {
                     NL.push_back(Link);
@@ -1088,7 +1093,7 @@ bool IBB_Section::Rename(const std::string& NewName)
             for (auto&& [idx, Link] : std::views::zip(std::views::iota(0u), Sub.NewLinkTo))
             {
                 //按照这个Link，找到所有from的地方并修改to到新name
-                Ret &= Sub.RenameInLinkTo(idx, NewName);
+                Ret &= Sub.RenameInLinkTo(idx, Name, NewName);
                 //找到连到的对象，改他们linkedby
                 Ret &= AcceptNewNameInLinkedBy(Link.To, NewName);
                 //然后修改链接本身

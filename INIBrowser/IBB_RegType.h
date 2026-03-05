@@ -5,7 +5,9 @@
 
 struct IBB_RegType
 {
-    std::string IniType;
+
+    std::string IniType; //如果从Register字段得到的可以直接访问；否则走GetIniTypeOfReg函数！
+
     ImColor FrameColor;         //Base Color
     ImColor FrameColorPlus1;    //Lightness  +
     ImColor FrameColorPlus2;    //Lightness  ++
@@ -52,6 +54,7 @@ namespace IBB_DefaultRegType
     bool LoadFromFile(const wchar_t* FileName);
     bool HasRegType(const _TEXT_UTF8 std::string& Type);
     IBB_RegType& GetRegType(const _TEXT_UTF8 std::string& Type);
+    const _TEXT_UTF8 std::string& GetIniTypeOfReg(const _TEXT_UTF8 std::string& Type);
     bool HasInputType(const _TEXT_UTF8 std::string& Type);
     IBG_InputType& GetInputType(const _TEXT_UTF8 std::string& Type);
     IBG_InputType& GetDefaultInputType();

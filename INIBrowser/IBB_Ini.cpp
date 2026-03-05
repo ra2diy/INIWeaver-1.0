@@ -280,6 +280,11 @@ const IBB_RegType& IBB_IniLine_Default::GetRegType() const
     return IBB_DefaultRegType::GetRegType(Property.TypeAlt);
 }
 
+const std::string& IBB_IniLine_Default::GetIniType() const
+{
+    return IBB_DefaultRegType::GetIniTypeOfReg(Property.TypeAlt);
+}
+
 const IBG_InputType& IBB_IniLine_Default::GetInputType() const
 {
     return *Input;
@@ -585,12 +590,12 @@ bool IBB_IniLine::Generate(const std::string& Value, IBB_IniLine_Default* Def)
     return Ret;
 }
 
-void IBB_IniLine::MakeKVForExport(IBB_VariableList& vl, std::vector<std::string>* TmpLineOrder) const
+void IBB_IniLine::MakeKVForExport(IBB_VariableList& vl, IBB_Section* AtSec, std::vector<std::string>* TmpLineOrder) const
 {
     auto& input = Default->GetInputType();
     auto& key = Default->Name;
     auto value = Data->GetStringForExport();
-    input.KVFmt(vl, key, value, TmpLineOrder);
+    input.KVFmt(vl, key, value, TmpLineOrder, AtSec);
 }
 
 

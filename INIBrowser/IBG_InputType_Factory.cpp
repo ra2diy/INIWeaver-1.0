@@ -329,6 +329,7 @@ IICPtr InputFormComponentFactory::CreateInputComponent_Special(IBB_ValueContaine
 
     return nullptr;
 }
+
 IFCPtr InputFormComponentFactory::CreateFormatComponent(IBB_ValueContainer& Cont, const JsonObject& Obj)
 {
     //IFC_PureText(const std::string& Text)
@@ -341,6 +342,8 @@ IFCPtr InputFormComponentFactory::CreateFormatComponent(IBB_ValueContainer& Cont
     // {"ValueID": <int>, "StdFormat": <string>}
     //IFC_ToString(int ValueID)
     // {"ValueIDToString": <int>}
+    //IFC_Export_UseKey()
+    // "<Export_Key>"
 
     ((void)Cont);
 
@@ -349,6 +352,8 @@ IFCPtr InputFormComponentFactory::CreateFormatComponent(IBB_ValueContainer& Cont
     if (Obj.IsTypeString())
     {
         auto text = Obj.GetString();
+        if (text == "<Export_Key>")
+            return std::make_unique<IFC_Export_UseKey>();
         return std::make_unique<IFC_PureText>(text);
     }
 
@@ -392,6 +397,49 @@ IFCPtr InputFormComponentFactory::GetParseErrorFormatComponent(const std::string
     return pifc;
 }
 
+IICVPtr InputFormComponentFactory::CreateInputComponentVector(IBB_ValueContainer& Cont, const JsonObject& Obj, bool& HasError)
+{
+    auto InputComponents = std::make_shared<std::vector<IICPtr>>();
+    HasError = false;
+    for (auto& item : Obj.GetArrayObject())
+    {
+        auto comp = InputFormComponentFactory::CreateInputComponent(Cont, item);
+        if (comp)
+            InputComponents->emplace_back(std::move(comp));
+        else
+        {
+            HasError = true;
+            InputComponents->emplace_back(
+                InputFormComponentFactory::GetParseErrorInputComponent(
+                    item.PrintUnformatted(
+                    )));
+        }
+
+    }
+    return InputComponents;
+}
+
+IFCVPtr InputFormComponentFactory::CreateFormatComponentVector(IBB_ValueContainer& Cont, const JsonObject& Obj, bool& HasError)
+{
+    auto FormatComponents = std::make_shared<std::vector<IFCPtr>>();
+    HasError = false;
+    for (auto& item : Obj.GetArrayObject())
+    {
+        auto comp = InputFormComponentFactory::CreateFormatComponent(Cont, item);
+        if (comp)
+            FormatComponents->emplace_back(std::move(comp));
+        else
+        {
+            HasError = true;
+            FormatComponents->emplace_back(
+                InputFormComponentFactory::GetParseErrorFormatComponent(
+                    item.PrintUnformatted(
+                    )));
+        }
+    }
+    return FormatComponents;
+}
+
 
 // ======== LOADING ==========
 
@@ -425,8 +473,6 @@ bool IICStatus::Load(const JsonObject& Obj)
 
 bool IBG_InputForm::Load(const JsonObject& Obj)
 {
-    InputComponents = std::make_shared<std::vector<IICPtr>>();
-    FormatComponents = std::make_shared<std::vector<IFCPtr>>();
     ValueContainer.Clear();
     Dirty = true;
     FormattedString.clear();
@@ -441,36 +487,10 @@ bool IBG_InputForm::Load(const JsonObject& Obj)
 
     bool Ret = true;
 
-    for (auto& item : oInput.GetArrayObject())
-    {
-        auto comp = InputFormComponentFactory::CreateInputComponent(ValueContainer, item);
-        if (comp)
-            InputComponents->emplace_back(std::move(comp));
-        else
-        {
-            Ret = false;
-            InputComponents->emplace_back(
-                InputFormComponentFactory::GetParseErrorInputComponent(
-                    item.PrintUnformatted(
-                    )));
-        }
-
-    }
-
-    for (auto& item : oFormat.GetArrayObject())
-    {
-        auto comp = InputFormComponentFactory::CreateFormatComponent(ValueContainer, item);
-        if (comp)
-            FormatComponents->emplace_back(std::move(comp));
-        else
-        {
-            Ret = false;
-            InputComponents->emplace_back(
-                InputFormComponentFactory::GetParseErrorInputComponent(
-                    item.PrintUnformatted(
-                    )));
-        }
-    }
+    bool HasError = false;
+    InputComponents = InputFormComponentFactory::CreateInputComponentVector(ValueContainer, oInput, HasError);
+    FormatComponents = InputFormComponentFactory::CreateFormatComponentVector(ValueContainer, oFormat, HasError);
+    if (HasError)Ret = false;
 
     ResetState();
 
@@ -510,9 +530,9 @@ bool IBG_InputType::Load(const JsonObject& Obj)
 
     WorkSpace->EnableLinkNode();
 
-    auto oFormatter = Obj.GetObjectItem("Formatter");
+    auto oFormatter = Obj.GetObjectItem("ExportMode");
     if (oFormatter)
-        KVFmt = KVFormatterFactory::LoadFromJson(oFormatter);
+        KVFmt = KVFormatterFactory::LoadFromJson(oFormatter, *this);
     else
         KVFmt = KVFormatter::Default();
 

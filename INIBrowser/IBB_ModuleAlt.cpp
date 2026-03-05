@@ -1439,6 +1439,16 @@ namespace IBB_ModuleAltDefault
         bool ChildMenuHovered{ false };
         bool LastHovered{ false };
 
+        bool ChildHovered() const
+        {
+            bool V = ChildMenuHovered;
+            for (auto& S : Sub)
+            {
+                V |= S->ChildHovered();
+            }
+            return V;
+        }
+
         void ResetHover()
         {
             ChildMenuHovered = false;
@@ -1460,11 +1470,7 @@ namespace IBB_ModuleAltDefault
                 ImGui::SameLine();
                 ImGui::Text(S->Name.c_str());
                 Hovered |= ImGui::IsItemHovered();
-                bool V = S->ChildMenuHovered;
-                for (auto& C : S->Sub)
-                {
-                    V |= C->ChildMenuHovered;
-                }
+                bool V = S->ChildHovered();
                 if (S->LastHovered || V)
                 {
                     DrawOpenFolderIcon(Pos, (float)FontHeight);
@@ -1489,7 +1495,8 @@ namespace IBB_ModuleAltDefault
 
                         IBR_PopupManager::DelayedPopupAction.push_back(
                             [ppos, P = S.get()] {
-                                P->ChildMenuHovered = ImGui::IsWindowHovered(ImGuiHoveredFlags_RectOnly);
+                                ImRect R = ImGui::GetCurrentWindow()->Rect();
+                                P->ChildMenuHovered = R.Contains(ImGui::GetMousePos());// ImGui::IsWindowHovered(ImGuiHoveredFlags_RectOnly);
                                 ImGui::SetWindowPos(ppos);
                                 P->RenderUI();
                             }

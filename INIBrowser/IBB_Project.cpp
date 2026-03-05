@@ -8,7 +8,10 @@
 #include "IBB_Index.h"
 #include <imgui_internal.h>
 
-const char* DefaultSubSecName = "_DEFAULT_SUBSEC";
+const char* InheritSubSecName = "A__INHERIT_SUBSEC";
+const char* DefaultSubSecName = "B__DEFAULT_SUBSEC";
+const char* UnknownSubSecName = "C__UNKNOWN_SUBSEC";
+const char* ImportSubSecName  = "D__IMPORT_SUBSEC";
 const char* DefaultAltPropType = "\"D\"";
 const char* LinkAltPropType = "\"L\"";
 
@@ -89,12 +92,30 @@ bool IBB_DefaultTypeList::LoadFromAlt(const IBB_DefaultTypeAltList& AltList)
     
     DefaultSubSec.Type = IBB_SubSec_Default::Default;
 
-    const char* InheritSubSecName = "  INHERIT_SUBSEC__";
-    auto& InheritSubSec = SubSec_Default[InheritSubSecName];
-    InheritSubSec.Name = InheritSubSecName;
-    InheritSubSec.Lines_ByName = { InheritKeyName };
-    InheritSubSec.Lines[InheritKeyName] = InheritLine;
-    InheritSubSec.Type = IBB_SubSec_Default::Inherit;
+    //Subsec在模块上按照字典序排列，不能随便起名字，否则可能会影响显示顺序
+    {
+        
+        auto& InheritSubSec = SubSec_Default[InheritSubSecName];
+        InheritSubSec.Name = InheritSubSecName;
+        InheritSubSec.Lines_ByName = { InheritKeyName };
+        InheritSubSec.Lines[InheritKeyName] = InheritLine;
+        InheritSubSec.Type = IBB_SubSec_Default::Inherit;
+    }
+
+    {
+        auto& ImportSubSec = SubSec_Default[ImportSubSecName];
+        ImportSubSec.Name = ImportSubSecName;
+        ImportSubSec.Lines_ByName = { ImportKeyName };
+        ImportSubSec.Lines[ImportKeyName] = ImportLine;
+        ImportSubSec.Type = IBB_SubSec_Default::Import;
+    }
+
+    {
+        auto& UnknownSubSec = SubSec_Default[UnknownSubSecName];
+        UnknownSubSec.Name = UnknownSubSecName;
+        UnknownSubSec.Type = IBB_SubSec_Default::UnknownLines;
+    }
+
 
     for (const auto& s : UsedStrings)
         IBB_DefaultRegType::EnsureRegType(s);
@@ -118,8 +139,8 @@ ImU32 StrToCol(const std::string& Str)
 
 const char* SelectDefaultInput(const std::string& LinkType)
 {
-    if (LinkType == "bool")return "Bool";
-    if (LinkType == "string")return "String";
+    if (!_strcmpi(LinkType.c_str(), "bool"))return "Bool";
+    if (!_strcmpi(LinkType.c_str(), "string"))return "String";
     return "Link";
 }
 

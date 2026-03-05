@@ -260,7 +260,7 @@ IBB_VariableList IBB_SubSec::GetLineList(bool PrintExtraData, bool FromExport, s
         if (FromExport)
         {
             if (sn == InheritKeyName)continue;
-            L.MakeKVForExport(Ret, TmpLineOrder);
+            L.MakeKVForExport(Ret, Root, TmpLineOrder);
         }
         else
         {
@@ -315,13 +315,12 @@ void IBB_SubSec::ClaimLink(size_t LineIdx, size_t ComponentIdx, size_t LinkIdx)
 
 const std::vector<std::string>& SplitParamCached(const std::string& Text);
 
-bool IBB_SubSec::RenameInLinkTo(size_t LinkIdx, const std::string& NewName)
+bool IBB_SubSec::RenameInLinkTo(size_t LinkIdx, const std::string& OldName, const std::string& NewName)
 {
     //按照这个Link，找到所有from的地方并修改to到新name
     //不需要修改Link结构
     bool Ret = true;
     auto& Link = NewLinkTo[LinkIdx];
-    auto OldName = Link.To.Section.GetText();
     for (auto& [lc, lidx] : LinkSrc)
     {
         if (lidx == LinkIdx)
@@ -341,11 +340,26 @@ bool IBB_SubSec::RenameInLinkTo(size_t LinkIdx, const std::string& NewName)
             auto vid = iic->GetCurrentTargetValueID();
             //没有值，跳过
             if (!iif->GetValues().Values.contains(vid)) continue;
-            auto NewVal = SplitParamCached(iif->GetValue(vid).Value) |
-                std::views::transform([&](auto& s) { return (s == OldName) ? NewName : s; }) |
+
+            /*OutputDebugStringA(std::format("link : {}\n", Link.GetText()).c_str());
+            OutputDebugStringA(std::format("vid : {}\n", vid).c_str());
+            OutputDebugStringA(std::format("name : {} -> {}\n", OldName, NewName).c_str());
+            OutputDebugStringA("Values : \n");
+            for (auto& [i, v] : iif->GetValues().Values)
+                OutputDebugStringA(std::format("{} : {}\n", i, v.Value).c_str());*/
+
+            iif->GetValue(vid).Value = SplitParamCached(iif->GetValue(vid).Value) |
                 std::views::filter([&](auto&& s) {return !s.empty(); }) |
+                std::views::transform([&](auto& s) { return (s == OldName) ? NewName : s; }) |
                 std::views::join_with(',') |
                 std::ranges::to<std::string>();
+
+            //OutputDebugStringA(std::format("Value at {} : {}\n", vid, iif->GetValue(vid).Value).c_str());
+
+            auto& NewVal = iif->RegenFormattedString();
+
+            //OutputDebugStringA(std::format("NewVal : {}\n", NewVal).c_str());
+
             Ret &= Root->MergeLine(Key, NewVal, IBB_IniMergeMode::Replace, true);
         }
     }
@@ -405,6 +419,9 @@ bool IBB_SubSec::UpdateAll()
             GlobalLogB.AddLog_CurTime(false); GlobalLogB.AddLog("IBB_SubSec::UpdateAll Line : ", false); GlobalLogB.AddLog(L.c_str());
         }
 
+        auto& Line = Lines[L];
+        if (!Line.Default)continue;
+
         auto wpw = Root->GetNewLineIIF(L);
         auto& wp = wpw._;
         if (std::holds_alternative<std::monostate>(wp))
@@ -425,7 +442,6 @@ bool IBB_SubSec::UpdateAll()
             }
 
             auto& KeyName = L;
-            auto& Line = Lines[L];
             auto ldd = Line.Default && IBB_DefaultRegType::HasRegType(Line.Default->Property.TypeAlt);
             std::set<std::pair<int, int>> SelectValues;
 
@@ -446,7 +462,7 @@ bool IBB_SubSec::UpdateAll()
             }
 
             auto& val = iif->GetValues();
-            auto DefaultLinkLimit = Line.Default ? Line.Default->GetLinkLimit() : -1;
+            auto DefaultLinkLimit = Line.Default->GetLinkLimit();
             auto CurrentEditBSec = IBR_EditFrame::CurSection.GetBack();
             auto RootRData = IBR_Inst_Project.GetSection(Root->GetThisDesc()).GetSectionData();
 
@@ -487,7 +503,8 @@ bool IBB_SubSec::UpdateAll()
                 else if (!LimitFix)
                     for (auto&& str : spc)
                     {
-                        auto toidx = IBF_Inst_Project.Project.GetSecIndex(str, "");
+                        auto& IniType = Line.Default->GetIniType();
+                        auto toidx = IBF_Inst_Project.Project.GetSecIndex(str, IniType);
                         //sprintf_s(LogBufB, "New Link <%s->%u:%u> to %s, ", Root->Name.c_str(), LineIdx, cidx, toidx.operator IBB_Section_Desc().GetText().c_str());
                         //GlobalLogB.AddLog(LogBufB, false);
                         ClaimLink(LineIdx, cidx, NewLT.size());

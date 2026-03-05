@@ -221,7 +221,7 @@ namespace IBR_ProjectManager
                 })));
     }
 
-    void _IN_FRONT_THREAD OutputRegister(std::vector<std::vector<std::string>>& TextPieces)
+    void _IN_FRONT_THREAD OutputRegister(std::vector<std::unordered_map<std::string, std::string>>& TextPieces)
     {
         auto& Proj = IBF_Inst_Project.Project;
         std::unordered_map<std::string, std::vector<std::string>> Reg;
@@ -241,7 +241,7 @@ namespace IBR_ProjectManager
             {
                 V += v; V += '='; V += v; V += '\n';
             }
-            TextPieces[Idx.Ini.Index].push_back(std::move(V));
+            TextPieces[Idx.Ini.Index][N] = std::move(V);
         }
     }
     void _IN_FRONT_THREAD Output(const std::wstring& Path, const std::vector<std::wstring>& TargetIniPath,const std::set<IBB_Section_Desc>& IgnoredSection, bool TriggerAfterAction)
@@ -262,7 +262,7 @@ namespace IBR_ProjectManager
         for (auto& [K, V] : IBF_Inst_Project.DisplayNames)DisplayRev[V] = K;
 
         size_t N = TargetIniPath.size();
-        std::vector<std::vector<std::string>>TextPieces;
+        std::vector<std::unordered_map<std::string, std::string>>TextPieces;
         TextPieces.resize(N);
 
 
@@ -284,7 +284,7 @@ namespace IBR_ProjectManager
                 { V+="]:["; V+=Sec.Inherit; }
                 V += "]\n";
                 V += Sec.GetText(false, true);
-                TextPieces[I].push_back(std::move(V));
+                TextPieces[I][Sec.Name] = std::move(V);
             }
         }
 
@@ -301,8 +301,11 @@ namespace IBR_ProjectManager
                 F.PutStr(";" + UnicodetoUTF8(std::vformat(locw("Back_OutputINILine1"), std::make_wformat_args(cwa, VersionW)))); F.Ln();
                 F.PutStr(";" + UnicodetoUTF8(std::vformat(locw("Back_OutputINILine2"), std::make_wformat_args(IBF_Inst_Project.Project.ProjName)))); F.Ln();
                 F.PutStr(";" + UnicodetoUTF8(std::vformat(locw("Back_OutputINILine3"), std::make_wformat_args(cwb)))); F.Ln();
-                for (auto& V : TextPieces[I])
+                for (auto& [K, V] : TextPieces[I])
                 {
+                    if (ExportContext::MergedDescs.contains({ Inis[I].Name, K }))
+                        continue;
+
                     F.PutStr(V);
                     F.Ln();
                     F.Ln();
@@ -457,7 +460,7 @@ namespace IBR_ProjectManager
             {
                 Save(IBF_Inst_Project.Project.Path, [](bool OK) {IBRF_CoreBump.SendToR({ [=]()
                 {
-                    IBR_PopupManager::ClearCurrentPopup();
+                    //IBR_PopupManager::ClearCurrentPopup();
                     if (OK)IBR_HintManager::SetHint(loc("GUI_SaveSuccess"), HintStayTimeMillis);
                     else IBR_HintManager::SetHint(loc("GUI_SaveFailure"), HintStayTimeMillis);
                 }, nullptr }); });

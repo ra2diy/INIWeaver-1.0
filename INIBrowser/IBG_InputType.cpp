@@ -310,19 +310,14 @@ void IBG_InputForm::ParseFromString(const std::string& Str)
 void IBG_InputForm::ResetState()
 {
     ValueContainer.Clear();
+    ComponentStatus.clear();
+    FormattedString.clear();
+    Dirty = true;
     for (auto& IC : *InputComponents)
     {
         IC->ResetState(ValueContainer);
-    }
-    FormattedString.clear();
-    ComponentStatus.clear();
-
-    for (auto& IC : *InputComponents)
-    {
         ComponentStatus.push_back(IC->InitialStatus);
     }
-
-    Dirty = true;
 }
 
 
@@ -407,7 +402,15 @@ const IBB_ValueFormat& IFC_Error::GetFormat() {
 }
 
 
+// ========== IFC_Export_UseKey =========
+IFC_Export_UseKey::IFC_Export_UseKey()
+    : Format(IBB_InputFormat::ToString, "") {
+}
 
+const IBB_ValueFormat& IFC_Export_UseKey::GetFormat() {
+    Format.Format.String = ExportContext::Key;
+    return Format;
+}
 
 
 // ========== IIC_Formatter ==========
@@ -1095,7 +1098,9 @@ IBB_UpdateResult IIC_MultipleChoice::RenderUI(IBB_ValueContainer& Cont, IICStatu
         auto& [DisplayName, DescLong] = Options[Choice];
 
         bool NewSel = Selected;
-        ImGui::Checkbox(DisplayName.c_str(), &NewSel);
+        auto& Desc = IBR_WorkSpace::ShowRegName ? Choice : DisplayName;
+
+        ImGui::Checkbox(Desc.c_str(), &NewSel);
         if ((uint8_t)NewSel != Selected)
         {
             Changed = true;
@@ -1178,8 +1183,9 @@ IBB_UpdateResult IIC_EnumCombo::RenderUI(IBB_ValueContainer& Cont, IICStatus&) {
             for (auto& Key : OptionOrder)
             {
                 auto& [DisplayName, DescLong] = Options[Key];
+                auto& Desc = IBR_WorkSpace::ShowRegName ? Key : DisplayName;
                 auto Equal = (CurrentValue == Key);
-                if (ImGui::Selectable(DisplayName.c_str(), Equal))
+                if (ImGui::Selectable(Desc.c_str(), Equal))
                 {
                     if (!Equal)
                     {
@@ -1247,8 +1253,9 @@ IBB_UpdateResult IIC_EnumRadio::RenderUI(IBB_ValueContainer& Cont, IICStatus&) {
     for (auto&& [idx, Key] : std::views::zip(std::views::iota(1), OptionOrder))
     {
         auto& [DisplayName, DescLong] = Options[Key];
+        auto& Desc = IBR_WorkSpace::ShowRegName ? Key : DisplayName;
         auto Equal = (CurrentValue == Key);
-        if (ImGui::RadioButton(DisplayName.c_str(), Equal))
+        if (ImGui::RadioButton(Desc.c_str(), Equal))
         {
             if (!Equal)
             {

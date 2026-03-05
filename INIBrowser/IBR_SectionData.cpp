@@ -231,97 +231,6 @@ void IBR_SectionData::RenameRegisterImpl(const std::string& Name)
     BackPtr_Cached = nullptr;
 }
 
-bool IBR_SectionData::OnLineEdit(const std::string& OnShow, const std::string& Name)
-{
-    if (OnShow.empty())return true;
-
-    auto& Line = ActiveLines[Name];
-    bool HasInput{ false };
-    if (Line.Edit.Input)HasInput = true;
-    auto back = GetBack_Inl();
-    auto [line, idx] = back->GetLineFromSubSecsEx(Name);
-    if (!line)
-    {
-        if (EnableLog)
-        {
-            GlobalLog.AddLog_CurTime(false);
-            auto W = UTF8toUnicode(Desc.GetText() + u8" : " + Name);
-            GlobalLog.AddLog(std::vformat(L"IBR_SectionData::OnLineEdit ： "+locw("Log_INILineNotExist"),
-                std::make_wformat_args(W)));
-        }
-        return true;
-    }
-    LinkNodeContext::LineIndex = idx;
-
-    const auto ShowInherit = [&]() {
-        auto it = ActiveLines.find(InheritKeyName);
-        if (it == ActiveLines.end()) return true;
-        auto& in = it->second.Edit.Input;
-        if (!in)return true;
-        auto& status = in->Form->GetComponentStatus();
-        if (status.empty())return true;
-        return status.front().InputMethod == IICStatus::Link;
-    };
-
-    const auto InheritStr = [&]() {
-        auto& Q = back->Inherit;
-        auto w = IBR_WorkSpace::ShowRegName ? UTF8toUnicode(Q) :
-            (IBR_Inst_Project.HasSection({ Desc.Ini, Q }) ? UTF8toUnicode(IBR_Inst_Project.GetSection({ Desc.Ini, Q }).GetDisplayName()) : UTF8toUnicode(Q));
-        std::wstring Nul;
-        if (w.empty()) return std::make_pair(loc("GUI_NoInherit"), loc("GUI_NoInherit"));
-        else return std::make_pair(loc("GUI_InheritFrom"), UnicodetoUTF8(std::vformat(locw("GUI_InheritFrom"), std::make_wformat_args(ShowInherit() ? w : Nul))));
-    };
-
-    auto& DescLong = (Name == InheritKeyName) ? loc("GUI_InheritDescLong") : line->Default->DescLong;
-    std::string DescShort;
-    std::string DescShort2;
-
-    if (Name == InheritKeyName)
-    {
-        std::tie(DescShort2, DescShort) = InheritStr();
-    }
-    else if (!IBR_WorkSpace::ShowRegName)
-    {
-        if (OnShow == EmptyOnShowDesc)
-            DescShort = DescShort2 = line->Default->DescShort;
-        else DescShort = DescShort2 = OnShow;
-    }
-    else DescShort = DescShort2 = Name;
-
-    float Width = ImGui::CalcTextSize(DescShort2.c_str()).x;
-    const float ReservedWidth = FontHeight * 5.0f;
-    WidthFix = std::max(WidthFix, Width + ReservedWidth);
-
-    if (Line.Edit.NeedInit())
-    {
-        //SYNC : WORKSPACE -> EDIT MENU
-        IBR_IniLine::InitType It{ line->Data->GetString() ,
-            "##" + RandStr(8),[Name, desc = this->Desc, line](const std::string& S)
-                {
-                    IBG_Undo.SomethingShouldBeHere();
-                    line->Data->SetValue(S);
-                    if (IBR_Inst_Project.IBR_Rev_SectionMap[desc] == IBR_EditFrame::CurSection.ID)
-                    {
-                        auto& L = IBR_EditFrame::EditLines[Name];
-                        auto& ed = L.Edit;
-                        L.Buffer = S;
-                        if (ed.Input && ed.Input->Form)
-                            ed.Input->Form->ParseFromString(S);
-                        //IBR_HintManager::SetHint("Sync : WS KNOWN -> EDIT", HintStayTimeMillis);
-                    }
-                },
-            line->Default->Input->WorkSpace,
-            line->Default->GetNodeSetting()
-        };
-        Line.Edit.RenderUI(DescShort, DescLong, &It);
-    }
-    else
-    {
-        Line.Edit.RenderUI(DescShort, DescLong);
-    }
-    return line->Default->Property.TypeAlt.empty() ? true : HasInput;
-}
-
 void IBR_SectionData::CopyToClipBoard()
 {
     IBB_ClipBoardData ClipData;
@@ -400,6 +309,95 @@ void IBR_SectionData::UnfoldComposed()
 }
 
 // ---------- RENDER UI ----------
+
+bool IBR_SectionData::RenderUI_KnownLine(const std::string& OnShow, const std::string& Name)
+{
+    if (OnShow.empty())return true;
+
+    auto& Line = ActiveLines[Name];
+    bool HasInput{ false };
+    if (Line.Edit.Input)HasInput = true;
+    auto back = GetBack_Inl();
+    auto [line, idx] = back->GetLineFromSubSecsEx(Name);
+    if (!line)
+    {
+        if (EnableLog)
+        {
+            GlobalLog.AddLog_CurTime(false);
+            auto W = UTF8toUnicode(Desc.GetText() + u8" : " + Name);
+            GlobalLog.AddLog(std::vformat(L"IBR_SectionData::RenderUI_KnownLine ： " + locw("Log_INILineNotExist"),
+                std::make_wformat_args(W)));
+        }
+        return true;
+    }
+    LinkNodeContext::LineIndex = idx;
+
+    const auto ShowInherit = [&]() {
+        auto it = ActiveLines.find(InheritKeyName);
+        if (it == ActiveLines.end()) return true;
+        auto& in = it->second.Edit.Input;
+        if (!in)return true;
+        auto& status = in->Form->GetComponentStatus();
+        if (status.empty())return true;
+        return status.front().InputMethod == IICStatus::Link;
+        };
+
+    const auto InheritStr = [&]() {
+        auto& Q = back->Inherit;
+        auto w = IBR_WorkSpace::ShowRegName ? UTF8toUnicode(Q) :
+            (IBR_Inst_Project.HasSection({ Desc.Ini, Q }) ? UTF8toUnicode(IBR_Inst_Project.GetSection({ Desc.Ini, Q }).GetDisplayName()) : UTF8toUnicode(Q));
+        std::wstring Nul;
+        if (w.empty()) return std::make_pair(loc("GUI_NoInherit"), loc("GUI_NoInherit"));
+        else return std::make_pair(loc("GUI_InheritFrom"), UnicodetoUTF8(std::vformat(locw("GUI_InheritFrom"), std::make_wformat_args(ShowInherit() ? w : Nul))));
+        };
+
+    auto& DescLong = [&]() -> const auto& {
+            if (Name == InheritKeyName)return loc("GUI_InheritDescLong");
+            else if (Name == ImportKeyName) return loc("GUI_ImportDescLong");
+            else return line->Default->DescLong;
+        }();
+    std::string DescShort;
+    std::string DescShort2;
+
+    if (Name == InheritKeyName)
+    {
+        std::tie(DescShort2, DescShort) = InheritStr();
+    }
+    else if (!IBR_WorkSpace::ShowRegName)
+    {
+        if (OnShow == EmptyOnShowDesc)
+            DescShort = DescShort2 = line->Default->DescShort;
+        else DescShort = DescShort2 = OnShow;
+    }
+    else DescShort = DescShort2 = Name;
+
+    float Width = ImGui::CalcTextSize(DescShort2.c_str()).x;
+    const float ReservedWidth = FontHeight * 5.0f;
+    WidthFix = std::max(WidthFix, Width + ReservedWidth);
+
+    ExportContext::Key = Name;
+    if (Line.Edit.NeedInit())
+    {
+        //SYNC : WORKSPACE -> EDIT MENU
+        IBR_IniLine::InitType It{ line->Data->GetString() ,
+            "##" + RandStr(8),[Name, idx = IBB_Project_Index(this->Desc)](const std::string& S)
+                {
+                    IBG_Undo.SomethingShouldBeHere();
+                    auto Back = idx.GetSec(IBF_Inst_Project.Project);
+                    if (Back)Back->MergeLine(Name, S, IBB_IniMergeMode::Replace);
+                },
+            line->Default->Input->WorkSpace,
+            line->Default->GetNodeSetting()
+        };
+        Line.Edit.RenderUI(DescShort, DescLong, &It);
+    }
+    else
+    {
+        Line.Edit.RenderUI(DescShort, DescLong);
+    }
+    ExportContext::Key = "";
+    return line->Default->Property.TypeAlt.empty() ? true : HasInput;
+}
 
 void IBR_SectionData::RenderUI_TitleBar(bool &TriggeredRightMenu, float LastFinalY)
 {
@@ -877,7 +875,9 @@ void IBR_SectionData::RenderUI_UnknownLine(const std::string& k, const std::stri
             LinkNodeContext::CurLineChangeCompStatus = true;
 
         ImGui::SameLine();
+        ExportContext::Key = k;
         Line.Edit.Input->RenderUI();
+        ExportContext::Key = "";
     }
 }
 
@@ -901,20 +901,23 @@ void IBR_SectionData::RenderUI_Lines(IBB_Section* Bsec)
         LinkNodeContext::CurSub = &sub;
 
         if (sub.Default->Type == IBB_SubSec_Default::Inherit && Bsec->Inherit.empty())continue;
-        for (const auto& k : sub.Lines_ByName)
+        if (sub.Default->Type == IBB_SubSec_Default::UnknownLines)
         {
-            if (!Bsec->IsOnShow(k))continue;
-            OnLineEdit(Bsec->GetOnShow(k), k);
+            for (const auto& [k, l] : Bsec->UnknownLines.Value)
+                RenderUI_UnknownLine(k, l, Bsec);
         }
+        else
+        {
+            for (const auto& k : sub.Lines_ByName)
+            {
+                if (!Bsec->IsOnShow(k))continue;
+                RenderUI_KnownLine(Bsec->GetOnShow(k), k);
+            }
+        }
+
+        IBR_LinkNode::PushInactiveLines(sub, LinkNodeContext::CollapsedCenter);
     }
-    LinkNodeContext::CurSub = nullptr;
-
-    for (const auto& [k, l] : Bsec->UnknownLines.Value)
-        RenderUI_UnknownLine(k, l, Bsec);
-
-    auto& cc = LinkNodeContext::CollapsedCenter;
-    for (auto& sub : Bsec->SubSecs)
-        IBR_LinkNode::PushInactiveLines(sub, { cc.x, cc.y + ImGui::GetWindowPos().y });
+    LinkNodeContext::CurSub = nullptr; 
 }
 
 namespace IBR_LinkNode
@@ -997,7 +1000,7 @@ void IBR_SectionData::RenderUI()
         else
         {
             if (IsIncluded())RenderUI_Composed();
-            LinkNodeContext::CollapsedCenter = { HeadLineRN.x , FinalY + HalfLine };
+            LinkNodeContext::CollapsedCenter = { HeadLineRN.x , FinalY + HalfLine + ImGui::GetWindowPos().y };
             RenderUI_Lines(Bsec);
         }
     }

@@ -2,7 +2,7 @@
 #include "IBFront.h"
 #include "FromEngine/RFBump.h"
 #include "IBSave.h"
-#include "IBG_InputType.h"
+#include "IBG_InputType_Defines.h"
 #include "IBR_IniLine.h"
 #include <any>
 
@@ -96,7 +96,7 @@ struct IBR_SectionData
     void RenameRegisterImpl(const std::string& Name);
     void RenameDisplay();
     void RenameRegister();
-    bool OnLineEdit(const std::string& OnShow, const std::string& Name);
+    bool RenderUI_KnownLine(const std::string& OnShow, const std::string& Name);
 
     void RenderUI();
     void RenderUI_TitleBar(bool& TriggeredRightMenu, float LastFinalY);

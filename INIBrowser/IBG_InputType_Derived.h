@@ -1,7 +1,11 @@
 ﻿#pragma once
 #include "IBG_InputType.h"
 
-
+namespace ExportContext
+{
+    extern std::string Key;
+    extern size_t SameKeyIdx;//用于当Key重复时区分不同的Key
+}
 
 struct IFC_PureText final : public IBB_FormatComponent
 {
@@ -50,6 +54,14 @@ struct IFC_Error final : public IBB_FormatComponent
     IBB_ValueFormat Format;
     std::wstring TextW;
     IFC_Error(const std::string& Text);
+
+    const IBB_ValueFormat& GetFormat();
+};
+
+struct IFC_Export_UseKey final : public IBB_FormatComponent
+{
+    IBB_ValueFormat Format;
+    IFC_Export_UseKey();
 
     const IBB_ValueFormat& GetFormat();
 };

@@ -59,6 +59,7 @@ struct IBB_IniLine_Default
 
     LineData Create() const;
     const IBB_RegType& GetRegType() const;
+    const std::string& GetIniType() const;
     const IBG_InputType& GetInputType() const;
     LinkNodeSetting GetNodeSetting() const;
     int GetLinkLimit() const;
@@ -81,7 +82,8 @@ struct IBB_SubSec_Default
     {
         Default,
         Inherit,
-        Import
+        Import,
+        UnknownLines
     }Type;
 
     IBB_SubSec_Default();
@@ -141,7 +143,7 @@ struct IBB_IniLine
     //ValidateResult ValidateAndMerge(const std::string& Another, IBB_IniMergeMode Mode);
     //ValidateResult ValidateAndMerge(const IBB_IniLine& Another, IBB_IniMergeMode Mode);
 
-    void MakeKVForExport(IBB_VariableList&, std::vector<std::string>* TmpLineOrder = nullptr) const;
+    void MakeKVForExport(IBB_VariableList&, IBB_Section* AtSec, std::vector<std::string>* TmpLineOrder = nullptr) const;
 
     template<typename T> T* GetData() const { return dynamic_cast<T*>(Data.get()); }
 
@@ -196,7 +198,7 @@ struct IBB_SubSec
     std::pair< std::multimap<uint64_t, size_t>::const_iterator, std::multimap<uint64_t, size_t>::const_iterator>
         GetLink(size_t LineIdx, size_t ComponentIdx) const;
     void ClaimLink(size_t LineIdx, size_t ComponentIdx, size_t LinkIdx);
-    bool RenameInLinkTo(size_t LinkIdx, const std::string& NewName);
+    bool RenameInLinkTo(size_t LinkIdx, const std::string& OldName, const std::string& NewName);
 
     bool UpdateAll();
     bool TriggerUpdate();

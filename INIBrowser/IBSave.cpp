@@ -370,7 +370,15 @@ bool IBS_Project::Save(const std::wstring& _Path)
     bool R = ProjSL.Write(Path.c_str());
     if (IBF_Inst_Setting.OutputOnSave())
     {
-        IBRF_CoreBump.SendToR({ [=]() {IBR_ProjectManager::AutoOutputAction(); }});
+        auto AllNotEmpty = std::ranges::all_of(
+            IBF_Inst_Project.Project.Inis,
+            [](auto& ini) { return !IBF_Inst_Project.Project.LastOutputIniName[ini.Name].empty(); }
+        );
+
+        OutputDebugStringA((std::string("IBS_Project::Save : AllNotEmpty = ") + (AllNotEmpty ? "true" : "false") + "\n").c_str());
+
+        if(AllNotEmpty)IBRF_CoreBump.SendToR({ [=]() {IBR_ProjectManager::AutoOutputAction(); } });
+        else IBRF_CoreBump.SendToR({ [=]() {IBR_ProjectManager::OutputAction(); } });
     }
     return R;
 }

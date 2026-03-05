@@ -1,4 +1,5 @@
 ﻿#pragma once
+#include "IBG_InputType_Defines.h"
 #include "FromEngine/Include.h"
 #include "IBB_OutputFormat.h"
 #include "IBR_LinkNode.h"
@@ -33,15 +34,6 @@ struct IBB_UpdateResult
     int ValueID;
 };
 
-struct IBG_InputComponent;
-struct IBB_FormatComponent;
-struct IBB_ValidateComponent;
-struct IBB_ValueContainer;
-struct IBB_InputState;
-struct IBB_InputValue;
-using IICPtr = std::shared_ptr<IBG_InputComponent>;
-using IFCPtr = std::shared_ptr<IBB_FormatComponent>;
-using IISPtr = std::unique_ptr<IBB_InputState>;
 
 struct IICStatus
 {
@@ -138,6 +130,9 @@ struct InputFormComponentFactory
 
     static IICPtr GetParseErrorInputComponent(const std::string& Desc);
     static IFCPtr GetParseErrorFormatComponent(const std::string& Desc);
+
+    static IICVPtr CreateInputComponentVector(IBB_ValueContainer& Cont, const JsonObject& Obj, bool& HasError);
+    static IFCVPtr CreateFormatComponentVector(IBB_ValueContainer& Cont, const JsonObject& Obj, bool& HasError);
 };
 
 struct IBB_ValueContainer
@@ -153,14 +148,12 @@ struct IBG_InputFormUIResult
     bool Active;
 };
 
-struct IBG_InputForm;
-struct LinkNodeSetting;
-using IIFPtr = std::unique_ptr<IBG_InputForm>;
+
 
 struct IBG_InputForm
 {
-    std::shared_ptr<std::vector<IICPtr>> InputComponents;
-    std::shared_ptr<std::vector<IFCPtr>> FormatComponents;
+    IICVPtr InputComponents;
+    IFCVPtr FormatComponents;
     
     IBB_InputValue& GetValue(int ValueID);
     IBG_InputFormUIResult RenderUI(const LinkNodeSetting& Default); //returns whether any value changed
@@ -171,6 +164,7 @@ struct IBG_InputForm
     bool Load(const JsonObject& Obj);
     IIFPtr Duplicate() const;
     void EnableLinkNode() { LinkNodeEnabled = true; }
+    const std::string& RegenFormattedString() { Dirty = true; return GetFormattedString(); }
 
 private:
     std::string FormattedString;
@@ -182,6 +176,8 @@ private:
 public:
     std::vector<IICStatus>& GetComponentStatus() { return ComponentStatus; }
     IBB_ValueContainer& GetValues() { return ValueContainer; }
+    void SetValues(const IBB_ValueContainer& Cont) { ValueContainer = Cont; }
+    void SetValues(IBB_ValueContainer&& Cont) { ValueContainer = std::move(Cont); }
 };
 
 using IIFWrapper = std::variant< IIFPtr, IIFPtr*, std::monostate >;
