@@ -438,6 +438,7 @@ R"({
     //A 属于 B
     const bool ContainType(const _TEXT_UTF8 std::string& TypeA, const _TEXT_UTF8 std::string& TypeB)
     {
+        if (TypeB == "_AnyType")return true;
         auto it = CompoundTypeIndex.find(TypeA);
         if (it == CompoundTypeIndex.end())return false;
         return it->second.contains(TypeB);
