@@ -1685,6 +1685,7 @@ namespace IBR_WorkSpace
                     ImGuiWindowFlags_NoScrollbar |
                     ImGuiWindowFlags_NoResize |
                     ImGuiWindowFlags_NoScrollWithMouse |
+                    ImGuiWindowFlags_AlwaysAutoResize |
                     (sd.Frozen ? ImGuiWindowFlags_NoInputs : 0)|
                     (NoMouseInput ? ImGuiWindowFlags_NoMove : 0));
                 ImGui::SetWindowFontScale(IBR_FullView::Ratio);
@@ -1793,7 +1794,7 @@ namespace IBR_WorkSpace
                     auto sz = ImGui::GetWindowSize();
                     if (sd.FinalY < 1.0F)sd.FinalY = FontHeight * 8.0F;
                     if (sd.WidthFix > FontHeight * 15.0f)ImGui::SetWindowSize({ sd.WidthFix, sd.FinalY + FontHeight * 2.0F });
-                    else ImGui::SetWindowSize({ FontHeight * 15.0f, sd.FinalY + FontHeight * 1.0F });
+                    else ImGui::Dummy({ FontHeight * 15.0f, 0.0F });
                 }
 
                 sd.RenderUI();

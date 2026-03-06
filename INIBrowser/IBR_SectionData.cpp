@@ -70,6 +70,18 @@ namespace ImGui
     ImVec2 GetLineEndPos();
     ImVec2 GetLineBeginPos();
     bool IsWindowClicked(ImGuiMouseButton Button);
+
+    void Dummy(const ImVec2& size, bool AffectsLayout)
+    {
+        if (!AffectsLayout)return Dummy(size);
+        else
+        {
+            auto w = GetCurrentWindow();
+            auto mx = w->DC.CursorMaxPos;
+            Dummy(size);
+            w->DC.CursorMaxPos = mx;
+        }
+    }
 }
 
 extern wchar_t CurrentDirW[];
@@ -100,7 +112,6 @@ void DrawDragPreviewIcon()
     }
     //else ImGui::Text(u8"NOT ACCEPTED");
 }
-
 
 IBB_Section* IBR_SectionData::GetBack_Inl()
 {
@@ -406,7 +417,7 @@ void IBR_SectionData::RenderUI_Acceptor(float LastFinalY)
     auto Virtual = IsVirtualBlock();
     auto Included = IsIncluded();
 
-    ImGui::Dummy({ ImGui::GetWindowWidth(), Included ? LastFinalY : ImGui::GetWindowHeight()});
+    ImGui::Dummy({ ImGui::GetWindowWidth(), Included ? LastFinalY : ImGui::GetWindowHeight() }, true);
     if (!Virtual && ImGui::BeginDragDropTarget())
     {
         auto payload = ImGui::AcceptDragDropPayload("IBR_SecDrag", ImGuiDragDropFlags_AcceptBeforeDelivery);
@@ -519,7 +530,7 @@ void IBR_SectionData::RenderUI_TitleBar(bool &TriggeredRightMenu, float LastFina
     
     ImVec2 CurL{ Pos.x,Pos.y - 0.2f * FontHeight };
     ImGui::SetCursorPos({ 0.0f,CurL.y });
-    ImGui::Dummy({ ImGui::GetWindowWidth(), ImGui::GetTextLineHeightWithSpacing() });
+    ImGui::Dummy({ ImGui::GetWindowWidth(), ImGui::GetTextLineHeightWithSpacing()}, true);
     if (ImGui::IsItemClicked(ImGuiMouseButton_Right))
     {
         auto id = IBR_Inst_Project.GetSectionID(Desc);
@@ -720,7 +731,7 @@ void IBR_SectionData::RenderUI_TitleBar(bool &TriggeredRightMenu, float LastFina
 
         auto UPos = ImGui::GetCursorPos();
         ImGui::SetCursorPos({ 0.0f,CurL.y });
-        ImGui::Dummy({ ImGui::GetWindowWidth(), ImGui::GetTextLineHeightWithSpacing() });
+        ImGui::Dummy({ ImGui::GetWindowWidth(), ImGui::GetTextLineHeightWithSpacing() }, true);
         ImGui::SetCursorPos(UPos);
         if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
         {

@@ -33,7 +33,11 @@ void PushComboRect()
 
 bool IBR_Combo_Stage_I(const char* label, const char* preview_value, ImGuiComboFlags flags)
 {
-    return ImGui::BeginCombo(label, preview_value, flags);
+    auto w = ImGui::GetCurrentWindow();
+    auto mx = w->DC.CursorMaxPos;
+    bool Clicked = ImGui::BeginCombo(label, preview_value, flags);
+    w->DC.CursorMaxPos = mx;
+    return Clicked;
 }
 
 void IBR_Combo_Stage_II()

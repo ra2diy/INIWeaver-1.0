@@ -6,6 +6,7 @@
 #include "IBR_Components.h"
 #include "IBR_Combo.h"
 #include "FromEngine/global_tool_func.h"
+#include <imgui_internal.h>
 
 namespace LinkNodeContext
 {
@@ -281,8 +282,10 @@ namespace IBR_LinkNode
 
         ImGui::PushID(LineIdx << 16 | CompIdx);
 
-
+        auto w = ImGui::GetCurrentWindow();
+        auto mx = w->DC.CursorMaxPos;
         bool Clicked = ImGui::RadioButton("", true, Style);
+        w->DC.CursorMaxPos = mx;
         bool RightClicked = ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right);
         bool Hovered = ImGui::IsItemHovered();
         bool ShowReg = IBR_WorkSpace::ShowRegName;
