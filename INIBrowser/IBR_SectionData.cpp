@@ -424,16 +424,15 @@ void IBR_SectionData::RenderUI_TitleBar(bool &TriggeredRightMenu, float LastFina
 
                 if (back && srcback)
                 {
-                    if (srcback->DefaultLinkKey.HasValue(back->Register))
+                    if (auto& DLK = srcback->GetDLK(back->Register); !DLK.empty())
                     {
-                        auto& Val = srcback->DefaultLinkKey.GetVariable(back->Register);
                         if (payload->IsPreview())
-                            IBR_Inst_Project.DragConditionText = Desc.Ini + " -> " + DisplayName + " : " + Val;
+                            IBR_Inst_Project.DragConditionText = Desc.Ini + " -> " + DisplayName + " : " + DLK;
                         if (payload->IsDelivery())
                         {
                             IBG_Undo.SomethingShouldBeHere();
-                            back->MergeLine(Val, desc.Sec, IBB_IniMergeMode::Merge);
-                            back->SetOnShow(Val);
+                            back->MergeLine(DLK, desc.Sec, IBB_IniMergeMode::Merge);
+                            back->SetOnShow(DLK);
                         }
                     }
                     else if (payload->IsPreview())
@@ -908,8 +907,9 @@ void IBR_SectionData::RenderUI_Lines(IBB_Section* Bsec)
         }
         else
         {
-            for (const auto& k : sub.Lines_ByName)
+            for (const auto& k : Bsec->LineOrder)
             {
+                if (!sub.CanOwnKey(k))continue;
                 if (!Bsec->IsOnShow(k))continue;
                 RenderUI_KnownLine(Bsec->GetOnShow(k), k);
             }

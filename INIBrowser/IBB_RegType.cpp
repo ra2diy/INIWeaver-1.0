@@ -40,7 +40,7 @@ namespace IBB_DefaultRegType
         DefaultColor, DefaultColor, DefaultColor, DefaultColor,
         DefaultColor, DefaultColor, DefaultColor, DefaultColor,
         DefaultColorD, DefaultColorD, DefaultColorD, DefaultColorD,
-        false, false, false, false, u8"模块", 0};
+        false, false, false, false, u8"模块", "", 0};
     StrBoolType DefaultStrBoolType;
     ImColor DefaultNodeColor;
 
@@ -207,6 +207,7 @@ R"({
         else Reg.Name = loc("Back_DefaultModuleName");
         Reg.Count = 0;
 
+        Reg.ExportName = Obj.ItemStringOr(u8"ExportName", "");
         
 
 

@@ -1036,8 +1036,8 @@ IBB_UpdateResult IIC_InputText::RenderUI(IBB_ValueContainer& Cont, IICStatus& St
         static const IBB_InputFormat Fmt = { IBB_InputFormat::ToString, "" };
         auto CurrentValue = Var.Dirty ? Var.StateValPtr->Format(Fmt) : Var.Value;
 
-        auto Size = ImGui::CalcTextSize(Hint.c_str(), NULL, true);
-        ImGui::SetNextItemWidth(ImGui::GetWindowContentRegionWidth() - ImGui::GetCursorPosX() - Size.x);
+        //auto Size = ImGui::CalcTextSize(Hint.c_str(), NULL, true);
+        //ImGui::SetNextItemWidth(ImGui::GetWindowContentRegionWidth() - ImGui::GetCursorPosX() - Size.x);
         auto Changed = InputTextStdString(Hint.c_str(), CurrentValue);
 
         auto Active = ImGui::IsItemActive();

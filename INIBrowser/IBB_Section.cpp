@@ -82,9 +82,9 @@ bool IBB_Section::Generate(const ModuleClipData& Clip)
 
             //！注意：下面几行保证了新的模块生成时必然有继承和语句包！
             VL.Value[InheritKeyName] = Inherit;
-            VL.Value[ImportKeyName] = "";
+            //VL.Value[ImportKeyName] = "";
             OnShow[InheritKeyName] = EmptyOnShowDesc;
-            OnShow[ImportKeyName] = EmptyOnShowDesc;
+            //OnShow[ImportKeyName] = EmptyOnShowDesc;
 
             for (auto& L : Clip.Lines)
             {
@@ -607,6 +607,18 @@ const std::string& IBB_Section::GetOnShow(const std::string& Key) const
     const static std::string Empty{};
     auto _F = this->OnShow.find(Key);
     return _F == this->OnShow.end() ? Empty : _F->second;
+}
+
+const std::string& IBB_Section::GetDLK(const std::string& Reg) const
+{
+    const static std::string Empty{};
+    if(DefaultLinkKey.HasValue(Reg))
+        return DefaultLinkKey.GetVariable(Reg);
+    if (Reg == Register && DefaultLinkKey.HasValue("_MyType"))
+        return DefaultLinkKey.GetVariable("_MyType");
+    if (DefaultLinkKey.HasValue("_AnyType"))
+        return DefaultLinkKey.GetVariable("_AnyType");
+    return Empty;
 }
 
 void IBB_Section::SetOnShow(const std::string& Key, const std::string& Value, bool AllowReapply)

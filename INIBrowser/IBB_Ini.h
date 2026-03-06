@@ -199,6 +199,7 @@ struct IBB_SubSec
         GetLink(size_t LineIdx, size_t ComponentIdx) const;
     void ClaimLink(size_t LineIdx, size_t ComponentIdx, size_t LinkIdx);
     bool RenameInLinkTo(size_t LinkIdx, const std::string& OldName, const std::string& NewName);
+    bool CanOwnKey(const std::string& Key) const;
 
     bool UpdateAll();
     bool TriggerUpdate();
@@ -302,6 +303,7 @@ struct IBB_Section
     bool HasLine(const std::string& Key) const;
     bool IsOnShow(const std::string& Key) const;
     const std::string& GetOnShow(const std::string& Key) const;
+    const std::string& GetDLK(const std::string& Reg) const;
 
     void SetOnShow(const std::string& Key, const std::string& Value, bool AllowReapply);
     void SetOnShow(const std::string& Key);

@@ -236,7 +236,8 @@ namespace IBR_ProjectManager
             Idx.GetIni(Proj);
             //MessageBoxA(NULL, Idx.GetIni(Proj)->Name.c_str(), std::to_string(Idx.Ini.Index).c_str(), MB_OK);
             std::string V;
-            V += '[';V += N;V += "]\n";
+            const auto& ExportName = RegType.ExportName.empty() ? N : RegType.ExportName;
+            V += '[';V += ExportName;V += "]\n";
             for (auto& v : R)
             {
                 V += v; V += '='; V += v; V += '\n';
@@ -257,6 +258,7 @@ namespace IBR_ProjectManager
                 IBR_PopupManager::ClearCurrentPopup(); } });
             return;
         }
+        ExportContext::MergedDescs.clear();
 
         std::map<IBB_Section_Desc, std::string> DisplayRev;
         for (auto& [K, V] : IBF_Inst_Project.DisplayNames)DisplayRev[V] = K;
@@ -270,15 +272,14 @@ namespace IBR_ProjectManager
         OutputRegister(TextPieces);
         for (size_t I = 0; I < N; I++)
         {
-            //MessageBoxW(NULL, TargetIniPath[I].c_str(), L"dsfsd", MB_OK);
             for (auto& [SN, Sec] : Inis[I].Secs)
             {
                 for (auto& Sub : Sec.SubSecs)for (auto& L : Sub.Lines)
                     if (L.first == InheritKeyName)Sec.Inherit = L.second.Data->GetString();
                 IBB_Section_Desc Desc = { Inis[I].Name, Sec.Name };
+                if (IgnoredSection.contains(Desc) || Sec.IsLinkGroup || Sec.IsComment())continue;
                 std::string V;
                 V += ';'; V += DisplayRev[Desc];  V += '\n';
-                if (IgnoredSection.contains(Desc) || Sec.IsLinkGroup || Sec.IsComment())continue;
                 V += '['; V += Sec.Name;
                 if(!Sec.Inherit.empty())
                 { V+="]:["; V+=Sec.Inherit; }
@@ -362,7 +363,11 @@ namespace IBR_ProjectManager
                                 else IBR_HintManager::SetHint(loc("GUI_LoadFailure"), HintStayTimeMillis);
                             }, nullptr }); });
                 }
-                else { IBR_HintManager::SetHint(loc("GUI_ActionCanceled"), HintStayTimeMillis); IBR_PopupManager::ClearPopupDelayed(); }
+                else {
+                    IBR_HintManager::SetHint(loc("GUI_ActionCanceled"), HintStayTimeMillis);
+                    IBR_PopupManager::ClearPopupDelayed();
+                    CreateAction();
+                }
             });
     }
     void _IN_RENDER_THREAD OpenRecentAction(const std::wstring& Path)
@@ -676,7 +681,6 @@ namespace IBR_ProjectManager
         IBRF_CoreBump.SendToR({ [=]() {OpenRecentAction(Path); }, &ActionAfterClose });
         CloseAction();
     }
-
     void _IN_RENDER_THREAD OpenRecentOptAction(const std::wstring& Path)
     {
         if (IsOpen())ProjOpen_OpenRecentAction(Path);

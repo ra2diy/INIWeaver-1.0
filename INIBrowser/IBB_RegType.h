@@ -25,6 +25,7 @@ struct IBB_RegType
     bool UseOwnName;
     bool ValidateOptions;
     std::string Name;
+    std::string ExportName;
     int Count;
     IBB_VariableList DefaultLinks;
     std::unordered_map<std::string, std::string> Options;//AllowedValue : DisplayName ; if empty then any value allowed

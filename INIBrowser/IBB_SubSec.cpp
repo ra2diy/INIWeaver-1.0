@@ -313,6 +313,12 @@ void IBB_SubSec::ClaimLink(size_t LineIdx, size_t ComponentIdx, size_t LinkIdx)
     LinkSrc.insert({ i, LinkIdx });
 }
 
+bool IBB_SubSec::CanOwnKey(const std::string& Key) const
+{
+    auto pSub = IBF_Inst_DefaultTypeList.List.KeyBelongToSubSec(Key);
+    return pSub == Default;
+}
+
 const std::vector<std::string>& SplitParamCached(const std::string& Text);
 
 bool IBB_SubSec::RenameInLinkTo(size_t LinkIdx, const std::string& OldName, const std::string& NewName)
