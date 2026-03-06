@@ -51,7 +51,7 @@ struct IBG_InputComponent : public std::enable_shared_from_this<IBG_InputCompone
 {
     virtual ~IBG_InputComponent() = default;
     virtual IBB_UpdateResult RenderUI(IBB_ValueContainer& Cont, IICStatus& Status) = 0;
-    virtual std::string FormatValue(IBB_InputValue&, const IBB_InputFormat&) = 0;
+    virtual std::string FormatValue(IBB_ValueContainer&, IBB_InputValue&, const IBB_InputFormat&) = 0;
     virtual void ParseValue(IBB_ValueContainer& Cont, const IBB_InputFormat& Format) = 0;
     virtual bool CanProvideState(IBB_ValueContainer& Cont) const = 0;
     virtual void ResetState(IBB_ValueContainer& Cont) const = 0;
@@ -117,7 +117,7 @@ struct IBB_InputValue
     IBB_InputValue(const IBB_InputValue&);
 
     void NeedsUpdate(IBB_ValueContainer& Cont, IBG_InputComponent& Source);
-    void UpdateValue(const IBB_InputFormat& Format);
+    void UpdateValue(IBB_ValueContainer& Cont, const IBB_InputFormat& Format);
 };
 
 
@@ -164,7 +164,7 @@ struct IBG_InputForm
     bool Load(const JsonObject& Obj);
     IIFPtr Duplicate() const;
     void EnableLinkNode() { LinkNodeEnabled = true; }
-    const std::string& RegenFormattedString() { Dirty = true; return GetFormattedString(); }
+    const std::string& RegenFormattedString();
 
 private:
     std::string FormattedString;

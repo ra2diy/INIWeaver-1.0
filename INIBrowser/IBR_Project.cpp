@@ -406,6 +406,29 @@ IBR_Section _PROJ_CMD_READ _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE I
     return RSec;
 }
 
+IBR_Section _PROJ_CMD_READ _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE IBR_Project::CreateSingleValBlock(ImVec2 InitialEqPos, const std::string& InitialValue)
+{
+    auto RSec = CreateSectionAndBack(
+        IBB_Section_Desc{ DefaultIniName, RandStr(16) },
+        loc("Back_SingleValBlockName")
+    );
+
+    auto BSec = RSec.GetBack();
+    assert(BSec != nullptr);
+    BSec->SingleVal = true;
+    BSec->MergeLine(SingleValName, InitialValue, IBB_IniMergeMode::Replace);
+    BSec->OnShow[SingleValName] = EmptyOnShowDesc;
+    BSec->Register = "_AnyType";
+
+    auto RD = RSec.GetSectionData();
+    assert(RD != nullptr);
+    RD->EqPos = InitialEqPos;
+
+    IBG_Undo.SomethingShouldBeHere();
+
+    return RSec;
+}
+
 IBR_Section _PROJ_CMD_READ _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE IBR_Project::CreateSectionAndBack(const IBB_Section_Desc& Desc, _TEXT_UTF8 const std::string& DisplayName)
 {
     CreateSection(Desc);

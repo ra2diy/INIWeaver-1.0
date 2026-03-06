@@ -634,6 +634,13 @@ namespace IBR_WorkSpace
                     IBRF_CoreBump.SendToR({ [=]() {IBR_Inst_Project.CreateCommentBlock(EqMouse); } });
                     IBR_PopupManager::ClearRightClickMenu();
                 }
+                ImGui::Text(locc("GUI_CreateSingleValBlock"));
+                if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+                {
+                    auto EqMouse = RePosToEqPos(ImGui::GetMousePos());
+                    IBRF_CoreBump.SendToR({ [=]() {IBR_Inst_Project.CreateSingleValBlock(EqMouse); } });
+                    IBR_PopupManager::ClearRightClickMenu();
+                }
                 ImGui::PopStyleColor();
                 RenderRightClickTable();
                 ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_PopupBg));

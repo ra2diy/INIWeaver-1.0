@@ -399,14 +399,12 @@ bool IBR_SectionData::RenderUI_KnownLine(const std::string& OnShow, const std::s
     return line->Default->Property.TypeAlt.empty() ? true : HasInput;
 }
 
-void IBR_SectionData::RenderUI_TitleBar(bool &TriggeredRightMenu, float LastFinalY)
+void IBR_SectionData::RenderUI_Acceptor(float LastFinalY)
 {
-    auto Rsec = IBR_Inst_Project.GetSection(Desc);
-    auto HalfLine = ImGui::GetTextLineHeightWithSpacing() * 0.5F;
     auto Pos = ImGui::GetCursorPos();
+    ImGui::SetCursorPos({ 0.0f, FinalY });
     auto Virtual = IsVirtualBlock();
     auto Included = IsIncluded();
-    ImGui::SetCursorPos({ 0.0f, FinalY });
 
     ImGui::Dummy({ ImGui::GetWindowWidth(), Included ? LastFinalY : ImGui::GetWindowHeight()});
     if (!Virtual && ImGui::BeginDragDropTarget())
@@ -506,6 +504,19 @@ void IBR_SectionData::RenderUI_TitleBar(bool &TriggeredRightMenu, float LastFina
             ImGui::EndDragDropTarget();
         }
     }
+
+    ImGui::SetCursorPos(Pos);
+}
+
+void IBR_SectionData::RenderUI_TitleBar(bool &TriggeredRightMenu, float LastFinalY)
+{
+    auto Rsec = IBR_Inst_Project.GetSection(Desc);
+    auto HalfLine = ImGui::GetTextLineHeightWithSpacing() * 0.5F;
+    auto Pos = ImGui::GetCursorPos();
+    auto Virtual = IsVirtualBlock();
+
+    RenderUI_Acceptor(LastFinalY);
+    
     ImVec2 CurL{ Pos.x,Pos.y - 0.2f * FontHeight };
     ImGui::SetCursorPos({ 0.0f,CurL.y });
     ImGui::Dummy({ ImGui::GetWindowWidth(), ImGui::GetTextLineHeightWithSpacing() });
@@ -975,6 +986,12 @@ void IBR_SectionData::RenderUI()
         FinalY = 0;
         return;
     }
+    auto Bsec = GetBack_Inl();
+    if (Bsec == nullptr)
+    {
+        RenderUI_Error();
+        return;
+    }
 
     ReWindowUL = ImGui::GetCursorScreenPos();
     auto HalfLine = ImGui::GetTextLineHeightWithSpacing() * 0.5F;
@@ -985,15 +1002,13 @@ void IBR_SectionData::RenderUI()
     bool TriggeredRightMenu = false;
     bool Included = IsIncluded();
     
-    RenderUI_TitleBar(TriggeredRightMenu, LastFinalY);
+    if(!Bsec->SingleVal)RenderUI_TitleBar(TriggeredRightMenu, LastFinalY);
+    else RenderUI_Acceptor(LastFinalY);
     
     ImVec2 HeadLineRN = ImGui::GetLineEndPos() - ImVec2{ FontHeight * 1.5f, HalfLine };
     {
         IBD_RInterruptF(x);
-        auto Bsec = GetBack_Inl();
-        if (Bsec == nullptr)
-            RenderUI_Error();
-        else if (IsComment)
+        if (IsComment)
             RenderUI_Comment(Bsec);
         else if (Included && CollapsedInComposed && !First)
             RenderUI_Collapsed(Bsec, HeadLineRN, Rsec);

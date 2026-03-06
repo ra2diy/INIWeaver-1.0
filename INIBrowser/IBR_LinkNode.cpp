@@ -26,6 +26,7 @@ namespace ExportContext
     std::string Key;
     size_t SameKeyIdx;//用于当Key重复时区分不同的Key
     std::set<IBB_Section_Desc> MergedDescs;//被Import而合并的Section列表
+    bool OnExport;
 }
 
 bool LinkNodeSetting::Load(JsonObject Obj, bool* HasCustom)

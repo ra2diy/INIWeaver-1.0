@@ -277,7 +277,7 @@ namespace IBR_ProjectManager
                 for (auto& Sub : Sec.SubSecs)for (auto& L : Sub.Lines)
                     if (L.first == InheritKeyName)Sec.Inherit = L.second.Data->GetString();
                 IBB_Section_Desc Desc = { Inis[I].Name, Sec.Name };
-                if (IgnoredSection.contains(Desc) || Sec.IsLinkGroup || Sec.IsComment())continue;
+                if (IgnoredSection.contains(Desc) || Sec.IsLinkGroup || Sec.IsComment() || Sec.SingleVal)continue;
                 std::string V;
                 V += ';'; V += DisplayRev[Desc];  V += '\n';
                 V += '['; V += Sec.Name;

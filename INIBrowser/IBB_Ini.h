@@ -125,7 +125,7 @@ struct IBB_IniLine_Data_String final : public IBB_IniLine_Data_Base
     LineData Duplicate() const;
 
     std::string GetString() const { return Value; }
-    std::string GetStringForExport() const { return GetString(); }
+    std::string GetStringForExport() const;
 
     virtual const char* GetName() const { return TypeName; }
 
@@ -245,6 +245,7 @@ struct IBB_Section
     std::string Comment{};
     std::string Register;
     bool CreateAsCommentBlock{ false };
+    bool SingleVal{ false };//为True时只有一个值
 
     struct _Dynamic
     {

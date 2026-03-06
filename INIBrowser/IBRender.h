@@ -99,6 +99,7 @@ struct IBR_SectionData
     bool RenderUI_KnownLine(const std::string& OnShow, const std::string& Name);
 
     void RenderUI();
+    void RenderUI_Acceptor(float LastFinalY);
     void RenderUI_TitleBar(bool& TriggeredRightMenu, float LastFinalY);
     void RenderUI_Error();
     void RenderUI_Comment(IBB_Section*);
@@ -247,7 +248,10 @@ struct IBR_Project
     //不建议，会缺少模板里面约定的一部分Variable（包括类型标记）
     bool _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE CreateSection(const IBB_Section_Desc& Desc);
     IBR_Section _PROJ_CMD_READ _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE CreateSectionAndBack(const IBB_Section_Desc& Desc, _TEXT_UTF8 const std::string& DisplayName);
+
+    //特殊类型
     IBR_Section _PROJ_CMD_READ _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE CreateCommentBlock(ImVec2 InitialEqPos, std::string_view InitialText = "", ImVec2 InitialEqSize = {0.0F,0.0F});
+    IBR_Section _PROJ_CMD_READ _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE CreateSingleValBlock(ImVec2 InitialEqPos, const std::string& InitialValue = "");
 
     //同GetSection的HasBack
     bool _PROJ_CMD_READ HasSection(const IBB_Section_Desc& Desc) _PROJ_CMD_BACK_CONST;

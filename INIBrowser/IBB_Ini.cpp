@@ -5,11 +5,17 @@
 #include "Global.h"
 #include "IBB_RegType.h"
 #include "IBR_LinkNode.h"
+#include <ranges>
 
 const char* Internal_IniName = "_LINKGROUP_INI_FILE";
 extern const char* LinkAltPropType;
 
-
+namespace ExportContext
+{
+    extern std::string Key;
+    extern size_t SameKeyIdx;//用于当Key重复时区分不同的Key
+    extern bool OnExport;
+}
 
 /*
 struct IBB_IniLine_Data_Int final : public IBB_IniLine_Data_Base
@@ -120,6 +126,64 @@ LineData IBB_IniLine_Data_String::Duplicate() const
     LineData R{ new IBB_IniLine_Data_String };
     R->MergeData(this);
     return R;
+}
+
+
+std::string DecodeListForExport(const std::string& Val)
+{
+    if (Val.empty())return "";
+    IBB_Section_Desc Desc{ Internal_IniName, Val };
+    auto pSec = IBF_Inst_Project.Project.GetSec(Desc);
+    if (pSec && pSec->IsLinkGroup)
+    {
+        std::string R;
+        for (auto& V : pSec->LinkGroup_NewLinkTo)
+        {
+            auto pp = V.To.GetSec(IBF_Inst_Project.Project);
+            if (pp)
+            {
+                R += pp->Name;
+                R += ',';
+            }
+        }
+        if (!R.empty())R.pop_back();
+        return R;
+    }
+    if (pSec && pSec->SingleVal)
+    {
+        auto pLine = pSec->GetLineFromSubSecs(SingleValName);
+        if (pLine)return pLine->Data->GetStringForExport();
+        else return Val;
+    }
+    else
+    {
+        return Val;
+    }
+}
+
+std::string_view TrimView(std::string_view Line);
+
+std::string IBB_IniLine_Data_String::GetStringForExport() const
+{
+
+    const std::string& Delim = ",";
+    return GetString() |
+        std::views::split(Delim) |
+        std::views::transform([](const auto& subrange) -> std::string {
+            if (subrange.empty()) return "";
+            return
+                DecodeListForExport(
+                    std::string(
+                        TrimView(
+                            std::string_view(
+                                &*subrange.begin(), std::ranges::distance(subrange)
+                            )
+                        )
+                    )
+                );
+        }) |
+        std::views::join_with(Delim) |
+        std::ranges::to<std::string>();
 }
 
 
@@ -594,7 +658,15 @@ void IBB_IniLine::MakeKVForExport(IBB_VariableList& vl, IBB_Section* AtSec, std:
 {
     auto& input = Default->GetInputType();
     auto& key = Default->Name;
+
+    auto IIF = Default->GetInputType().Sidebar->Duplicate();
+    auto Str = Data->GetString();
+    IIF->ParseFromString(Str);
+    ExportContext::OnExport = true;
+    Data->SetValue(IIF->RegenFormattedString());
+    ExportContext::OnExport = false;
     auto value = Data->GetStringForExport();
+    Data->SetValue(Str);
     input.KVFmt(vl, key, value, TmpLineOrder, AtSec);
 }
 

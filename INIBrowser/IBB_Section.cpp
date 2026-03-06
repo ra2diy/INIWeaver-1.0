@@ -80,11 +80,16 @@ bool IBB_Section::Generate(const ModuleClipData& Clip)
             IBB_VariableList VL;
             std::vector<std::string> Order;
 
-            //！注意：下面几行保证了新的模块生成时必然有继承和语句包！
+            SingleVal = IsTrueString(VarList.GetVariable("SingleVal"));
+            VarList.Value.erase("SingleVal");
+            if (SingleVal)
+            {
+                VL.Value[SingleValName];
+                OnShow[SingleValName] = EmptyOnShowDesc;
+            }
+
             VL.Value[InheritKeyName] = Inherit;
-            //VL.Value[ImportKeyName] = "";
             OnShow[InheritKeyName] = EmptyOnShowDesc;
-            //OnShow[ImportKeyName] = EmptyOnShowDesc;
 
             for (auto& L : Clip.Lines)
             {
@@ -214,6 +219,8 @@ void IBB_Section::GetClipData(ModuleClipData& Clip)
                 Clip.DefaultLinkKey.push_back({ A, B });
             for (auto& [A, B] : VarList.Value)
                 Clip.VarList.push_back({ A, B });
+
+            Clip.VarList.push_back({ "SingleVal", SingleVal ? "true" : "false" });
         }
     }
 }
