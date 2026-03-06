@@ -326,7 +326,7 @@ bool IBB_SubSec::RenameInLinkTo(size_t LinkIdx, const std::string& OldName, cons
     //按照这个Link，找到所有from的地方并修改to到新name
     //不需要修改Link结构
     bool Ret = true;
-    auto& Link = NewLinkTo[LinkIdx];
+    //auto& Link = NewLinkTo[LinkIdx];
     for (auto& [lc, lidx] : LinkSrc)
     {
         if (lidx == LinkIdx)
