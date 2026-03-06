@@ -1678,9 +1678,15 @@ std::vector<std::string> ParseCSVLine(std::string_view L)
         }
         else
         {
+            if (L[i] == '"' && L.size() > i + 1 && L[i + 1] == '"')
+            {
+                i++;
+                continue;
+            }
             if (L[i] == '"')
             {
                 Result.emplace_back(TrimView(L.substr(d, i - d)));
+                subreplace(Result.back(), "\"\"", "\"");
                 Quote = false;
                 while (i < L.size() && L[i] != ',')i++;
                 d = i + 1;
