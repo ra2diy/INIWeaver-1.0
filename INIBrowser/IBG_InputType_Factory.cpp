@@ -401,7 +401,9 @@ IICVPtr InputFormComponentFactory::CreateInputComponentVector(IBB_ValueContainer
 {
     auto InputComponents = std::make_shared<std::vector<IICPtr>>();
     HasError = false;
-    for (auto& item : Obj.GetArrayObject())
+    auto Objs = Obj.GetArrayObject();
+    InputComponents->reserve(Objs.size());
+    for (auto& item : Objs)
     {
         auto comp = InputFormComponentFactory::CreateInputComponent(Cont, item);
         if (comp)
@@ -423,7 +425,9 @@ IFCVPtr InputFormComponentFactory::CreateFormatComponentVector(IBB_ValueContaine
 {
     auto FormatComponents = std::make_shared<std::vector<IFCPtr>>();
     HasError = false;
-    for (auto& item : Obj.GetArrayObject())
+    auto Objs = Obj.GetArrayObject();
+    FormatComponents->reserve(Objs.size());
+    for (auto& item : Objs)
     {
         if (item.IsTypeObject() && item.HasItem("ValueList"))
         {
@@ -456,7 +460,9 @@ ILFVPtr InputFormComponentFactory::CreateLineFormatVector(IBB_ValueContainer& Co
 {
     auto LineFormats = std::make_shared<std::vector<IBB_LineFormat>>();
     HasError = false;
-    for (auto& o : Obj.GetArrayObject())
+    auto Objs = Obj.GetArrayObject();
+    LineFormats->reserve(Objs.size());
+    for (auto& o : Objs)
     {
         auto oKey = o.GetObjectItem("Key");
         auto oValue = o.GetObjectItem("Value");
@@ -521,7 +527,7 @@ bool IBG_InputForm::Load(const JsonObject& Obj)
     FormatComponents = InputFormComponentFactory::CreateFormatComponentVector(ValueContainer, oFormat, HasError);
     if (HasError)Ret = false;
 
-    ResetState();
+    RegenFormattedString();
 
     return Ret;
 }

@@ -187,19 +187,14 @@ bool IBB_SubSec::MergeLine(const std::string& Key, const std::string& Value, boo
         if (Def == nullptr)return false;
         Lines_ByName.push_back(Key);
 
-        //std::string DefVal;
-        //bool UseDef = Value.empty();
-        //if (UseDef)DefVal = "";//Def->GetInputType().Sidebar->GetFormattedString();
-        const auto& Val = Value;// UseDef ? DefVal : Value;
-
-        auto rp = Lines.insert({ Key, IBB_IniLine(Val, Def) });
+        auto rp = Lines.insert({ Key, IBB_IniLine(Value, Def) });
         if (InitOnShow && Root->OnShow[Key].empty())
         {
             if (!Def->Property.TypeAlt.empty() && Def->Property.TypeAlt != "bool")
                 Root->OnShow[Key] = EmptyOnShowDesc;
         }
 
-        Root->SyncLineOnUI(Key, Val);
+        Root->SyncLineOnUI(Key, Value);
     }
     else
     {

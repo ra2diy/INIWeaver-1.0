@@ -1025,7 +1025,9 @@ IIC_InputText::IIC_InputText(IBB_ValueContainer& Cont, int valueid, const std::s
 {
     Hint += "##";
     Hint += RandStr(12);
-    Cont.GetValue(ValueID).ResetState<IIS_String>(InitialText);
+    auto& Val = Cont.GetValue(ValueID);
+    Val.ResetState<IIS_String>(InitialText);
+    Val.NeedsUpdate(Cont, *this);
 }
 
 IBB_UpdateResult IIC_InputText::RenderUI(IBB_ValueContainer& Cont, IICStatus& Status)
@@ -1097,7 +1099,9 @@ void IIC_InputText::ResetState(IBB_ValueContainer& Cont) const
 IIC_MultipleChoice::IIC_MultipleChoice(IBB_ValueContainer& Cont, int valueid, const std::string& InitialText, bool sameline, int maxInOneLine, const std::unordered_map<std::string, IICDescStr>& options, const std::vector<std::string>& order)
     : Hint(RandStr(12)), ValueID(valueid), SameLine(sameline), MaxInOneLine(maxInOneLine), Options(options), OptionOrder(order)
 {
-    Cont.GetValue(ValueID).ResetState<IIS_String>(InitialText);
+    auto& Val = Cont.GetValue(ValueID);
+    Val.ResetState<IIS_String>(InitialText);
+    Val.NeedsUpdate(Cont, *this);
 }
 
 IBB_UpdateResult IIC_MultipleChoice::RenderUI(IBB_ValueContainer& Cont, IICStatus&)
@@ -1185,7 +1189,9 @@ IIC_EnumCombo::IIC_EnumCombo(IBB_ValueContainer& Cont, int valueid, const std::s
     : Options(options), Hint(hint), ValueID(valueid), OptionOrder(order) {
     Hint += "##";
     Hint += RandStr(12);
-    Cont.GetValue(ValueID).ResetState<IIS_String>(InitialValue);
+    auto& Val = Cont.GetValue(ValueID);
+    Val.ResetState<IIS_String>(InitialValue);
+    Val.NeedsUpdate(Cont, *this);
 }
 
 IBB_UpdateResult IIC_EnumCombo::RenderUI(IBB_ValueContainer& Cont, IICStatus&) {
@@ -1258,7 +1264,9 @@ void IIC_EnumCombo::ResetState(IBB_ValueContainer& Cont) const
 // ========== IIC_EnumRadio ==========
 IIC_EnumRadio::IIC_EnumRadio(IBB_ValueContainer& Cont, int valueid, const std::string& InitialValue, const std::unordered_map<std::string, IICDescStr>& options, bool sameline, int maxInOneLine, const std::vector<std::string>& order)
     : Options(options), ValueID(valueid), Hint(RandStr(12)), SameLine(sameline), MaxInOneLine(maxInOneLine), OptionOrder(order) {
-    Cont.GetValue(ValueID).ResetState<IIS_String>(InitialValue);
+    auto& Val = Cont.GetValue(ValueID);
+    Val.ResetState<IIS_String>(InitialValue);
+    Val.NeedsUpdate(Cont, *this);
 }
 
 IBB_UpdateResult IIC_EnumRadio::RenderUI(IBB_ValueContainer& Cont, IICStatus&) {
@@ -1335,7 +1343,9 @@ IIC_Bool::IIC_Bool(IBB_ValueContainer& Cont, int valueid, bool InitialValue, Str
     : ValueID(valueid), Hint(hint), FmtType(fmt) {
     Hint += "##";
     Hint += RandStr(12);
-    Cont.GetValue(ValueID).ResetState<IIS_Bool>(InitialValue, FmtType);
+    auto& Val = Cont.GetValue(ValueID);
+    Val.ResetState<IIS_Bool>(InitialValue, FmtType);
+    Val.NeedsUpdate(Cont, *this);
 }
 
 IBB_UpdateResult IIC_Bool::RenderUI(IBB_ValueContainer& Cont, IICStatus&)
@@ -1394,7 +1404,9 @@ IIC_InputInt::IIC_InputInt(IBB_ValueContainer& Cont, int valueid, int InitialVal
     : Min(min), Max(max), Hint(hint), ValueID(valueid) {
     Hint += "##";
     Hint += RandStr(12);
-    Cont.GetValue(ValueID).ResetState<IIS_Int>(InitialValue);
+    auto& Val = Cont.GetValue(ValueID);
+    Val.ResetState<IIS_Int>(InitialValue);
+    Val.NeedsUpdate(Cont, *this);
 }
 
 IBB_UpdateResult IIC_InputInt::RenderUI(IBB_ValueContainer& Cont, IICStatus& Status)
@@ -1564,7 +1576,9 @@ IIC_SliderInt::IIC_SliderInt(IBB_ValueContainer& Cont, int valueid, int InitialV
     : Min(min), Max(max), Hint(hint), SlideFormat(slidefmt), Logarithmic(log), ValueID(valueid) {
     Hint += "##";
     Hint += RandStr(12);
-    Cont.GetValue(ValueID).ResetState<IIS_Int>(InitialValue);
+    auto& Val = Cont.GetValue(ValueID);
+    Val.ResetState<IIS_Int>(InitialValue);
+    Val.NeedsUpdate(Cont, *this);
 }
 
 IBB_UpdateResult IIC_SliderInt::RenderUI(IBB_ValueContainer& Cont, IICStatus&) {

@@ -132,7 +132,7 @@ namespace IBR_LinkNode
 
     bool UpdateLinkInitial()
     {
-        if (LinkNodeContext::CurSub && LinkNodeContext::LineIndex != UINT_MAX)
+        if (LinkNodeContext::CurSub && LinkNodeContext::CurSub->Default->Type != IBB_SubSec_Default::UnknownLines)
         {
             auto& ln = LinkNodeContext::CurSub->Lines_ByName[LinkNodeContext::LineIndex];
             auto& Line = LinkNodeContext::CurSub->Lines[ln];

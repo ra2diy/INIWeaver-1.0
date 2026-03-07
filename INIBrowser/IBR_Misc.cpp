@@ -443,6 +443,17 @@ namespace IBR_EditFrame
             IBG_Undo.SomethingShouldBeHere();
             {
                 IBD_RInterruptF(x);
+
+                if (NewLineValue.empty())
+                {
+                    auto pLine = IBF_Inst_DefaultTypeList.List.KeyBelongToLine(NewLineKey);
+                    if (pLine)
+                    {
+                        auto& Input = pLine->GetInputType();
+                        NewLineValue = Input.Sidebar->GetFormattedString();
+                    }
+                }
+
                 pbk->OnShow[NewLineKey] = EmptyOnShowDesc;//默认在画布上显示
                 pbk->MergeLine(NewLineKey, NewLineValue, IBB_IniMergeMode::Replace);//添加或替换
                 pbk->OrderKey(NewLineKey, 0);//调整到最前面，方便用户看到
@@ -451,6 +462,20 @@ namespace IBR_EditFrame
             ResetEdit(pbk);
             NewLineKey.clear();
             NewLineValue.clear();
+        }
+
+        if (NewLineValue.empty() && !NewLineKey.empty())
+        {
+            auto pLine = IBF_Inst_DefaultTypeList.List.KeyBelongToLine(NewLineKey);
+            if (pLine)
+            {
+                auto& Input = pLine->GetInputType();
+                auto& Str = Input.Sidebar->GetFormattedString();
+                if (!Str.empty())
+                {
+                    ImGui::TextDisabled(u8"使用默认值：%s", Str.c_str());
+                }
+            }
         }
 
         EditStringWithOptions(Active, NewLineKey, IBF_Inst_DefaultTypeList.List.Query.InputTextOptions);

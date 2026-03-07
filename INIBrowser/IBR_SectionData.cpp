@@ -884,8 +884,6 @@ void IBR_SectionData::RenderUI_Virtual()
 
 void IBR_SectionData::RenderUI_UnknownLine(const std::string& k, const std::string& l, IBB_Section* Bsec)
 {
-    LinkNodeContext::LineIndex = UINT_MAX;
-
     auto _F = Bsec->OnShow.find(k);
     if (_F == Bsec->OnShow.end() || _F->second.empty())return;
     auto& Line = ActiveLines[k];
@@ -941,7 +939,12 @@ void IBR_SectionData::RenderUI_Lines(IBB_Section* Bsec)
         if (sub.Default->Type == IBB_SubSec_Default::UnknownLines)
         {
             for (const auto& [k, l] : Bsec->UnknownLines.Value)
+            {
+                sub.Lines_ByName.push_back(k);
+                LinkNodeContext::LineIndex = sub.Lines_ByName.size() - 1;
                 RenderUI_UnknownLine(k, l, Bsec);
+        }
+            sub.Lines_ByName.clear();
         }
         else
         {
