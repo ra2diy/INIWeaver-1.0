@@ -47,7 +47,9 @@ struct BufferedLine
     LinkNodeSetting LinkNode;
     std::string Buffer;
     std::string Hint;
+    std::string OnShowBuf;
     bool Known;
+    bool InputOnshow;
 };
 
 struct ActiveLine

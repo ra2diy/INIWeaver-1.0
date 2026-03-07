@@ -319,6 +319,8 @@ namespace IBR_EditFrame
                 Line.Hint = V.Default->DescLong;
                 Line.InputType = V.Default->Input;
                 Line.LinkNode = V.Default->GetNodeSetting();
+                Line.OnShowBuf = rsc->GetOnShow(K);
+                Line.InputOnshow = false;
             }
         }
         for (auto& [K, V] : rsc->UnknownLines.Value)
@@ -329,6 +331,8 @@ namespace IBR_EditFrame
             Line.Hint = "";
             Line.InputType = &IBB_DefaultRegType::SelectInputTypeByValue(V);
             Line.LinkNode = IBB_DefaultRegType::GetDefaultLinkNodeSetting();
+            Line.OnShowBuf = rsc->GetOnShow(K);
+            Line.InputOnshow = false;
         }
     }
 
@@ -512,14 +516,34 @@ namespace IBR_EditFrame
             //if (K == InheritKeyName)continue;
             auto& V = EditLines.at(K);
 
-            if (ImGui::RadioButton(("##" + K).c_str(), !pbk->OnShow[K].empty(), GlobalNodeStyle))
+            if (ImGui::RadioButton(("##" + K).c_str(), pbk->IsOnShow(K), GlobalNodeStyle))
             {
                 IBG_Undo.SomethingShouldBeHere();
                 if (pbk->OnShow[K].empty())pbk->OnShow[K] = EmptyOnShowDesc;
                 else pbk->OnShow[K].clear();
             }
 
+            if (ImGui::IsItemClicked(ImGuiMouseButton_Right))
+            {
+                V.InputOnshow = !V.InputOnshow;
+            }
+
             ImGui::SameLine();
+
+            if (V.InputOnshow)
+            {
+                ImGui::PushID(K.c_str());
+                bool Show = pbk->IsOnShow(K);
+                if (V.OnShowBuf == EmptyOnShowDesc)V.OnShowBuf = "";
+                auto Changed = InputTextStdString("", V.OnShowBuf);
+                if (Changed)
+                {
+                    IBG_Undo.SomethingShouldBeHere();
+                    if (Show && V.OnShowBuf.empty())pbk->OnShow[K] = EmptyOnShowDesc;
+                    else pbk->OnShow[K] = V.OnShowBuf;
+                }
+                ImGui::PopID();
+            }
 
             if (V.Edit.NeedInit())
             {
