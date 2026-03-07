@@ -362,11 +362,7 @@ bool IBR_SectionData::RenderUI_KnownLine(const std::string& OnShow, const std::s
         else return std::make_pair(loc("GUI_InheritFrom"), UnicodetoUTF8(std::vformat(locw("GUI_InheritFrom"), std::make_wformat_args(ShowInherit() ? w : Nul))));
         };
 
-    auto& DescLong = [&]() -> const auto& {
-            if (Name == InheritKeyName)return loc("GUI_InheritDescLong");
-            else if (Name == ImportKeyName) return loc("GUI_ImportDescLong");
-            else return line->Default->DescLong;
-        }();
+    auto& DescLong = line->Default->DescLong;
     std::string DescShort;
     std::string DescShort2;
 
