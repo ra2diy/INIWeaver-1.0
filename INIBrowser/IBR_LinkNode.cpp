@@ -56,6 +56,7 @@ bool LinkNodeSetting::Load(JsonObject Obj, bool* HasCustom)
 
 std::vector<std::string> SplitParam(const std::string& Text);
 void DrawDragPreviewIcon();
+void DrawDragPreviewIcon_LinkLim0();
 
 namespace ImGui
 {
@@ -131,7 +132,7 @@ namespace IBR_LinkNode
 
     bool UpdateLinkInitial()
     {
-        if (LinkNodeContext::CurSub)
+        if (LinkNodeContext::CurSub && LinkNodeContext::LineIndex != UINT_MAX)
         {
             auto& ln = LinkNodeContext::CurSub->Lines_ByName[LinkNodeContext::LineIndex];
             auto& Line = LinkNodeContext::CurSub->Lines[ln];
@@ -183,7 +184,8 @@ namespace IBR_LinkNode
                 return FromSub.NewLinkTo[p.second];
             });
 
-        auto Center = DefaultCenter();
+        bool IsImport = (FromSub.Default->Type == IBB_SubSec_Default::Import);
+        auto Center = IsImport ? ImportCenter() : DefaultCenter();
 
         //sprintf_s(LogBufB, "<%p->%u:%u>%s PushLink : ", &FromSub, LineIdx, CompIdx, FromSub.Lines_ByName[LineIdx].c_str());
         //GlobalLogB.AddLog(LogBufB, false);
@@ -392,7 +394,8 @@ namespace IBR_LinkNode
             }
             else ImGui::Text((Data.Desc.Ini + " -> " + Data.DisplayName + " : " + KeyName).c_str());
 
-            DrawDragPreviewIcon();
+            if (LinkNode.LinkLimit == 0)DrawDragPreviewIcon_LinkLim0();
+            else DrawDragPreviewIcon();
 
             LinkNodeContext::CurDragStart = { DC.x , DC.y + ImGui::GetTextLineHeight() };
             LinkNodeContext::CurDragCol = LinkNode.LinkCol;
@@ -414,21 +417,24 @@ namespace IBR_LinkNode
         }
         if (Session.NotifyValueToMerge)
         {
-            auto s = Links |
-                std::views::transform([&](auto p) {return p.To.Section.GetText(); }) |
-                std::views::filter([&](auto&& s) { return !s.empty(); }) |
-                std::ranges::to<std::vector>();
-            bool Used = false;
-            for (auto& ss : s)if (ss == Session.ValueToMerge)
+            if (LinkNode.LinkLimit != 0)
             {
-                Used = true;
-                break;
+                auto s = Links |
+                    std::views::transform([&](auto p) {return p.To.Section.GetText(); }) |
+                    std::views::filter([&](auto&& s) { return !s.empty(); }) |
+                    std::ranges::to<std::vector>();
+                bool Used = false;
+                for (auto& ss : s)if (ss == Session.ValueToMerge)
+                {
+                    Used = true;
+                    break;
+                }
+                if (!Used)s.push_back(Session.ValueToMerge);
+                auto str = s |
+                    std::views::join_with(',') |
+                    std::ranges::to<std::string>();
+                UR = ModifyAndShow(str, UR.Active);
             }
-            if (!Used)s.push_back(Session.ValueToMerge);
-            auto str = s |
-                std::views::join_with(',') |
-                std::ranges::to<std::string>();
-            UR = ModifyAndShow(str, UR.Active);
             Session.NotifyValueToMerge = false;
         }
 

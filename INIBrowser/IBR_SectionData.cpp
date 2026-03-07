@@ -90,6 +90,18 @@ extern const char* LinkAltPropType;
 extern int RFontHeight;
 extern bool EnableDebugList;
 
+void DrawDragPreviewIcon_LinkLim0()
+{
+    if (ImGui::IsDragDropPayloadBeingAccepted())
+    {
+        auto P = ImGui::GetCursorScreenPos();
+        DrawCross(P, float(RFontHeight), IBR_Color::ErrorTextColor);
+        ImGui::Dummy(ImVec2{ float(RFontHeight),float(RFontHeight) });
+        ImGui::SameLine();
+        ImGui::TextColored(IBR_Color::ErrorTextColor, locc("GUI_Preview_InvalidLink"));
+    }
+}
+
 void DrawDragPreviewIcon()
 {
     //ImGui::Text(u8"DRAWN");
@@ -515,14 +527,13 @@ void IBR_SectionData::RenderUI_Acceptor(float LastFinalY)
     ImGui::SetCursorPos(Pos);
 }
 
-void IBR_SectionData::RenderUI_TitleBar(bool &TriggeredRightMenu, float LastFinalY)
+void IBR_SectionData::RenderUI_TitleBar(IBR_Section Rsec, IBB_Section* Bsec, bool &TriggeredRightMenu, float LastFinalY)
 {
-    auto Rsec = IBR_Inst_Project.GetSection(Desc);
     auto HalfLine = ImGui::GetTextLineHeightWithSpacing() * 0.5F;
     auto Pos = ImGui::GetCursorPos();
     auto Virtual = IsVirtualBlock();
 
-    RenderUI_Acceptor(LastFinalY);
+    auto NotAsImported = std::ranges::all_of(Bsec->NewLinkedBy, [](const auto& nl) { return nl.FromKey != ImportKeyName; });
     
     ImVec2 CurL{ Pos.x,Pos.y - 0.2f * FontHeight };
     ImGui::SetCursorPos({ 0.0f,CurL.y });
@@ -692,7 +703,16 @@ void IBR_SectionData::RenderUI_TitleBar(bool &TriggeredRightMenu, float LastFina
     if (!IsComment && !Virtual)
     {
         if (Ignore)ImGui::PushStyleColor(ImGuiCol_CheckMark, IBR_WorkSpace::TempWbg);
-        Rsec.SetReOffset(ImVec2{ FontHeight * 0.7f, HalfLine });
+        if (!NotAsImported)
+        {
+            auto X = ImGui::GetWindowContentRegionWidth() * 0.5f - FontHeight * 0.5f;
+            ImGui::SetCursorPosX(X);
+            ReOffset = { X, HalfLine };
+        }
+        else
+        {
+            ReOffset = { FontHeight * 0.7f, HalfLine };
+        }
         auto CPos = ImGui::GetCursorPos();
         auto wpp = ImGui::GetWindowPos();
         ImGui::RadioButton(("##MODULE" + ModuleStrID).c_str(), true, GlobalNodeStyle);
@@ -711,6 +731,9 @@ void IBR_SectionData::RenderUI_TitleBar(bool &TriggeredRightMenu, float LastFina
             IBR_Inst_Project.IBR_SecDragMap[s] = { Desc };
             ImGui::EndDragDropSource();
         }
+
+        if (NotAsImported)
+        {
         ImGui::SameLine();
         if (IBR_WorkSpace::ShowRegName)
         {
@@ -724,6 +747,7 @@ void IBR_SectionData::RenderUI_TitleBar(bool &TriggeredRightMenu, float LastFina
             }
         }
         else ImGui::Text(DisplayName.c_str());
+        }
 
         auto UPos = ImGui::GetCursorPos();
         ImGui::SetCursorPos({ 0.0f,CurL.y });
@@ -860,6 +884,8 @@ void IBR_SectionData::RenderUI_Virtual()
 
 void IBR_SectionData::RenderUI_UnknownLine(const std::string& k, const std::string& l, IBB_Section* Bsec)
 {
+    LinkNodeContext::LineIndex = UINT_MAX;
+
     auto _F = Bsec->OnShow.find(k);
     if (_F == Bsec->OnShow.end() || _F->second.empty())return;
     auto& Line = ActiveLines[k];
@@ -887,7 +913,7 @@ void IBR_SectionData::RenderUI_UnknownLine(const std::string& k, const std::stri
         }
 
         LinkNodeContext::CurLineChangeCompStatus = false;
-        ImGui::TextEx(k.c_str());
+        ImGui::TextEx(_F->second == EmptyOnShowDesc ? k.c_str() : _F->second.c_str());
         if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
             LinkNodeContext::CurLineChangeCompStatus = true;
 
@@ -912,6 +938,7 @@ void IBR_SectionData::RenderUI_Composed()
 void IBR_SectionData::RenderUI_Lines(IBB_Section* Bsec)
 {
     Bsec->CheckSubsecOrder();
+
     for (auto i : Bsec->SubSecOrder)
     {
         auto& sub = Bsec->SubSecs[i];
@@ -1009,8 +1036,9 @@ void IBR_SectionData::RenderUI()
     bool TriggeredRightMenu = false;
     bool Included = IsIncluded();
     
-    if(!Bsec->SingleVal)RenderUI_TitleBar(TriggeredRightMenu, LastFinalY);
-    else RenderUI_Acceptor(LastFinalY);
+    RenderUI_Acceptor(LastFinalY);
+
+    if(!Bsec->SingleVal)RenderUI_TitleBar(Rsec, Bsec, TriggeredRightMenu, LastFinalY);
     
     ImVec2 HeadLineRN = ImGui::GetLineEndPos() - ImVec2{ FontHeight * 1.5f, HalfLine };
     {

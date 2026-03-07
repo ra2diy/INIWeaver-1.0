@@ -485,7 +485,7 @@ bool IBB_SubSec::UpdateAll()
                 auto& piic = iif->InputComponents->at(cidx);
                 auto LinkLimit = piic->UseCustomSetting ? piic->NodeSetting.LinkLimit : DefaultLinkLimit;
                 auto& spc = SplitParamCached(V.Value);
-                if (LinkLimit != -1 && (int)spc.size() > LinkLimit)
+                if (LinkLimit != -1 && LinkLimit != 0 && (int)spc.size() > LinkLimit)
                 {
                     LimitFix = true;
                     std::string NewStr;

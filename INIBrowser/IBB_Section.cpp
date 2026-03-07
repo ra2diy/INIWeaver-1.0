@@ -964,6 +964,14 @@ void IBB_Section::OrderKey(const std::string& Key, size_t NewOrder)
 
 void IBB_Section::CheckSubsecOrder()
 {
+    extern const char* UnknownSubSecName;
+    if (!this->UnknownLines.Value.empty() &&
+        std::ranges::find_if(this->SubSecs, [](auto& sub) {return sub.Default->Type == IBB_SubSec_Default::UnknownLines; }) == this->SubSecs.end())
+    {
+        auto pUnkSub = &IBF_Inst_DefaultTypeList.List.SubSec_Default[UnknownSubSecName];
+        SubSecs.push_back(IBB_SubSec(pUnkSub, this));
+    }
+
     if (this->SubSecOrder.size() != this->SubSecs.size() + 1)
     {
         this->SubSecOrder.clear();

@@ -100,7 +100,7 @@ struct IBR_SectionData
 
     void RenderUI();
     void RenderUI_Acceptor(float LastFinalY);
-    void RenderUI_TitleBar(bool& TriggeredRightMenu, float LastFinalY);
+    void RenderUI_TitleBar(IBR_Section Rsec, IBB_Section* Bsec, bool& TriggeredRightMenu, float LastFinalY);
     void RenderUI_Error();
     void RenderUI_Comment(IBB_Section*);
     void RenderUI_Collapsed(IBB_Section*, ImVec2 HeadLineRN, IBR_Section Rsec);
