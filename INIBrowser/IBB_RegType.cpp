@@ -180,7 +180,7 @@ R"({
     }
     void LoadReg(IBB_RegType& Reg, JsonObject Obj)
     {
-        auto S = Obj.GetObjectItem(u8"IniType");
+        auto S = Obj.GetObjectItem(u8"ExportToINI");
         if (S.Available())Reg.IniType = S.GetString();
         else Reg.IniType = DefaultIniName;
         S = Obj.GetObjectItem(u8"FrameColor");
@@ -193,7 +193,7 @@ R"({
         }
         else Reg.FrameColorL = DefaultColor;
 
-        Reg.Export = Obj.ItemBoolOr(u8"Export", false);
+        Reg.Export = Obj.ItemBoolOr(u8"NeedRegisterList", false);
         Reg.RegNameAsDisplay = Obj.ItemBoolOr(u8"UseRegName", false);
         Reg.UseOwnName = Obj.ItemBoolOr(u8"UseOwnName", false);
         Reg.ValidateOptions = Obj.ItemBoolOr(u8"ValidateOptions", false);
@@ -207,7 +207,7 @@ R"({
         else Reg.Name = loc("Back_DefaultModuleName");
         Reg.Count = 0;
 
-        Reg.ExportName = Obj.ItemStringOr(u8"ExportName", "");
+        Reg.ExportName = Obj.ItemStringOr(u8"RegisterListName", "");
         
 
 
