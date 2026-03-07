@@ -204,7 +204,7 @@ struct IBB_SubSec
     bool UpdateAll();
     bool TriggerUpdate();
 
-    bool AddLine(const std::pair<std::string, std::string>& Line, bool InitOnShow, IBB_IniMergeMode Mode, bool NoUpdate = false);
+    bool MergeLine(const std::string& Key, const std::string& Value, bool InitOnShow, IBB_IniMergeMode Mode, bool NoUpdate = false);
     bool ChangeRoot(IBB_Section* NewRoot);
     IBB_SubSec& ChangeRootAndBack(IBB_Section* NewRoot) { ChangeRoot(NewRoot); return *this; }
 };
@@ -258,6 +258,7 @@ struct IBB_Section
     bool Merge(const IBB_Section& Another, const std::unordered_map<std::string, IBB_IniMergeMode>& MergeType, bool IsDuplicate);
     bool Merge(const IBB_Section& Another, IBB_IniMergeMode MergeType, bool IsDuplicate);//they share the same merge type
     bool MergeLine(const std::string& Key, const std::string& Value, IBB_IniMergeMode Mode, bool NoUpdate = false);
+    bool SetUnknownLineAndSync(const std::string& Key, const std::string& Value);
     bool Generate(const IBB_Section_NameType& Paragraph);
     bool GenerateLines(const IBB_VariableList& Lines, const std::vector<std::string>& Order = {}, bool InitOnShow = true);
     bool GenerateAsDuplicate(const IBB_Section& Src);
@@ -283,10 +284,13 @@ struct IBB_Section
     bool Isolate();//切断所有Link
     void RedirectLinkAsDupicate();
 
-    const IBB_IniLine* GetLineFromSubSecs(const std::string& Name) const;
     IBB_IniLine* GetLineFromSubSecs(const std::string& Name);
     std::pair <IBB_IniLine*, IBB_SubSec*> GetLineFromSubSecsEx2(const std::string& Name);
     std::pair <IBB_IniLine*, size_t> GetLineFromSubSecsEx(const std::string& Name);
+    IBB_SubSec& GetSubSecByDef(IBB_SubSec_Default* Def);//返回Def对应的SubSec，若没有则构造一个新的SubSec并返回
+    IBB_SubSec& GetSubSecByLine(const std::string& Key);//返回包含Key的SubSec，若没有则构造一个新的SubSec并返回
+
+    const IBB_IniLine* GetLineFromSubSecs(const std::string& Name) const;
     IBB_Project_Index GetThisIndex() const;
     IBB_Section_Desc GetThisDesc() const;
     std::vector<std::string> GetKeys(bool PrintExtraData) const;//RARELY USED
@@ -305,7 +309,8 @@ struct IBB_Section
     bool IsOnShow(const std::string& Key) const;
     const std::string& GetOnShow(const std::string& Key) const;
     const std::string& GetDLK(const std::string& Reg) const;
-
+    void SyncLineOnUI(const std::string& Key, const std::string& Value) const;
+    
     void SetOnShow(const std::string& Key, const std::string& Value, bool AllowReapply);
     void SetOnShow(const std::string& Key);
     void PushLineOrder(const std::string& Key);

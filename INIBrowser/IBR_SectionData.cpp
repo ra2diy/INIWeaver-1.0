@@ -529,6 +529,7 @@ void IBR_SectionData::RenderUI_Acceptor(float LastFinalY)
 
 void IBR_SectionData::RenderUI_TitleBar(IBR_Section Rsec, IBB_Section* Bsec, bool &TriggeredRightMenu, float LastFinalY)
 {
+    IM_UNUSED(LastFinalY);
     auto HalfLine = ImGui::GetTextLineHeightWithSpacing() * 0.5F;
     auto Pos = ImGui::GetCursorPos();
     auto Virtual = IsVirtualBlock();
@@ -734,19 +735,18 @@ void IBR_SectionData::RenderUI_TitleBar(IBR_Section Rsec, IBB_Section* Bsec, boo
 
         if (NotAsImported)
         {
-        ImGui::SameLine();
-        if (IBR_WorkSpace::ShowRegName)
-        {
-            IBD_RInterruptF(x);
-            auto Bsec = Rsec.GetBack();
-            if (Bsec)ImGui::Text(Bsec->Name.c_str());
-            else
+            ImGui::SameLine();
+            if (IBR_WorkSpace::ShowRegName)
             {
-                ImGui::TextColored(IBR_Color::ErrorTextColor, locc("Back_GunMu"));
-                BackPtr_Cached = nullptr;
+                IBD_RInterruptF(x);
+                if (Bsec)ImGui::Text(Bsec->Name.c_str());
+                else
+                {
+                    ImGui::TextColored(IBR_Color::ErrorTextColor, locc("Back_GunMu"));
+                    BackPtr_Cached = nullptr;
+                }
             }
-        }
-        else ImGui::Text(DisplayName.c_str());
+            else ImGui::Text(DisplayName.c_str());
         }
 
         auto UPos = ImGui::GetCursorPos();
@@ -898,14 +898,7 @@ void IBR_SectionData::RenderUI_UnknownLine(const std::string& k, const std::stri
             Line.Edit.Input.reset(new IBR_InputManager(l, "##" + RandStr(8), [desc = Desc, Bsec, Str = k](const std::string& S)
                 {
                     IBG_Undo.SomethingShouldBeHere();
-                    Bsec->UnknownLines.Value[Str] = S;
-                    if (IBR_Inst_Project.IBR_Rev_SectionMap[desc] == IBR_EditFrame::CurSection.ID)
-                    {
-                        auto& ed = IBR_EditFrame::EditLines[Str].Edit;
-                        if (ed.Input && ed.Input->Form)
-                            ed.Input->Form->ParseFromString(S);
-                        //IBR_HintManager::SetHint("Sync : WS UNKNOWN -> EDIT", HintStayTimeMillis);
-                    }
+                    Bsec->SetUnknownLineAndSync(Str, S);
                 },
                 InputType.WorkSpace->Duplicate(),
                 IBB_DefaultRegType::GetDefaultLinkNodeSetting()
@@ -1035,7 +1028,7 @@ void IBR_SectionData::RenderUI()
     auto Rsec = IBR_Inst_Project.GetSection(Desc);
     bool TriggeredRightMenu = false;
     bool Included = IsIncluded();
-    
+
     RenderUI_Acceptor(LastFinalY);
 
     if(!Bsec->SingleVal)RenderUI_TitleBar(Rsec, Bsec, TriggeredRightMenu, LastFinalY);

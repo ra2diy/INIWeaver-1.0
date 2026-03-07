@@ -160,8 +160,11 @@ IBG_InputFormUIResult IBG_InputForm::RenderUI(const LinkNodeSetting& Default)
         IBG_Undo.SomethingShouldBeHere();
         if (TryUpdateLink && NeedsUpdateLink)
         {
-            auto& KeyName = LinkNodeContext::CurSub->Lines_ByName[LinkNodeContext::LineIndex];
-            LinkNodeContext::CurSub->Root->MergeLine(KeyName, GetFormattedString(), IBB_IniMergeMode::Replace);
+            //auto& KeyName = LinkNodeContext::CurSub->Lines_ByName[LinkNodeContext::LineIndex];
+            //auto Snapshot =
+            //GetFormattedString();
+            //LinkNodeContext::CurSub->Root->MergeLine(KeyName, Snapshot, IBB_IniMergeMode::Replace, true);
+            //ParseFromString(Snapshot);
         }
     }
     return { Changed, Active };
@@ -212,7 +215,6 @@ void IBG_InputForm::ParseFromString(const std::string& Str)
     auto CC = std::move(ComponentStatus);
     ResetState();
     ComponentStatus = std::move(CC);
-    auto S = Str;
 
     //按照*FormatComponents的格式化组件来解析字符串
     //提取全部的固定文本并以此切割文本

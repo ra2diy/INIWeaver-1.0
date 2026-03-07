@@ -173,36 +173,38 @@ bool IBB_SubSec::Merge(const IBB_SubSec& Another, IBB_IniMergeMode Mode, bool Is
     }
     return Ret;
 }
-bool IBB_SubSec::AddLine(const std::pair<std::string, std::string>& Line, bool InitOnShow, IBB_IniMergeMode Mode, bool NoUpdate)
+bool IBB_SubSec::MergeLine(const std::string& Key, const std::string& Value, bool InitOnShow, IBB_IniMergeMode Mode, bool NoUpdate)
 {
     /*sprintf_s(LogBufB, __FUNCTION__ ":  %s=%s Mode=%d InitOnShow=%s NoUpdate=%s",
         Line.first.c_str(), Line.second.c_str(), Mode, IBD_BoolStr(InitOnShow), IBD_BoolStr(NoUpdate));
     GlobalLogB.AddLog(LogBufB);*/
 
     bool Ret = true;
-    auto it = Lines.find(Line.first);
+    auto it = Lines.find(Key);
     if (it == Lines.end())
     {
-        IBB_IniLine_Default* Def = IBF_Inst_DefaultTypeList.List.KeyBelongToLine(Line.first);
+        IBB_IniLine_Default* Def = IBF_Inst_DefaultTypeList.List.KeyBelongToLine(Key);
         if (Def == nullptr)return false;
-        Lines_ByName.push_back(Line.first);
-        auto rp = Lines.insert({ Line.first,IBB_IniLine(Line.second, Def) });
-        if (InitOnShow && Root->OnShow[Line.first].empty())
+        Lines_ByName.push_back(Key);
+
+        //std::string DefVal;
+        //bool UseDef = Value.empty();
+        //if (UseDef)DefVal = "";//Def->GetInputType().Sidebar->GetFormattedString();
+        const auto& Val = Value;// UseDef ? DefVal : Value;
+
+        auto rp = Lines.insert({ Key, IBB_IniLine(Val, Def) });
+        if (InitOnShow && Root->OnShow[Key].empty())
         {
             if (!Def->Property.TypeAlt.empty() && Def->Property.TypeAlt != "bool")
-                Root->OnShow[Line.first] = EmptyOnShowDesc;
+                Root->OnShow[Key] = EmptyOnShowDesc;
         }
+
+        Root->SyncLineOnUI(Key, Val);
     }
     else
     {
-        Ret = it->second.Merge(Line.second, Mode);
-    }
-
-    auto RootRData = IBR_Inst_Project.GetSection(Root->GetThisDesc()).GetSectionData();
-    if (RootRData && RootRData->ActiveLines.contains(Line.first))
-    {
-        auto& in = RootRData->ActiveLines[Line.first].Edit.Input;
-        if (in)in->Form->ParseFromString(Line.second);
+        Ret = it->second.Merge(Value, Mode);
+        Root->SyncLineOnUI(Key, Value);
     }
 
     if (NoUpdate) return Ret;

@@ -389,8 +389,8 @@ namespace IBR_LinkNode
         {
             if (IsInherit)
             {
-                auto w = UTF8toUnicode((Data.Desc.Ini + " -> " + Data.DisplayName));
-                ImGui::Text(UnicodetoUTF8(std::vformat(locw("GUI_InheritTo"), std::make_wformat_args(w))).c_str());
+                auto ws = UTF8toUnicode((Data.Desc.Ini + " -> " + Data.DisplayName));
+                ImGui::Text(UnicodetoUTF8(std::vformat(locw("GUI_InheritTo"), std::make_wformat_args(ws))).c_str());
             }
             else ImGui::Text((Data.Desc.Ini + " -> " + Data.DisplayName + " : " + KeyName).c_str());
 

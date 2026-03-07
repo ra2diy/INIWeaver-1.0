@@ -257,15 +257,17 @@ bool IBB_Section::SetText(const std::vector<IniToken>& Tokens)
             }
             auto& Sub = SubSecs.at(It->second);
             {
-                if (!Sub.AddLine({ tok.Key,tok.Value }, false, IBB_IniMergeMode::Replace))Ret = false;
-                if (tok.HasDesc)
-                {
-                    if (tok.Desc.empty())OnShow[tok.Key] = EmptyOnShowDesc;
-                    else OnShow[tok.Key] = tok.Desc;
-                }
-                else OnShow.erase(tok.Key);
+                if (!Sub.MergeLine( tok.Key, tok.Value, false, IBB_IniMergeMode::Replace, false))Ret = false;
             }
         }
+
+        if (tok.HasDesc)
+        {
+            if (tok.Desc.empty())OnShow[tok.Key] = EmptyOnShowDesc;
+            else OnShow[tok.Key] = tok.Desc;
+        }
+        else OnShow.erase(tok.Key);
+
         if(!UsedKeys.contains(tok.Key))
             LineOrder.push_back(tok.Key);
     };
@@ -282,6 +284,8 @@ bool IBB_Section::SetText(const std::vector<IniToken>& Tokens)
         if (tok.Empty || tok.IsSection)continue;
         u(tok);
     }
+
+    UpdateAll();
 
     return Ret;
 }
@@ -737,10 +741,10 @@ bool IBB_Section::GenerateLines(const IBB_VariableList& Par, const std::vector<s
     bool RemakeOrder = Order.empty();
     LineOrder = Order;
     std::unordered_map<IBB_SubSec_Default*, int> SubSecList;
-    for (const auto& L : Par.Value)
+    for (const auto& [Key, Value] : Par.Value)
     {
-        auto ptr = IBF_Inst_DefaultTypeList.List.KeyBelongToSubSec(L.first);
-        if (ptr == nullptr)UnknownLines.Value[L.first] = L.second;
+        auto ptr = IBF_Inst_DefaultTypeList.List.KeyBelongToSubSec(Key);
+        if (ptr == nullptr)UnknownLines.Value[Key] = Value;
         else
         {
             auto It = SubSecList.find(ptr);
@@ -751,8 +755,8 @@ bool IBB_Section::GenerateLines(const IBB_VariableList& Par, const std::vector<s
                  SubSecs.emplace_back(ptr, this);
             }
             auto& Sub = SubSecs.at(It->second);
-            if (!Sub.AddLine(L, InitOnShow, IBB_IniMergeMode::Replace))Ret = false;
-            if (RemakeOrder)LineOrder.push_back(L.first);
+            if (!Sub.MergeLine(Key, Value, InitOnShow, IBB_IniMergeMode::Replace))Ret = false;
+            if (RemakeOrder)LineOrder.push_back(Key);
         }
     }
     return Ret;
@@ -854,42 +858,75 @@ bool IBB_Section::Merge(const IBB_Section& Another, IBB_IniMergeMode MergeType, 
 
 const std::vector<std::string>& SplitParamCached(const std::string& Text);
 
+bool IBB_Section::SetUnknownLineAndSync(const std::string& Key, const std::string& Value)
+{
+    PushLineOrder(Key);
+    UnknownLines.Value[Key] = Value;
+    SyncLineOnUI(Key, Value);
+    return true;
+}
+
+void IBB_Section::SyncLineOnUI(const std::string& Key, const std::string& Value) const
+{
+    auto RSec = IBR_Inst_Project.GetSection(GetThisDesc());
+    IBRF_CoreBump.SendToR({ [=] {
+        if(IBR_EditFrame::CurSection.ID == RSec.ID)
+            IBR_EditFrame::UpdateLine(Key, Value);
+    } });
+    auto RootRData = RSec.GetSectionData();
+    if (RootRData && RootRData->ActiveLines.contains(Key))
+    {
+        auto& in = RootRData->ActiveLines[Key].Edit.Input;
+        if (in)in->Form->ParseFromString(Value);
+    }
+}
+
+//返回Def对应的SubSec，若没有则构造一个新的SubSec并返回
+IBB_SubSec& IBB_Section::GetSubSecByDef(IBB_SubSec_Default* Def)
+{
+    auto It = std::find_if(SubSecs.begin(), SubSecs.end(), [&](const IBB_SubSec& su) {return su.Default == Def; });
+    if (It == SubSecs.end())
+    {
+        SubSecs.emplace_back(Def, this);
+        It = std::prev(SubSecs.end());
+    }
+    auto& Sub = *It;
+    return Sub;
+}
+
+//返回包含Key的SubSec，若没有则构造一个新的SubSec并返回
+IBB_SubSec& IBB_Section::GetSubSecByLine(const std::string& Key)
+{
+    auto ptr = IBF_Inst_DefaultTypeList.List.KeyBelongToSubSec(Key);
+    return GetSubSecByDef(ptr);
+}
+
 bool IBB_Section::MergeLine(const std::string& Key, const std::string& Value, IBB_IniMergeMode Mode, bool NoUpdate)
 {
-    /*sprintf_s(LogBufB, __FUNCTION__ ": Section %s : Merge %s=%s Mode=%d NoUpdate=%s",
+    sprintf_s(LogBufB, __FUNCTION__ ": Section %s : Merge %s=%s Mode=%d NoUpdate=%s\n",
         GetThisDesc().GetText().c_str(), Key.c_str(), Value.c_str(), Mode, IBD_BoolStr(NoUpdate));
-    GlobalLogB.AddLog(LogBufB);*/
+    OutputDebugStringA(LogBufB);
+    //GlobalLogB.AddLog(LogBufB);
     switch (Mode)
     {
     case IBB_IniMergeMode::Replace:
     {
         auto ptr = IBF_Inst_DefaultTypeList.List.KeyBelongToSubSec(Key);
-        PushLineOrder(Key);
         if (ptr == nullptr)
         {
-            UnknownLines.Value[Key] = Value;
-            IBRF_CoreBump.SendToR({ [=] {IBR_EditFrame::UpdateLine(Key, Value); } });
+            SetUnknownLineAndSync(Key, Value);
             return true;
         }
         else
         {
-            auto It = std::find_if(SubSecs.begin(), SubSecs.end(), [&](const IBB_SubSec& su) {return su.Default == ptr; });
-            if (It == SubSecs.end())
-            {
-                SubSecs.emplace_back(ptr, this);
-                It = std::prev(SubSecs.end());
-            }
-            auto& Sub = *It;
-            IBRF_CoreBump.SendToR({ [=] {IBR_EditFrame::UpdateLine(Key, Value); } });
-            return Sub.AddLine({ Key, Value }, false, IBB_IniMergeMode::Replace, NoUpdate);
+            PushLineOrder(Key);
+            auto& Sub = GetSubSecByDef(ptr);
+            return Sub.MergeLine(Key, Value, false, IBB_IniMergeMode::Replace, NoUpdate);
         }
     }
     case IBB_IniMergeMode::Merge:
     {
         auto ptr = IBF_Inst_DefaultTypeList.List.KeyBelongToSubSec(Key);
-        bool Unique = std::ranges::all_of(LineOrder, [&](const auto& elem) { return elem != Key; });
-        if (Unique)LineOrder.push_back(Key);
-
         const auto MergeVal = [](const std::string & Orig, const std::string & Value)->std::string
         {
             auto & pv = SplitParamCached(Orig);
@@ -907,25 +944,19 @@ bool IBB_Section::MergeLine(const std::string& Key, const std::string& Value, IB
 
         if (ptr == nullptr)
         {
-            UnknownLines.Value[Key] = MergeVal(UnknownLines.Value[Key], Value);
-            IBRF_CoreBump.SendToR({ [=] {IBR_EditFrame::UpdateLine(Key, Value); } });
+            auto NewVal = MergeVal(UnknownLines.Value[Key], Value);
+            SetUnknownLineAndSync(Key, NewVal);
             return true;
         }
         else
         {
-            auto It = std::find_if(SubSecs.begin(), SubSecs.end(), [&](const IBB_SubSec& su) {return su.Default == ptr; });
-            if (It == SubSecs.end())
-            {
-                SubSecs.emplace_back(ptr, this);
-                It = std::prev(SubSecs.end());
-            }
-            auto& Sub = *It;
+            PushLineOrder(Key);
+            auto& Sub = GetSubSecByDef(ptr);
             auto LineIt = Sub.Lines.find(Key);
             std::string NewVal;
             if (LineIt == Sub.Lines.end())NewVal = Value;
             else NewVal = MergeVal(LineIt->second.Data->GetString(), Value);
-            IBRF_CoreBump.SendToR({ [=] {IBR_EditFrame::UpdateLine(Key, NewVal); } });
-            return Sub.AddLine({ Key, NewVal }, false, IBB_IniMergeMode::Replace, NoUpdate);
+            return Sub.MergeLine(Key, NewVal, false, IBB_IniMergeMode::Replace, NoUpdate);
         }
         return true;
     }

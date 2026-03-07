@@ -54,7 +54,9 @@ bool IBR_InputManager::RenderUI()
     ImGui::EndGroup();
     if (Result.Changed)
     {
-        AfterInput(Form->GetFormattedString());
+        //创建新字符串并传递给回调函数，避免在回调函数中访问已被销毁的内部状态
+        auto S = Form->GetFormattedString();
+        AfterInput(S);
     }
     if (Result.Active)IBR_WorkSpace::OperateOnText = true;
     return Result.Active;
@@ -419,36 +421,7 @@ namespace IBR_EditFrame
     void AFTER_INTERRUPT_F Modify(const std::string& s, BufferedLine& L)
     {
         auto back = CurSection.GetBack();
-        auto data = CurSection.GetSectionData();
-        if (L.Known)
-        {
-            auto [Line, Sub] = back->GetLineFromSubSecsEx2(s);
-            if (Line)
-            {
-                IBG_Undo.SomethingShouldBeHere();
-                Line->Data->SetValue(L.Buffer);
-                Sub->TriggerUpdate();
-            }
-            else
-            {
-                MessageBoxW(NULL, L"back->GetLineFromSubSecs(s) == nullptr", L"IBR_EditFrame::RenderUI", MB_OK);
-            }
-        }
-        else
-        {
-            back->UnknownLines.Value[s] = L.Buffer;
-        }
-        {
-            //SYNC : EDIT MENU -> WORKSPACE
-            auto it = data->ActiveLines.find(s);
-            if (it != data->ActiveLines.end())
-            {
-                if (it->second.Edit.Input && it->second.Edit.Input->Form)
-                    it->second.Edit.Input->Form->ParseFromString(L.Buffer);
-                //IBR_HintManager::SetHint("Sync : EDIT -> WS ACTIVE", HintStayTimeMillis);
-            }
-            //else IBR_HintManager::SetHint("Sync : EDIT -> WS INACTIVE", HintStayTimeMillis);
-        }
+        back->MergeLine(s, L.Buffer, IBB_IniMergeMode::Replace, false);
     }
 
     void RenderUI_NewLine(IBB_Section* pbk)
