@@ -175,7 +175,7 @@ const std::string& IBG_InputForm::RegenFormattedString()
     //实际上没使用出来的值，所以直接入TmpFmt即可。
     for (auto& IC : *InputComponents)
         IC->FormatValue(ValueContainer, ValueContainer.GetValue(IC->GetCurrentTargetValueID()), TmpFmt);
-    GetFormattedString();
+    return GetFormattedString();
 }
 
 const std::string& IBG_InputForm::GetFormattedString()
