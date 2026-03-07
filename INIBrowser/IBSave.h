@@ -15,8 +15,8 @@ namespace InsertLoad
     struct SelectFileRet
     {
         std::wstring RetBuf;
-        int PathOffset;
-        bool Success;
+        int PathOffset{ 0 };
+        bool Success{ true };
     };
 
     SelectFileRet SelectFileName(HWND Root, const SelectFileType& Type, BOOL(_stdcall* Proc)(LPOPENFILENAMEW), bool UseFolder);

@@ -293,7 +293,7 @@ namespace Initialize
         CrashFinishEvent = CreateEventW(NULL, TRUE, FALSE, NULL);
         SetUnhandledExceptionFilter(TopLevelFilter);
         HANDLE hThread = CreateThread(NULL, 0, CrashLoggerThread, NULL, 0, NULL);
-        CloseHandle(hThread);
+        if (hThread != NULL)CloseHandle(hThread);
     }
 
     void CheckFontAtlas()

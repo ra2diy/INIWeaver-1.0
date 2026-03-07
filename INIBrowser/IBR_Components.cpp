@@ -885,23 +885,12 @@ namespace IBR_HintManager
         if (HasSet && IsCountDown && CountDownTimer.GetMilli() > CountDownMillis)Clear();
         if (HasSet && HasCustom)
             if (!CustomFn(CustomHint))Clear();
-
         DList->AddRectFilled({ 0.0f,(float)IBR_UICondition::CurrentScreenHeight - GetHeight() },
             { (float)IBR_UICondition::CurrentScreenWidth ,(float)IBR_UICondition::CurrentScreenHeight },
             ImColor(ImGui::GetStyleColorVec4(ImGuiCol_WindowBg)));
         DList->AddLine({ 0.0f,(float)IBR_UICondition::CurrentScreenHeight - GetHeight() },
             { (float)IBR_UICondition::CurrentScreenWidth,(float)IBR_UICondition::CurrentScreenHeight - GetHeight() },
             ImColor(ImGui::GetStyleColorVec4(ImGuiCol_Border)), 1.0f);
-        /*
-        if (_TempSelectLink::IsInLink())
-        {
-            const char* Tx = u8"左键单击选择，右键取消";
-            DList->AddText({ FontHeight * 0.8f,(float)IBR_UICondition::CurrentScreenHeight - FontHeight * 1.25f },
-                ImColor(ImGui::GetStyleColorVec4(ImGuiCol_Text)),
-                Tx, Tx + strlen(Tx));
-        }
-        else*/
-
         if (!Hint.empty() || HasSet)
         {
             const std::string& HintStr = GetHint();
@@ -949,7 +938,6 @@ namespace IBR_WorkSpace
 
 namespace IBR_SelectMode
 {
-    Mode CurrentMode;
     bool InSelectProcess;
     std::vector<ModuleID_t> MassSelectWindows;
     std::set<IBB_Section_Desc> MassSelectWindowsDesc;
@@ -960,30 +948,6 @@ namespace IBR_SelectMode
     bool IsWindowMassSelected(const IBB_Section_Desc& Desc)
     {
         return (IBR_WorkSpace::IsMassSelecting || IBR_WorkSpace::IsMassAfter) && MassSelectWindowsDesc.count(Desc) != 0;
-    }
-    void EnterSelectMode(const Mode& Mode)
-    {
-        if (!InSelectProcess)
-        {
-            InSelectProcess = true;
-            CurrentMode = Mode;
-        }
-    }
-    void ExitSelectMode(IBR_Section Section, ImVec2 ClickRePos)
-    {
-        if (InSelectProcess)
-        {
-            InSelectProcess = false;
-            CurrentMode.Exit(Section, ClickRePos);
-        }
-    }
-    void CancelSelectMode()
-    {
-        if (InSelectProcess)
-        {
-            InSelectProcess = false;
-            CurrentMode.Cancel();
-        }
     }
     void UpdateMassSelect()
     {
@@ -1046,59 +1010,9 @@ namespace IBR_SelectMode
             DList->PopClipRect();
         }
     }
-    void RenderUI_SelectProcess()
-    {
-        if (InSelectProcess)
-        {
-            auto& WUL = IBR_RealCenter::WorkSpaceUL, WDR = IBR_RealCenter::WorkSpaceDR;
-            ImDrawList* DList = ImGui::GetForegroundDrawList();
-            ModuleID_t HoverId = ULLONG_MAX;
-            if (CurrentMode.RestrictedToSections)
-            {
-                for (auto& sp : IBR_Inst_Project.IBR_SectionMap)
-                {
-                    if (!IBR_Inst_Project.GetSectionFromID(sp.first).HasBack())continue;
-                    auto ReUL = IBR_WorkSpace::EqPosToRePos(sp.second.EqPos), ReDR = IBR_WorkSpace::EqPosToRePos(sp.second.EqPos + sp.second.EqSize);
-                    auto [ok, NUL, NDR] = RectangleCross(ReUL, ReDR, WUL, WDR);
-                    if (ok)DList->AddRectFilled(NUL, NDR, IBR_Color::ForegroundCoverColor);
-
-                    if (sp.second.Hovered)HoverId = sp.first;
-                }
-            }
-            else
-            {
-                DList->AddRectFilled(WUL, WDR, IBR_Color::ForegroundCoverColor);
-            }
-            auto& io = ImGui::GetIO();
-            if (IBR_WorkSpace::InWorkSpace(io.MousePos))
-            {
-                DList->AddCircle(io.MousePos, 5.0f, IBR_Color::LinkingLineColor, 0, 2.0f);
-
-                bool RC = ImGui::IsMouseClicked(ImGuiMouseButton_Right), LC = ImGui::IsMouseClicked(ImGuiMouseButton_Left);
-                if (RC && (!LC))CancelSelectMode();
-                if (LC && (!RC))
-                {
-                    if (CurrentMode.RestrictedToSections)
-                    {
-                        if (HoverId != ULLONG_MAX)ExitSelectMode(IBR_Inst_Project.GetSectionFromID(HoverId), io.MousePos);
-                    }
-                    else ExitSelectMode(IBR_Inst_Project.GetSectionFromID(ULLONG_MAX), io.MousePos);
-                }
-            }
-        }
-    }
     void RenderUI()
     {
         UpdateMassSelect();
         RenderUI_MassSelect();
-        RenderUI_SelectProcess();
-    }
-    bool InSelectMode()
-    {
-        return InSelectProcess;
-    }
-    const Mode& CurrentSelectMode()
-    {
-        return CurrentMode;
     }
 }

@@ -87,7 +87,6 @@ namespace IBR_ProjectManager
             IBR_Inst_Project.Clear();
             IBG_Undo.Clear();
             IBR_WorkSpace::Close();
-            IBR_SelectMode::CancelSelectMode();
             IBR_EditFrame::Clear();
             IBR_PopupManager::ClearRightClickMenu();
             IBR_ListView::ClearSort();
@@ -762,11 +761,12 @@ namespace IBR_ProjectManager
                     { FontHeight * 10.0f, FontHeight * 7.0f }, false, true)));
             }
         }
+        auto ShapeCnt = Shapes.size();
         if (!Shapes.empty())
         IBR_PopupManager::SetCurrentPopup(std::move(IBR_PopupManager::Popup{}
             .CreateModal(loc("GUI_LoadFile"), false)
             .SetFlag(ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize)
-            .SetSize({ FontHeight * 20.0f, FontHeight * 6.0f + std::min(Shapes.size(), size_t(6)) * FontHeight * 2.0f })
+            .SetSize({ FontHeight * 20.0f, FontHeight * 6.0f + std::min(ShapeCnt, size_t(6)) * FontHeight * 2.0f })
             .PushMsgBack([SHP=std::move(Shapes)]() mutable
                 {
                     ImGui::Text(locc("GUI_SHPToLoad"));

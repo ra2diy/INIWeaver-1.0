@@ -8,20 +8,9 @@ struct IBB_Section_Desc;
 
 namespace IBR_SelectMode
 {
-    struct Mode
-    {
-        bool RestrictedToSections;
-        std::function<void(IBR_Section, ImVec2)>Exit;
-        StdMessage Cancel;
-    };
     const std::vector<ModuleID_t>& GetMassSelected();
     bool IsWindowMassSelected(const IBB_Section_Desc& Desc);
-    void EnterSelectMode(const Mode& Mode);
-    void ExitSelectMode(IBR_Section Section, ImVec2 ClickRePos);
-    void CancelSelectMode();
     void RenderUI();
-    bool InSelectMode();
-    const Mode& CurrentSelectMode();
 }
 
 namespace IBR_DynamicData
