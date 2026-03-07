@@ -40,65 +40,12 @@ void MergeList(std::vector<std::string>& Value, const std::string& Str)
     //Value.erase(std::remove_if(Value.begin(), Value.end(), [&](const std::string& s)->bool {return !SS.insert(s).second; }), Value.end());
 }
 
-
-//std::string DecodeListForExport(const std::string& Val)
-//{
-//    if (Val.empty())return "";
-//    IBB_Section_Desc Desc{ Internal_IniName, Val };
-//    auto pSec = IBF_Inst_Project.Project.GetSec(Desc);
-//    if (pSec && pSec->IsLinkGroup)
-//    {
-//        std::string R;
-//        for (auto& V : pSec->LinkGroup_NewLinkTo)
-//        {
-//            auto pp = V.To.GetSec(IBF_Inst_Project.Project);
-//            if (pp)
-//            {
-//                R += pp->Name;
-//                R += ',';
-//            }
-//        }
-//        if (!R.empty())R.pop_back();
-//        return R;
-//    }
-//    else
-//    {
-//        return Val;
-//    }
-//}
-//
-//std::string IBB_IniLine_DataList::GetString() const
-//{
-//    std::string Ret;
-//    for (auto& V : Value)
-//    {
-//        Ret += V;
-//        Ret.push_back(',');
-//    }
-//    if (!Ret.empty())Ret.pop_back();
-//    return Ret;
-//}
-//std::string IBB_IniLine_DataList::GetStringForExport() const
-//{
-//    std::string Ret;
-//    for (auto& V : Value)
-//    {
-//        Ret += DecodeListForExport(V);
-//        Ret.push_back(',');
-//    }
-//    if (!Ret.empty())Ret.pop_back();
-//    return Ret;
-//}
-
-extern const char* DefaultAltPropType;
-extern const char* LinkAltPropType;
-
 std::string IBB_NewLink::GetText() const
 {
     return "FROM " + From.operator IBB_Section_Desc().GetText() + "." + FromKey + " TO " + To.operator IBB_Section_Desc().GetText();
 }
 
-IBB_SubSec::IBB_SubSec(IBB_SubSec&& A) :
+IBB_SubSec::IBB_SubSec(IBB_SubSec&& A) noexcept :
     Root(A.Root), Default(A.Default), Lines_ByName(std::move(A.Lines_ByName)), Lines(std::move(A.Lines)), NewLinkTo(std::move(A.NewLinkTo))
 {}
 
@@ -336,24 +283,13 @@ bool IBB_SubSec::RenameInLinkTo(size_t LinkIdx, const std::string& OldName, cons
             //没有值，跳过
             if (!iif->GetValues().Values.contains(vid)) continue;
 
-            /*OutputDebugStringA(std::format("link : {}\n", Link.GetText()).c_str());
-            OutputDebugStringA(std::format("vid : {}\n", vid).c_str());
-            OutputDebugStringA(std::format("name : {} -> {}\n", OldName, NewName).c_str());
-            OutputDebugStringA("Values : \n");
-            for (auto& [i, v] : iif->GetValues().Values)
-                OutputDebugStringA(std::format("{} : {}\n", i, v.Value).c_str());*/
-
             iif->GetValue(vid).Value = SplitParamCached(iif->GetValue(vid).Value) |
                 std::views::filter([&](auto&& s) {return !s.empty(); }) |
                 std::views::transform([&](auto& s) { return (s == OldName) ? NewName : s; }) |
                 std::views::join_with(',') |
                 std::ranges::to<std::string>();
 
-            //OutputDebugStringA(std::format("Value at {} : {}\n", vid, iif->GetValue(vid).Value).c_str());
-
             auto& NewVal = iif->RegenFormattedString();
-
-            //OutputDebugStringA(std::format("NewVal : {}\n", NewVal).c_str());
 
             Ret &= Root->MergeLine(Key, NewVal, IBB_IniMergeMode::Replace, true);
         }
@@ -369,33 +305,6 @@ void IBB_SubSec::GenerateAsDuplicate(const IBB_SubSec& Src)
     NewLinkTo = Src.NewLinkTo;
     Lines.reserve(Src.Lines.size());
     for (const auto& p : Src.Lines)Lines.insert({ p.first,p.second.Duplicate() });
-}
-
-bool IBB_SubSec::TriggerUpdate()
-{
-    auto Ret = true;
-    auto& Proj = *Root->Root->Root;
-    Ret &= UpdateAll();
-    auto SubLinkTo =  Root->SubSecs |
-        std::views::transform([&](auto& ss) {return ss.NewLinkTo; }) |
-        std::views::join;
-    for (auto& Link : NewLinkTo)
-    {
-        auto pSec = Link.To.GetSec(Proj);
-        if (pSec != Root && pSec)
-        {
-            Ret &= pSec->UpdateAll();
-            pSec->NewLinkedBy = pSec->NewLinkedBy |
-                std::views::filter([&](auto& l) { return l.From != Root->GetThisIndex(); }) |
-                std::ranges::to<std::vector>();
-            if (Root->IsLinkGroup)
-                pSec->NewLinkedBy.append_range(Root->LinkGroup_NewLinkTo);
-            else
-                pSec->NewLinkedBy.append_range(SubLinkTo);
-
-        }
-    }
-    return Ret;
 }
 
 bool IBB_SubSec::UpdateAll()
@@ -465,11 +374,6 @@ bool IBB_SubSec::UpdateAll()
             {
                 if (!val.Values.contains(id))continue;
                 auto& V = val.Values[id];
-                /*GlobalLogB.AddLog("IBB_SubSec::UpdateAll Line : ", false);
-                GlobalLogB.AddLog(L.c_str(), false);
-                GlobalLogB.AddLog("=", false);
-                GlobalLogB.AddLog(V.Value.c_str());
-                GlobalLogB.AddLog("Result : ", false);*/
                 
                 auto& piic = iif->InputComponents->at(cidx);
                 auto LinkLimit = piic->UseCustomSetting ? piic->NodeSetting.LinkLimit : DefaultLinkLimit;
@@ -533,17 +437,5 @@ bool IBB_SubSec::UpdateAll()
     return Ret;
 }
 
-/*
-{
-    bool TemporaryCheck = true;
-    if (Lines.size() != Lines_ByName.size())
-        TemporaryCheck = false;
-    else for (auto& L : Lines_ByName)
-    {
-        if (!Lines.contains(L))TemporaryCheck = false;
-    }
-    if (!TemporaryCheck)
-        throw std::exception("wo yao yan pai", 1);
-}
-*/
+
 

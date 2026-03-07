@@ -176,7 +176,7 @@ struct IBB_SubSec
     IBB_SubSec() {}
     IBB_SubSec(IBB_SubSec_Default* D, IBB_Section* R) : Default(D), Root(R) {}
     IBB_SubSec(const IBB_SubSec&) = default;
-    IBB_SubSec(IBB_SubSec&& A);
+    IBB_SubSec(IBB_SubSec&& A) noexcept;
 
     bool Merge(const IBB_SubSec& Another, const std::unordered_map<std::string, IBB_IniMergeMode>& MergeType, bool IsDuplicate);
     bool Merge(const IBB_SubSec& Another, IBB_IniMergeMode Mode, bool IsDuplicate);
@@ -192,7 +192,6 @@ struct IBB_SubSec
     bool CanOwnKey(const std::string& Key) const;
 
     bool UpdateAll();
-    bool TriggerUpdate();
 
     bool MergeLine(const std::string& Key, const std::string& Value, bool InitOnShow, IBB_IniMergeMode Mode, bool NoUpdate = false);
     bool ChangeRoot(IBB_Section* NewRoot);

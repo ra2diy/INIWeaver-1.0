@@ -11,8 +11,6 @@
 const char* InheritSubSecName = "A__INHERIT_SUBSEC";
 const char* DefaultSubSecName = "B__DEFAULT_SUBSEC";
 const char* ImportSubSecName  = "D__IMPORT_SUBSEC";
-const char* DefaultAltPropType = "\"D\"";
-const char* LinkAltPropType = "\"L\"";
 
 void IBB_DefaultTypeList::EnsureType(const IBB_DefaultTypeAlt& D, std::set<std::string>* UsedStrings)
 {
