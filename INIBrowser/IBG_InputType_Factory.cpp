@@ -425,6 +425,18 @@ IFCVPtr InputFormComponentFactory::CreateFormatComponentVector(IBB_ValueContaine
     HasError = false;
     for (auto& item : Obj.GetArrayObject())
     {
+        if (item.IsTypeObject() && item.HasItem("ValueList"))
+        {
+            auto List = item.ItemArrayInt("ValueList");
+            for (auto& vid : List)
+            {
+                FormatComponents->push_back(std::make_unique<IFC_ToString>(vid));
+                FormatComponents->push_back(std::make_unique<IFC_PureText>(","));
+            }
+            if(!List.empty())FormatComponents->pop_back();
+            continue;
+        }
+
         auto comp = InputFormComponentFactory::CreateFormatComponent(Cont, item);
         if (comp)
             FormatComponents->emplace_back(std::move(comp));
@@ -440,6 +452,23 @@ IFCVPtr InputFormComponentFactory::CreateFormatComponentVector(IBB_ValueContaine
     return FormatComponents;
 }
 
+ILFVPtr InputFormComponentFactory::CreateLineFormatVector(IBB_ValueContainer& Cont, const JsonObject& Obj, bool& HasError)
+{
+    auto LineFormats = std::make_shared<std::vector<IBB_LineFormat>>();
+    HasError = false;
+    for (auto& o : Obj.GetArrayObject())
+    {
+        auto oKey = o.GetObjectItem("Key");
+        auto oValue = o.GetObjectItem("Value");
+        if (oKey && oValue)
+        {
+            auto pifckey = CreateFormatComponentVector(Cont, oKey, HasError);
+            auto pifcvalue = CreateFormatComponentVector(Cont, oValue, HasError);
+            LineFormats->emplace_back(pifckey, pifcvalue);
+        }
+    }
+    return LineFormats;
+}
 
 // ======== LOADING ==========
 

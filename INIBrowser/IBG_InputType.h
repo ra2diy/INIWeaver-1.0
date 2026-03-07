@@ -133,6 +133,7 @@ struct InputFormComponentFactory
 
     static IICVPtr CreateInputComponentVector(IBB_ValueContainer& Cont, const JsonObject& Obj, bool& HasError);
     static IFCVPtr CreateFormatComponentVector(IBB_ValueContainer& Cont, const JsonObject& Obj, bool& HasError);
+    static ILFVPtr CreateLineFormatVector(IBB_ValueContainer& Cont, const JsonObject& Obj, bool& HasError);
 };
 
 struct IBB_ValueContainer
@@ -209,6 +210,12 @@ struct IICDescStr
 {
     std::string Short, Long;
     static IICDescStr Load(JsonObject Obj);
+};
+
+struct IBB_LineFormat
+{
+    IFCVPtr Key;
+    IFCVPtr Value;
 };
 
 StrBoolType StrBoolTypeFromString(const std::string& str, StrBoolType Default);

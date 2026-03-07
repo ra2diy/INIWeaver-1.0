@@ -95,9 +95,8 @@ namespace KVFormatter
             };
     }
 
-    KVFormatter_t Recompose(IFCVPtr SaveFormat, IFCVPtr ExportKey, IFCVPtr ExportValue, IBB_ValueContainer&& Values)
+    KVFormatter_t Recompose(IICVPtr SaveInput, IFCVPtr SaveFormat, ILFVPtr ExportLines, IBB_ValueContainer&& Values)
     {
-        static IICVPtr piicv = std::make_shared<std::vector<IICPtr>>();
         return[=, Vals = std::move(Values)](IBB_VariableList& Dest, const std::string& Key, const std::string& Value, std::vector<std::string>* TmpLineOrder, IBB_Section* AtSec)
             {
                 IM_UNUSED(AtSec);
@@ -107,22 +106,23 @@ namespace KVFormatter
 
                 //Initialize InputForm
                 IBG_InputForm Form;
-                Form.InputComponents = piicv;
+                Form.InputComponents = SaveInput;
                 Form.ResetState();
                 Form.SetValues(Vals);
 
                 //Parse and recompose
                 Form.FormatComponents = SaveFormat;
                 Form.ParseFromString(Value);
-                Form.FormatComponents = ExportKey;
-                auto K = Form.GetFormattedString();
-                Form.FormatComponents = ExportValue;
-                auto V = Form.GetFormattedString();
 
-                //Add new line
-                Dest.Value[K] = V;
-                AddUniqueTmpLine(TmpLineOrder, K);
-
+                for (auto&& [ExportKey, ExportValue] : *ExportLines)
+                {
+                    Form.FormatComponents = ExportKey;
+                    auto K = Form.RegenFormattedString();
+                    Form.FormatComponents = ExportValue;
+                    auto V = Form.RegenFormattedString();
+                    Dest.Value[K] = V;
+                    AddUniqueTmpLine(TmpLineOrder, K);
+                }
                 //Reset Context
                 ExportContext::Key.clear();
             };
@@ -159,13 +159,14 @@ namespace KVFormatterFactory
             else if (Type == "Recompose")
             {
                 auto& SaveFormat = AtType.Sidebar->FormatComponents;
-                auto oExportKey = j.GetObjectItem("ExportKey");
-                auto oExportValue = j.GetObjectItem("ExportValue");
+                auto& SaveInput = AtType.Sidebar->InputComponents;
+                auto oExportLines = j.GetObjectItem("ExportLines");
+                if(!oExportLines)return Default();
                 IBB_ValueContainer TmpCont;
                 bool HasError;
-                auto ExportKey = InputFormComponentFactory::CreateFormatComponentVector(TmpCont, oExportKey, HasError);
-                auto ExportValue = InputFormComponentFactory::CreateFormatComponentVector(TmpCont, oExportValue, HasError);
-                return Recompose(SaveFormat, ExportKey, ExportValue, std::move(TmpCont));
+                auto ExportLines = InputFormComponentFactory::CreateLineFormatVector(TmpCont, oExportLines, HasError);
+                if(HasError)return Default();
+                return Recompose(SaveInput, SaveFormat, ExportLines, std::move(TmpCont));
             }
             else return Default();
         }

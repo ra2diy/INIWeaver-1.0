@@ -10,7 +10,7 @@ namespace KVFormatter
     KVFormatter_t Default();
     KVFormatter_t SplitValue(const std::string& delim);
     KVFormatter_t ImportAllModules(const std::string& delim, const std::string& INIType, bool MergeTargetOnExport);
-    KVFormatter_t Recompose(IFCVPtr SaveFormat, IFCVPtr ExportKey, IFCVPtr ExportValue, IBB_ValueContainer&& Values);
+    KVFormatter_t Recompose(IICVPtr SaveInput, IFCVPtr SaveFormat, ILFVPtr ExportLines, IBB_ValueContainer&& Values);
 }
 
 namespace KVFormatterFactory
