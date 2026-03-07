@@ -469,6 +469,55 @@ namespace IBR_EditFrame
         EditStringWithOptions(Active, NewLineKey, IBF_Inst_DefaultTypeList.List.Query.InputTextOptions);
     }
 
+    void RenderUI_SwitchToText()
+    {
+        if (ImGui::Button(locc("GUI_SwitchToTextEdit")))
+        {
+            IBR_EditFrame::SwitchToText();
+            return;
+        }
+    }
+
+    //此处关联了IBR_Project::RenameAll() & ModuleClipData::NeedtoMangle()
+    //记得同时修改
+    bool NeedtoMangle(IBB_Section* pbk)
+    {
+        bool P = false;
+        std::string W{}, Q{};
+        W = pbk->VarList.GetVariable("_InitialSecName");
+        Q = pbk->VarList.GetVariable("UseOwnName");
+        if (W == pbk->Name && !IsTrueString(Q))
+        {
+            P = true;
+        }
+        if (W.empty())P = true;
+        return P;
+    }
+
+    void RenderUI_UseOwnName(IBB_Section* pbk)
+    {
+        bool N = NeedtoMangle(pbk);
+        bool P = N;
+        ImGui::Checkbox(locc("GUI_RefreshRegisterOnPaste"), &P);
+        if (P != N)
+        {
+            if (P)
+            {
+                //Set 1
+                pbk->VarList.Value["_OldInitSecName"] = pbk->VarList.Value["_InitialSecName"];
+                pbk->VarList.Value.erase("_InitialSecName");
+            }
+            else
+            {
+                //Set 0
+                auto& Str = pbk->VarList.Value["_OldInitSecName"];
+                //生成一个随机的、不可能是ModuleTag的初始名字
+                if(Str.empty())Str = GenerateModuleTag() + RandStr(4);
+                pbk->VarList.Value["_InitialSecName"] = GenerateModuleTag() + RandStr(4); 
+            }
+        }
+    }
+
     void RenderUI_TextEdit()
     {
 
@@ -577,11 +626,9 @@ namespace IBR_EditFrame
                 return;
             }
 
-            if (ImGui::Button(locc("GUI_SwitchToTextEdit")))
-            {
-                IBR_EditFrame::SwitchToText();
-                return;
-            }
+            RenderUI_SwitchToText();
+            ImGui::SameLine();
+            RenderUI_UseOwnName(pbk);
 
             RenderUI_NewLine(pbk);
 

@@ -449,6 +449,7 @@ namespace IBR_WorkSpace
 
 namespace IBR_TopMost
 {
+    extern const char* LayerName;
     using RenderPayload = std::function<void(ImDrawList* DList)>;
 
     void CommitText(const ImVec2& pos, ImU32 col, const char* text, int Priority = 0);

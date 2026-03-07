@@ -178,6 +178,7 @@ namespace IBR_WorkSpace
     float RatioPrev;
     bool IsBgDragging;
     ImVec2 DragStartMouse, DragStartEqCenter, DragStartReCenter, InitialMassCenter;
+    ImVec2 HoldingStartEqMouse, HoldingStartEqDelta;
     ImVec2 ExtraMove, MousePosExt, DragStartEqMouse, DragCurMouse, DragCurEqMouse;
     int UpdatePrevResult;
     bool LastClickable{ false }, LastOnWindow{ true }, LastCont{ false }, Cont{ false };
@@ -277,7 +278,7 @@ namespace IBR_WorkSpace
         auto DeltaEq = ET / -IBR_FullView::Ratio;
         for (auto& [ID, Data] : IBR_Inst_Project.IBR_SectionMap)
             if (Data.Dragging)
-                Data.EqPos = MouseEq + Data.EqDelta;
+                Data.EqPos = MouseEq + HoldingStartEqDelta + Data.EqDelta;
     }
     void UpdateScrollMassSelect(const ImVec2& MousePos)
     {
@@ -849,7 +850,8 @@ namespace IBR_WorkSpace
                 w->Hidden ||
                 (w->Flags & ImGuiWindowFlags_Popup) ||
                 w->IsFallbackWindow ||
-                !w->LastFrameRendered
+                !w->LastFrameRendered ||
+                !strcmp(w->Name ,IBR_TopMost::LayerName)
                 )continue;
 
             if (IBR_Inst_Debug.ShowWorkspaceWindowFrame)
@@ -993,6 +995,8 @@ namespace IBR_WorkSpace
                 }
             TSum /= Sum;
             InitialMassCenter = TSum;
+            HoldingStartEqMouse = RePosToEqPos(ImGui::GetMousePos());
+            HoldingStartEqDelta = InitialMassCenter - HoldingStartEqMouse;
             for (auto& [ID, Data] : IBR_Inst_Project.IBR_SectionMap)
                 if (Data.Dragging)
                     Data.EqDelta = Data.EqPos - TSum;

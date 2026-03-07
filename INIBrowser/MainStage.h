@@ -194,7 +194,6 @@ void ControlPanel()
     if (!(IBR_PopupManager::HasPopup && IBR_PopupManager::CurrentPopup.Modal))
     {
         ImGui::PushOrderFront(MainMenuWindow);
-        //ImGui::GetCurrentContext()->ExtraTopMostWindow2 = MainMenuWindow;
     }
 
     IBR_Inst_Menu.RenderUIMenu();
