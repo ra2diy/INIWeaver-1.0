@@ -375,7 +375,7 @@ bool IBS_Project::Save(const std::wstring& _Path)
             [](auto& ini) { return !IBF_Inst_Project.Project.LastOutputIniName[ini.Name].empty(); }
         );
 
-        OutputDebugStringA((std::string("IBS_Project::Save : AllNotEmpty = ") + (AllNotEmpty ? "true" : "false") + "\n").c_str());
+        //OutputDebugStringA((std::string("IBS_Project::Save : AllNotEmpty = ") + (AllNotEmpty ? "true" : "false") + "\n").c_str());
 
         if(AllNotEmpty)IBRF_CoreBump.SendToR({ [=]() {IBR_ProjectManager::AutoOutputAction(); } });
         else IBRF_CoreBump.SendToR({ [=]() {IBR_ProjectManager::OutputAction(); } });
