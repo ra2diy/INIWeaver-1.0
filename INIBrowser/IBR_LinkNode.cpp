@@ -136,7 +136,7 @@ namespace IBR_LinkNode
         {
             auto& ln = LinkNodeContext::CurSub->Lines_ByName[LinkNodeContext::LineIndex];
             auto& Line = LinkNodeContext::CurSub->Lines[ln];
-            if (Line.Default && IBB_DefaultRegType::HasRegType(Line.Default->Property.TypeAlt))
+            if (Line.Default && IBB_DefaultRegType::HasRegType(Line.Default->TypeAlt))
                 return true;
         }
         return false;

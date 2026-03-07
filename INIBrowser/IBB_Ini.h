@@ -37,12 +37,8 @@ struct IBB_IniLine_Default
         std::string Lim;
     };
 
-    struct _Property//存储的是什么
-    {
-        std::string Type;
-        JsonObject Lim;//限制数据，对link来说是LinkLimit
-        std::string TypeAlt;//一个RegType的名字
-    };
+    int LinkLimit;
+    std::string TypeAlt;//一个RegType的名字
 
     //从TypeAlt加载
     std::string Name, DescShort, DescLong;
@@ -50,7 +46,6 @@ struct IBB_IniLine_Default
     //保留备用
     std::vector<std::string> Platform;
     _Limit Limit;
-    _Property Property;
     
     //从TypeAlt加载
     ImU32 Color;
@@ -63,7 +58,6 @@ struct IBB_IniLine_Default
     const IBG_InputType& GetInputType() const;
     LinkNodeSetting GetNodeSetting() const;
     int GetLinkLimit() const;
-    //bool Load(JsonObject FromJson);
 };
 
 struct IBB_SubSec_Default
@@ -205,21 +199,6 @@ struct IBB_SubSec
     IBB_SubSec& ChangeRootAndBack(IBB_Section* NewRoot) { ChangeRoot(NewRoot); return *this; }
 };
 
-
-struct IBB_Section_NameType
-{
-    std::string Name;
-    std::string IniType;
-    IBB_VariableList VarList;
-    IBB_VariableList Lines;
-    bool IsLinkGroup;//no VarList Lines
-
-    void Read(const ExtFileClass& File);
-    void Write(const ExtFileClass& File)const;
-};
-
-
-
 struct IBB_Section
 {
     IBB_Ini* Root{ nullptr };
@@ -253,7 +232,6 @@ struct IBB_Section
     bool Merge(const IBB_Section& Another, const std::unordered_map<std::string, IBB_IniMergeMode>& MergeType, bool IsDuplicate);
     bool Merge(const IBB_Section& Another, IBB_IniMergeMode MergeType, bool IsDuplicate);//they share the same merge type
     bool MergeLine(const std::string& Key, const std::string& Value, IBB_IniMergeMode Mode, bool NoUpdate = false);
-    bool Generate(const IBB_Section_NameType& Paragraph);
     bool GenerateLines(const IBB_VariableList& Lines, const std::vector<std::string>& Order = {}, bool InitOnShow = true);
     void OrderKey(const std::string& Key, size_t NewOrder);
     void CheckSubsecOrder();
@@ -263,7 +241,6 @@ struct IBB_Section
 
     IBB_Section() {}
     IBB_Section(const std::string& N, IBB_Ini* R);
-    IBB_Section(const IBB_Section_NameType& Paragraph, IBB_Ini* R) : Root(R) { Generate(Paragraph); }
     IBB_Section(const IBB_Section&) = default;
     IBB_Section(IBB_Section&&) noexcept;
 
@@ -287,12 +264,10 @@ struct IBB_Section
     IBB_Section_Desc GetThisDesc() const;
     std::vector<std::string> GetKeys(bool PrintExtraData) const;//RARELY USED
     IBB_VariableList GetLineList(bool PrintExtraData, bool FromExport, std::vector<std::string>* TmpLineOrder = nullptr) const;//RARELY USED
-    IBB_VariableList GetSimpleLines() const;//RARELY USED
     std::string GetText(bool PrintExtraData, bool FromExport = false, bool ForEdit = false) const;
     std::string GetTextForEdit() const;
     std::vector<size_t> GetRegisteredPosition() const;//Project的RegList序号
     std::vector<std::pair<size_t, size_t>> GetRegisteredPositionAlt() const;//pair<Project的RegList序号,RegList的Sec*序号>
-    IBB_Section_NameType GetNameType() const;
     IIFWrapper_Wrapper GetLineIIF(const std::string& Key) const;
     IIFWrapper_Wrapper GetNewLineIIF(const std::string& Key) const;
     bool IsComment() const { return CreateAsCommentBlock || !Comment.empty(); }

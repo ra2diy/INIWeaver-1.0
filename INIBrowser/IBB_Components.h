@@ -35,9 +35,6 @@ struct IBB_VariableList
     bool HasValue(const std::string& Name) const;
     std::string GetText(bool ConsiderUpValue, bool FromExport) const;
     void Flatten(IBB_VariableList& Target) const;
-
-    void Read(const ExtFileClass& File);//不管UpValue
-    void Write(const ExtFileClass& File)const;//不管UpValue
 };
 
 struct IBB_Section_Desc

@@ -12,22 +12,6 @@
 struct IniToken;
 struct ModuleClipData;
 
-
-
-struct IBB_RegisterList_NameType
-{
-    std::string Type;
-    std::string IniType;
-    std::string TargetIniType;
-    std::vector <std::string> List;
-
-    std::vector <std::string> TargetIniTypeList;
-    bool UseTargetIniTypeList{ false };
-
-    void Read(const ExtFileClass& File);
-    void Write(const ExtFileClass& File)const;
-};
-
 struct IBB_RegisterList
 {
     IBB_Project* Root;
@@ -42,7 +26,6 @@ struct IBB_RegisterList
     bool Merge(const IBB_RegisterList& Another);
 
     std::string GetText(bool PrintExtraData) const;
-    IBB_RegisterList_NameType GetNameType() const;
 };
 
 struct IBB_ModuleAlt;
@@ -73,7 +56,6 @@ struct IBB_Project
     bool AddIni(const IBB_Ini& Ini, bool IsDuplicate);
     bool CreateRegisterList(const std::string& Name, const std::string& IniName);
     bool AddRegisterList(const IBB_RegisterList& List);
-    IBB_Section* AddNewSection(const IBB_Section_NameType& Paragraph);
     IBB_Section* CreateNewSection(const IBB_Section_Desc& Desc);
     bool AddNewLinkToLinkGroup(const IBB_Section_Desc& From, const IBB_Section_Desc& To);
 
@@ -88,8 +70,6 @@ struct IBB_Project
 
     void Clear();
     bool IsEmpty() const;
-private:
-    IBB_Section* AddNewSectionEx(const IBB_Section_NameType& Paragraph);
 };
 
 

@@ -447,7 +447,7 @@ bool IBR_SectionData::RenderUI_Line(const std::string& OnShow, const std::string
         Line.Edit.RenderUI(DescShort, DescLong);
     }
     ExportContext::Key = "";
-    return line->Default->Property.TypeAlt.empty() ? true : HasInput;
+    return line->Default->TypeAlt.empty() ? true : HasInput;
 }
 
 void IBR_SectionData::RenderUI_Acceptor(float LastFinalY)

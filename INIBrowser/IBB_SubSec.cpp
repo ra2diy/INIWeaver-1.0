@@ -190,7 +190,7 @@ bool IBB_SubSec::MergeLine(const std::string& Key, const std::string& Value, boo
         auto rp = Lines.insert({ Key, IBB_IniLine(Value, Def) });
         if (InitOnShow && Root->OnShow[Key].empty())
         {
-            if (!Def->Property.TypeAlt.empty() && Def->Property.TypeAlt != "bool")
+            if (!Def->TypeAlt.empty() && Def->TypeAlt != "bool")
                 Root->OnShow[Key] = EmptyOnShowDesc;
         }
 
@@ -437,7 +437,7 @@ bool IBB_SubSec::UpdateAll()
             }
 
             auto& KeyName = L;
-            auto ldd = Line.Default && IBB_DefaultRegType::HasRegType(Line.Default->Property.TypeAlt);
+            auto ldd = Line.Default && IBB_DefaultRegType::HasRegType(Line.Default->TypeAlt);
             std::set<std::pair<int, int>> SelectValues;
 
             int i = 0;

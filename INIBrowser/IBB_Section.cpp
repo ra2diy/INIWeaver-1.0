@@ -368,16 +368,6 @@ IBB_VariableList IBB_Section::GetLineList(bool PrintExtraData, bool FromExport, 
 
     return Ret;
 }
-IBB_VariableList IBB_Section::GetSimpleLines() const
-{
-    IBB_VariableList Ret;
-    if (!IsLinkGroup)
-    {
-        for (const auto& Sub : SubSecs)
-            Ret.Merge(Sub.GetLineList(false, false), false);
-    }
-    return Ret;
-}
 
 std::string IBB_Section::GetText(bool PrintExtraData, bool FromExport, bool ForEdit) const
 {
@@ -456,17 +446,6 @@ std::vector<std::pair<size_t, size_t>> IBB_Section::GetRegisteredPositionAlt() c
         for (size_t j = 0; j < li.List.size(); j++)
             if (li.List.at(j) == this) { Ret.push_back({ i,j }); break; }
     }
-    return Ret;
-}
-
-IBB_Section_NameType IBB_Section::GetNameType() const
-{
-    IBB_Section_NameType Ret;
-    Ret.IsLinkGroup = IsLinkGroup;
-    Ret.IniType = Root->Name;
-    Ret.Name = Name;
-    Ret.VarList = VarList;
-    Ret.Lines = GetSimpleLines();
     return Ret;
 }
 
@@ -680,29 +659,6 @@ bool IBB_Section::GenerateLines(const IBB_VariableList& Par, const std::vector<s
     return Ret;
 }
 
-bool IBB_Section::Generate(const IBB_Section_NameType& Par)
-{
-    Name = Par.Name;
-    IsLinkGroup = Par.IsLinkGroup;
-    VarList = Par.VarList;
-    if (IsLinkGroup)
-    {
-        if (!Par.Lines.Value.empty())
-        {
-            if (EnableLog)
-            {
-                GlobalLogB.AddLog_CurTime(false);
-                GlobalLogB.AddLog((u8"IBB_Section::Generate ： " + loc("Log_GenerateInvalidLines")).c_str());
-            }
-            return false;
-        }
-        else return true;
-    }
-    else
-    {
-        return GenerateLines(Par.Lines, {}, false);
-    }
-}
 
 bool IBB_Section::Merge(const IBB_Section& Another, const std::unordered_map<std::string, IBB_IniMergeMode>& MergeType, bool IsDuplicate)
 {

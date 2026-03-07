@@ -323,24 +323,17 @@ bool IBB_SubSec_Default::Load(JsonObject FromJson, const std::unordered_map<std:
 
 LineData IBB_IniLine_Default::Create() const
 {
-    /*if (Property.Type == IBB_IniLine_Data_Int::TypeName)
-        return LineData(new IBB_IniLine_Data_Int);
-    else if (Property.Type == IBB_IniLine_Data_String::TypeName)
-        return LineData(new IBB_IniLine_Data_String);
-    else if (IsLinkAlt())
-        return LineData(new IBB_IniLine_DataList);
-    return LineData(new IBB_IniLine_Data_String);*/
     return std::make_shared<IBB_IniLine_Data_String>();
 }
 
 const IBB_RegType& IBB_IniLine_Default::GetRegType() const
 {
-    return IBB_DefaultRegType::GetRegType(Property.TypeAlt);
+    return IBB_DefaultRegType::GetRegType(TypeAlt);
 }
 
 const std::string& IBB_IniLine_Default::GetIniType() const
 {
-    return IBB_DefaultRegType::GetIniTypeOfReg(Property.TypeAlt);
+    return IBB_DefaultRegType::GetIniTypeOfReg(TypeAlt);
 }
 
 const IBG_InputType& IBB_IniLine_Default::GetInputType() const
@@ -350,14 +343,14 @@ const IBG_InputType& IBB_IniLine_Default::GetInputType() const
 
 int IBB_IniLine_Default::GetLinkLimit() const
 {
-    return *reinterpret_cast<const int*>(&Property.Lim);
+    return LinkLimit;
 }
 
 LinkNodeSetting IBB_IniLine_Default::GetNodeSetting() const
 {
     return LinkNodeSetting{
-        Property.TypeAlt,
-        GetLinkLimit(),
+        TypeAlt,
+        LinkLimit,
         Color
     };
 }
@@ -430,22 +423,6 @@ std::string IBB_RegisterList::GetText(bool PrintExtraData) const
         i++;
     }
     return Text;
-}
-IBB_RegisterList_NameType IBB_RegisterList::GetNameType() const
-{
-    IBB_RegisterList_NameType Ret;
-    Ret.UseTargetIniTypeList = true;
-    Ret.List.reserve(List.size());
-    Ret.TargetIniTypeList.reserve(List.size());
-    Ret.IniType = IniType;
-    Ret.Type = Type;
-    for (const auto& Sec : List)
-    {
-        if (Sec == nullptr)continue;
-        Ret.List.push_back(Sec->Name);
-        Ret.TargetIniTypeList.push_back(Sec->Root->Name);
-    }
-    return Ret;
 }
 
 
@@ -579,7 +556,7 @@ bool IBB_IniLine::Merge(const std::string& Another, IBB_IniMergeMode Mode)
             {
                 GlobalLogB.AddLog_CurTime(false);
                 auto K = UTF8toUnicode(Default->Name);
-                auto LT = UTF8toUnicode(Default->Property.Type);
+                auto LT = L"";
                 GlobalLogB.AddLog(std::vformat(L"IBB_DefaultTypeList::Merge ： " + locw("Error_DataTypeNotExist"),
                     std::make_wformat_args(K, LT)).c_str());
             }
@@ -629,22 +606,13 @@ bool IBB_IniLine::Generate(const std::string& Value, IBB_IniLine_Default* Def)
         {
             GlobalLogB.AddLog_CurTime(false);
             auto K = UTF8toUnicode(Default->Name);
-            auto LT = UTF8toUnicode(Default->Property.Type);
+            auto LT = L"";
             GlobalLogB.AddLog(std::vformat(L"IBB_IniLine::Generate ： " + locw("Error_DataTypeNotExist"),
                 std::make_wformat_args(K, LT)).c_str());
         }
         return false;
     }
     bool Ret = Data->SetValue(Value);
-    if (EnableLogEx)
-    {
-        GlobalLogB.AddLog_CurTime(false);
-        sprintf_s(LogBufB, "IBB_IniLine::Generate -> std::string Default->Name=%s, std::string Default->Property.Type=%s",
-            Default->Name.c_str(), Default->Property.Type.c_str()); GlobalLogB.AddLog(LogBufB);
-        GlobalLogB.AddLog_CurTime(false);
-        sprintf_s(LogBufB, "IBB_IniLine::Generate -> DataType=%s bool Ret=%s",
-            Data->GetName(), IBD_BoolStr(Ret)); GlobalLogB.AddLog(LogBufB);
-    }
     return Ret;
 }
 
@@ -784,93 +752,6 @@ bool IBB_Ini::UpdateAll()
     }
     return Ret;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-void IBB_Section_NameType::Read(const ExtFileClass& File)
-{
-    File.ReadData(Name);
-    File.ReadData(IniType);
-    File.ReadData(IsLinkGroup);
-    VarList.Read(File);
-    Lines.Read(File);
-}
-void IBB_Section_NameType::Write(const ExtFileClass& File)const
-{
-    File.WriteData(Name);
-    File.WriteData(IniType);
-    File.WriteData(IsLinkGroup);
-    VarList.Write(File);
-    Lines.Write(File);
-}
-
-
-void IBB_VariableList::Read(const ExtFileClass& File)
-{
-    std::vector<std::string> sv;
-    File.ReadVector(sv);
-    for (size_t i = 0; i + 1 < sv.size(); i += 2)
-        Value.insert({ std::move(sv.at(i)),std::move(sv.at(i + 1)) });
-}
-void IBB_VariableList::Write(const ExtFileClass& File)const
-{
-    std::vector<std::string> sv;
-    for (const auto& p : Value)
-    {
-        sv.push_back(p.first);
-        sv.push_back(p.second);
-    }
-    File.WriteVector(sv);
-}
-
-void IBB_RegisterList_NameType::Read(const ExtFileClass& File)
-{
-    File.ReadData(Type);
-    File.ReadData(IniType);
-    File.ReadData(UseTargetIniTypeList);
-    File.ReadVector(List);
-    if (UseTargetIniTypeList)File.ReadVector(TargetIniTypeList);
-    else File.ReadData(TargetIniType);
-}
-void IBB_RegisterList_NameType::Write(const ExtFileClass& File)const
-{
-    File.WriteData(Type);
-    File.WriteData(IniType);
-    File.WriteData(UseTargetIniTypeList);
-    File.WriteVector(List);
-    if (UseTargetIniTypeList)File.WriteVector(TargetIniTypeList);
-    else File.WriteData(TargetIniType);
-}
-
-
-
-
-
-
-
-
-
-
-
 
 
 

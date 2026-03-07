@@ -26,17 +26,14 @@ void IBB_DefaultTypeList::EnsureType(const IBB_DefaultTypeAlt& D, std::set<std::
     L.Color = D.Color;
     L.Input = &IBB_DefaultRegType::GetInputType(D.Input);
     L.InputName = D.Input;
-    if (D.LinkType.empty() || D.LinkLimit == 0 || D.LinkType == "bool")
+    L.TypeAlt = D.LinkType;
+    if (D.LinkType.empty() || D.LinkLimit == 0)
     {
-        L.Property.Type = DefaultAltPropType;
-        L.Property.Lim = JsonObject(nullptr);
-        L.Property.TypeAlt = D.LinkType;
+        L.LinkLimit = 0;
     }
     else
     {
-        L.Property.Type = LinkAltPropType;
-        L.Property.Lim = JsonObject(reinterpret_cast<cJSON*>(D.LinkLimit));
-        L.Property.TypeAlt = D.LinkType;
+        L.LinkLimit = D.LinkLimit;
         if (UsedStrings)
             UsedStrings->insert(D.LinkType);
         else
@@ -300,71 +297,6 @@ bool IBB_Project::RegisterSection(size_t RegListID, IBB_Section& Section)
     RegisterLists.at(RegListID).List.push_back(const_cast<IBB_Section*>(&Section));
     Section.Register = RegisterLists.at(RegListID).Type;
     return true;
-}
-IBB_Section* IBB_Project::AddNewSection(const IBB_Section_NameType& Paragraph)
-{
-    if (EnableLogEx)
-    {
-        GlobalLogB.AddLog_CurTime(false);
-        sprintf_s(LogBufB, "IBB_Project::AddNewSection <- IBB_Section_NameType Paragraph=%p(Name=%s)", &Paragraph, Paragraph.Name.c_str()); GlobalLogB.AddLog(LogBufB);
-        auto Ret = AddNewSectionEx(Paragraph);
-        GlobalLogB.AddLog_CurTime(false);
-        sprintf_s(LogBufB, "IBB_Project::AddNewSection -> IBB_Section* Ret=%p", Ret); GlobalLogB.AddLog(LogBufB);
-        return Ret;
-    }
-    else return AddNewSectionEx(Paragraph);
-}
-IBB_Section* IBB_Project::AddNewSectionEx(const IBB_Section_NameType& Paragraph)
-{
-    IBB_Project_Index Tg(Paragraph.IniType, Paragraph.Name);
-    if (Paragraph.IniType.empty() || Paragraph.Name.empty())
-    {
-        if (EnableLog)
-        {
-            GlobalLogB.AddLog_CurTime(false);
-            GlobalLogB.AddLog((u8"IBB_Project::AddNewSection ：" + loc("Log_NoEmptyArgument")).c_str());
-        }
-        return nullptr;
-    }
-    auto Sc = Tg.GetSec(*this);
-    if (Sc != nullptr)return nullptr;//this is AddNewSection plz don't give me an existing paragraph plz
-    auto SIni = Tg.GetIni(*this);
-    if (SIni == nullptr)
-    {
-        CreateIni(Paragraph.IniType);
-        SIni = Tg.GetIni(*this);
-        if (SIni == nullptr)
-        {
-            if (EnableLog)
-            {
-                GlobalLogB.AddLog_CurTime(false);
-                GlobalLogB.AddLog((u8"IBB_Project::AddNewSection ：" + loc("Log_CannotCreateINI")).c_str());
-            }
-            return nullptr;
-        }
-    }
-    if (!SIni->CreateSection(Paragraph.Name))
-    {
-        if (EnableLog)
-        {
-            GlobalLogB.AddLog_CurTime(false);
-            GlobalLogB.AddLog((u8"IBB_Project::AddNewSection ：" + loc("Log_CreateSectionFailed")).c_str());
-        }
-        return nullptr;
-    }
-    Sc = Tg.GetSec(*this);
-
-    if (Sc == nullptr)
-    {
-        if (EnableLog)
-        {
-            GlobalLogB.AddLog_CurTime(false);
-            GlobalLogB.AddLog((u8"IBB_Project::AddNewSection ：" + loc("Log_CannotCreateSection")).c_str());
-        }
-        return nullptr;
-    }
-    if (Sc->Generate(Paragraph))return Sc;
-    else return nullptr;
 }
 IBB_Section* IBB_Project::CreateNewSection(const IBB_Section_Desc& Desc)
 {
