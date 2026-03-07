@@ -504,6 +504,22 @@ namespace IBR_WorkSpace
         auto c = ClipData.Modules.size();
         IBR_HintManager::SetHint(UnicodetoUTF8(std::vformat(locw("GUI_CopySuccess"), std::make_wformat_args(c))), HintStayTimeMillis);
     }
+    void DuplicateSelected()
+    {
+        IBB_ClipBoardData ClipData;
+        GenerateClipDataFromMassSelect(ClipData);
+        ClipData.Mangle(true);
+
+        auto [Success, X] = IBR_Inst_Project.AddModule(ClipData.Modules);
+        if (Success)
+        {
+            auto c = X.size();
+            IBR_HintManager::SetHint(UnicodetoUTF8(std::vformat(locw("GUI_DuplicateSuccess"), std::make_wformat_args(c))), HintStayTimeMillis);
+            MassSelect(X);
+            MoveAfterMass = true;
+        }
+        else IBR_HintManager::SetHint(loc("GUI_DuplicateFailed"), HintStayTimeMillis);
+    }
     void CutSelected()
     {
         CopySelected();
@@ -838,8 +854,8 @@ namespace IBR_WorkSpace
 
             if (IBR_Inst_Debug.ShowWorkspaceWindowFrame)
             {
-                ImGui::GetForegroundDrawList()->AddText(w->Rect().Min, IBR_Color::IllegalLineColor, w->Name);
-                ImGui::GetForegroundDrawList()->AddRect(w->Rect().Min, w->Rect().Max, IBR_Color::FocusWindowColor, 2.0F, 0, 3.0F);
+                IBR_TopMost::CommitText(w->Rect().Min, IBR_Color::IllegalLineColor, w->Name);
+                IBR_TopMost::CommitRect(w->Rect().Min, w->Rect().Max, IBR_Color::FocusWindowColor, 2.0F, 0, 3.0F);
             }
 
 
@@ -1098,6 +1114,10 @@ namespace IBR_WorkSpace
                 {
                     CopySelected();
                 }
+                else if (IsHotKeyPressed(Duplicate))
+                {
+                    DuplicateSelected();
+                }
                 else if (IsHotKeyPressed(Cut))
                 {
                     CutSelected();
@@ -1127,60 +1147,8 @@ namespace IBR_WorkSpace
                 else if (ImGui::IsMouseReleased(ImGuiMouseButton_Right))
                 {
                     MassAfter_RightDownPos = { FLT_MAX, FLT_MAX };
-                    auto F = []() {
-                        {
-                            IsMassAfter = false;
-                            HasRightDownToWait = true;
-                            IBR_Inst_Project.CopyTransform.clear();
-                            //MessageBoxA(NULL, std::to_string(MassTarget.size()).c_str(), "!", MB_OK);
-                            std::set<IBB_Section_Desc>DS;
-                            for (auto& v : MassTarget)
-                            {
-                                auto sc = IBR_Inst_Project.GetSectionFromID(v);
-                                auto pd = sc.GetDesc();
-                                if (pd)DS.insert(*pd);
-                            }
-                            for (auto& ini : IBF_Inst_Project.Project.Inis)
-                            {
-                                if (ini.Secs_ByName.empty())continue;
-                                for (auto& sec : ini.Secs)
-                                {
-                                    IBB_Section_Desc DescOrig = { ini.Name,sec.second.Name };
-                                    if (DS.count(DescOrig))
-                                        IBR_Inst_Project.CopyTransform[sec.second.Name] = GenerateModuleTag();
-                                }
-                                for (auto& sec : ini.Secs)
-                                {
-                                    IBB_Section_Desc DescOrig = { ini.Name,sec.second.Name };
-                                    if (DS.count(DescOrig))
-                                        IBRF_CoreBump.SendToR({ [=]()
-                                            {
-                                                IBB_Section_Desc desc = { ini.Name,IBR_Inst_Project.CopyTransform[sec.second.Name]};
-                                                IBR_Inst_Project.GetSection(DescOrig).DuplicateSection(desc);
-                                                auto rsc = IBR_Inst_Project.GetSection(desc);
-                                                auto rsc_orig = IBR_Inst_Project.GetSection(DescOrig);
-                                                auto& rsd = *rsc.GetSectionData();
-                                                auto& rsd_orig = *rsc_orig.GetSectionData();
-                                                rsd.RenameDisplayImpl(rsd_orig.DisplayName);
-                                                rsd.EqPos = rsd_orig.EqPos + dImVec2{2.0 * FontHeight, 2.0 * FontHeight};
-                                                rsd.EqSize = rsd_orig.EqSize;
-                                                rsd.Ignore = rsd_orig.Ignore;
-                                                rsd.IsComment = rsd_orig.IsComment;
-                                                if (rsd.IsComment)
-                                                {
-                                                    rsd.CommentEdit = std::make_shared<BufString>();
-                                                    strcpy(rsd.CommentEdit.get(), rsd_orig.CommentEdit.get());
-                                                }
-                                                rsd.Dragging = true;
-                                            },nullptr });
-                                    //见V0.2.0任务清单（四）第75条“涉及字段数目变化的指令应借由IBF_SendToR等提至主循环开头”
-                                }
-                            }
-                            IBRF_CoreBump.SendToR({ [=]() {IBF_Inst_Project.UpdateAll(); IBR_WorkSpace::HoldingModules = true;  },nullptr });
-                        }
-                        };
                     IBR_PopupManager::SetRightClickMenu(std::move(
-                        IBR_PopupManager::Popup{}.Create(RandStr(8)).PushMsgBack([F, CreateOnWindow = OnWindow]() {
+                        IBR_PopupManager::Popup{}.Create(RandStr(8)).PushMsgBack([CreateOnWindow = OnWindow]() {
 
                             if (CreateOnWindow)
                             {
@@ -1281,7 +1249,7 @@ namespace IBR_WorkSpace
 
                             if (ImGui::SmallButtonAlignLeft(locc("GUI_CreateCopy"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
                             {
-                                F();
+                                DuplicateSelected();
                                 IBR_PopupManager::ClearRightClickMenu();
                             }
 
@@ -1814,10 +1782,9 @@ namespace IBR_WorkSpace
                 {
                     if (sp.first == IBR_EditFrame::CurSection.ID)
                     {
-                        auto FL = ImGui::GetForegroundDrawList();
-                        FL->PushClipRect(IBR_RealCenter::WorkSpaceUL, IBR_RealCenter::WorkSpaceDR, true);
-                        FL->AddRect(ImGui::GetWindowPos(), ImGui::GetWindowPos() + ImGui::GetWindowSize(), IBR_Color::FocusWindowColor, 5.0F, 0, 5.0F);
-                        FL->PopClipRect();
+                        IBR_TopMost::CommitPushClipRect(IBR_RealCenter::WorkSpaceUL, IBR_RealCenter::WorkSpaceDR, true);
+                        IBR_TopMost::CommitRect(ImGui::GetWindowPos(), ImGui::GetWindowPos() + ImGui::GetWindowSize(), IBR_Color::FocusWindowColor, 5.0F, 0, 5.0F);
+                        IBR_TopMost::CommitPopClipRect();
                     }
                 }
                 if (sp.first == IBR_EditFrame::CurSection.ID && !IsMassSelecting && !IsMassAfter && LastCont)
@@ -1836,6 +1803,8 @@ namespace IBR_WorkSpace
                         //IBR_PopupManager::ClearRightClickMenu();
                     }
                     else if (IsHotKeyPressed(Copy))sd.CopyToClipBoard();
+                    else if (IsHotKeyPressed(Duplicate))sd.Duplicate();
+                    else if (IsHotKeyPressed(Cut))sd.CutToClipBoard();
                 }
 
                 ImGui::PopClipRect();

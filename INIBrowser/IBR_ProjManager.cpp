@@ -459,7 +459,8 @@ namespace IBR_ProjectManager
     {
 
         if (!IBF_Inst_Project.Project.ChangeAfterSave)return;
-        SetWaitingPopup();
+        //make someone happy
+        //SetWaitingPopup();
         IBS_Push([=]()
             {
                 Save(IBF_Inst_Project.Project.Path, [](bool OK) {IBRF_CoreBump.SendToR({ [=]()

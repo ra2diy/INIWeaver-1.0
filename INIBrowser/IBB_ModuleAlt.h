@@ -185,7 +185,7 @@ ClipReadStream& operator>>(ClipReadStream& stm, ModuleClipData& v);
 struct IBB_Section;
 struct IBB_Section_Desc;
 
-void MangleModules(std::vector<ModuleClipData>& Modules);
+void MangleModules(std::vector<ModuleClipData>& Modules, bool FromDup = false);
 JsonFile ModulesToJson(const std::vector<ModuleClipData>& Modules);
 
 struct IBB_ClipBoardData
@@ -193,7 +193,7 @@ struct IBB_ClipBoardData
     uint32_t ProjectRID;
     std::vector<ModuleClipData> Modules;
 
-    void Mangle();
+    void Mangle(bool FromDup = false);
     void Generate(const std::vector<IBB_Section_Desc>& Modules);
     void GenerateAll(bool UsePosAsDelta, bool FromClipBoard);
     std::string GetString() const;

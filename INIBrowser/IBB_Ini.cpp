@@ -115,12 +115,6 @@ bool IBB_IniLine_Data_String::Clear()
     Value.clear();
     return true;
 }
-void IBB_IniLine_Data_String::UpdateAsDuplicate()
-{
-    auto it = IBR_Inst_Project.CopyTransform.find(Value);
-    if (it != IBR_Inst_Project.CopyTransform.end())
-        Value = it->second;
-}
 LineData IBB_IniLine_Data_String::Duplicate() const
 {
     LineData R{ new IBB_IniLine_Data_String };

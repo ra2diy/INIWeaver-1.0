@@ -231,6 +231,7 @@ void ControlPanel()
 
     IBR_SelectMode::RenderUI();
     IBR_HintManager::RenderUI();
+    IBR_TopMost::RenderUI();
     IBR_PopupManager::RenderUI();
 
     IBR_WorkSpace::LastOperateOnText = IBR_WorkSpace::OperateOnText;

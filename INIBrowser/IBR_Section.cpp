@@ -172,32 +172,6 @@ const std::string& _PROJ_CMD_READ IBR_Section::GetRegTypeName() _PROJ_CMD_BACK_C
     if (!bk)return def;
     else return IBB_DefaultRegType::GetRegType(bk->Register).Name;
 }
-bool _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE IBR_Section::DuplicateSection(const IBB_Section_Desc& NewDesc) const
-{
-    IBD_RInterruptF(x);
-    IBG_Undo.SomethingShouldBeHere();
-    auto pSec = GetBack_Inl();
-    if (pSec == nullptr)return false;
-
-    if (!IBF_Inst_Project.Project.CreateNewSection(NewDesc))return false;
-
-    IBF_Inst_Project.UpdateCreateSection(NewDesc);
-
-    auto pNSec = const_cast<IBB_Section*>(IBF_Inst_Project.Project.GetSec(IBB_Project_Index{ NewDesc }));
-    if (pNSec == nullptr)return false;
-    bool Ret = pNSec->GenerateAsDuplicate(*pSec);
-
-    pNSec->RedirectLinkAsDupicate();
-
-    //TODO: Check if Update Works
-    //TODO: Undo Action
-    return Ret;
-}
-IBR_Section  _PROJ_CMD_READ _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE IBR_Section::DuplicateSectionAndBack(const IBB_Section_Desc& NewDesc) _PROJ_CMD_BACK_CONST const
-{
-    DuplicateSection(NewDesc);
-    return Root->GetSection(NewDesc);
-}
 
 bool _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE IBR_Section::Rename(const std::string& NewName)
 {

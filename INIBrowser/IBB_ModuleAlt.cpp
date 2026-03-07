@@ -1210,25 +1210,23 @@ bool ModuleClipData::NeedtoMangle() const
     return P;
 }
 
-void MangleModules(std::vector<ModuleClipData>& Modules)
+void MangleModules(std::vector<ModuleClipData>& Modules, bool FromDup)
 {
     for (auto& m : Modules)
     {
-        if (!m.NeedtoMangle())continue;
+        if (!FromDup && !m.NeedtoMangle())continue;
 
         auto S = m.Desc.B;
         auto W = GenerateModuleTag();
 
-        for (auto& v : m.VarList)
-            if (v.A == "_InitialSecName")v.B = W;
         for (auto& n : Modules)
             n.Replace(S, W);
     }
 }
 
-void IBB_ClipBoardData::Mangle()
+void IBB_ClipBoardData::Mangle(bool FromDup)
 {
-    MangleModules(Modules);
+    MangleModules(Modules, FromDup);
 }
 
 inline auto trim(std::string_view string) noexcept {

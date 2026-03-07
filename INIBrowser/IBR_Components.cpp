@@ -1,6 +1,7 @@
 ﻿#include "IBR_Components.h"
 #include "IBFront.h"
 #include "Global.h"
+#include "IBR_HotKey.h"
 #include "FromEngine/RFBump.h"
 #include "FromEngine/global_timer.h"
 #include<imgui_internal.h>
@@ -557,6 +558,13 @@ namespace IBR_PopupManager
 
     void RenderUI()
     {
+        if(IsHotKeyPressed(Cancel))
+        {
+            if(HasPopup)CurrentPopup.Close();
+            IBR_PopupManager::ClearCurrentPopup();
+            IBR_PopupManager::ClearRightClickMenu();
+        }
+
         IsMouseOnPopupCond = false;
         bool AboutToCloseRight = false;
         if (HasPopup)
@@ -974,8 +982,7 @@ namespace IBR_SelectMode
     {
         if (!IBR_PopupManager::HasPopup && IBR_WorkSpace::IsMassSelecting)
         {
-            ImDrawList* DList = ImGui::GetForegroundDrawList();
-            DList->PushClipRect(IBR_RealCenter::WorkSpaceUL, IBR_RealCenter::WorkSpaceDR);
+            IBR_TopMost::CommitPushClipRect(IBR_RealCenter::WorkSpaceUL, IBR_RealCenter::WorkSpaceDR);
             auto [MinX, MaxX] = std::minmax(IBR_WorkSpace::DragStartEqMouse.x, IBR_WorkSpace::DragCurEqMouse.x);
             auto [MinY, MaxY] = std::minmax(IBR_WorkSpace::DragStartEqMouse.y, IBR_WorkSpace::DragCurEqMouse.y);
             ImRect SelectRect{ {MinX, MinY}, {MaxX, MaxY} };
@@ -987,17 +994,16 @@ namespace IBR_SelectMode
                 if (SelectRect.Contains(EqRect))
                 {
                     auto ReUL = IBR_WorkSpace::EqPosToRePos(ds.EqPos), ReDR = IBR_WorkSpace::EqPosToRePos(ds.EqPos + ds.EqSize);
-                    DList->AddRectFilled(ReUL, ReDR, IBR_Color::ForegroundCoverColor);
+                    IBR_TopMost::CommitRectFilled(ReUL, ReDR, IBR_Color::ForegroundCoverColor);
                 }
             }
             auto S = IBR_WorkSpace::EqPosToRePos(IBR_WorkSpace::DragStartEqMouse), T = IBR_WorkSpace::EqPosToRePos(IBR_WorkSpace::DragCurEqMouse);
-            DList->AddRect(S, T, IBR_Color::ForegroundMarkColor);
-            DList->PopClipRect();
+            IBR_TopMost::CommitRect(S, T, IBR_Color::ForegroundMarkColor);
+            IBR_TopMost::CommitPopClipRect();
         }
         if (!IBR_PopupManager::HasPopup && IBR_WorkSpace::IsMassAfter)
         {
-            ImDrawList* DList = ImGui::GetForegroundDrawList();
-            DList->PushClipRect(IBR_RealCenter::WorkSpaceUL, IBR_RealCenter::WorkSpaceDR);
+            IBR_TopMost::CommitPushClipRect(IBR_RealCenter::WorkSpaceUL, IBR_RealCenter::WorkSpaceDR);
             for (auto& id : IBR_WorkSpace::MassTarget)
             {
                 auto R = IBR_Inst_Project.GetSectionFromID(id);
@@ -1005,9 +1011,9 @@ namespace IBR_SelectMode
                 if (!ds || !R.HasBack())continue;
                 if (ds->IsIncluded())continue;
                 auto ReUL = IBR_WorkSpace::EqPosToRePos(ds->EqPos), ReDR = IBR_WorkSpace::EqPosToRePos(ds->EqPos + ds->EqSize);
-                DList->AddRectFilled(ReUL, ReDR, IBR_Color::ForegroundCoverColor);
+                IBR_TopMost::CommitRectFilled(ReUL, ReDR, IBR_Color::ForegroundCoverColor);
             }
-            DList->PopClipRect();
+            IBR_TopMost::CommitPopClipRect();
         }
     }
     void RenderUI()
@@ -1015,4 +1021,61 @@ namespace IBR_SelectMode
         UpdateMassSelect();
         RenderUI_MassSelect();
     }
+}
+
+
+namespace IBR_TopMost
+{
+    std::map<int, std::vector<RenderPayload>> Payloads;
+
+    void CommitText(const ImVec2& pos, ImU32 col, const char* text, int Priority)
+    {
+        CommitPayload([=, T = std::string(text)](ImDrawList* DList)
+            {
+                DList->AddText(pos, col, T.c_str());
+            }, Priority);
+    }
+    void CommitRect(const ImVec2& p_min, const ImVec2& p_max, ImU32 col, float rounding, ImDrawFlags flags, float thickness, int Priority)
+    {
+        CommitPayload([=](ImDrawList* DList)
+            {
+                DList->AddRect(p_min, p_max, col, rounding, flags, thickness);
+            }, Priority);
+    }
+    void CommitPushClipRect(const ImVec2& clip_rect_min, const ImVec2& clip_rect_max, bool intersect_with_current_clip_rect, int Priority)
+    {
+        CommitPayload([=](ImDrawList* DList)
+            {
+                DList->PushClipRect(clip_rect_min, clip_rect_max, intersect_with_current_clip_rect);
+            }, Priority);
+    }
+    void CommitRectFilled(const ImVec2& p_min, const ImVec2& p_max, ImU32 col, float rounding, ImDrawFlags flags, int Priority)
+    {
+        CommitPayload([=](ImDrawList* DList)
+            {
+                DList->AddRectFilled(p_min, p_max, col, rounding, flags);
+            }, Priority);
+    }
+    void CommitPopClipRect(int Priority)
+    {
+        CommitPayload([](ImDrawList* DList)
+            {
+                DList->PopClipRect();
+            }, Priority);
+    }
+    void CommitPayload(const RenderPayload& Payload, int Priority)
+    {
+        Payloads[Priority].push_back(Payload);
+    }
+
+    void RenderUI()
+    {
+        if (Payloads.empty())return;
+        ImDrawList* DList = ImGui::GetForegroundDrawList();
+        for (auto& [Pri, PayloadList] : Payloads)
+            for(auto& Payload : PayloadList)
+                Payload(DList);
+        Payloads.clear();
+    }
+
 }

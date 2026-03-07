@@ -521,33 +521,6 @@ IIFWrapper_Wrapper IBB_Section::GetLineIIF(const std::string& Key) const
     return GetNewLineIIF(Key);
 }
 
-void IBB_Section::RedirectLinkAsDupicate()
-{
-    /*
-    IBB_Ini* Root;
-
-    std::string Name;
-    std::vector<IBB_SubSec> SubSecs;
-    std::vector<IBB_Link> LinkedBy;
-
-    */
-    //LinkedBy.clear();
-    for (auto& [k, s] : VarList.Value)
-    {
-        auto it = IBR_Inst_Project.CopyTransform.find(s);
-        if (it != IBR_Inst_Project.CopyTransform.end())
-            s = it->second;
-    }
-    for (auto& sub : SubSecs)
-    {
-        for (auto& lin : sub.Lines)
-        {
-            lin.second.Data->UpdateAsDuplicate();
-        }
-        //sub.LinkTo.clear();
-    }
-}
-
 bool IBB_Section::HasLine(const std::string& Key) const
 {
     if (IsLinkGroup || IsComment()) return false;
@@ -775,7 +748,22 @@ bool IBB_Section::Merge(const IBB_Section& Another, IBB_IniMergeMode MergeType, 
     {
         for (const auto& key : Another.LineOrder)
             PushLineOrder(key);
-        VarList.Merge(Another.VarList, false);
+
+        switch (MergeType)
+        {
+        case IBB_IniMergeMode::Replace:
+            VarList = Another.VarList;
+            OnShow = Another.OnShow;
+            break;
+        case IBB_IniMergeMode::Merge:
+        case IBB_IniMergeMode::Reserve:
+        default:
+            VarList.Merge(Another.VarList, false);
+            for (auto& p : Another.OnShow)OnShow.insert(p);
+            break;
+        }
+
+        
         for (const auto& ss : Another.SubSecs)
         {
             if (ss.Default == nullptr)continue;
@@ -886,16 +874,6 @@ bool IBB_Section::MergeLine(const std::string& Key, const std::string& Value, IB
 }
 
 
-bool IBB_Section::GenerateAsDuplicate(const IBB_Section& Src)
-{
-    auto pproj = Root->Root;
-    Merge(Src, IBB_IniMergeMode::Replace, true);
-    for (auto s : Src.GetRegisteredPosition())
-    {
-        pproj->RegisterSection(s, *this);
-    }
-    return true;
-}
 
 void IBB_Section::OrderKey(const std::string& Key, size_t NewOrder)
 {

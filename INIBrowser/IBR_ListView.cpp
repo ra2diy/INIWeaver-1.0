@@ -177,50 +177,35 @@ namespace IBR_ListView
         }
         if (SelectAll || SelectNone || Delete || Duplicate)
         {
-            if (Duplicate)IBR_Inst_Project.CopyTransform.clear();
             std::vector<IBB_Section_Desc> ToDel;
+            if (Duplicate)
+            {
+                std::vector<ModuleID_t> Tg;
+                for (auto& ini : IBF_Inst_Project.Project.Inis)
+                {
+                    if (ini.Secs_ByName.empty())continue;
+                    for (auto& sec : ini.Secs)
+                        if (sec.second.Dynamic.Selected)
+                            if (auto s = IBR_Inst_Project.GetSectionID(sec.second.GetThisDesc()); s)
+                                Tg.push_back(*s);
+                }
+                if (!Tg.empty())
+                {
+                    IBR_WorkSpace::MassSelect(Tg);
+                    IBR_WorkSpace::DuplicateSelected();
+                }
+            }
             for (auto& ini : IBF_Inst_Project.Project.Inis)
             {
                 if (ini.Secs_ByName.empty())continue;
-                if (Duplicate)
-                {
-                    for (auto& sec : ini.Secs)
-                    {
-                        if (sec.second.Dynamic.Selected && Duplicate)
-                            IBR_Inst_Project.CopyTransform[sec.second.Name] = GenerateModuleTag();
-                    }
-                }
                 for (auto& sec : ini.Secs)
                 {
                     if (SelectAll)sec.second.Dynamic.Selected = true;
                     if (SelectNone)sec.second.Dynamic.Selected = false;
                     if (sec.second.Dynamic.Selected && Delete)ToDel.push_back({ ini.Name,sec.second.Name });
-                    if (sec.second.Dynamic.Selected && Duplicate)
-                        IBRF_CoreBump.SendToR({ [=]()
-                            {
-                                IBB_Section_Desc desc = { ini.Name,IBR_Inst_Project.CopyTransform[sec.second.Name]};
-                                IBR_Inst_Project.GetSection({ ini.Name,sec.second.Name }).DuplicateSection(desc);
-                                auto rsc = IBR_Inst_Project.GetSection(desc);
-                                auto rsc_orig = IBR_Inst_Project.GetSection({ ini.Name,sec.second.Name });
-                                auto& rsd = *rsc.GetSectionData();
-                                auto& rsd_orig = *rsc_orig.GetSectionData();
-                                rsd.RenameDisplayImpl(rsd_orig.DisplayName);
-                                rsd.EqPos = rsd_orig.EqPos + dImVec2{2.0 * FontHeight, 2.0 * FontHeight};
-                                rsd.EqSize = rsd_orig.EqSize;
-                                rsd.Dragging = true;
-                                rsd.IsComment = rsd_orig.IsComment;
-                                if (rsd.IsComment)
-                                {
-                                    rsd.CommentEdit = std::make_shared<BufString>();
-                                    strcpy(rsd.CommentEdit.get(), rsd_orig.CommentEdit.get());
-                                }
-                            },nullptr });
-                    //见V0.2.0任务清单（四）第75条“涉及字段数目变化的指令应借由IBF_SendToR等提至主循环开头”
                 }
             }
-            if (Duplicate)
-                IBRF_CoreBump.SendToR({ [=]() {IBF_Inst_Project.UpdateAll(); IBR_WorkSpace::HoldingModules = true;  },nullptr });
-            else if (Delete)
+            if (Delete)
                 IBRF_CoreBump.SendToR({ [=]() { IBR_Inst_Project.DeleteSection(ToDel); },nullptr });
             else IBRF_CoreBump.SendToR({ [=]() {IBF_Inst_Project.UpdateAll(); },nullptr });
 

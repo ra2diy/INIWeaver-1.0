@@ -1,4 +1,4 @@
-#include "IBR_HotKey.h"
+﻿#include "IBR_HotKey.h"
 
 namespace IBR_HotKey
 {
@@ -100,6 +100,7 @@ IsHotKeyPressedDef(Paste);
 IsHotKeyPressedDef(Cut);
 IsHotKeyPressedDef(Undo);
 IsHotKeyPressedDef(Redo);
+IsHotKeyPressedDef(Duplicate);
 IsHotKeyPressedDef(SelectAll);
 IsHotKeyPressedDef(SelectNone);
 IsHotKeyPressedDef(SelectInvert);
@@ -109,6 +110,7 @@ IsHotKeyPressedDef(Close);
 IsHotKeyPressedDef(SaveAs);
 IsHotKeyPressedDef(Export);
 IsHotKeyPressedDef(Delete);
+IsHotKeyPressedDef(Cancel);
 IsHotKeyPressedDef(DeleteAll);
 IsHotKeyPressedDef(Center);
 IsHotKeyPressedDef(Refresh);

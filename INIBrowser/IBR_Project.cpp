@@ -643,7 +643,6 @@ void IBR_Project::Clear()
     IBR_SectionMap.clear();
     IBR_Rev_SectionMap.clear();
     IBR_SecDragMap.clear();
-    CopyTransform.clear();
     DragConditionText.clear();
     DragConditionTextAlt.clear();
     LinkList.clear();

@@ -53,6 +53,7 @@ std::wstring RemoveSpec(std::wstring W);
 struct IBR_Section;
 struct IBR_Project;
 struct IBB_Section_Desc;
+struct IBB_ClipBoardData;
 extern const IBB_Section_Desc IBB_Section_DescNull;
 
 #define INVALID_MODULE_ID UINT64_MAX
@@ -112,7 +113,11 @@ struct IBR_SectionData
     void FoldComposed();
     void UnfoldComposed();
 
+    IBB_ClipBoardData GetClipBoardData(int& Copied);
     void CopyToClipBoard();
+    void CutToClipBoard();
+    void Duplicate();
+
     bool Decomposable() const;
     void Decompose();
     bool IsIncluded() const;
@@ -156,9 +161,6 @@ struct IBR_Section
 
     bool _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE SetVarList(const IBB_VariableList& NewList);
 
-    //不建议跨INI类型复制，除非你确定你在做什么，并且为字段设置正确的变量表，以符合模板的整体约定
-    bool _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE DuplicateSection(const IBB_Section_Desc& NewDesc) _PROJ_CMD_BACK_CONST const;
-    IBR_Section  _PROJ_CMD_READ _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE DuplicateSectionAndBack(const IBB_Section_Desc& NewDesc) _PROJ_CMD_BACK_CONST const;
 
     //如果名字冲突则啥也不干并返回false
     bool _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE Rename(const std::string& NewName);
@@ -207,7 +209,6 @@ struct IBR_Project
     std::map<ModuleID_t, IBR_SectionData> IBR_SectionMap;
     std::map<IBB_Section_Desc, ModuleID_t> IBR_Rev_SectionMap;
     std::unordered_map<std::string, SectionDragData> IBR_SecDragMap;
-    std::unordered_map<std::string, std::string> CopyTransform;
     std::string DragConditionText;
     std::string DragConditionTextAlt;
     std::vector<_Plink> LinkList;
@@ -432,6 +433,7 @@ namespace IBR_WorkSpace
     void NoIgnoreSelected();
     void DeleteSelected();
     void CopySelected();
+    void DuplicateSelected();
     void CutSelected();
     void Paste();
     void GenerateClipDataFromIDs(IBB_ClipBoardData& ClipData, const std::vector<ModuleID_t>& IDs);
@@ -445,6 +447,19 @@ namespace IBR_WorkSpace
     dImVec2 GetMassCenter(const std::vector<ModuleID_t>& Target);
 }
 
+namespace IBR_TopMost
+{
+    using RenderPayload = std::function<void(ImDrawList* DList)>;
+
+    void CommitText(const ImVec2& pos, ImU32 col, const char* text, int Priority = 0);
+    void CommitRect(const ImVec2& p_min, const ImVec2& p_max, ImU32 col, float rounding = 0.0f, ImDrawFlags flags = 0, float thickness = 1.0f, int Priority = 0);
+    void CommitPushClipRect(const ImVec2& clip_rect_min, const ImVec2& clip_rect_max, bool intersect_with_current_clip_rect = false, int Priority = 0);
+    void CommitRectFilled(const ImVec2& p_min, const ImVec2& p_max, ImU32 col, float rounding = 0.0f, ImDrawFlags flags = 0, int Priority = 0);
+    void CommitPopClipRect(int Priority = 0);
+    void CommitPayload(const RenderPayload& Payload, int Priority = 0);
+    void RenderUI();
+
+}
 
 namespace IBR_EditFrame
 {

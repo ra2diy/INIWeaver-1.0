@@ -101,7 +101,6 @@ struct IBB_IniLine_Data_Base
     virtual std::string GetString() const = 0;
     virtual std::string GetStringForExport() const = 0;
     virtual LineData Duplicate() const = 0;
-    virtual void UpdateAsDuplicate() = 0;
     virtual const char* GetName() const = 0;
     virtual bool Clear() = 0;
 
@@ -120,7 +119,6 @@ struct IBB_IniLine_Data_String final : public IBB_IniLine_Data_Base
     bool MergeValue(const std::string& Val);
     bool MergeData(const IBB_IniLine_Data_Base* data);
     bool Clear();
-    void UpdateAsDuplicate();
     LineData Duplicate() const;
 
     std::string GetString() const { return Value; }
@@ -257,7 +255,6 @@ struct IBB_Section
     bool MergeLine(const std::string& Key, const std::string& Value, IBB_IniMergeMode Mode, bool NoUpdate = false);
     bool Generate(const IBB_Section_NameType& Paragraph);
     bool GenerateLines(const IBB_VariableList& Lines, const std::vector<std::string>& Order = {}, bool InitOnShow = true);
-    bool GenerateAsDuplicate(const IBB_Section& Src);
     void OrderKey(const std::string& Key, size_t NewOrder);
     void CheckSubsecOrder();
 
@@ -278,7 +275,6 @@ struct IBB_Section
     bool ChangeAddress();//用于不改变内容但是改变存储位置时,供移动构造
     bool RemoveNameInLinkTo(IBB_Section* Target);//配合Isolate
     bool Isolate();//切断所有Link
-    void RedirectLinkAsDupicate();
 
     IBB_IniLine* GetLineFromSubSecs(const std::string& Name);
     std::pair <IBB_IniLine*, IBB_SubSec*> GetLineFromSubSecsEx2(const std::string& Name);

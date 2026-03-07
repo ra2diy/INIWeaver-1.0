@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "FromEngine/Include.h"
 #include "Global.h"
 
@@ -39,6 +39,7 @@ IsHotKeyPressedDec(Paste);
 IsHotKeyPressedDec(Cut);
 IsHotKeyPressedDec(Undo);
 IsHotKeyPressedDec(Redo);
+IsHotKeyPressedDec(Duplicate);
 IsHotKeyPressedDec(SelectAll);
 IsHotKeyPressedDec(SelectNone);//Ctrl+Shift+A temporarily unused
 IsHotKeyPressedDec(SelectInvert);//Ctrl+Shift+I temporarily unused
@@ -48,6 +49,7 @@ IsHotKeyPressedDec(Close);
 IsHotKeyPressedDec(SaveAs);
 IsHotKeyPressedDec(Export);
 IsHotKeyPressedDec(Delete);
+IsHotKeyPressedDec(Cancel);
 IsHotKeyPressedDec(DeleteAll);
 IsHotKeyPressedDec(Center);
 IsHotKeyPressedDec(Refresh);

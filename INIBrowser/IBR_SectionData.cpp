@@ -254,15 +254,13 @@ void IBR_SectionData::RenameRegisterImpl(const std::string& Name)
     BackPtr_Cached = nullptr;
 }
 
-void IBR_SectionData::CopyToClipBoard()
+IBB_ClipBoardData IBR_SectionData::GetClipBoardData(int& Copied)
 {
     IBB_ClipBoardData ClipData;
-    int Copied;
-
     if (IsVirtualBlock())
     {
         auto IDs = IncludingModules;
-        if(auto ido = IBR_Inst_Project.GetSectionID(Desc); ido)
+        if (auto ido = IBR_Inst_Project.GetSectionID(Desc); ido)
             IDs.push_back(*ido);
         Copied = IDs.size();
         IBR_WorkSpace::GenerateClipDataFromIDs(ClipData, IDs);
@@ -275,8 +273,42 @@ void IBR_SectionData::CopyToClipBoard()
         Copied = 1;
     }
 
+    return ClipData;
+}
+
+void IBR_SectionData::CopyToClipBoard()
+{
+    int Copied;
+    auto ClipData = GetClipBoardData(Copied);
+
     ImGui::SetClipboardText(ClipData.GetString().c_str());
     IBR_HintManager::SetHint(UnicodetoUTF8(std::vformat(locw("GUI_CopySuccess"), std::make_wformat_args(Copied))), HintStayTimeMillis);
+}
+
+void IBR_SectionData::CutToClipBoard()
+{
+    int Copied;
+    auto ClipData = GetClipBoardData(Copied);
+
+    IBRF_CoreBump.SendToR({ [desc = Desc]() { IBG_Undo.SomethingShouldBeHere(); IBR_Inst_Project.DeleteSection(desc); } });
+
+    ImGui::SetClipboardText(ClipData.GetString().c_str());
+    IBR_HintManager::SetHint(UnicodetoUTF8(std::vformat(locw("GUI_CopySuccess"), std::make_wformat_args(Copied))), HintStayTimeMillis);
+}
+
+void IBR_SectionData::Duplicate()
+{
+    int Copied;
+    auto ClipData = GetClipBoardData(Copied);
+    ClipData.Mangle(true);
+
+    auto [Success, X] = IBR_Inst_Project.AddModule(ClipData.Modules);
+    if (Success)
+    {
+        IBR_HintManager::SetHint(UnicodetoUTF8(std::vformat(locw("GUI_DuplicateSuccess"), std::make_wformat_args(Copied))), HintStayTimeMillis);
+        IBR_WorkSpace::MassSelect(X);
+    }
+    else IBR_HintManager::SetHint(loc("GUI_DuplicateFailed"), HintStayTimeMillis);
 }
 
 bool IBR_SectionData::Decomposable() const
@@ -852,11 +884,10 @@ void IBR_SectionData::RenderUI_Virtual()
             {
                 if (id == IBR_EditFrame::CurSection.ID)
                 {
-                    auto FL = ImGui::GetForegroundDrawList();
-                    FL->PushClipRect(IBR_RealCenter::WorkSpaceUL, IBR_RealCenter::WorkSpaceDR, true);
+                    IBR_TopMost::CommitPushClipRect(IBR_RealCenter::WorkSpaceUL, IBR_RealCenter::WorkSpaceDR, true);
                     //FL->AddRect(ImGui::GetWindowPos(), ImGui::GetWindowPos() + ImGui::GetWindowSize(), IBR_Color::FocusWindowColor, 5.0F, 0, 5.0F);
-                    FL->AddRect(PosUL, PosDR, IBR_Color::FocusWindowColor, 5.0F, 0, 5.0F);
-                    FL->PopClipRect();
+                    IBR_TopMost::CommitRect(PosUL, PosDR, IBR_Color::FocusWindowColor, 5.0F, 0, 5.0F);
+                    IBR_TopMost::CommitPopClipRect();
                 }
             }
 
