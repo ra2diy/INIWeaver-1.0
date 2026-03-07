@@ -48,7 +48,6 @@ struct BufferedLine
     std::string Buffer;
     std::string Hint;
     std::string OnShowBuf;
-    bool Known;
     bool InputOnshow;
 };
 

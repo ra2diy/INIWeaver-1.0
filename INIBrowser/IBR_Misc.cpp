@@ -317,24 +317,12 @@ namespace IBR_EditFrame
             {
                 auto& Line = EditLines[K];
                 Line.Buffer = V.Data->GetString();
-                Line.Known = true;
                 Line.Hint = V.Default->DescLong;
                 Line.InputType = V.Default->Input;
                 Line.LinkNode = V.Default->GetNodeSetting();
                 Line.OnShowBuf = rsc->GetOnShow(K);
                 Line.InputOnshow = false;
             }
-        }
-        for (auto& [K, V] : rsc->UnknownLines.Value)
-        {
-            auto& Line = EditLines[K];
-            Line.Buffer = V;
-            Line.Known = false;
-            Line.Hint = "";
-            Line.InputType = &IBB_DefaultRegType::SelectInputTypeByValue(V);
-            Line.LinkNode = IBB_DefaultRegType::GetDefaultLinkNodeSetting();
-            Line.OnShowBuf = rsc->GetOnShow(K);
-            Line.InputOnshow = false;
         }
     }
 
@@ -473,7 +461,7 @@ namespace IBR_EditFrame
                 auto& Str = Input.Sidebar->GetFormattedString();
                 if (!Str.empty())
                 {
-                    ImGui::TextDisabled(u8"使用默认值：%s", Str.c_str());
+                    ImGui::TextDisabled(locc("GUI_UseInitialValue"), Str.c_str());
                 }
             }
         }

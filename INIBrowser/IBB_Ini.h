@@ -82,8 +82,7 @@ struct IBB_SubSec_Default
     {
         Default,
         Inherit,
-        Import,
-        UnknownLines
+        Import
     }Type;
 
     IBB_SubSec_Default();
@@ -192,7 +191,6 @@ struct IBB_SubSec
 
     std::vector<std::string> GetKeys(bool PrintExtraData) const;//RARELY USED
     IBB_VariableList GetLineList(bool PrintExtraData, bool FromExport, std::vector<std::string>* TmpLineOrder = nullptr) const;//RARELY USED
-    std::string GetFullVariable(const std::string& Name) const;
     IBB_SubSec Duplicate() const;//这个才是深复制，鉴于深复制用处远低浅复制，故默认浅复制
     void GenerateAsDuplicate(const IBB_SubSec& Src);//从Src深复制
     std::pair< std::multimap<uint64_t, size_t>::const_iterator, std::multimap<uint64_t, size_t>::const_iterator>
@@ -234,7 +232,6 @@ struct IBB_Section
     std::vector<size_t> SubSecOrder;
     std::vector<IBB_NewLink> NewLinkedBy;
     IBB_VariableList VarList;
-    IBB_VariableList UnknownLines;//不归属于任一SubSec
 
     bool IsLinkGroup{ false };//no subsec varlist unklines
     std::vector<IBB_NewLink> LinkGroup_NewLinkTo;
@@ -258,7 +255,6 @@ struct IBB_Section
     bool Merge(const IBB_Section& Another, const std::unordered_map<std::string, IBB_IniMergeMode>& MergeType, bool IsDuplicate);
     bool Merge(const IBB_Section& Another, IBB_IniMergeMode MergeType, bool IsDuplicate);//they share the same merge type
     bool MergeLine(const std::string& Key, const std::string& Value, IBB_IniMergeMode Mode, bool NoUpdate = false);
-    bool SetUnknownLineAndSync(const std::string& Key, const std::string& Value);
     bool Generate(const IBB_Section_NameType& Paragraph);
     bool GenerateLines(const IBB_VariableList& Lines, const std::vector<std::string>& Order = {}, bool InitOnShow = true);
     bool GenerateAsDuplicate(const IBB_Section& Src);
@@ -298,7 +294,6 @@ struct IBB_Section
     IBB_VariableList GetSimpleLines() const;//RARELY USED
     std::string GetText(bool PrintExtraData, bool FromExport = false, bool ForEdit = false) const;
     std::string GetTextForEdit() const;
-    std::string GetFullVariable(const std::string& Name) const;//如果对其使用_SECTION_NAME则返回字段名
     std::vector<size_t> GetRegisteredPosition() const;//Project的RegList序号
     std::vector<std::pair<size_t, size_t>> GetRegisteredPositionAlt() const;//pair<Project的RegList序号,RegList的Sec*序号>
     IBB_Section_NameType GetNameType() const;

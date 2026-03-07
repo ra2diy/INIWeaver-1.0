@@ -333,7 +333,7 @@ void IBR_SectionData::UnfoldComposed()
 
 // ---------- RENDER UI ----------
 
-bool IBR_SectionData::RenderUI_KnownLine(const std::string& OnShow, const std::string& Name)
+bool IBR_SectionData::RenderUI_Line(const std::string& OnShow, const std::string& Name)
 {
     if (OnShow.empty())return true;
 
@@ -882,39 +882,6 @@ void IBR_SectionData::RenderUI_Virtual()
     }
 }
 
-void IBR_SectionData::RenderUI_UnknownLine(const std::string& k, const std::string& l, IBB_Section* Bsec)
-{
-    auto _F = Bsec->OnShow.find(k);
-    if (_F == Bsec->OnShow.end() || _F->second.empty())return;
-    auto& Line = ActiveLines[k];
-    auto& V = Bsec->UnknownLines.Value[k];
-    {
-        if (!Line.Edit.Input)
-        {
-            //SYNC : WORKSPACE -> EDIT MENU
-            auto& InputType = IBB_DefaultRegType::SelectInputTypeByValue(V);
-            Line.Edit.Input.reset(new IBR_InputManager(l, "##" + RandStr(8), [desc = Desc, Bsec, Str = k](const std::string& S)
-                {
-                    IBG_Undo.SomethingShouldBeHere();
-                    Bsec->SetUnknownLineAndSync(Str, S);
-                },
-                InputType.WorkSpace->Duplicate(),
-                IBB_DefaultRegType::GetDefaultLinkNodeSetting()
-            ));
-        }
-
-        LinkNodeContext::CurLineChangeCompStatus = false;
-        ImGui::TextEx(_F->second == EmptyOnShowDesc ? k.c_str() : _F->second.c_str());
-        if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
-            LinkNodeContext::CurLineChangeCompStatus = true;
-
-        ImGui::SameLine();
-        ExportContext::Key = k;
-        Line.Edit.Input->RenderUI();
-        ExportContext::Key = "";
-    }
-}
-
 void IBR_SectionData::RenderUI_Composed()
 {
     ImGui::SetCursorPos({ ImGui::GetWindowWidth() - FontHeight * 4.0f, FinalY - FontHeight * 0.15f });
@@ -936,23 +903,13 @@ void IBR_SectionData::RenderUI_Lines(IBB_Section* Bsec)
         LinkNodeContext::CurSub = &sub;
 
         if (sub.Default->Type == IBB_SubSec_Default::Inherit && Bsec->Inherit.empty())continue;
-        if (sub.Default->Type == IBB_SubSec_Default::UnknownLines)
-        {
-            for (const auto& [k, l] : Bsec->UnknownLines.Value)
-            {
-                sub.Lines_ByName.push_back(k);
-                LinkNodeContext::LineIndex = sub.Lines_ByName.size() - 1;
-                RenderUI_UnknownLine(k, l, Bsec);
-        }
-            sub.Lines_ByName.clear();
-        }
         else
         {
             for (const auto& k : Bsec->LineOrder)
             {
                 if (!sub.CanOwnKey(k))continue;
                 if (!Bsec->IsOnShow(k))continue;
-                RenderUI_KnownLine(Bsec->GetOnShow(k), k);
+                RenderUI_Line(Bsec->GetOnShow(k), k);
             }
         }
 

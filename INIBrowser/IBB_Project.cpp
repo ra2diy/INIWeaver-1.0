@@ -10,7 +10,6 @@
 
 const char* InheritSubSecName = "A__INHERIT_SUBSEC";
 const char* DefaultSubSecName = "B__DEFAULT_SUBSEC";
-const char* UnknownSubSecName = "C__UNKNOWN_SUBSEC";
 const char* ImportSubSecName  = "D__IMPORT_SUBSEC";
 const char* DefaultAltPropType = "\"D\"";
 const char* LinkAltPropType = "\"L\"";
@@ -109,13 +108,6 @@ bool IBB_DefaultTypeList::LoadFromAlt(const IBB_DefaultTypeAltList& AltList)
         ImportSubSec.Lines[ImportKeyName] = ImportLine;
         ImportSubSec.Type = IBB_SubSec_Default::Import;
     }
-
-    {
-        auto& UnknownSubSec = SubSec_Default[UnknownSubSecName];
-        UnknownSubSec.Name = UnknownSubSecName;
-        UnknownSubSec.Type = IBB_SubSec_Default::UnknownLines;
-    }
-
 
     for (const auto& s : UsedStrings)
         IBB_DefaultRegType::EnsureRegType(s);

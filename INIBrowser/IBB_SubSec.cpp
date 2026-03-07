@@ -274,14 +274,6 @@ IBB_VariableList IBB_SubSec::GetLineList(bool PrintExtraData, bool FromExport, s
     return Ret;
 }
 
-std::string IBB_SubSec::GetFullVariable(const std::string& Name) const
-{
-    auto it = Lines.find(Name);
-    if (it == Lines.end())return "";
-    if (!it->second.Data)return "";
-    return it->second.Data->GetString();
-}
-
 IBB_SubSec IBB_SubSec::Duplicate() const
 {
     IBB_SubSec Ret;

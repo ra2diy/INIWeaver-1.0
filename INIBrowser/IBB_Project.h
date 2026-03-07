@@ -149,9 +149,10 @@ public:
     bool BuildQuery();//call after load
     void EnsureType(const std::string& Key, const std::string& LinkType);
     void EnsureType(const IBB_DefaultTypeAlt& Alt, std::set<std::string>* pSet = nullptr);
+    void CreateUnknownType(const std::string& KeyName);
 
-    IBB_IniLine_Default* KeyBelongToLine(const std::string& KeyName) const;//Order:String-Special-Regex
-    IBB_SubSec_Default* KeyBelongToSubSec(const std::string& KeyName) const;
+    IBB_IniLine_Default* KeyBelongToLine(const std::string& KeyName);//Order:String-Special-Regex
+    IBB_SubSec_Default* KeyBelongToSubSec(const std::string& KeyName);
 };
 
 

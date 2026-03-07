@@ -190,16 +190,6 @@ void IBB_Section::GetClipData(ModuleClipData& Clip)
                     Tok.Desc = OnShow[key];
                 }
             }
-            for (auto& [key, val] : UnknownLines.Value)
-            {
-                auto& Tok = Tokens[key];
-                Tok.Empty = false;
-                Tok.HasDesc = !OnShow[key].empty();
-                Tok.IsSection = false;
-                Tok.Key = key;
-                Tok.Value = val;
-                Tok.Desc = OnShow[key];
-            }
             for (auto& s : LineOrder)
             {
                 if (auto It = Tokens.find(s); It != Tokens.end())
@@ -239,26 +229,21 @@ bool IBB_Section::SetText(const std::vector<IniToken>& Tokens)
     SubSecs.clear();
     LineOrder.clear();
     OnShow.clear();
-    UnknownLines.Value.clear();
     std::unordered_map<IBB_SubSec_Default*, int> SubSecList;
     std::unordered_set<std::string> UsedKeys;
     auto u = [&](const IniToken& tok) {
         //if (tok.Value.empty())MessageBoxA(MainWindowHandle, tok.Key.c_str(), "fff1", MB_OK);
 
         auto ptr = IBF_Inst_DefaultTypeList.List.KeyBelongToSubSec(tok.Key);
-        if (ptr == nullptr)UnknownLines.Value[tok.Key] = tok.Value;
-        else
+        auto It = SubSecList.find(ptr);
+        if (It == SubSecList.end())
         {
-            auto It = SubSecList.find(ptr);
-            if (It == SubSecList.end())
-            {
-                It = SubSecList.insert({ ptr,SubSecs.size() }).first;
-                SubSecs.emplace_back(ptr, this);
-            }
-            auto& Sub = SubSecs.at(It->second);
-            {
-                if (!Sub.MergeLine( tok.Key, tok.Value, false, IBB_IniMergeMode::Replace, false))Ret = false;
-            }
+            It = SubSecList.insert({ ptr,SubSecs.size() }).first;
+            SubSecs.emplace_back(ptr, this);
+        }
+        auto& Sub = SubSecs.at(It->second);
+        {
+            if (!Sub.MergeLine(tok.Key, tok.Value, false, IBB_IniMergeMode::Replace, false))Ret = false;
         }
 
         if (tok.HasDesc)
@@ -318,8 +303,6 @@ std::vector<std::string> IBB_Section::GetKeys(bool PrintExtraData) const
             auto K = Sub.GetKeys(PrintExtraData);
             Ret.insert(Ret.end(), K.begin(), K.end());
         }
-        for (const auto& V : UnknownLines.Value)
-            Ret.push_back(V.first);
         if (PrintExtraData)
         {
             Ret.push_back("_SECTION_NAME");
@@ -362,7 +345,6 @@ IBB_VariableList IBB_Section::GetLineList(bool PrintExtraData, bool FromExport, 
     {
         for (const auto& Sub : SubSecs)
             Ret.Merge(Sub.GetLineList(PrintExtraData, FromExport, TmpLineOrder), false);
-        Ret.Merge(UnknownLines, false);
         if (PrintExtraData)
         {
             Ret.Value["_SECTION_NAME"] = Name;
@@ -393,7 +375,6 @@ IBB_VariableList IBB_Section::GetSimpleLines() const
     {
         for (const auto& Sub : SubSecs)
             Ret.Merge(Sub.GetLineList(false, false), false);
-        Ret.Merge(UnknownLines, false);
     }
     return Ret;
 }
@@ -507,17 +488,6 @@ IIFWrapper_Wrapper IBB_Section::GetNewLineIIF(const std::string& Key) const
             }
             else return std::monostate{};
         }
-        else if (UnknownLines.HasValue(Key))
-        {
-            auto& Value = UnknownLines.GetVariable(Key);
-            auto& piif = IBB_DefaultRegType::SelectInputTypeByValue(Value).Sidebar;
-            if (piif) {
-                auto dup = piif->Duplicate();
-                dup->ParseFromString(Value);
-                return dup;
-            }
-            else return std::monostate{};
-        }
         else return std::monostate{};
         };
     return { NewIIF() };
@@ -551,19 +521,6 @@ IIFWrapper_Wrapper IBB_Section::GetLineIIF(const std::string& Key) const
     return GetNewLineIIF(Key);
 }
 
-std::string IBB_Section::GetFullVariable(const std::string& _Name) const
-{
-    if (VarList.HasValue(_Name))return VarList.GetVariable(_Name);
-    if (_Name == "_SECTION_NAME")return Name;
-    if (UnknownLines.HasValue(_Name))return UnknownLines.GetVariable(_Name);
-    for (const auto& ss : SubSecs)
-    {
-        auto u = ss.GetFullVariable(_Name);
-        if (!u.empty())return u;
-    }
-    return "";
-}
-
 void IBB_Section::RedirectLinkAsDupicate()
 {
     /*
@@ -576,12 +533,6 @@ void IBB_Section::RedirectLinkAsDupicate()
     */
     //LinkedBy.clear();
     for (auto& [k, s] : VarList.Value)
-    {
-        auto it = IBR_Inst_Project.CopyTransform.find(s);
-        if (it != IBR_Inst_Project.CopyTransform.end())
-            s = it->second;
-    }
-    for (auto& [k, s] : UnknownLines.Value)
     {
         auto it = IBR_Inst_Project.CopyTransform.find(s);
         if (it != IBR_Inst_Project.CopyTransform.end())
@@ -600,7 +551,6 @@ void IBB_Section::RedirectLinkAsDupicate()
 bool IBB_Section::HasLine(const std::string& Key) const
 {
     if (IsLinkGroup || IsComment()) return false;
-    if (UnknownLines.HasValue(Key))return true;
     if (SubSecs.empty())return false;
     if (GetLineFromSubSecs(Key) != nullptr)return true;
     return false;
@@ -744,20 +694,15 @@ bool IBB_Section::GenerateLines(const IBB_VariableList& Par, const std::vector<s
     for (const auto& [Key, Value] : Par.Value)
     {
         auto ptr = IBF_Inst_DefaultTypeList.List.KeyBelongToSubSec(Key);
-        if (ptr == nullptr)UnknownLines.Value[Key] = Value;
-        else
+        auto It = SubSecList.find(ptr);
+        if (It == SubSecList.end())
         {
-            auto It = SubSecList.find(ptr);
-            if (It == SubSecList.end())
-            {
-               
-                It = SubSecList.insert({ ptr,SubSecs.size() }).first;
-                 SubSecs.emplace_back(ptr, this);
-            }
-            auto& Sub = SubSecs.at(It->second);
-            if (!Sub.MergeLine(Key, Value, InitOnShow, IBB_IniMergeMode::Replace))Ret = false;
-            if (RemakeOrder)LineOrder.push_back(Key);
+            It = SubSecList.insert({ ptr,SubSecs.size() }).first;
+            SubSecs.emplace_back(ptr, this);
         }
+        auto& Sub = SubSecs.at(It->second);
+        if (!Sub.MergeLine(Key, Value, InitOnShow, IBB_IniMergeMode::Replace))Ret = false;
+        if (RemakeOrder)LineOrder.push_back(Key);
     }
     return Ret;
 }
@@ -798,8 +743,6 @@ bool IBB_Section::Merge(const IBB_Section& Another, const std::unordered_map<std
     {
         for (const auto& key : Another.LineOrder)
             PushLineOrder(key);
-
-        UnknownLines.Merge(Another.UnknownLines, false);
         VarList.Merge(Another.VarList, false);
         for (const auto& ss : Another.SubSecs)
         {
@@ -832,8 +775,6 @@ bool IBB_Section::Merge(const IBB_Section& Another, IBB_IniMergeMode MergeType, 
     {
         for (const auto& key : Another.LineOrder)
             PushLineOrder(key);
-
-        UnknownLines.Merge(Another.UnknownLines, false);
         VarList.Merge(Another.VarList, false);
         for (const auto& ss : Another.SubSecs)
         {
@@ -857,14 +798,6 @@ bool IBB_Section::Merge(const IBB_Section& Another, IBB_IniMergeMode MergeType, 
 }
 
 const std::vector<std::string>& SplitParamCached(const std::string& Text);
-
-bool IBB_Section::SetUnknownLineAndSync(const std::string& Key, const std::string& Value)
-{
-    PushLineOrder(Key);
-    UnknownLines.Value[Key] = Value;
-    SyncLineOnUI(Key, Value);
-    return true;
-}
 
 void IBB_Section::SyncLineOnUI(const std::string& Key, const std::string& Value) const
 {
@@ -912,17 +845,9 @@ bool IBB_Section::MergeLine(const std::string& Key, const std::string& Value, IB
     case IBB_IniMergeMode::Replace:
     {
         auto ptr = IBF_Inst_DefaultTypeList.List.KeyBelongToSubSec(Key);
-        if (ptr == nullptr)
-        {
-            SetUnknownLineAndSync(Key, Value);
-            return true;
-        }
-        else
-        {
-            PushLineOrder(Key);
-            auto& Sub = GetSubSecByDef(ptr);
-            return Sub.MergeLine(Key, Value, false, IBB_IniMergeMode::Replace, NoUpdate);
-        }
+        PushLineOrder(Key);
+        auto& Sub = GetSubSecByDef(ptr);
+        return Sub.MergeLine(Key, Value, false, IBB_IniMergeMode::Replace, NoUpdate);
     }
     case IBB_IniMergeMode::Merge:
     {
@@ -941,23 +866,13 @@ bool IBB_Section::MergeLine(const std::string& Key, const std::string& Value, IB
             }
             return str;
         };
-
-        if (ptr == nullptr)
-        {
-            auto NewVal = MergeVal(UnknownLines.Value[Key], Value);
-            SetUnknownLineAndSync(Key, NewVal);
-            return true;
-        }
-        else
-        {
-            PushLineOrder(Key);
-            auto& Sub = GetSubSecByDef(ptr);
-            auto LineIt = Sub.Lines.find(Key);
-            std::string NewVal;
-            if (LineIt == Sub.Lines.end())NewVal = Value;
-            else NewVal = MergeVal(LineIt->second.Data->GetString(), Value);
-            return Sub.MergeLine(Key, NewVal, false, IBB_IniMergeMode::Replace, NoUpdate);
-        }
+        PushLineOrder(Key);
+        auto& Sub = GetSubSecByDef(ptr);
+        auto LineIt = Sub.Lines.find(Key);
+        std::string NewVal;
+        if (LineIt == Sub.Lines.end())NewVal = Value;
+        else NewVal = MergeVal(LineIt->second.Data->GetString(), Value);
+        return Sub.MergeLine(Key, NewVal, false, IBB_IniMergeMode::Replace, NoUpdate);
         return true;
     }
     case IBB_IniMergeMode::Reserve:
@@ -995,14 +910,6 @@ void IBB_Section::OrderKey(const std::string& Key, size_t NewOrder)
 
 void IBB_Section::CheckSubsecOrder()
 {
-    extern const char* UnknownSubSecName;
-    if (!this->UnknownLines.Value.empty() &&
-        std::ranges::find_if(this->SubSecs, [](auto& sub) {return sub.Default->Type == IBB_SubSec_Default::UnknownLines; }) == this->SubSecs.end())
-    {
-        auto pUnkSub = &IBF_Inst_DefaultTypeList.List.SubSec_Default[UnknownSubSecName];
-        SubSecs.push_back(IBB_SubSec(pUnkSub, this));
-    }
-
     if (this->SubSecOrder.size() != this->SubSecs.size() + 1)
     {
         this->SubSecOrder.clear();
@@ -1029,7 +936,6 @@ IBB_Section::IBB_Section(IBB_Section&& S) noexcept :
     SubSecs(std::move(S.SubSecs)),
     NewLinkedBy(std::move(S.NewLinkedBy)),
     VarList(std::move(S.VarList)),
-    UnknownLines(std::move(S.UnknownLines)),
     LinkGroup_NewLinkTo(std::move(S.LinkGroup_NewLinkTo)),
     LineOrder(std::move(S.LineOrder))
 {
@@ -1459,10 +1365,6 @@ bool IBB_Section::UpdateLineOrder()
     {
         for (const auto& [K, V] : ss.Lines)
             if (!NewLineOrder.contains(K))NewLineOrder.insert(K);
-    }
-    for (const auto& [K, V] : UnknownLines.Value)
-    {
-        if (!NewLineOrder.contains(K))NewLineOrder.insert(K);
     }
 
     // remove deleted lines

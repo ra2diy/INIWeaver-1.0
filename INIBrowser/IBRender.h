@@ -96,7 +96,7 @@ struct IBR_SectionData
     void RenameRegisterImpl(const std::string& Name);
     void RenameDisplay();
     void RenameRegister();
-    bool RenderUI_KnownLine(const std::string& OnShow, const std::string& Name);
+    bool RenderUI_Line(const std::string& OnShow, const std::string& Name);
 
     void RenderUI();
     void RenderUI_Acceptor(float LastFinalY);
@@ -105,7 +105,6 @@ struct IBR_SectionData
     void RenderUI_Comment(IBB_Section*);
     void RenderUI_Collapsed(IBB_Section*, ImVec2 HeadLineRN, IBR_Section Rsec);
     void RenderUI_Virtual();
-    void RenderUI_UnknownLine(const std::string& k, const std::string& l, IBB_Section* Bsec);
     void RenderUI_Composed();
     void RenderUI_Lines(IBB_Section* Bsec);
 

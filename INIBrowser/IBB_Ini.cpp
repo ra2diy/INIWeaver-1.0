@@ -940,7 +940,38 @@ bool IBB_DefaultTypeList::BuildQuery()
     return Ret;
 }
 
-IBB_IniLine_Default* IBB_DefaultTypeList::KeyBelongToLine(const std::string& KeyName) const
+void IBB_DefaultTypeList::CreateUnknownType(const std::string& KeyName)
+{
+    IBB_DefaultTypeAlt Alt;
+
+    Alt.Name = KeyName;
+    Alt.DescShort = KeyName;
+    Alt.DescLong = "";
+
+    const auto& link = IBB_DefaultRegType::GetDefaultLinkNodeSetting();
+    Alt.LinkType = link.LinkType;
+    Alt.LinkLimit = link.LinkLimit;
+    Alt.Color = link.LinkCol;
+
+    const char* SelectDefaultInput(const std::string & LinkType);
+    Alt.Input = SelectDefaultInput(Alt.LinkType);
+
+    EnsureType(Alt);
+
+    auto& Def = IniLine_Default[KeyName];
+    Query.IniLine_Default_Full.insert({ Def.Limit.Lim, &Def });
+
+    extern const char* DefaultSubSecName;
+    auto& Sub = SubSec_Default[DefaultSubSecName];
+    Sub.Lines_ByName.push_back(KeyName);
+    Sub.Lines[KeyName] = Def;
+
+    Query.SubSec_Default_FromLineID.insert({ KeyName, &Sub });
+    //Query.InputTextOptions 不修改：字典里面其实没有这个类型。
+
+}
+
+IBB_IniLine_Default* IBB_DefaultTypeList::KeyBelongToLine(const std::string& KeyName)
 {
     {
         auto It = Query.IniLine_Default_Full.find(KeyName);
@@ -961,13 +992,14 @@ IBB_IniLine_Default* IBB_DefaultTypeList::KeyBelongToLine(const std::string& Key
         //for (const auto& p : Query.IniLine_Default_RegexNotFull)if (RegexNotFull_Nothrow(KeyName, p.first))return p.second;
         //for (const auto& p : Query.IniLine_Default_RegexNotNone)if (RegexNotNone_Nothrow(KeyName, p.first))return p.second;
     }
-    return nullptr;
+
+    CreateUnknownType(KeyName);
+    return KeyBelongToLine(KeyName);
 }
 
-IBB_SubSec_Default* IBB_DefaultTypeList::KeyBelongToSubSec(const std::string& KeyName) const
+IBB_SubSec_Default* IBB_DefaultTypeList::KeyBelongToSubSec(const std::string& KeyName)
 {
     auto ptr = KeyBelongToLine(KeyName);
-    if (ptr == nullptr)return nullptr;
     auto it = Query.SubSec_Default_FromLineID.find(ptr->Name);
     if (it == Query.SubSec_Default_FromLineID.end())return nullptr;
     return it->second;
