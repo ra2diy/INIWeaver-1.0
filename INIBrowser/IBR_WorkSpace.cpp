@@ -1399,35 +1399,13 @@ namespace IBR_WorkSpace
 
     void RenderUI_Links()
     {
-        auto EstimateLineWidth = [](ImVec2 pa, ImVec2 pb) -> float
-            {
-                //give up
-                IM_UNUSED(pa);
-                IM_UNUSED(pb);
-                return FontHeight / 5.0f;
-                /*
-                float Base = FontHeight / 5.0f;
-                float Dist = hypotf(pb.x - pa.x, pb.y - pa.y);
-                float ScrLin = (IBR_UICondition::CurrentScreenHeight + IBR_UICondition::CurrentScreenWidth) / 2.0F;
-                float Ratio = Dist / ScrLin;
-                float Mult;
-                if (Ratio < 1.2F) Mult = 1.0F;
-                else if (Ratio < 3.0F) Mult = Ratio / 1.2F;
-                else if (Ratio < 5.0F) Mult = (Ratio - 3.0F) * 1.5F + 2.5F;
-                else if (Ratio < 8.0F) Mult = (Ratio - 5.0F) * 2.5F + 5.5F;
-                else if (Ratio < 12.0F)Mult = (Ratio - 8.0F) * 4.0F + 13.0F;
-                else Mult = (Ratio - 12.0F) * 4.5F + 30.5F;
-                return Base * Mult;
-                */
-            };
-
         if(LinkNodeContext::HasDragNow)
         {
             auto pa = LinkNodeContext::CurDragStart;
             auto pb = ImGui::GetMousePos();
             auto Col = LinkNodeContext::CurDragCol;
             auto JList = (IBR_PopupManager::HasPopup) ? ImGui::GetBackgroundDrawList() : ImGui::GetForegroundDrawList();
-            float LineWidth = EstimateLineWidth(pa, pb);
+            float LineWidth = FontHeight / 5.0f;
             JList->PushClipRect(IBR_RealCenter::WorkSpaceUL, IBR_RealCenter::WorkSpaceDR, true);
             JList->AddBezierCubic(
                 pa,
@@ -1477,7 +1455,7 @@ namespace IBR_WorkSpace
                 {
                     ImVec2 pa = Link.BeginR;
                     ImVec2 pb = RSD->ReWindowUL + RSD->ReOffset;
-                    float LineWidth = EstimateLineWidth(pa, pb);;
+                    float LineWidth = FontHeight / 5.0f;
                     ImVec2 Mid = (pa + pb) / 2.0F;
                     bool Straight = (pb.x - pa.x >= FontHeight * 5.0F);
 
@@ -1489,7 +1467,18 @@ namespace IBR_WorkSpace
                         Col,
                         LineWidth);
                     else
-                        if (Link.IsSelfLinked)
+                    {
+                        if (Link.FromImport)
+                        {
+                            KList->AddBezierCubic(
+                                pa,
+                                { (pa.x + 4 * pb.x) / 5,pa.y },
+                                { (4 * pa.x + pb.x) / 5,pb.y },
+                                pb,
+                                Col,
+                                LineWidth);
+                        }
+                        else if (Link.IsSelfLinked)
                         {
                             KList->AddBezierCubic(
                                 pa,
@@ -1561,6 +1550,7 @@ namespace IBR_WorkSpace
                             }
                             */
                         }
+                    }
 
                 }
                 KList->PopClipRect();

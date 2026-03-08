@@ -113,6 +113,7 @@ void ControlPanel()
     static bool First = true;
 
     GetWindowRect(MainWindowHandle, &FinalWP);
+    IBF_Inst_Project.SwapLinkedBy();
     IBR_UICondition::UpdateWindowTitle();
     IBR_WorkSpace::UpdatePrev();
     IBR_FullView::UpdateCurrentEqMax();

@@ -38,6 +38,7 @@ struct IBB_IniLine_Default
     };
 
     int LinkLimit;
+    bool Known;
     std::string TypeAlt;//一个RegType的名字
 
     //从TypeAlt加载
@@ -160,6 +161,7 @@ struct IBB_NewLink
     ImU32 DefaultColor;
 
     std::string GetText() const;
+    bool Empty() const;//From和To都不能为空，有一个是"":""就返回true
 };
 
 struct IBB_SubSec
@@ -206,7 +208,6 @@ struct IBB_Section
     std::string Name;
     std::vector<IBB_SubSec> SubSecs;
     std::vector<size_t> SubSecOrder;
-    std::vector<IBB_NewLink> NewLinkedBy;
     IBB_VariableList VarList;
 
     bool IsLinkGroup{ false };//no subsec varlist unklines
@@ -258,6 +259,7 @@ struct IBB_Section
     IBB_SubSec& GetSubSecByDef(IBB_SubSec_Default* Def);//返回Def对应的SubSec，若没有则构造一个新的SubSec并返回
     IBB_SubSec& GetSubSecByLine(const std::string& Key);//返回包含Key的SubSec，若没有则构造一个新的SubSec并返回
 
+    std::vector<IBB_NewLink>& GetLinkedBy() const;
     const IBB_IniLine* GetLineFromSubSecs(const std::string& Name) const;
     IBB_Project_Index GetThisIndex() const;
     IBB_Section_Desc GetThisDesc() const;

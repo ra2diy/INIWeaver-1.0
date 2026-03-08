@@ -45,6 +45,11 @@ std::string IBB_NewLink::GetText() const
     return "FROM " + From.operator IBB_Section_Desc().GetText() + "." + FromKey + " TO " + To.operator IBB_Section_Desc().GetText();
 }
 
+bool IBB_NewLink::Empty() const
+{
+    return From.Empty() || To.Empty();
+}
+
 IBB_SubSec::IBB_SubSec(IBB_SubSec&& A) noexcept :
     Root(A.Root), Default(A.Default), Lines_ByName(std::move(A.Lines_ByName)), Lines(std::move(A.Lines)), NewLinkTo(std::move(A.NewLinkTo))
 {}
@@ -286,6 +291,7 @@ bool IBB_SubSec::RenameInLinkTo(size_t LinkIdx, const std::string& OldName, cons
             iif->GetValue(vid).Value = SplitParamCached(iif->GetValue(vid).Value) |
                 std::views::filter([&](auto&& s) {return !s.empty(); }) |
                 std::views::transform([&](auto& s) { return (s == OldName) ? NewName : s; }) |
+                std::views::filter([&](auto&& s) {return !s.empty(); }) |
                 std::views::join_with(',') |
                 std::ranges::to<std::string>();
 
@@ -404,6 +410,9 @@ bool IBB_SubSec::UpdateAll()
                     {
                         auto& IniType = Line.Default->GetIniType();
                         auto toidx = IBF_Inst_Project.Project.GetSecIndex(str, IniType);
+
+                        if (toidx.Empty())continue;//目标不存在，跳过
+
                         //sprintf_s(LogBufB, "New Link <%s->%u:%u> to %s, ", Root->Name.c_str(), LineIdx, cidx, toidx.operator IBB_Section_Desc().GetText().c_str());
                         //GlobalLogB.AddLog(LogBufB, false);
                         ClaimLink(LineIdx, cidx, NewLT.size());

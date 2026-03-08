@@ -429,15 +429,19 @@ bool IBR_SectionData::RenderUI_Line(const std::string& OnShow, const std::string
     ExportContext::Key = Name;
     if (Line.Edit.NeedInit())
     {
+        auto& Input = line->Default->Known ?
+            *line->Default->Input :
+            IBB_DefaultRegType::SelectInputTypeByValue(line->Data->GetString());
         //SYNC : WORKSPACE -> EDIT MENU
         IBR_IniLine::InitType It{ line->Data->GetString() ,
             "##" + RandStr(8),[Name, idx = IBB_Project_Index(this->Desc)](const std::string& S)
                 {
                     IBG_Undo.SomethingShouldBeHere();
                     auto Back = idx.GetSec(IBF_Inst_Project.Project);
-                    if (Back)Back->MergeLine(Name, S, IBB_IniMergeMode::Replace);
+                    if (!Back)return;
+                    Back->MergeLine(Name, S, IBB_IniMergeMode::Replace);
                 },
-            line->Default->Input->WorkSpace,
+            Input.WorkSpace,//内部会Duplicate一次，此处不需要
             line->Default->GetNodeSetting()
         };
         Line.Edit.RenderUI(DescShort, DescLong, &It);
@@ -566,7 +570,7 @@ void IBR_SectionData::RenderUI_TitleBar(IBR_Section Rsec, IBB_Section* Bsec, boo
     auto Pos = ImGui::GetCursorPos();
     auto Virtual = IsVirtualBlock();
 
-    auto NotAsImported = std::ranges::all_of(Bsec->NewLinkedBy, [](const auto& nl) { return nl.FromKey != ImportKeyName; });
+    auto NotAsImported = std::ranges::all_of(Bsec->GetLinkedBy(), [](const auto& nl) { return nl.FromKey != ImportKeyName; });
     
     ImVec2 CurL{ Pos.x,Pos.y - 0.2f * FontHeight };
     ImGui::SetCursorPos({ 0.0f,CurL.y });
@@ -764,6 +768,31 @@ void IBR_SectionData::RenderUI_TitleBar(IBR_Section Rsec, IBB_Section* Bsec, boo
             IBR_Inst_Project.IBR_SecDragMap[s] = { Desc };
             ImGui::EndDragDropSource();
         }
+        if (ImGui::IsItemHovered())
+        {
+            std::string Str;
+            auto& Links = Bsec->GetLinkedBy();
+            if (IBR_WorkSpace::ShowRegName)
+                Str = Links |
+                std::views::transform([&](auto p) {return p.From.Section.GetText(); }) |
+                std::views::filter([&](auto&& s) { return !s.empty(); }) |
+                std::views::join_with(',') |
+                std::ranges::to<std::string>();
+            else
+                Str = Links |
+                std::views::transform([&](auto p) {
+                    auto Sec = IBR_Inst_Project.GetSection(p.From);
+                    return Sec.HasBack() ? Sec.GetDisplayName() : p.From.Section.GetText();
+                }) |
+                std::views::filter([&](auto&& s) { return !s.empty(); }) |
+                        std::views::join_with(',') |
+                        std::ranges::to<std::string>();
+            if (!Str.empty())
+            {
+                auto W = UTF8toUnicode(Str);
+                IBR_ToolTip(std::vformat(locw("GUI_Preview_LinkedBy"), std::make_wformat_args(W)));
+            }
+        }
 
         if (NotAsImported)
         {
@@ -832,8 +861,9 @@ void IBR_SectionData::RenderUI_Collapsed(IBB_Section* Bsec, ImVec2 HeadLineRN, I
         for (const auto& lt : sub.NewLinkTo)
         {
             IBB_Section_Desc _Desc = lt.To;
+            bool FromImport = (lt.FromKey == ImportKeyName);
             bool IsLinkingToSelf = (gtd == _Desc);
-            IBR_LinkNode::PushLinkForDraw(HeadLineRN, _Desc, lt.DefaultColor, IsLinkingToSelf);
+            IBR_LinkNode::PushLinkForDraw(HeadLineRN, _Desc, lt.DefaultColor, FromImport, IsLinkingToSelf);
         }
     }
     ImGui::SetCursorPos({ ImGui::GetWindowWidth() - FontHeight * 4.0f, FinalY - FontHeight * 0.15f });
@@ -991,9 +1021,9 @@ namespace IBR_LinkNode
         return ImGui::GetStyleColorVec4(ImGuiCol_CheckMark);
     }
 
-    void PushLinkForDraw(ImVec2 Center, const IBB_Section_Desc& Target, ImU32 LineCol, bool SelfLink, bool SrcDragging)
+    void PushLinkForDraw(ImVec2 Center, const IBB_Section_Desc& Target, ImU32 LineCol, bool FromImport, bool SelfLink, bool SrcDragging)
     {
-        IBR_Inst_Project.LinkList.push_back({ Center, Target, AdjustLineCol(LineCol), SelfLink, SrcDragging });
+        IBR_Inst_Project.LinkList.push_back({ Center, Target, AdjustLineCol(LineCol), FromImport, SelfLink, SrcDragging });
     }
 }
 

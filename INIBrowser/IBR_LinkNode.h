@@ -106,6 +106,7 @@ namespace IBR_LinkNode
         ImVec2 Center,
         const IBB_Section_Desc& Target,
         ImU32 LineCol,
+        bool FromImport,
         bool SelfLink,
         bool SrcDragging = false
     );

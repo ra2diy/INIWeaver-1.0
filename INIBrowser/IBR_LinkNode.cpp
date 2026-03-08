@@ -106,6 +106,11 @@ namespace IBR_NodeSession
         auto S = Ini + "\n" + Sec + "\n" + Line + "\n" + std::to_string(Comp);
         return std::hash<std::string>{}(S);
     }
+
+    void ClearSession()
+    {
+        SessionData.clear();
+    }
 }
 
 namespace IBR_LinkNode
@@ -192,6 +197,7 @@ namespace IBR_LinkNode
         for (auto& L : Links)
         {
             //GlobalLogB.AddLog((L.To.operator IBB_Section_Desc().GetText() + " , ").c_str(), false);
+            IBF_Inst_Project.PushLinkedBy(L);
             PushLinkForDraw(
                 Center,
                 L.To,
@@ -459,10 +465,12 @@ namespace IBR_LinkNode
             if (link.To.GetSec(IBF_Inst_Project.Project) == FromSub.Root)continue;
             if (it == OnShow.end() || it->second.empty())
             {
+                IBF_Inst_Project.PushLinkedBy(link);
                 PushLinkForDraw(
                     Center,
                     link.To,
                     link.DefaultColor,
+                    (link.FromKey == ImportKeyName),
                     false
                 );
             }
@@ -488,6 +496,7 @@ namespace IBR_LinkNode
             if (Line != LineIdx)continue;
             if (Pushed.contains(idx))continue;
             auto& link = FromSub.NewLinkTo[lidx];
+            IBF_Inst_Project.PushLinkedBy(link);
             PushLinkForDraw(
                 Center,
                 link.To,

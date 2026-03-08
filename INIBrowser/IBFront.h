@@ -2,6 +2,7 @@
 
 #include "IBB_Setting.h"
 #include "IBB_Project.h"
+#include "IBB_Components.h"
 #include "SaveFile.h"
 
 void IBF_Thr_FrontLoop();
@@ -48,12 +49,18 @@ struct IBF_DefaultTypeList
 
 
 struct IBS_Project;
+struct IBB_NewLink;
 
 struct IBF_Project
 {
     IBB_Project Project;
     uint32_t CurrentProjectRID;
     std::unordered_map<std::string, IBB_Section_Desc> DisplayNames;
+    std::map<IBB_Section_Desc, std::vector<IBB_NewLink>> LinkedBy, LinkedByLast;
+
+    void SwapLinkedBy();
+    void PushLinkedBy(IBB_NewLink Link);
+    std::vector<IBB_NewLink>& GetLinkedBy(const IBB_Section_Desc& Desc);
 
     bool HasDisplayName(const std::string& Name)
     {

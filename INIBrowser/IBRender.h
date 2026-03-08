@@ -201,6 +201,7 @@ struct IBR_Project
         ImVec2 BeginR;
         IBB_Section_Desc Dest;
         ImU32 Color;
+        bool FromImport;
         bool IsSelfLinked;
         bool IsSrcDragging;
     };

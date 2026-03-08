@@ -185,6 +185,7 @@ bool IBF_DefaultTypeList::ReadAltSetting(const wchar_t* Name)
     std::vector<std::wstring> FindFileVec(const std::wstring & pattern);
     using namespace std::string_literals;
 
+
     IBB_DefaultTypeAltList Alt;
     if (EnableLog)
     {
@@ -219,29 +220,26 @@ bool IBF_Project::UpdateAll()
     return Project.UpdateAll();
 }
 
+void IBF_Project::SwapLinkedBy()
+{
+    std::swap(LinkedBy, LinkedByLast);
+    for (auto& d : LinkedBy)
+        d.second.clear();
+}
+void IBF_Project::PushLinkedBy(IBB_NewLink Link)
+{
+    LinkedBy[Link.To].push_back(Link);
+}
+std::vector<IBB_NewLink>& IBF_Project::GetLinkedBy(const IBB_Section_Desc& Desc)
+{
+    return LinkedByLast[Desc];
+}
+
 bool IBF_Project::UpdateCreateSection(const IBB_Section_Desc& Desc)
 {
     IBB_Section* pSec = const_cast<IBB_Section*>(Project.GetSec(Desc));
     if (pSec == nullptr)return false;
-
-    bool Ret = true;
-    for (auto& Ini : Project.Inis)for (auto& sp : Ini.Secs)
-    {
-        if (sp.second.IsLinkGroup)
-        {
-            for (auto& l : sp.second.LinkGroup_NewLinkTo)
-                if (l.To.GetSec(Project) == pSec)
-                    pSec->NewLinkedBy.push_back(l);
-        }
-        else
-        {
-            for (auto& ss : sp.second.SubSecs)
-                for (auto& l : ss.NewLinkTo)
-                    if (l.To.GetSec(Project) == pSec)
-                        pSec->NewLinkedBy.push_back(l);
-        }
-    }
-    return Ret;
+    return true;
 }
 
 void IBF_Project::Load(const IBS_Project& Proj)
@@ -279,9 +277,15 @@ void IBF_Project::Save(IBS_Project& Proj)
     Project.ChangeAfterSave = false;
 }
 
+namespace IBR_NodeSession
+{
+    void ClearSession();
+}
+
 void IBF_Project::Clear()
 {
     CurrentProjectRID = 0;
     Project.Clear();
     this->DisplayNames.clear();
+    IBR_NodeSession::ClearSession();
 }

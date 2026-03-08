@@ -8,6 +8,8 @@
 #include "IBR_LinkNode.h"
 #include "IBB_FileChecker.h"
 
+extern IBB_Section* spsp;
+
 std::string IBB_RegType::GetNoName()
 {
     auto NewName = Name + std::to_string(++Count);
@@ -277,8 +279,15 @@ R"({
         }
         else pp = &it->second;
 
+        
+        OutputDebugStringA((std::to_string(spsp) + "\n").c_str());
+        OutputDebugStringA((spsp->Name + "\n").c_str());
         auto pIni = IBF_Inst_Project.Project.GetIni(IBB_Project_Index(pp->IniType));
+        OutputDebugStringA((std::to_string(spsp) + "\n").c_str());
+        OutputDebugStringA((spsp->Name + "\n").c_str());
         if (!pIni)IBF_Inst_Project.Project.CreateIni(pp->IniType);
+        OutputDebugStringA((std::to_string(spsp) + "\n").c_str());
+        OutputDebugStringA((spsp->Name + "\n").c_str());
     }
     bool Load(JsonObject Obj)
     {
@@ -367,7 +376,8 @@ R"({
             GlobalLogB.AddLog((u8"IBB_DefaultRegType::LoadFromFile ： " + loc("Log_LoadRegType")).c_str());
         }
         bool Available = true;
-        for(auto&& File : FindFileVec(FileName))
+        auto&& Vec = FindFileVec(FileName);
+        for(auto&& File : Vec)
         {
             IBB_FileCheck(File, false, true, false);
             JsonFile F;
@@ -377,6 +387,13 @@ R"({
             if (!F.Available())Available = false;
             else Available &= Load(F);
         }
+
+        if (Vec.empty())
+        {
+            auto S_StrBool = "\"yes_no\"";
+            InitInputTypes(S_StrBool);
+        }
+
         return Available;
     }
     bool HasRegType(const _TEXT_UTF8 std::string& Type)

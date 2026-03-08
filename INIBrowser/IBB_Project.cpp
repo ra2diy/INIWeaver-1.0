@@ -464,28 +464,12 @@ bool IBB_Project::UpdateAll()
         sprintf_s(LogBufB, "IBB_Project::UpdateAll <- void"); GlobalLogB.AddLog(LogBufB);
     }
     bool Ret = true;
-    for (auto& Ini : Inis)for (auto& sp : Ini.Secs)
-    {
-        sp.second.NewLinkedBy.clear();
-        for (auto& ss : sp.second.SubSecs)ss.NewLinkTo.clear();
-    }
-    for (auto& Ini : Inis)if (!Ini.UpdateAll())Ret = false;
     for (auto& Ini : Inis)
-        for (auto& [sn, Sec] : Ini.Secs)
-        {
-            if (Sec.IsLinkGroup)
-            {
-                for (auto& Link1 : Sec.LinkGroup_NewLinkTo)
-                    if (auto To1 = Link1.To.GetSec(*this); To1)
-                        To1->NewLinkedBy.push_back(Link1);
-            }
-            else for (auto& Sub : Sec.SubSecs)
-            {
-                for (auto& Link : Sub.NewLinkTo)
-                    if (auto To = Link.To.GetSec(*this); To)
-                        To->NewLinkedBy.push_back(Link);
-            }
-        }
+        for (auto& sp : Ini.Secs)
+            for (auto& ss : sp.second.SubSecs)
+                ss.NewLinkTo.clear();
+    for (auto& Ini : Inis)if (!Ini.UpdateAll())Ret = false;
+    
     RecalcSPCacheSize(*this, SPCacheSize());
     if (EnableLogEx)
     {

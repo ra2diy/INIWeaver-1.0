@@ -107,7 +107,7 @@ std::optional<ModuleID_t> _PROJ_CMD_WRITE _PROJ_CMD_UPDATE IBR_Project::AddModul
         if (!sd)return std::nullopt;
         //sd->Dragging = true;
         sd->EqDelta = Module.EqDelta;
-        //M essage BoxA(NULL, ("(" + std::to_string(sd->EqDelta.x) + " , " + std::to_string(sd->EqDelta.y) + ")").c_str(), "Load1!", MB_OK);
+        //MessageBoxA(NULL, ("(" + std::to_string(sd->EqDelta.x) + " , " + std::to_string(sd->EqDelta.y) + ")").c_str(), "Load1!", MB_OK);
         sd->EqSize = Module.EqSize;
         sd->Ignore = Module.Ignore;
         sd->EqPos = InitEqPos;

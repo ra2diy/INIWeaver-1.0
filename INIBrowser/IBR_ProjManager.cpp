@@ -73,6 +73,20 @@ namespace IBR_ProjectManager
         proj.CreateVersionMajor = VersionMajor;
         proj.CreateVersionMinor = VersionMinor;
         proj.CreateVersionRelease = VersionRelease;
+
+        /*
+        必须加这两行以应对一个十分刁钻的bug：
+        在项目里面，
+        如果第一个模块在art这个ini中，
+        且这个模块的第一个语句不在字典当中，
+        且这个语句的连接类型在任何配置当中都没出现过，
+        且Rules在任何配置当中也没出现过
+        且连接类型需要向Rules写入注册表，
+        那么就会在载入这个项目时崩溃
+        */
+        proj.CreateIni(DefaultIniName);
+        proj.CreateIni(Internal_IniName);
+
         IBF_Inst_Project.CurrentProjectRID = GlobalRnd();
         IBB_DefaultRegType::ClearModuleCount();
         IsProjectOpen = true;

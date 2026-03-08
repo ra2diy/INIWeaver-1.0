@@ -71,7 +71,6 @@ bool IBB_Section::Generate(const ModuleClipData& Clip)
         {
             Comment.clear();
             OnShow.clear();
-            NewLinkedBy.clear();
             LineOrder.clear();
             LinkGroup_NewLinkTo.clear();
             Register = Clip.Register;
@@ -98,7 +97,7 @@ bool IBB_Section::Generate(const ModuleClipData& Clip)
                 std::string dsc;
                 Order.push_back(L.Key); 
             }
-            
+
             GenerateLines(VL, Order, false);
         }
     }
@@ -311,7 +310,7 @@ std::vector<std::string> IBB_Section::GetKeys(bool PrintExtraData) const
             VarList.Flatten(VL);
             for (const auto& V : VL.Value)
                 Ret.push_back(V.first);
-            for (const auto& L : NewLinkedBy)
+            for (const auto& L : GetLinkedBy())
             {
                 auto pf = L.From.GetSec(*(Root->Root)), pt = L.To.GetSec(*(Root->Root));
                 if (pf != nullptr && pt != nullptr)
@@ -352,7 +351,7 @@ IBB_VariableList IBB_Section::GetLineList(bool PrintExtraData, bool FromExport, 
             IBB_VariableList VL;
             VarList.Flatten(VL);
             Ret.Merge(VL, false);
-            for (auto L : NewLinkedBy)
+            for (auto L : GetLinkedBy())
             {
                 auto pf = L.From.GetSec(*(Root->Root)), pt = L.To.GetSec(*(Root->Root));
                 if (pf != nullptr && pt != nullptr)
@@ -636,6 +635,13 @@ IBB_Section_Desc IBB_Section::GetThisDesc() const
     return IBB_Section_Desc{ Root->Name,Name };
 }
 
+std::vector<IBB_NewLink>& IBB_Section::GetLinkedBy() const
+{
+    return IBF_Inst_Project.GetLinkedBy(GetThisDesc());
+}
+
+extern IBB_Section* spsp;
+
 bool IBB_Section::GenerateLines(const IBB_VariableList& Par, const std::vector<std::string>& Order, bool InitOnShow)
 {
     bool Ret = true;
@@ -868,7 +874,6 @@ IBB_Section::IBB_Section(IBB_Section&& S) noexcept :
     IsLinkGroup(S.IsLinkGroup),
     Name(std::move(S.Name)),
     SubSecs(std::move(S.SubSecs)),
-    NewLinkedBy(std::move(S.NewLinkedBy)),
     VarList(std::move(S.VarList)),
     LinkGroup_NewLinkTo(std::move(S.LinkGroup_NewLinkTo)),
     LineOrder(std::move(S.LineOrder))
@@ -940,7 +945,7 @@ bool IBB_Section::RemoveNameInLinkTo(IBB_Section* Target)
                 if (Link.To.GetSec(Proj) == Target)
                     //按照这个Link，找到所有from的地方并修改to到新name
                     Ret &= Sub.RenameInLinkTo(idx, Target->Name, "");
-                else
+                else if(!Link.Empty())
                 {
                     NL.push_back(Link);
                     OldToNew[idx] = NL.size() - 1;
@@ -962,7 +967,7 @@ bool IBB_Section::AcceptNewNameInLinkedBy(const IBB_Project_Index& OldIndex, con
     //不存在则退出
     if (!Sec)return true;
     //从自己来的都得改
-    for (auto& Link : Sec->NewLinkedBy)
+    for (auto& Link : Sec->GetLinkedBy())
         if (Link.From.GetSec(Proj) == this)
             Link.From.Section.Assign(NewName);
     return true;
@@ -1001,7 +1006,7 @@ bool IBB_Section::Rename(const std::string& NewName)
                     Link.To.Section.Assign(NewName);
             }
     }
-    for (auto& Link : NewLinkedBy)
+    for (auto& Link : GetLinkedBy())
     {
         //按照From追溯到来源
         auto Src = Link.From.GetSec(Proj);
@@ -1033,7 +1038,7 @@ bool IBB_Section::Isolate()
 {
     auto& Proj = *Root->Root;
     bool Ret = true;
-    for (auto& Link : NewLinkedBy)
+    for (auto& Link : GetLinkedBy())
     {
         //按照From追溯到来源
         auto Src = Link.From.GetSec(Proj);

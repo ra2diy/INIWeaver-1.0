@@ -96,3 +96,10 @@ const IBB_Section* IBB_Project_Index::GetSec(const IBB_Project& Proj) const
     auto Iter1 = Section.Search(Iter->Secs, true);
     return (Iter1 == Iter->Secs.end()) ? nullptr : std::addressof(Iter1->second);
 }
+bool IBB_Project_Index::Empty() const
+{
+    if (Ini.UseIndex)return false;
+    if (Section.UseIndex)return false;
+    if (Ini.Name.empty() && Section.Name.empty())return true;
+    return false;
+}

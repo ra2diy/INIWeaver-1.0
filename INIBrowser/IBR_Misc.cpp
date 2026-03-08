@@ -318,10 +318,13 @@ namespace IBR_EditFrame
                 auto& Line = EditLines[K];
                 Line.Buffer = V.Data->GetString();
                 Line.Hint = V.Default->DescLong;
-                Line.InputType = V.Default->Input;
                 Line.LinkNode = V.Default->GetNodeSetting();
                 Line.OnShowBuf = rsc->GetOnShow(K);
                 Line.InputOnshow = false;
+
+                Line.InputType = V.Default->Known ?
+                    V.Default->Input :
+                    &IBB_DefaultRegType::SelectInputTypeByValue(Line.Buffer);
             }
         }
     }
@@ -377,15 +380,20 @@ namespace IBR_EditFrame
     void ExitTextEdit()
     {
         auto pbk = CurSection.GetBack();
-        if (!pbk)
+        auto rsd = CurSection.GetSectionData();
+        if (!pbk || !rsd)
         {
             Empty = true;
             return;
         }
         OnTextEdit = false;
+
         IBG_Undo.SomethingShouldBeHere();
+
+        rsd->ActiveLines.clear();
         pbk->SetText(EditBuf);
         ResetEdit(pbk);
+
         NewLineKey.clear();
         NewLineValue.clear();
         IBR_Inst_Project.UpdateAll();

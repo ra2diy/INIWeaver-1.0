@@ -97,6 +97,7 @@ struct IBB_Project_Index
     IBB_Section* GetSec(IBB_Project& Proj);
     IBB_Ini* GetIni(IBB_Project& Proj) const;
     IBB_Section* GetSec(IBB_Project& Proj) const;
+    bool Empty() const;
 
     bool operator==(const IBB_Project_Index& A) const
     {
