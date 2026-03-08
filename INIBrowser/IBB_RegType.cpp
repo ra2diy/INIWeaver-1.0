@@ -8,8 +8,6 @@
 #include "IBR_LinkNode.h"
 #include "IBB_FileChecker.h"
 
-extern IBB_Section* spsp;
-
 std::string IBB_RegType::GetNoName()
 {
     auto NewName = Name + std::to_string(++Count);
@@ -279,15 +277,8 @@ R"({
         }
         else pp = &it->second;
 
-        
-        OutputDebugStringA((std::to_string(spsp) + "\n").c_str());
-        OutputDebugStringA((spsp->Name + "\n").c_str());
         auto pIni = IBF_Inst_Project.Project.GetIni(IBB_Project_Index(pp->IniType));
-        OutputDebugStringA((std::to_string(spsp) + "\n").c_str());
-        OutputDebugStringA((spsp->Name + "\n").c_str());
         if (!pIni)IBF_Inst_Project.Project.CreateIni(pp->IniType);
-        OutputDebugStringA((std::to_string(spsp) + "\n").c_str());
-        OutputDebugStringA((spsp->Name + "\n").c_str());
     }
     bool Load(JsonObject Obj)
     {
