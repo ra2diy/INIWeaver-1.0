@@ -131,17 +131,13 @@ struct IBB_IniLine
 
     template<typename T> T* GetData() const { return dynamic_cast<T*>(Data.get()); }
 
-    bool Merge(const IBB_IniLine& Another, IBB_IniMergeMode Mode);
     bool Merge(const std::string& Another, IBB_IniMergeMode Mode);
-
     bool Generate(const std::string& Value, IBB_IniLine_Default* Def = nullptr);//don't change Default if Def == nullptr 
 
     IBB_IniLine() {}
     IBB_IniLine(const std::string& Value, IBB_IniLine_Default* Def) { Generate(Value, Def); }
     IBB_IniLine(const IBB_IniLine& F) { Default = F.Default; Data = F.Data; }
     IBB_IniLine(IBB_IniLine&& F) noexcept;
-
-    IBB_IniLine Duplicate() const;//这个才是深复制，鉴于深复制用处远低浅复制，故默认浅复制
 
     ~IBB_IniLine() = default;
 };
@@ -172,13 +168,8 @@ struct IBB_SubSec
     IBB_SubSec(const IBB_SubSec&) = default;
     IBB_SubSec(IBB_SubSec&& A) noexcept;
 
-    bool Merge(const IBB_SubSec& Another, const std::unordered_map<std::string, IBB_IniMergeMode>& MergeType, bool IsDuplicate);
-    bool Merge(const IBB_SubSec& Another, IBB_IniMergeMode Mode, bool IsDuplicate);
-
     std::vector<std::string> GetKeys(bool PrintExtraData) const;//RARELY USED
-    IBB_VariableList GetLineList(bool PrintExtraData, bool FromExport, std::vector<std::string>* TmpLineOrder = nullptr) const;//RARELY USED
-    IBB_SubSec Duplicate() const;//这个才是深复制，鉴于深复制用处远低浅复制，故默认浅复制
-    void GenerateAsDuplicate(const IBB_SubSec& Src);//从Src深复制
+    IBB_VariableList GetLineList(bool PrintExtraData, bool FromExport, std::vector<std::string>* TmpLineOrder = nullptr) const;
     std::pair< std::multimap<uint64_t, size_t>::const_iterator, std::multimap<uint64_t, size_t>::const_iterator>
         GetLink(size_t LineIdx, size_t ComponentIdx) const;
     void ClaimLink(size_t LineIdx, size_t ComponentIdx, size_t LinkIdx);
@@ -222,8 +213,6 @@ struct IBB_Section
     //增删改时相应修改移动构造函数
 
     // MergeType is unused to a LinkGroup
-    bool Merge(const IBB_Section& Another, const std::unordered_map<std::string, IBB_IniMergeMode>& MergeType, bool IsDuplicate);
-    bool Merge(const IBB_Section& Another, IBB_IniMergeMode MergeType, bool IsDuplicate);//they share the same merge type
     bool MergeLine(const std::string& Key, const std::string& Value, IBB_IniMergeMode Mode, bool NoUpdate = false);
     bool GenerateLines(const IBB_VariableList& Lines, const std::vector<std::string>& Order = {}, bool InitOnShow = true);
     void OrderKey(const std::string& Key, size_t NewOrder);
@@ -238,7 +227,6 @@ struct IBB_Section
     IBB_Section(IBB_Section&&) noexcept;
 
     bool ChangeRoot(const IBB_Ini* NewRoot);
-    IBB_Section& ChangeRootAndBack(const IBB_Ini* R) { ChangeRoot(R); return *this; }
     bool Rename(const std::string& NewName);//无效化指向它的所有IBB_Section_Desc
     bool AcceptNewNameInLinkTo(IBB_Section* Target, const std::string& NewName);//配合Rename
     bool AcceptNewNameInLinkedBy(const IBB_Project_Index& OldIndex, const std::string& NewName);//配合Rename
@@ -286,20 +274,16 @@ struct IBB_Section
 struct IBB_Ini
 {
     IBB_Project* Root;
-    /*
-    enum _Type
-    {
-        Rule,Art,AI,Sound,EVA    etc.
-    }Name;
-    */
-    _TEXT_ANSI std::string Name;
-    std::vector<_TEXT_ANSI std::string> Secs_ByName;
-    std::unordered_map<_TEXT_ANSI std::string, IBB_Section> Secs;
+    std::string Name;
+    std::vector<std::string> Secs_ByName;
+    std::unordered_map<std::string, IBB_Section> Secs;
 
-    bool Merge(const IBB_Ini& Another, bool IsDuplicate);
-    bool CreateSection(const _TEXT_ANSI std::string& _Name);
-    bool AddSection(const IBB_Section& Section, bool IsDuplicate);
-    bool DeleteSection(const _TEXT_ANSI std::string& Tg);//包含Update
+    IBB_Ini() = default;
+    IBB_Ini(const IBB_Ini&);
+    IBB_Ini(IBB_Ini&&) noexcept;
+
+    bool CreateSection(const std::string& _Name);
+    bool DeleteSection(const std::string& Tg);//包含Update
 
     std::string GetText(bool PrintExtraData) const;
 

@@ -54,77 +54,6 @@ IBB_SubSec::IBB_SubSec(IBB_SubSec&& A) noexcept :
     Root(A.Root), Default(A.Default), Lines_ByName(std::move(A.Lines_ByName)), Lines(std::move(A.Lines)), NewLinkTo(std::move(A.NewLinkTo))
 {}
 
-bool IBB_SubSec::Merge(const IBB_SubSec& Another, const std::unordered_map<std::string, IBB_IniMergeMode>& MergeType, bool IsDuplicate)
-{
-    bool Ret = true;
-    for (auto p : Another.Lines)
-    {
-        auto it = Lines.find(p.first);
-        if (it == Lines.end())
-        {
-            Lines_ByName.push_back(p.first);
-            if (IsDuplicate)
-            {
-                IBB_IniLine np = p.second.Duplicate();
-                Lines.insert({ p.first,np });
-            }
-            else Lines.insert(p);
-        }
-        else
-        {
-            const auto& Mode = MergeType.find(p.first);
-            if (!it->second.Merge(p.second, Mode == MergeType.end() ? IBB_IniMergeMode::Replace : Mode->second))Ret = false;
-        }
-    }
-    if (Root != nullptr)
-    {
-        //auto pproj = Root->Root->Root;
-        auto ti = Root->GetThisIndex();
-        for (const auto& p : Another.NewLinkTo)
-        {
-            NewLinkTo.push_back(p);
-            NewLinkTo.back().From = ti;
-        }
-    }
-    return Ret;
-}
-bool IBB_SubSec::Merge(const IBB_SubSec& Another, IBB_IniMergeMode Mode, bool IsDuplicate)
-{
-    bool Ret = true;
-    for (auto p : Another.Lines)
-    {
-        auto it = Lines.find(p.first);
-        if (it == Lines.end())
-        {
-            Lines_ByName.push_back(p.first);
-            if (IsDuplicate)
-            {
-                IBB_IniLine np = p.second.Duplicate();
-                Lines.insert({ p.first,np });
-            }
-            else
-            {
-                Lines.insert(p);
-            }
-        }
-        else
-        {
-            if (!it->second.Merge(p.second, Mode))Ret = false;
-        }
-    }
-    if (Root != nullptr)
-    {
-        //auto pproj = Root->Root->Root;
-        auto ti = Root->GetThisIndex();
-        for (const auto& p : Another.NewLinkTo)
-        {
-            NewLinkTo.push_back(p);
-            NewLinkTo.back().From = ti;
-
-        }
-    }
-    return Ret;
-}
 bool IBB_SubSec::MergeLine(const std::string& Key, const std::string& Value, bool InitOnShow, IBB_IniMergeMode Mode, bool NoUpdate)
 {
     /*sprintf_s(LogBufB, __FUNCTION__ ":  %s=%s Mode=%d InitOnShow=%s NoUpdate=%s",
@@ -227,18 +156,6 @@ IBB_VariableList IBB_SubSec::GetLineList(bool PrintExtraData, bool FromExport, s
     return Ret;
 }
 
-IBB_SubSec IBB_SubSec::Duplicate() const
-{
-    IBB_SubSec Ret;
-    Ret.Root = Root;
-    Ret.Default = Default;
-    Ret.Lines_ByName = Lines_ByName;
-    Ret.NewLinkTo = NewLinkTo;
-    Ret.Lines.reserve(Lines.size());
-    for (const auto& p : Lines)Ret.Lines.insert({ p.first,p.second.Duplicate() });
-    return Ret;
-}
-
 std::pair< std::multimap<uint64_t, size_t>::const_iterator, std::multimap<uint64_t, size_t>::const_iterator>
 IBB_SubSec::GetLink(size_t LineIdx, size_t ComponentIdx) const
 {
@@ -304,15 +221,6 @@ bool IBB_SubSec::RenameInLinkTo(size_t LinkIdx, const std::string& OldName, cons
     return Ret;
 }
 
-void IBB_SubSec::GenerateAsDuplicate(const IBB_SubSec& Src)
-{
-    Root = Src.Root;
-    Default = Src.Default;
-    Lines_ByName = Src.Lines_ByName;
-    NewLinkTo = Src.NewLinkTo;
-    Lines.reserve(Src.Lines.size());
-    for (const auto& p : Src.Lines)Lines.insert({ p.first,p.second.Duplicate() });
-}
 
 bool IBB_SubSec::UpdateAll()
 {

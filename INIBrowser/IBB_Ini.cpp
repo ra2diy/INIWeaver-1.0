@@ -418,31 +418,6 @@ std::string IBB_RegisterList::GetText(bool PrintExtraData) const
 }
 
 
-
-bool IBB_Ini::Merge(const IBB_Ini& Another, bool IsDuplicate)
-{
-    bool Ret = true;
-    for (const auto& fs : Another.Secs_ByName)
-    {
-        auto It = Another.Secs.find(fs);
-        if (It == Another.Secs.end())
-        {
-            if (EnableLog)
-            {
-                GlobalLogB.AddLog_CurTime(false);
-                auto gt = UTF8toUnicode(Another.Name + "->" + fs);
-                GlobalLogB.AddLog(std::vformat(L"IBB_Ini::Merge ：" + locw("Log_SectionNotExist"), std::make_wformat_args(gt)));
-            }
-            Ret = false;
-        }
-        else
-        {
-            if (!AddSection(It->second, IsDuplicate))Ret = false;
-        }
-    }
-    return Ret;
-}
-
 /*
 ValidateResult IBB_IniLine::ValidateValue() const
 {
@@ -530,12 +505,7 @@ ValidateResult IBB_IniLine::ValidateAndMerge(const IBB_IniLine& Another, IBB_Ini
 }
 */
 
-bool IBB_IniLine::Merge(const IBB_IniLine& Another, IBB_IniMergeMode Mode)
-{
-    if (Another.Default == nullptr)return false;
-    if (!Another.Data)return false;
-    return Merge(Another.Data->GetString(), Mode);
-}
+
 bool IBB_IniLine::Merge(const std::string& Another, IBB_IniMergeMode Mode)
 {
     if (Default == nullptr)return false;
@@ -626,12 +596,17 @@ IBB_IniLine::IBB_IniLine(IBB_IniLine&& F) noexcept
     Default = F.Default; Data = F.Data;
 }
 
-IBB_IniLine IBB_IniLine::Duplicate() const
+IBB_Ini::IBB_Ini(const IBB_Ini& rhs)
+    : Root(rhs.Root), Name(rhs.Name), Secs_ByName(rhs.Secs_ByName), Secs(rhs.Secs)
 {
-    IBB_IniLine L;
-    L.Default = Default;
-    if (Data != nullptr)L.Data = Data->Duplicate();
-    return L;
+    for (auto& [k, s] : Secs)
+        s.ChangeRoot(this);
+}
+IBB_Ini::IBB_Ini(IBB_Ini&& rhs) noexcept
+    : Root(rhs.Root), Name(std::move(rhs.Name)), Secs_ByName(std::move(rhs.Secs_ByName)), Secs(std::move(rhs.Secs))
+{
+    for (auto& [k, s] : Secs)
+        s.ChangeRoot(this);
 }
 
 bool IBB_Ini::CreateSection(const std::string& _Name)
@@ -660,21 +635,7 @@ bool IBB_Ini::CreateSection(const std::string& _Name)
     }
     else return false;
 }
-bool IBB_Ini::AddSection(const IBB_Section& Section, bool IsDuplicate)
-{
-    auto Is = Secs.find(Section.Name);
-    if (Is == Secs.end())
-    {
-        Secs_ByName.push_back(Section.Name);
-        auto It = Secs.insert({ Section.Name,Section });
-        It.first->second.ChangeRootAndBack(this);
-        return true;
-    }
-    else
-    {
-        return Is->second.Merge(Section, IBB_IniMergeMode::Merge, IsDuplicate);
-    }
-}
+
 
 bool IBB_Ini::DeleteSection(const std::string& Tg)
 {

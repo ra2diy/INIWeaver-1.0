@@ -656,88 +656,6 @@ bool IBB_Section::GenerateLines(const IBB_VariableList& Par, const std::vector<s
     return Ret;
 }
 
-
-bool IBB_Section::Merge(const IBB_Section& Another, const std::unordered_map<std::string, IBB_IniMergeMode>& MergeType, bool IsDuplicate)
-{
-    auto pproj = Root->Root; (void)pproj;
-    if (IsLinkGroup)
-    {
-        LinkGroup_NewLinkTo.insert(LinkGroup_NewLinkTo.end(), Another.LinkGroup_NewLinkTo.begin(), Another.LinkGroup_NewLinkTo.end());
-        return true;
-    }
-    else
-    {
-        for (const auto& key : Another.LineOrder)
-            PushLineOrder(key);
-        VarList.Merge(Another.VarList, false);
-        for (const auto& ss : Another.SubSecs)
-        {
-            if (ss.Default == nullptr)continue;
-            IBB_TDIndex<IBB_SubSec_Default*> idx(ss.Default);
-            auto It = idx.Search<IBB_SubSec>(SubSecs, true, [](const IBB_SubSec& su)->IBB_SubSec_Default* {return su.Default; });
-            if (It == SubSecs.end())
-            {
-                if (IsDuplicate)
-                {
-                    SubSecs.emplace_back(); SubSecs.back().GenerateAsDuplicate(ss); SubSecs.back().ChangeRoot(this);
-                }
-                else { SubSecs.push_back(ss); SubSecs.back().ChangeRoot(this); }
-            }
-            else It->Merge(ss, MergeType, IsDuplicate);
-        }
-        return true;
-    }
-    //LinkedBy : Refresh from Update !
-}
-bool IBB_Section::Merge(const IBB_Section& Another, IBB_IniMergeMode MergeType, bool IsDuplicate)
-{
-    auto pproj = Root->Root; (void)pproj;
-    if (IsLinkGroup)
-    {
-        LinkGroup_NewLinkTo.insert(LinkGroup_NewLinkTo.end(), Another.LinkGroup_NewLinkTo.begin(), Another.LinkGroup_NewLinkTo.end());
-        return true;
-    }
-    else
-    {
-        for (const auto& key : Another.LineOrder)
-            PushLineOrder(key);
-
-        switch (MergeType)
-        {
-        case IBB_IniMergeMode::Replace:
-            VarList = Another.VarList;
-            OnShow = Another.OnShow;
-            break;
-        case IBB_IniMergeMode::Merge:
-        case IBB_IniMergeMode::Reserve:
-        default:
-            VarList.Merge(Another.VarList, false);
-            for (auto& p : Another.OnShow)OnShow.insert(p);
-            break;
-        }
-
-        
-        for (const auto& ss : Another.SubSecs)
-        {
-            if (ss.Default == nullptr)continue;
-            IBB_TDIndex<IBB_SubSec_Default*> idx(ss.Default);
-            auto It = idx.Search<IBB_SubSec>(SubSecs, true, [](const IBB_SubSec& su)->IBB_SubSec_Default* {return su.Default; });
-            if (It == SubSecs.end())
-            {
-                if (IsDuplicate)
-                {
-                    SubSecs.emplace_back(); SubSecs.back().GenerateAsDuplicate(ss); SubSecs.back().ChangeRoot(this);
-                }
-                else { SubSecs.push_back(ss); SubSecs.back().ChangeRoot(this); }
-            }
-            else It->Merge(ss, MergeType, IsDuplicate);
-        }
-
-        return true;
-    }
-    //LinkedBy : Refresh from Update !
-}
-
 const std::vector<std::string>& SplitParamCached(const std::string& Text);
 
 void IBB_Section::SyncLineOnUI(const std::string& Key, const std::string& Value) const
@@ -876,6 +794,7 @@ IBB_Section::IBB_Section(IBB_Section&& S) noexcept :
 bool IBB_Section::ChangeRoot(const IBB_Ini* NewRoot)
 {
     Root = const_cast<IBB_Ini*>(NewRoot);
+    return true;
 }
 
 bool IBB_Section::AcceptNewNameInLinkTo(IBB_Section* Target, const std::string& NewName)
