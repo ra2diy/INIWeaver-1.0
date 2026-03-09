@@ -8,6 +8,7 @@
 #include "IBB_RegType.h"
 #include<imgui_internal.h>
 #include <ranges>
+#include "IBR_ListView.h"
 
 
 std::pair<bool, std::vector<ModuleID_t>> _PROJ_CMD_WRITE  _PROJ_CMD_UPDATE IBR_Project::AddModule(const IBB_ModuleAlt& Module, const std::string& Argument, bool UseMouseCenter)
@@ -52,6 +53,7 @@ std::pair<bool, std::vector<ModuleID_t>> _PROJ_CMD_WRITE  _PROJ_CMD_UPDATE IBR_P
     }
     Ret &= SetModuleIncludeLink(Vec);
     Ret &= IBF_Inst_Project.UpdateAll();
+    IBR_ListView::NeedsUpdate();
     return { Ret, Vec };
 }
 std::optional<ModuleID_t> _PROJ_CMD_WRITE  _PROJ_CMD_UPDATE IBR_Project::AddModule(const ModuleClipData& Modules, bool UseMouseCenter)
@@ -62,6 +64,7 @@ std::optional<ModuleID_t> _PROJ_CMD_WRITE  _PROJ_CMD_UPDATE IBR_Project::AddModu
     Ret &= R.has_value();
     if (R)Ret &= SetModuleIncludeLink(R.value());
     Ret &= IBF_Inst_Project.UpdateAll();
+    IBR_ListView::NeedsUpdate();
     if (Ret)return R;
     else return std::nullopt;
 }
@@ -402,6 +405,7 @@ IBR_Section _PROJ_CMD_READ _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE I
         RD->EqSize = InitialEqSize;
 
     IBG_Undo.SomethingShouldBeHere();
+    IBR_ListView::NeedsUpdate();
 
     return RSec;
 }
@@ -425,6 +429,7 @@ IBR_Section _PROJ_CMD_READ _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE I
     RD->EqPos = InitialEqPos;
 
     IBG_Undo.SomethingShouldBeHere();
+    IBR_ListView::NeedsUpdate();
 
     return RSec;
 }
@@ -494,6 +499,7 @@ bool _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE IBR_Project::DeleteSect
     {
         IBD_RInterruptF(x);
         IBF_Inst_Project.UpdateAll();
+        IBR_ListView::NeedsUpdate();
     }
     return Ret;
 }
@@ -508,6 +514,7 @@ bool _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE IBR_Project::DeleteSect
         auto ci = const_cast<IBB_Ini*>(IBF_Inst_Project.Project.GetIni(IBB_Project_Index{ Desc }));
         Ret = ci->DeleteSection(Desc.Sec);
         IBF_Inst_Project.UpdateAll();
+        IBR_ListView::NeedsUpdate();
     }
     //Desc这个入参可能是这些map里面的引用，所以必须提前复制一份
     auto _Desc = Desc;
@@ -518,22 +525,7 @@ bool _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE IBR_Project::DeleteSect
     IBR_Rev_SectionMap.erase(_Desc);
     return Ret;
 }//TODO
-/*
-bool _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE IBR_Project::DeleteSection(const IBB_Section_Desc& Desc)
-{
-    bool Ret;
-    {
-        IBD_RInterruptF(x);
-        if (IBF_Inst_Project.Project.GetSec(IBB_Project_Index{ Desc }) == nullptr)return false;
-        auto ci = const_cast<IBB_Ini*>(IBF_Inst_Project.Project.GetIni(IBB_Project_Index{ Desc }));
-        Ret = ci->DeleteSection(Desc.Sec);
-    }
-    auto RS = GetSection(Desc);
-    IBR_SectionMap.erase(RS.ID);
-    IBR_Rev_SectionMap.erase(Desc);
-    return Ret;
-}
-*/
+
 
 
 bool _PROJ_CMD_UPDATE IBR_Project::DataCheck()

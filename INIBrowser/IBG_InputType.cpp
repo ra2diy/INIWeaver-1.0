@@ -1020,11 +1020,11 @@ std::string IIC_Separator::FormatValue(IBB_ValueContainer&, IBB_InputValue&,  co
 
 // ========== IIC_InputText ==========
 
-IIC_InputText::IIC_InputText(IBB_ValueContainer& Cont, int valueid, const std::string& InitialText, const std::string& hint)
+IIC_InputText::IIC_InputText(IBB_ValueContainer& Cont, int valueid, const std::string& InitialText, const IICDescStr& hint)
     : Hint(hint), ValueID(valueid)
 {
-    Hint += "##";
-    Hint += RandStr(12);
+    Hint.Short += "##";
+    Hint.Short += RandStr(12);
     auto& Val = Cont.GetValue(ValueID);
     Val.ResetState<IIS_String>(InitialText);
     Val.NeedsUpdate(Cont, *this);
@@ -1044,7 +1044,7 @@ IBB_UpdateResult IIC_InputText::RenderUI(IBB_ValueContainer& Cont, IICStatus& St
     if (Status.InputMethod == IICStatus::Link)  
     {
         IBB_UpdateResult def = { false, false, -1 };
-        return IBR_LinkNode::RenderUI_Node(Hint, def, NodeSetting, mf);
+        return IBR_LinkNode::RenderUI_Node(Hint.Short, Hint.Long, def, NodeSetting, mf);
     }
     else
     {
@@ -1053,7 +1053,9 @@ IBB_UpdateResult IIC_InputText::RenderUI(IBB_ValueContainer& Cont, IICStatus& St
 
         //auto Size = ImGui::CalcTextSize(Hint.c_str(), NULL, true);
         //ImGui::SetNextItemWidth(ImGui::GetWindowContentRegionWidth() - ImGui::GetCursorPosX() - Size.x);
-        auto Changed = InputTextStdString(Hint.c_str(), CurrentValue);
+        auto Changed = InputTextStdString(Hint.Short.c_str(), CurrentValue);
+        if(ImGui::IsItemHovered())IBR_ToolTip(Hint.Long);
+            
 
         auto Active = ImGui::IsItemActive();
         if (Changed)return mf(CurrentValue, Active);
@@ -1339,10 +1341,10 @@ void IIC_EnumRadio::ResetState(IBB_ValueContainer& Cont) const
 }
 
 // ========== IIC_Bool ==========
-IIC_Bool::IIC_Bool(IBB_ValueContainer& Cont, int valueid, bool InitialValue, StrBoolType fmt, const std::string& hint)
+IIC_Bool::IIC_Bool(IBB_ValueContainer& Cont, int valueid, bool InitialValue, StrBoolType fmt, const IICDescStr& hint)
     : ValueID(valueid), Hint(hint), FmtType(fmt) {
-    Hint += "##";
-    Hint += RandStr(12);
+    Hint.Short += "##";
+    Hint.Short += RandStr(12);
     auto& Val = Cont.GetValue(ValueID);
     Val.ResetState<IIS_Bool>(InitialValue, FmtType);
     Val.NeedsUpdate(Cont, *this);
@@ -1362,7 +1364,8 @@ IBB_UpdateResult IIC_Bool::RenderUI(IBB_ValueContainer& Cont, IICStatus&)
 
     bool Old = Val;
 
-    ImGui::Checkbox(Hint.c_str(), &Val);
+    ImGui::Checkbox(Hint.Short.c_str(), &Val);
+    if (ImGui::IsItemHovered())IBR_ToolTip(Hint.Long);
 
     bool Changed = (Old != Val);
 
@@ -1400,10 +1403,10 @@ void IIC_Bool::ResetState(IBB_ValueContainer& Cont) const
 }
 
 // ========== IIC_InputInt ==========
-IIC_InputInt::IIC_InputInt(IBB_ValueContainer& Cont, int valueid, int InitialValue, int min, int max, const std::string& hint)
+IIC_InputInt::IIC_InputInt(IBB_ValueContainer& Cont, int valueid, int InitialValue, int min, int max, const IICDescStr& hint)
     : Min(min), Max(max), Hint(hint), ValueID(valueid) {
-    Hint += "##";
-    Hint += RandStr(12);
+    Hint.Short += "##";
+    Hint.Short += RandStr(12);
     auto& Val = Cont.GetValue(ValueID);
     Val.ResetState<IIS_Int>(InitialValue);
     Val.NeedsUpdate(Cont, *this);
@@ -1423,7 +1426,7 @@ IBB_UpdateResult IIC_InputInt::RenderUI(IBB_ValueContainer& Cont, IICStatus& Sta
     if (Status.InputMethod == IICStatus::Link)
     {
         IBB_UpdateResult def = { false, false, -1 };
-        return IBR_LinkNode::RenderUI_Node(Hint, def, NodeSetting, mf);
+        return IBR_LinkNode::RenderUI_Node(Hint.Short, Hint.Long, def, NodeSetting, mf);
     }
     else
     {
@@ -1432,7 +1435,8 @@ IBB_UpdateResult IIC_InputInt::RenderUI(IBB_ValueContainer& Cont, IICStatus& Sta
 
         //auto Size = ImGui::CalcTextSize(Hint.c_str(), NULL, true);
         //ImGui::SetNextItemWidth(ImGui::GetWindowContentRegionWidth() - ImGui::GetCursorPosX() - Size.x);
-        auto Changed = InputTextStdString(Hint.c_str(), CurrentValue);
+        auto Changed = InputTextStdString(Hint.Short.c_str(), CurrentValue);
+        if (ImGui::IsItemHovered())IBR_ToolTip(Hint.Long);
         if (Changed)
         {
             char* ss;
@@ -1572,10 +1576,10 @@ void IIC_ColorPanel::ResetState(IBB_ValueContainer& Cont) const
 }
 
 // ========== IIC_SliderInt ==========
-IIC_SliderInt::IIC_SliderInt(IBB_ValueContainer& Cont, int valueid, int InitialValue, int min, int max, const std::string& hint, const std::string& slidefmt, bool log)
+IIC_SliderInt::IIC_SliderInt(IBB_ValueContainer& Cont, int valueid, int InitialValue, int min, int max, const IICDescStr& hint, const std::string& slidefmt, bool log)
     : Min(min), Max(max), Hint(hint), SlideFormat(slidefmt), Logarithmic(log), ValueID(valueid) {
-    Hint += "##";
-    Hint += RandStr(12);
+    Hint.Short += "##";
+    Hint.Short += RandStr(12);
     auto& Val = Cont.GetValue(ValueID);
     Val.ResetState<IIS_Int>(InitialValue);
     Val.NeedsUpdate(Cont, *this);
@@ -1597,8 +1601,9 @@ IBB_UpdateResult IIC_SliderInt::RenderUI(IBB_ValueContainer& Cont, IICStatus&) {
 
     //auto Size = ImGui::CalcTextSize(Hint.c_str(), NULL, true);
     //ImGui::SetNextItemWidth(ImGui::GetWindowContentRegionWidth() - ImGui::GetCursorPosX() - Size.x);
-    auto Changed = ImGui::SliderInt(Hint.c_str(), &Val, Min, Max, SlideFormat.c_str(),
+    auto Changed = ImGui::SliderInt(Hint.Short.c_str(), &Val, Min, Max, SlideFormat.c_str(),
         Logarithmic ? ImGuiSliderFlags_Logarithmic : ImGuiSliderFlags_None);
+    if (ImGui::IsItemHovered())IBR_ToolTip(Hint.Long);
 
     if (Changed)
     {

@@ -408,10 +408,6 @@ bool IBB_Project::UpdateAll()
         sprintf_s(LogBufB, "IBB_Project::UpdateAll <- void"); GlobalLogB.AddLog(LogBufB);
     }
     bool Ret = true;
-    for (auto& Ini : Inis)
-        for (auto& sp : Ini.Secs)
-            for (auto& ss : sp.second.SubSecs)
-                ss.NewLinkTo.clear();
     for (auto& Ini : Inis)if (!Ini.UpdateAll())Ret = false;
     
     RecalcSPCacheSize(*this, SPCacheSize());

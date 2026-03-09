@@ -167,7 +167,8 @@ IICPtr InputFormComponentFactory::CreateInputComponent_Special(IBB_ValueContaine
             int ValueID = oValueID.GetInt();
 
             auto InitValue = Obj.ItemStringOr("InitialValue", "");
-            auto Hint = Obj.ItemStringOr("Hint", "");
+            auto oHint = Obj.GetObjectItem("Hint");
+            IICDescStr Hint = IICDescStr::Load(oHint);
 
             return std::make_unique<IIC_InputText>(Cont, ValueID, InitValue, Hint);
         }
@@ -183,7 +184,8 @@ IICPtr InputFormComponentFactory::CreateInputComponent_Special(IBB_ValueContaine
             int ValueID = oValueID.GetInt();
 
             auto InitValue = Obj.ItemStringOr("InitialValue", "");
-            auto Hint = Obj.ItemStringOr("Hint", "");
+            auto oHint = Obj.GetObjectItem("Hint");
+            IICDescStr Hint = IICDescStr::Load(oHint);
 
             auto q = std::make_unique<IIC_InputText>(Cont, ValueID, InitValue, Hint);
 
@@ -262,7 +264,8 @@ IICPtr InputFormComponentFactory::CreateInputComponent_Special(IBB_ValueContaine
             int ValueID = oValueID.GetInt();
 
             auto InitValue = Obj.ItemBoolOr("InitialValue", false);
-            auto Hint = Obj.ItemStringOr("Hint", "");
+            auto oHint = Obj.GetObjectItem("Hint");
+            IICDescStr Hint = IICDescStr::Load(oHint);
 
             auto oFmt = Obj.GetObjectItem("Fmt");
             StrBoolType fmt = StrBoolTypeFromJSON(oFmt, StrBoolType::Str_yes_no);
@@ -295,7 +298,8 @@ IICPtr InputFormComponentFactory::CreateInputComponent_Special(IBB_ValueContaine
             else Max = oMax.GetInt();
 
             auto InitValue = Obj.ItemIntOr("InitialValue", 0);
-            auto Hint = Obj.ItemStringOr("Hint", "");
+            auto oHint = Obj.GetObjectItem("Hint");
+            IICDescStr Hint = IICDescStr::Load(oHint);
 
             return std::make_unique<IIC_InputInt>(Cont, ValueID, InitValue, Min, Max, Hint);
 
@@ -318,7 +322,8 @@ IICPtr InputFormComponentFactory::CreateInputComponent_Special(IBB_ValueContaine
             int Max = oMax.GetInt();
 
             auto InitValue = Obj.ItemIntOr("InitialValue", 0);
-            auto Hint = Obj.ItemStringOr("Hint", "");
+            auto oHint = Obj.GetObjectItem("Hint");
+            IICDescStr Hint = IICDescStr::Load(oHint);
             auto SlideFmt = Obj.ItemStringOr("ValueFormat", "%d");
             auto Log = Obj.ItemBoolOr("Logarithmic", false);
 

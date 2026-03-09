@@ -221,6 +221,27 @@ bool IBB_SubSec::RenameInLinkTo(size_t LinkIdx, const std::string& OldName, cons
     return Ret;
 }
 
+#include "IBR_Components.h"
+
+void IBB_SubSec::UpdateNewLinkTo(std::vector<IBB_NewLink>&& NewLT)
+{
+    auto& Proj = *(Root->Root->Root);
+    for (auto& L : NewLinkTo)
+        if (L.FromKey == ImportKeyName)
+        {
+            auto pf = L.To.GetSec(Proj);
+            if (!pf)continue;
+            pf->Dynamic.ImportCount--;
+        }
+    for (auto& L : NewLT)
+        if (L.FromKey == ImportKeyName)
+        {
+            auto pf = L.To.GetSec(Proj);
+            if (!pf)continue;
+            pf->Dynamic.ImportCount++;
+        }
+    NewLinkTo = std::move(NewLT);
+}
 
 bool IBB_SubSec::UpdateAll()
 {
@@ -349,23 +370,7 @@ bool IBB_SubSec::UpdateAll()
         if (it != Lines.end())Root->Inherit = it->second.Data->GetString(); 
     }
 
-    auto& Proj = *(Root->Root->Root);
-    for (auto& L : NewLinkTo)
-        if (L.FromKey == ImportKeyName)
-        {
-            auto pf = L.From.GetSec(Proj);
-            if (!pf)continue;
-            pf->Dynamic.ImportCount--;
-        }
-    for (auto& L : NewLT)
-        if (L.FromKey == ImportKeyName)
-        {
-            auto pf = L.From.GetSec(Proj);
-            if (!pf)continue;
-            pf->Dynamic.ImportCount++;
-        }
-
-    NewLinkTo = NewLT;
+    UpdateNewLinkTo(std::move(NewLT));
 
     if (LimitFix)Ret &= UpdateAll();
 

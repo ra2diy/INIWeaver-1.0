@@ -177,6 +177,7 @@ struct IBB_SubSec
     bool CanOwnKey(const std::string& Key) const;
 
     bool UpdateAll();
+    void UpdateNewLinkTo(std::vector<IBB_NewLink>&& NewLT);
 
     bool MergeLine(const std::string& Key, const std::string& Value, bool InitOnShow, IBB_IniMergeMode Mode, bool NoUpdate = false);
     bool ChangeRoot(IBB_Section* NewRoot);

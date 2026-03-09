@@ -767,31 +767,6 @@ void IBR_SectionData::RenderUI_TitleBar(IBR_Section Rsec, IBB_Section* Bsec, boo
             IBR_Inst_Project.IBR_SecDragMap[s] = { Desc };
             ImGui::EndDragDropSource();
         }
-        if (ImGui::IsItemHovered())
-        {
-            std::string Str;
-            auto& Links = Bsec->GetLinkedBy_Cached();
-            if (IBR_WorkSpace::ShowRegName)
-                Str = Links |
-                std::views::transform([&](auto p) {return p.From.Section.GetText(); }) |
-                std::views::filter([&](auto&& s) { return !s.empty(); }) |
-                std::views::join_with(',') |
-                std::ranges::to<std::string>();
-            else
-                Str = Links |
-                std::views::transform([&](auto p) {
-                    auto Sec = IBR_Inst_Project.GetSection(p.From);
-                    return Sec.HasBack() ? Sec.GetDisplayName() : p.From.Section.GetText();
-                }) |
-                std::views::filter([&](auto&& s) { return !s.empty(); }) |
-                        std::views::join_with(',') |
-                        std::ranges::to<std::string>();
-            //if (!Str.empty())
-            {
-                auto W = UTF8toUnicode(Str);
-                IBR_ToolTip(std::to_wstring(Bsec->Dynamic.ImportCount) + L"\n" + std::vformat(locw("GUI_Preview_LinkedBy"), std::make_wformat_args(W)));
-            }
-        }
 
         if (NotAsImported)
         {

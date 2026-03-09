@@ -60,6 +60,13 @@ namespace IBR_ListView
 {
     std::vector<IBB_Project_Index> CurrentList;
     bool Search_Full{ false }, Search_CaseSensitive{ false }, Search_Regex{ false }, Search_ByRegistry{ false };
+    bool NeedsUpdateV{ false };
+
+    inline namespace __
+    {
+        extern bool ReversedFlag;
+        extern SortBy CurrentSortBy;
+    }
 
     void RenderUI()
     {
@@ -72,6 +79,16 @@ namespace IBR_ListView
         IBD_RInterruptF(x);
 
         if (CurrentList.empty())InitSort();
+        if (NeedsUpdateV)
+        {
+            bool Rev = IsReversed();
+            auto Sort = GetCurrentSortBy();
+            RemakeSort();
+            CurrentSortBy = SortBy::COUNT;
+            ReversedFlag = Rev;
+            SetSortBy(Sort);
+            NeedsUpdateV = false;
+        }
         for (auto& ini : IBF_Inst_Project.Project.Inis)
         {
             if (ini.Secs_ByName.empty())continue;
@@ -302,7 +319,10 @@ namespace IBR_ListView
         {
             return SearchBuffer;
         }
-
+        void NeedsUpdate()
+        {
+            NeedsUpdateV = true;
+        }
         void RemakeSort()
         {
             if (!CurrentList.empty())

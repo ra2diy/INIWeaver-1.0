@@ -191,11 +191,35 @@ IBR_MainMenu IBR_Inst_Menu
 }
 };
 
+const char* Document_CN = "https://inibrowser-02-chinese.readthedocs.io/zh-cn/latest/Info.html";
+const char* Document_EN = "https://inibrowser-02-chinese.readthedocs.io/en/latest/Info.html";
+const char* BugReportURL = "https://docs.qq.com/form/page/DWXdKYUFRV1dHSnNE";
+const char* RepositoryURL = "https://github.com/ra2diy/INIWeaver-1.0";
+const char* LicenseURL = "https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html";
 
 void ControlPanel_About()
 {
+    const auto URLOpr = [](const char* URL)
+        {
+            ImGui::PushID(URL);
+            if (ImGui::Button(locc("GUI_CopyLinkToClipboard")))
+            {
+                ImGui::LogToClipboard();
+                ImGui::LogText(URL);
+                ImGui::LogFinish();
+                IBR_HintManager::SetHint(loc("GUI_CopyLinkToClipboard_Success"), HintStayTimeMillis);
+            }
+            ImGui::SameLine();
+            if (ImGui::Button(locc("GUI_OpenLink")))
+            {
+                ::ShellExecuteA(nullptr, "open", URL, NULL, NULL, SW_SHOWNORMAL);
+            }
+            ImGui::PopID();
+        };
+
     ImGui::TextWrapped(locc("GUI_About1"), _AppName, Version.c_str());
-    ImGui::TextWrapped(u8"GLFW/Dear ImGui", Version.c_str());
+    ImGui::TextWrapped(locc("GUI_About_Copyright"));
+    ImGui::Text(u8"GLFW/Dear ImGui/CJSON/FmtLib");
     ImGui::Separator();
     ImGui::TextWrapped((loc("GUI_About5")).c_str());
     ImGui::TextWrapped(u8"      钢铁之锤");
@@ -204,11 +228,38 @@ void ControlPanel_About()
     ImGui::TextWrapped((loc("GUI_About8")).c_str());
     ImGui::TextWrapped(u8"      九千天华");
     ImGui::TextWrapped(locc("GUI_About2"));
+    ImGui::Separator();
+    if (ImGui::Button(locc("GUI_About_License"), { ImGui::GetWindowContentRegionWidth(), FontHeight * 1.5f }))
+    {
+        IBR_PopupManager::SetCurrentPopup(std::move(
+            IBR_PopupManager::Popup{}
+            .CreateModal(loc("GUI_About_License"), true)
+            .SetFlag(ImGuiWindowFlags_NoResize)
+            .SetSize({FontHeight * 22.0f, FontHeight * 30.0f})
+            .PushMsgBack([=]() {
+                ImGui::TextWrapped(locc("GUI_About_LicenseInfo_1"));
+                ImGui::TextWrapped(LicenseURL);
+                URLOpr(LicenseURL);
+                ImGui::TextWrapped(locc("GUI_About_LicenseInfo_2"));
+                ImGui::TextWrapped(RepositoryURL);
+                URLOpr(RepositoryURL);
+                ImGui::TextWrapped(locc("GUI_About_LicenseInfo_3"));
+                ImGui::Separator();
+                ImGui::TextWrapped(locc("GUI_About_LicenseInfo_4"));
+            })
+        ));
+    }
 
-    const char* Document_CN = "https://inibrowser-02-chinese.readthedocs.io/zh-cn/latest/Info.html";
-    const char* Document_EN = "https://inibrowser-02-chinese.readthedocs.io/en/latest/Info.html";
-    const char* BugReportURL = "https://docs.qq.com/form/page/DWXdKYUFRV1dHSnNE";
-    const char* RepositoryURL = "https://github.com/ra2diy/INIWeaver-1.0";
+    if (ImGui::Button(locc("GUI_About_Acknowledgments"), { ImGui::GetWindowContentRegionWidth(), FontHeight * 1.5f }))
+    {
+        IBR_PopupManager::SetCurrentPopup(std::move(
+            IBR_PopupManager::Popup{}
+            .CreateModal(loc("GUI_About_Acknowledgments"), true)
+            .SetFlag(ImGuiWindowFlags_NoResize)
+            .SetSize({ FontHeight * 22.0f, FontHeight * 30.0f })
+            .PushTextBack(loc("GUI_About_AcknowledgmentsInfo"))
+        ));
+    }
 
     auto DocLang = loc("DocLang");
     //目前可用 ：ZH-CN EN
@@ -218,41 +269,11 @@ void ControlPanel_About()
     else DocumentURL = Document_CN;
 
     ImGui::TextWrapped(locc("GUI_About7")); //ImGui::SameLine();
-    if (ImGui::Button((loc("GUI_CopyLinkToClipboard") + u8"##C").c_str()))
-    {
-        ImGui::LogToClipboard();
-        ImGui::LogText(Document_CN);
-        ImGui::LogFinish();
-    }
-    ImGui::SameLine();
-    if (ImGui::Button((loc("GUI_OpenLink") + u8"##C").c_str()))
-    {
-        ::ShellExecuteA(nullptr, "open", Document_CN, NULL, NULL, SW_SHOWNORMAL);
-    }
+    URLOpr(DocumentURL);
 
     ImGui::TextWrapped(locc("GUI_About3")); //ImGui::SameLine();
-    if (ImGui::Button((loc("GUI_CopyLinkToClipboard") + u8"##A").c_str()))
-    {
-        ImGui::LogToClipboard();
-        ImGui::LogText(BugReportURL);
-        ImGui::LogFinish();
-    }
-    ImGui::SameLine();
-    if (ImGui::Button((loc("GUI_OpenLink") + u8"##A").c_str()))
-    {
-        ::ShellExecuteA(nullptr, "open", BugReportURL, NULL, NULL, SW_SHOWNORMAL);
-    }
+    URLOpr(BugReportURL);
 
     ImGui::TextWrapped(locc("GUI_About4"));
-    if (ImGui::Button((loc("GUI_CopyLinkToClipboard") + u8"##B").c_str()))
-    {
-        ImGui::LogToClipboard();
-        ImGui::LogText(RepositoryURL);
-        ImGui::LogFinish();
-    }
-    ImGui::SameLine();
-    if (ImGui::Button((loc("GUI_OpenLink") + u8"##B").c_str()))
-    {
-        ::ShellExecuteA(nullptr, "open", RepositoryURL, NULL, NULL, SW_SHOWNORMAL);
-    }
+    URLOpr(RepositoryURL);
 }

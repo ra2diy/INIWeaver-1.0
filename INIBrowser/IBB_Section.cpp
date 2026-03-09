@@ -856,7 +856,7 @@ bool IBB_Section::RemoveNameInLinkTo(IBB_Section* Target)
                     NL.push_back(Link);
                     OldToNew[idx] = NL.size() - 1;
                 }
-            Sub.NewLinkTo = NL;
+            Sub.UpdateNewLinkTo(std::move(NL));
             Sub.LinkSrc = Sub.LinkSrc |
                 std::views::filter([&](auto& p) { return OldToNew.contains(p.second); }) |
                 std::views::transform([&](auto& p) { return std::make_pair(p.first, OldToNew[p.second]); }) |

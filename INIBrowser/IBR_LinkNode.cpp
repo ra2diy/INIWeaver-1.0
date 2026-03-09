@@ -210,6 +210,7 @@ namespace IBR_LinkNode
 
     IBB_UpdateResult RenderUI_Node(
         const std::string& Hint,
+        const std::string& DescLong,
         const IBB_UpdateResult& DefaultResult,
         const LinkNodeSetting& LinkNode,
         const std::function<IBB_UpdateResult(const std::string& NewValue, bool Active)>& ModifyFunc
@@ -231,6 +232,7 @@ namespace IBR_LinkNode
                 lidx,
                 cidx,
                 Hint,
+                DescLong,
                 DefaultResult,
                 LinkNode,
                 ModifyFunc
@@ -245,6 +247,7 @@ namespace IBR_LinkNode
         size_t LineIdx,
         size_t CompIdx,
         const std::string& Hint,
+        const std::string& DescLong,
         const IBB_UpdateResult& DefaultResult,
         const LinkNodeSetting& LinkNode,
         const std::function<IBB_UpdateResult(const std::string& NewValue, bool Active)>& ModifyFunc
@@ -256,6 +259,7 @@ namespace IBR_LinkNode
             if (Len)
             {
                 ImGui::TextUnformatted(Hint.c_str(), End);
+                if (ImGui::IsItemHovered())IBR_ToolTip(DescLong);
                 ImGui::SameLine();
             }
         }

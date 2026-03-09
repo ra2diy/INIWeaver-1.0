@@ -27,6 +27,8 @@ namespace IBR_ListView
         void SetSortBy(SortBy Type);
         void InitSort();
         void ClearSort();
+        void NeedsUpdate();
+        void RemakeSort();
         const char* GetSortName(SortBy Type);
         const char* GetCurrentSortName();
         SortBy GetCurrentSortBy();

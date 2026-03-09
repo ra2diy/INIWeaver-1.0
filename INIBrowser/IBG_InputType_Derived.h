@@ -177,9 +177,9 @@ struct IIC_Separator final : public IBG_InputComponent
 
 struct IIC_InputText final : public IBG_InputComponent
 {
-    std::string Hint;
+    IICDescStr Hint;
     int ValueID;
-    IIC_InputText(IBB_ValueContainer& Cont, int valueid, const std::string& InitialText, const std::string& hint);
+    IIC_InputText(IBB_ValueContainer& Cont, int valueid, const std::string& InitialText, const IICDescStr& hint);
 
     IBB_UpdateResult RenderUI(IBB_ValueContainer& Cont, IICStatus& Status);
     std::string FormatValue(IBB_ValueContainer&, IBB_InputValue& Val, const IBB_InputFormat& Format);
@@ -248,9 +248,9 @@ struct IIC_EnumRadio final : public IBG_InputComponent
 struct IIC_Bool final : public IBG_InputComponent
 {
     int ValueID;
-    std::string Hint;
+    IICDescStr Hint;
     StrBoolType FmtType;
-    IIC_Bool(IBB_ValueContainer& Cont, int valueid, bool InitialValue, StrBoolType fmt, const std::string& hint);
+    IIC_Bool(IBB_ValueContainer& Cont, int valueid, bool InitialValue, StrBoolType fmt, const IICDescStr& hint);
 
     IBB_UpdateResult RenderUI(IBB_ValueContainer& Cont, IICStatus& Status);
     std::string FormatValue(IBB_ValueContainer&, IBB_InputValue& Val, const IBB_InputFormat& Format);
@@ -264,9 +264,9 @@ struct IIC_Bool final : public IBG_InputComponent
 struct IIC_InputInt final : public IBG_InputComponent
 {
     int Min, Max;
-    std::string Hint;
+    IICDescStr Hint;
     int ValueID;
-    IIC_InputInt(IBB_ValueContainer& Cont, int valueid, int InitialValue, int min, int max, const std::string& hint);
+    IIC_InputInt(IBB_ValueContainer& Cont, int valueid, int InitialValue, int min, int max, const IICDescStr& hint);
 
     IBB_UpdateResult RenderUI(IBB_ValueContainer& Cont, IICStatus& Status);
     std::string FormatValue(IBB_ValueContainer&, IBB_InputValue& Val, const IBB_InputFormat& Format);
@@ -301,11 +301,11 @@ struct IIC_ColorPanel final : public IBG_InputComponent
 struct IIC_SliderInt final : public IBG_InputComponent
 {
     int Min, Max;
-    std::string Hint;
+    IICDescStr Hint;
     std::string SlideFormat;
     bool Logarithmic;
     int ValueID;
-    IIC_SliderInt(IBB_ValueContainer& Cont, int valueid, int InitialValue, int min, int max, const std::string& hint, const std::string& slidefmt, bool log);
+    IIC_SliderInt(IBB_ValueContainer& Cont, int valueid, int InitialValue, int min, int max, const IICDescStr& hint, const std::string& slidefmt, bool log);
 
     IBB_UpdateResult RenderUI(IBB_ValueContainer& Cont, IICStatus& Status);
     std::string FormatValue(IBB_ValueContainer&, IBB_InputValue& Val, const IBB_InputFormat& Format);

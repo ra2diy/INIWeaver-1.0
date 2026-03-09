@@ -208,6 +208,7 @@ namespace IBR_WorkSpace
     IBR_Section MouseOverSection{ &IBR_Inst_Project, UINT64_MAX };
     IBR_SectionData* MouseOverSecData{ nullptr };
     ImVec2 MassAfter_RightDownPos{ FLT_MAX, FLT_MAX };
+    uint64_t LastPasteTimeMicros;
     
     void RenderRightClickTable()
     {
@@ -536,6 +537,9 @@ namespace IBR_WorkSpace
     }
     void Paste()
     {
+        if (GetSysTimeMicros() - LastPasteTimeMicros < 120000)return;
+        LastPasteTimeMicros = GetSysTimeMicros();
+
         SuppressGLFWError(GLFW_FORMAT_UNAVAILABLE);
         auto Str = ImGui::GetClipboardText();
         UnsuppressGLFWError(GLFW_FORMAT_UNAVAILABLE);

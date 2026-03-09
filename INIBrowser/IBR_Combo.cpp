@@ -65,6 +65,8 @@ void IBR_ToolTip(const std::string& Str)
 
 void IBR_ToolTip(const char* Str)
 {
+    if (!*Str)return;
+
     //Autowrap & Use String
     auto awt = IBF_Inst_Setting.AutoWrapThreshold();
     auto ScrH = IBR_UICondition::CurrentScreenHeight - IBR_HintManager::GetHeight();
