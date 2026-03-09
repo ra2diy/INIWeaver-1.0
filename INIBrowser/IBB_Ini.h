@@ -3,6 +3,7 @@
 #include "cjson/cJSON.h"
 #include "IBB_Components.h"
 #include "IBB_Index.h"
+#include "IBB_PropStringPool.h"
 
 #ifndef _TEXT_UTF8
 #define _TEXT_UTF8
@@ -20,6 +21,7 @@ enum class ValidateResult;
 //using LineData = std::shared_ptr<IBB_IniLine_Data_Base>;
 using LineData = std::shared_ptr<IBB_IniLine_Data_String>;
 struct IIFWrapper_Wrapper;
+struct IBB_SubSec_Default;
 
 enum class IBB_IniMergeMode
 {
@@ -31,27 +33,20 @@ enum class IBB_IniMergeMode
 
 struct IBB_IniLine_Default
 {
-    struct _Limit//按照什么匹配
-    {
-        std::string Type;
-        std::string Lim;
-    };
-
     int LinkLimit;
     bool Known;
-    std::string TypeAlt;//一个RegType的名字
+    StrPoolID TypeAlt;//一个RegType的名字
 
     //从TypeAlt加载
-    std::string Name, DescShort, DescLong;
-
-    //保留备用
-    std::vector<std::string> Platform;
-    _Limit Limit;
-    
-    //从TypeAlt加载
+    StrPoolID Name;
+    DescPoolOffset DescShort;
+    DescPoolOffset DescLong;
     ImU32 Color;
-    std::string InputName;
+    StrPoolID InputName;
     const IBG_InputType* Input;
+
+    //SubSec关联
+    IBB_SubSec_Default* InSubSec;
 
     LineData Create() const;
     const IBB_RegType& GetRegType() const;
@@ -59,6 +54,7 @@ struct IBB_IniLine_Default
     const IBG_InputType& GetInputType() const;
     LinkNodeSetting GetNodeSetting() const;
     int GetLinkLimit() const;
+    const IBG_InputType* GetInputTypeByValue(const std::string& Value) const;
 };
 
 struct IBB_SubSec_Default
@@ -70,9 +66,6 @@ struct IBB_SubSec_Default
     }Require;
 
     std::string Name, DescShort, DescLong;
-    std::vector<std::string> Platform;
-    std::vector<std::string> Lines_ByName;
-    std::unordered_map<std::string, IBB_IniLine_Default> Lines;
     enum _Type
     {
         Default,
@@ -81,7 +74,6 @@ struct IBB_SubSec_Default
     }Type;
 
     IBB_SubSec_Default();
-    bool Load(JsonObject FromJson, const std::unordered_map<std::string, IBB_IniLine_Default>& LineMap);
 };
 
 
@@ -224,6 +216,7 @@ struct IBB_Section
     struct _Dynamic
     {
         bool Selected{ false };
+        int ImportCount{ 0 };
     }Dynamic;
 
     //增删改时相应修改移动构造函数
@@ -259,7 +252,8 @@ struct IBB_Section
     IBB_SubSec& GetSubSecByDef(IBB_SubSec_Default* Def);//返回Def对应的SubSec，若没有则构造一个新的SubSec并返回
     IBB_SubSec& GetSubSecByLine(const std::string& Key);//返回包含Key的SubSec，若没有则构造一个新的SubSec并返回
 
-    std::vector<IBB_NewLink>& GetLinkedBy() const;
+    std::vector<IBB_NewLink>& GetLinkedBy_NoCached() const;
+    std::vector<IBB_NewLink>& GetLinkedBy_Cached() const;
     const IBB_IniLine* GetLineFromSubSecs(const std::string& Name) const;
     IBB_Project_Index GetThisIndex() const;
     IBB_Section_Desc GetThisDesc() const;

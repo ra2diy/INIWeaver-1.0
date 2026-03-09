@@ -406,7 +406,7 @@ bool IBR_SectionData::RenderUI_Line(const std::string& OnShow, const std::string
         else return std::make_pair(loc("GUI_InheritFrom"), UnicodetoUTF8(std::vformat(locw("GUI_InheritFrom"), std::make_wformat_args(ShowInherit() ? w : Nul))));
         };
 
-    auto& DescLong = line->Default->DescLong;
+    auto DescLong = PoolDesc(line->Default->DescLong);
     std::string DescShort;
     std::string DescShort2;
 
@@ -417,7 +417,7 @@ bool IBR_SectionData::RenderUI_Line(const std::string& OnShow, const std::string
     else if (!IBR_WorkSpace::ShowRegName)
     {
         if (OnShow == EmptyOnShowDesc)
-            DescShort = DescShort2 = line->Default->DescShort;
+            DescShort = DescShort2 = PoolDesc(line->Default->DescShort);
         else DescShort = DescShort2 = OnShow;
     }
     else DescShort = DescShort2 = Name;
@@ -429,11 +429,10 @@ bool IBR_SectionData::RenderUI_Line(const std::string& OnShow, const std::string
     ExportContext::Key = Name;
     if (Line.Edit.NeedInit())
     {
-        auto& Input = line->Default->Known ?
-            *line->Default->Input :
-            IBB_DefaultRegType::SelectInputTypeByValue(line->Data->GetString());
+        auto Value = line->Data->GetString();
+        auto& Input = *line->Default->GetInputTypeByValue(Value);
         //SYNC : WORKSPACE -> EDIT MENU
-        IBR_IniLine::InitType It{ line->Data->GetString() ,
+        IBR_IniLine::InitType It{ Value ,
             "##" + RandStr(8),[Name, idx = IBB_Project_Index(this->Desc)](const std::string& S)
                 {
                     IBG_Undo.SomethingShouldBeHere();
@@ -451,7 +450,7 @@ bool IBR_SectionData::RenderUI_Line(const std::string& OnShow, const std::string
         Line.Edit.RenderUI(DescShort, DescLong);
     }
     ExportContext::Key = "";
-    return line->Default->TypeAlt.empty() ? true : HasInput;
+    return PoolStr(line->Default->TypeAlt).empty() ? true : HasInput;
 }
 
 void IBR_SectionData::RenderUI_Acceptor(float LastFinalY)
@@ -570,7 +569,7 @@ void IBR_SectionData::RenderUI_TitleBar(IBR_Section Rsec, IBB_Section* Bsec, boo
     auto Pos = ImGui::GetCursorPos();
     auto Virtual = IsVirtualBlock();
 
-    auto NotAsImported = std::ranges::all_of(Bsec->GetLinkedBy(), [](const auto& nl) { return nl.FromKey != ImportKeyName; });
+    auto NotAsImported = Bsec->Dynamic.ImportCount == 0;
     
     ImVec2 CurL{ Pos.x,Pos.y - 0.2f * FontHeight };
     ImGui::SetCursorPos({ 0.0f,CurL.y });
@@ -771,7 +770,7 @@ void IBR_SectionData::RenderUI_TitleBar(IBR_Section Rsec, IBB_Section* Bsec, boo
         if (ImGui::IsItemHovered())
         {
             std::string Str;
-            auto& Links = Bsec->GetLinkedBy();
+            auto& Links = Bsec->GetLinkedBy_Cached();
             if (IBR_WorkSpace::ShowRegName)
                 Str = Links |
                 std::views::transform([&](auto p) {return p.From.Section.GetText(); }) |
@@ -787,10 +786,10 @@ void IBR_SectionData::RenderUI_TitleBar(IBR_Section Rsec, IBB_Section* Bsec, boo
                 std::views::filter([&](auto&& s) { return !s.empty(); }) |
                         std::views::join_with(',') |
                         std::ranges::to<std::string>();
-            if (!Str.empty())
+            //if (!Str.empty())
             {
                 auto W = UTF8toUnicode(Str);
-                IBR_ToolTip(std::vformat(locw("GUI_Preview_LinkedBy"), std::make_wformat_args(W)));
+                IBR_ToolTip(std::to_wstring(Bsec->Dynamic.ImportCount) + L"\n" + std::vformat(locw("GUI_Preview_LinkedBy"), std::make_wformat_args(W)));
             }
         }
 

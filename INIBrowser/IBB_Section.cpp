@@ -310,12 +310,6 @@ std::vector<std::string> IBB_Section::GetKeys(bool PrintExtraData) const
             VarList.Flatten(VL);
             for (const auto& V : VL.Value)
                 Ret.push_back(V.first);
-            for (const auto& L : GetLinkedBy())
-            {
-                auto pf = L.From.GetSec(*(Root->Root)), pt = L.To.GetSec(*(Root->Root));
-                if (pf != nullptr && pt != nullptr)
-                    Ret.push_back("_LINK_FROM_" + pf->Name);
-            }
         }
     }
     return Ret;
@@ -351,12 +345,6 @@ IBB_VariableList IBB_Section::GetLineList(bool PrintExtraData, bool FromExport, 
             IBB_VariableList VL;
             VarList.Flatten(VL);
             Ret.Merge(VL, false);
-            for (auto L : GetLinkedBy())
-            {
-                auto pf = L.From.GetSec(*(Root->Root)), pt = L.To.GetSec(*(Root->Root));
-                if (pf != nullptr && pt != nullptr)
-                    Ret.Value["_LINK_FROM_" + pf->Name] = "_LINK_TO_" + pt->Name;
-            }
         }
     }
 
@@ -635,12 +623,15 @@ IBB_Section_Desc IBB_Section::GetThisDesc() const
     return IBB_Section_Desc{ Root->Name,Name };
 }
 
-std::vector<IBB_NewLink>& IBB_Section::GetLinkedBy() const
+std::vector<IBB_NewLink>& IBB_Section::GetLinkedBy_Cached() const
 {
-    return IBF_Inst_Project.GetLinkedBy(GetThisDesc());
+    return IBF_Inst_Project.GetLinkedBy_Cached(GetThisDesc());
 }
 
-extern IBB_Section* spsp;
+std::vector<IBB_NewLink>& IBB_Section::GetLinkedBy_NoCached() const
+{
+    return IBF_Inst_Project.GetLinkedBy_NoCached(GetThisDesc());
+}
 
 bool IBB_Section::GenerateLines(const IBB_VariableList& Par, const std::vector<std::string>& Order, bool InitOnShow)
 {
@@ -786,10 +777,6 @@ IBB_SubSec& IBB_Section::GetSubSecByLine(const std::string& Key)
 
 bool IBB_Section::MergeLine(const std::string& Key, const std::string& Value, IBB_IniMergeMode Mode, bool NoUpdate)
 {
-    sprintf_s(LogBufB, __FUNCTION__ ": Section %s : Merge %s=%s Mode=%d NoUpdate=%s\n",
-        GetThisDesc().GetText().c_str(), Key.c_str(), Value.c_str(), Mode, IBD_BoolStr(NoUpdate));
-    OutputDebugStringA(LogBufB);
-    //GlobalLogB.AddLog(LogBufB);
     switch (Mode)
     {
     case IBB_IniMergeMode::Replace:
@@ -962,14 +949,9 @@ bool IBB_Section::RemoveNameInLinkTo(IBB_Section* Target)
 
 bool IBB_Section::AcceptNewNameInLinkedBy(const IBB_Project_Index& OldIndex, const std::string& NewName)
 {
-    auto& Proj = *Root->Root;
-    auto Sec = OldIndex.GetSec(Proj);
-    //不存在则退出
-    if (!Sec)return true;
-    //从自己来的都得改
-    for (auto& Link : Sec->GetLinkedBy())
-        if (Link.From.GetSec(Proj) == this)
-            Link.From.Section.Assign(NewName);
+    //LinkedBy已经无辣！
+    IM_UNUSED(OldIndex);
+    IM_UNUSED(NewName);
     return true;
 }
 
@@ -1006,7 +988,7 @@ bool IBB_Section::Rename(const std::string& NewName)
                     Link.To.Section.Assign(NewName);
             }
     }
-    for (auto& Link : GetLinkedBy())
+    for (auto& Link : GetLinkedBy_NoCached())
     {
         //按照From追溯到来源
         auto Src = Link.From.GetSec(Proj);
@@ -1038,7 +1020,7 @@ bool IBB_Section::Isolate()
 {
     auto& Proj = *Root->Root;
     bool Ret = true;
-    for (auto& Link : GetLinkedBy())
+    for (auto& Link : GetLinkedBy_NoCached())
     {
         //按照From追溯到来源
         auto Src = Link.From.GetSec(Proj);

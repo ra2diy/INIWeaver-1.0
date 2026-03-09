@@ -141,7 +141,7 @@ namespace IBR_LinkNode
         {
             auto& ln = LinkNodeContext::CurSub->Lines_ByName[LinkNodeContext::LineIndex];
             auto& Line = LinkNodeContext::CurSub->Lines[ln];
-            if (Line.Default && IBB_DefaultRegType::HasRegType(Line.Default->TypeAlt))
+            if (Line.Default && IBB_DefaultRegType::HasRegType(PoolStr(Line.Default->TypeAlt)))
                 return true;
         }
         return false;
@@ -197,7 +197,6 @@ namespace IBR_LinkNode
         for (auto& L : Links)
         {
             //GlobalLogB.AddLog((L.To.operator IBB_Section_Desc().GetText() + " , ").c_str(), false);
-            IBF_Inst_Project.PushLinkedBy(L);
             PushLinkForDraw(
                 Center,
                 L.To,
@@ -465,7 +464,6 @@ namespace IBR_LinkNode
             if (link.To.GetSec(IBF_Inst_Project.Project) == FromSub.Root)continue;
             if (it == OnShow.end() || it->second.empty())
             {
-                IBF_Inst_Project.PushLinkedBy(link);
                 PushLinkForDraw(
                     Center,
                     link.To,
@@ -496,7 +494,6 @@ namespace IBR_LinkNode
             if (Line != LineIdx)continue;
             if (Pushed.contains(idx))continue;
             auto& link = FromSub.NewLinkTo[lidx];
-            IBF_Inst_Project.PushLinkedBy(link);
             PushLinkForDraw(
                 Center,
                 link.To,

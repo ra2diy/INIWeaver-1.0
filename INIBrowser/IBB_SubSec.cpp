@@ -142,7 +142,8 @@ bool IBB_SubSec::MergeLine(const std::string& Key, const std::string& Value, boo
         auto rp = Lines.insert({ Key, IBB_IniLine(Value, Def) });
         if (InitOnShow && Root->OnShow[Key].empty())
         {
-            if (!Def->TypeAlt.empty() && Def->TypeAlt != "bool")
+            auto Str = PoolStr(Def->TypeAlt);
+            if (!Str.empty() && Str != "bool")
                 Root->OnShow[Key] = EmptyOnShowDesc;
         }
 
@@ -352,7 +353,7 @@ bool IBB_SubSec::UpdateAll()
             }
 
             auto& KeyName = L;
-            auto ldd = Line.Default && IBB_DefaultRegType::HasRegType(Line.Default->TypeAlt);
+            auto ldd = Line.Default && IBB_DefaultRegType::HasRegType(PoolStr(Line.Default->TypeAlt));
             std::set<std::pair<int, int>> SelectValues;
 
             int i = 0;
@@ -439,6 +440,23 @@ bool IBB_SubSec::UpdateAll()
         auto it = Lines.find(InheritKeyName);
         if (it != Lines.end())Root->Inherit = it->second.Data->GetString(); 
     }
+
+    auto& Proj = *(Root->Root->Root);
+    for (auto& L : NewLinkTo)
+        if (L.FromKey == ImportKeyName)
+        {
+            auto pf = L.From.GetSec(Proj);
+            if (!pf)continue;
+            pf->Dynamic.ImportCount--;
+        }
+    for (auto& L : NewLT)
+        if (L.FromKey == ImportKeyName)
+        {
+            auto pf = L.From.GetSec(Proj);
+            if (!pf)continue;
+            pf->Dynamic.ImportCount++;
+        }
+
     NewLinkTo = NewLT;
 
     if (LimitFix)Ret &= UpdateAll();

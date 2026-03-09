@@ -185,8 +185,6 @@ bool IBF_DefaultTypeList::ReadAltSetting(const wchar_t* Name)
     std::vector<std::wstring> FindFileVec(const std::wstring & pattern);
     using namespace std::string_literals;
 
-
-    IBB_DefaultTypeAltList Alt;
     if (EnableLog)
     {
         GlobalLogB.AddLog_CurTime(false);
@@ -197,16 +195,15 @@ bool IBF_DefaultTypeList::ReadAltSetting(const wchar_t* Name)
     for (auto& CSV : FindFileVec(Name + L".csv"s))
     {
         IBB_FileCheck(CSV, false, true, false);
-        if (!Alt.LoadFromCSVFile(CSV.c_str()))Ret = false;
+        if (!List.LoadFromCSVFile(CSV.c_str()))Ret = false;
     }
     for (auto& JSON : FindFileVec(Name + L".json"s))
     {
         IBB_FileCheck(JSON, false, true, false);
-        if (!Alt.LoadFromJsonFile(JSON.c_str()))Ret = false;
+        if (!List.LoadFromJsonFile(JSON.c_str()))Ret = false;
     }
 
-    if (!List.LoadFromAlt(Alt))Ret = false;
-    if (!List.BuildQuery())Ret = false;
+    if (!List.LoadFromAlt())Ret = false;
     return Ret;
 }
 
@@ -220,19 +217,34 @@ bool IBF_Project::UpdateAll()
     return Project.UpdateAll();
 }
 
-void IBF_Project::SwapLinkedBy()
+void IBF_Project::RegenLinkedBy(const IBB_Section_Desc& Desc)
 {
-    std::swap(LinkedBy, LinkedByLast);
-    for (auto& d : LinkedBy)
-        d.second.clear();
+    auto& Arr = LinkedBy[Desc];
+    Arr.clear();
+    auto S = [&](IBB_NewLink& L) {
+            if(L.To.ToDesc() == Desc)
+                Arr.push_back(L);
+        };
+    for(auto& Ini:Project.Inis)
+        for (auto& [K, Sec] : Ini.Secs)
+        {
+            if (Sec.IsLinkGroup)
+                for (auto& L : Sec.LinkGroup_NewLinkTo)
+                    S(L);
+            else
+                for (auto& Sub : Sec.SubSecs)
+                    for (auto& L : Sub.NewLinkTo)
+                        S(L);
+        }
 }
-void IBF_Project::PushLinkedBy(IBB_NewLink Link)
+std::vector<IBB_NewLink>& IBF_Project::GetLinkedBy_Cached(const IBB_Section_Desc& Desc)
 {
-    LinkedBy[Link.To].push_back(Link);
+    return LinkedBy[Desc];
 }
-std::vector<IBB_NewLink>& IBF_Project::GetLinkedBy(const IBB_Section_Desc& Desc)
+std::vector<IBB_NewLink>& IBF_Project::GetLinkedBy_NoCached(const IBB_Section_Desc& Desc)
 {
-    return LinkedByLast[Desc];
+    RegenLinkedBy(Desc);
+    return LinkedBy[Desc];
 }
 
 bool IBF_Project::UpdateCreateSection(const IBB_Section_Desc& Desc)

@@ -105,12 +105,18 @@ namespace SearchModuleAlt
             ImGui::SameLine();
             ImGui::SmallButton((u8"添加##" + pModule->Name).c_str());
             if (ImGui::IsMouseDown(ImGuiMouseButton_Left) && ImGui::IsItemHovered())
+            {
+                pModule->FullyLoad();
                 IBR_Inst_Project.AddModule(*pModule, GenerateModuleTag());
+            }
         }
         else
         {
             if (R.Contains(ImGui::GetMousePos()) && ImGui::IsMouseDown(ImGuiMouseButton_Left))
+            {
+                pModule->FullyLoad();
                 IBR_Inst_Project.AddModule(*pModule, GenerateModuleTag());
+            }
         }
     }
 
@@ -678,6 +684,7 @@ namespace IBR_WorkSpace
         Alt.Parameter = "****";
         Alt.Path = UTF8toUnicode(IPath);
         Alt.Modules = std::move(ClipData.Modules);
+        Alt.FullyLoaded = true;
         Alt.SaveToFile();
 
         IBB_ModuleAltDefault::NewModule(std::move(Alt));

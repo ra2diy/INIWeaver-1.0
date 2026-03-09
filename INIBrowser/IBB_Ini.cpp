@@ -299,25 +299,10 @@ bool IBB_IniLine_Default::Load(JsonObject FromJson)
 }*/
 
 IBB_SubSec_Default::IBB_SubSec_Default() :
-    DescShort(""), DescLong(""), Platform({ "" })
+    DescShort(""), DescLong("")
 {
     Require.RequiredValues.clear();
     Require.ForbiddenValues.clear();
-}
-
-bool IBB_SubSec_Default::Load(JsonObject FromJson, const std::unordered_map<std::string, IBB_IniLine_Default>& LineMap)
-{
-    Platform = FromJson.GetObjectItem(u8"Platform").GetArrayString();
-    Name = FromJson.GetObjectItem(u8"Name").GetString();
-    DescShort = FromJson.GetObjectItem(u8"DescShort").GetString();
-    DescLong = FromJson.GetObjectItem(u8"DescLong").GetString();
-
-    Require.RequiredValues = FromJson.GetObjectItem(u8"RequiredValues").GetArrayObject();
-    Require.ForbiddenValues = FromJson.GetObjectItem(u8"ForbiddenValues").GetArrayObject();
-    Lines_ByName = FromJson.GetObjectItem(u8"Lines").GetArrayString();
-    for (const auto& s : Lines_ByName)Lines.insert({ s,LineMap.at(s) });
-
-    return true;
 }
 
 
@@ -328,12 +313,19 @@ LineData IBB_IniLine_Default::Create() const
 
 const IBB_RegType& IBB_IniLine_Default::GetRegType() const
 {
-    return IBB_DefaultRegType::GetRegType(TypeAlt);
+    return IBB_DefaultRegType::GetRegType(PoolStr(TypeAlt));
 }
 
 const std::string& IBB_IniLine_Default::GetIniType() const
 {
-    return IBB_DefaultRegType::GetIniTypeOfReg(TypeAlt);
+    return IBB_DefaultRegType::GetIniTypeOfReg(PoolStr(TypeAlt));
+}
+
+const IBG_InputType* IBB_IniLine_Default::GetInputTypeByValue(const std::string& Value) const
+{
+    return Known ?
+        Input :
+        &IBB_DefaultRegType::SelectInputTypeByValue(Value);
 }
 
 const IBG_InputType& IBB_IniLine_Default::GetInputType() const
@@ -349,7 +341,7 @@ int IBB_IniLine_Default::GetLinkLimit() const
 LinkNodeSetting IBB_IniLine_Default::GetNodeSetting() const
 {
     return LinkNodeSetting{
-        TypeAlt,
+        PoolStr(TypeAlt),
         LinkLimit,
         Color
     };
@@ -555,7 +547,7 @@ bool IBB_IniLine::Merge(const std::string& Another, IBB_IniMergeMode Mode)
             if (EnableLog)
             {
                 GlobalLogB.AddLog_CurTime(false);
-                auto K = UTF8toUnicode(Default->Name);
+                auto K = UTF8toUnicode(PoolStr(Default->Name));
                 auto LT = L"";
                 GlobalLogB.AddLog(std::vformat(L"IBB_DefaultTypeList::Merge ： " + locw("Error_DataTypeNotExist"),
                     std::make_wformat_args(K, LT)).c_str());
@@ -580,7 +572,7 @@ bool IBB_IniLine::Merge(const std::string& Another, IBB_IniMergeMode Mode)
         if (EnableLog)
         {
             GlobalLogB.AddLog_CurTime(false);
-            auto K = UTF8toUnicode(Default->Name);
+            auto K = UTF8toUnicode(PoolStr(Default->Name));
             auto LT = std::to_wstring(static_cast<int>(Mode));
             GlobalLogB.AddLog(std::vformat(L"IBB_IniLine::Merge ： " + locw("Error_MergeTypeNotExist"),
                 std::make_wformat_args(K, LT)).c_str());
@@ -591,12 +583,6 @@ bool IBB_IniLine::Merge(const std::string& Another, IBB_IniMergeMode Mode)
 }
 bool IBB_IniLine::Generate(const std::string& Value, IBB_IniLine_Default* Def)
 {
-    if (EnableLogEx)
-    {
-        GlobalLogB.AddLog_CurTime(false);
-        sprintf_s(LogBufB, "IBB_IniLine::Generate <- std::string Value=%s, IBB_IniLine_Default* Def=%p(Name=%s)",
-            Value.c_str(), Def, (Def == nullptr) ? "_ERROR" : Def->Name.c_str()); GlobalLogB.AddLog(LogBufB);
-    }
     if (Def != nullptr)Default = Def;
     if (Default == nullptr)return false;
     Data = Default->Create();
@@ -605,7 +591,7 @@ bool IBB_IniLine::Generate(const std::string& Value, IBB_IniLine_Default* Def)
         if (EnableLog)
         {
             GlobalLogB.AddLog_CurTime(false);
-            auto K = UTF8toUnicode(Default->Name);
+            auto K = UTF8toUnicode(PoolStr(Default->Name));
             auto LT = L"";
             GlobalLogB.AddLog(std::vformat(L"IBB_IniLine::Generate ： " + locw("Error_DataTypeNotExist"),
                 std::make_wformat_args(K, LT)).c_str());
@@ -619,7 +605,7 @@ bool IBB_IniLine::Generate(const std::string& Value, IBB_IniLine_Default* Def)
 void IBB_IniLine::MakeKVForExport(IBB_VariableList& vl, IBB_Section* AtSec, std::vector<std::string>* TmpLineOrder) const
 {
     auto& input = Default->GetInputType();
-    auto& key = Default->Name;
+    auto key = PoolStr(Default->Name);
 
     auto IIF = Default->GetInputType().Sidebar->Duplicate();
     auto Str = Data->GetString();
@@ -758,62 +744,7 @@ bool IBB_Ini::UpdateAll()
 
 
 
-IBB_DefaultTypeList::_Query::_Query()
-{
-    IniLine_Default_Special_FunctionList = {};//有什么Special类型再添加。
-}
 
-bool IBB_DefaultTypeList::BuildQuery()
-{
-    bool Ret = true;
-    for (const auto& p : IniLine_Default)
-    {
-        if (p.second.Limit.Type == u8"String") { Query.IniLine_Default_Full.insert({ p.second.Limit.Lim,(IBB_IniLine_Default*)std::addressof(p.second) }); }
-        else if (p.second.Limit.Type == u8"Special") { Query.IniLine_Default_Special.push_back({ p.second.Limit.Lim,(IBB_IniLine_Default*)std::addressof(p.second) }); }
-        else if (p.second.Limit.Type == u8"RegexFull") { Query.IniLine_Default_RegexFull.push_back({ p.second.Limit.Lim,(IBB_IniLine_Default*)std::addressof(p.second) }); }
-        else if (p.second.Limit.Type == u8"RegexNone") { Query.IniLine_Default_RegexNone.push_back({ p.second.Limit.Lim,(IBB_IniLine_Default*)std::addressof(p.second) }); }
-        else if (p.second.Limit.Type == u8"RegexNotFull") { Query.IniLine_Default_RegexNotFull.push_back({ p.second.Limit.Lim,(IBB_IniLine_Default*)std::addressof(p.second) }); }
-        else if (p.second.Limit.Type == u8"RegexNotNone") { Query.IniLine_Default_RegexNotNone.push_back({ p.second.Limit.Lim,(IBB_IniLine_Default*)std::addressof(p.second) }); }
-        else
-        {
-            if (EnableLog)
-            {
-                GlobalLogB.AddLog_CurTime(false);
-                auto K = UTF8toUnicode(p.second.Name);
-                auto LT = UTF8toUnicode(p.second.Limit.Type);
-                GlobalLogB.AddLog(std::vformat(L"IBB_DefaultTypeList::EnsureType ： " + locw("Error_LimitTypeNotExist"),
-                    std::make_wformat_args(K, LT)).c_str());
-
-            }
-            Ret = false;
-        }
-    }
-    for (const auto& p : SubSec_Default)
-    {
-        for (const auto& s : p.second.Lines_ByName)
-        {
-            Query.SubSec_Default_FromLineID.insert({ s,(IBB_SubSec_Default*)std::addressof(p.second) });
-        }
-    }
-    //InputTextOptions
-    for (const auto& p : IniLine_Default)
-    {
-        if (p.second.Name.empty())continue;
-        //Text, Desc, Hint
-        auto Pattern = p.second.Name + "\n" + p.second.DescShort;
-        for (auto& c : Pattern)if(isupper(c))c = (char)tolower(c);
-        Query.InputTextOptions.push_back({
-            p.second.Name,
-            p.second.DescShort,
-            p.second.DescLong,
-            Pattern
-        });
-
-    }
-    std::sort(Query.InputTextOptions.begin(), Query.InputTextOptions.end(),
-        [](const auto& a, const auto& b) { return a.Text < b.Text; });
-    return Ret;
-}
 
 void IBB_DefaultTypeList::CreateUnknownType(const std::string& KeyName)
 {
@@ -834,48 +765,24 @@ void IBB_DefaultTypeList::CreateUnknownType(const std::string& KeyName)
     EnsureType(Alt);
 
     auto& Def = IniLine_Default[KeyName];
-    Query.IniLine_Default_Full.insert({ Def.Limit.Lim, &Def });
+    Def.Known = false;
 
     extern const char* DefaultSubSecName;
     auto& Sub = SubSec_Default[DefaultSubSecName];
-    Sub.Lines_ByName.push_back(KeyName);
-    Sub.Lines[KeyName] = Def;
-
-    Query.SubSec_Default_FromLineID.insert({ KeyName, &Sub });
-    //Query.InputTextOptions 不修改：字典里面其实没有这个类型。
-
+    Def.InSubSec = &Sub;
 }
 
 IBB_IniLine_Default* IBB_DefaultTypeList::KeyBelongToLine(const std::string& KeyName)
 {
-    {
-        auto It = Query.IniLine_Default_Full.find(KeyName);
-        if (It != Query.IniLine_Default_Full.end())return It->second;
-    }
-    {
-        for (const auto& p : Query.IniLine_Default_Special)
-        {
-            auto It = Query.IniLine_Default_Special_FunctionList.find(p.first);
-            if (It != Query.IniLine_Default_Special_FunctionList.end())
-                if (It->second(KeyName))
-                    return p.second;
-        }
-    }
-    {
-        //for (const auto& p : Query.IniLine_Default_RegexFull)if (RegexFull_Nothrow(KeyName, p.first))return p.second;
-        //for (const auto& p : Query.IniLine_Default_RegexNone)if (RegexNone_Nothrow(KeyName, p.first))return p.second;
-        //for (const auto& p : Query.IniLine_Default_RegexNotFull)if (RegexNotFull_Nothrow(KeyName, p.first))return p.second;
-        //for (const auto& p : Query.IniLine_Default_RegexNotNone)if (RegexNotNone_Nothrow(KeyName, p.first))return p.second;
-    }
-
-    CreateUnknownType(KeyName);
-    return KeyBelongToLine(KeyName);
+    auto it = IniLine_Default.find(KeyName);
+    if (it == IniLine_Default.end())CreateUnknownType(KeyName);
+    it = IniLine_Default.find(KeyName);
+    if (it == IniLine_Default.end())return nullptr;
+    return &it->second;
 }
 
 IBB_SubSec_Default* IBB_DefaultTypeList::KeyBelongToSubSec(const std::string& KeyName)
 {
     auto ptr = KeyBelongToLine(KeyName);
-    auto it = Query.SubSec_Default_FromLineID.find(ptr->Name);
-    if (it == Query.SubSec_Default_FromLineID.end())return nullptr;
-    return it->second;
+    return ptr ? ptr->InSubSec : nullptr;
 }

@@ -56,11 +56,11 @@ struct IBF_Project
     IBB_Project Project;
     uint32_t CurrentProjectRID;
     std::unordered_map<std::string, IBB_Section_Desc> DisplayNames;
-    std::map<IBB_Section_Desc, std::vector<IBB_NewLink>> LinkedBy, LinkedByLast;
+    std::map<IBB_Section_Desc, std::vector<IBB_NewLink>> LinkedBy;
 
-    void SwapLinkedBy();
-    void PushLinkedBy(IBB_NewLink Link);
-    std::vector<IBB_NewLink>& GetLinkedBy(const IBB_Section_Desc& Desc);
+    void RegenLinkedBy(const IBB_Section_Desc& Desc);
+    std::vector<IBB_NewLink>& GetLinkedBy_Cached(const IBB_Section_Desc& Desc);
+    std::vector<IBB_NewLink>& GetLinkedBy_NoCached(const IBB_Section_Desc& Desc);
 
     bool HasDisplayName(const std::string& Name)
     {

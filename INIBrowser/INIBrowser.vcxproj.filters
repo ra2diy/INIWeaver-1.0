@@ -213,6 +213,9 @@
     <ClInclude Include="IBG_InputType_Defines.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="IBB_PropStringPool.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="INIBrowser.cpp">
@@ -366,6 +369,9 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="IBG_InputType_Factory.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="IBB_PropStringPool.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

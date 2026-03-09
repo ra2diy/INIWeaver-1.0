@@ -12,36 +12,19 @@ const char* InheritSubSecName = "A__INHERIT_SUBSEC";
 const char* DefaultSubSecName = "B__DEFAULT_SUBSEC";
 const char* ImportSubSecName  = "D__IMPORT_SUBSEC";
 
-void IBB_DefaultTypeList::EnsureType(const IBB_DefaultTypeAlt& D, std::set<std::string>* UsedStrings)
+void IBB_DefaultTypeList::EnsureType(const IBB_DefaultTypeAlt& D)
 {
     auto& L = IniLine_Default[D.Name];
-    L.Name = D.Name;
-    L.Platform = { "" };
-    L.Limit.Type = "String";
-    L.Limit.Lim = D.Name;
-    L.DescShort = D.DescShort;
-    L.DescLong = D.DescLong;
+    L.Name = NewPoolStr(D.Name);
+    L.DescShort = NewPoolDesc(D.DescShort);
+    L.DescLong = NewPoolDesc(D.DescLong);
     L.Color = D.Color;
+    L.Known = true;
     L.Input = &IBB_DefaultRegType::GetInputType(D.Input);
-    L.InputName = D.Input;
-    L.TypeAlt = D.LinkType;
-    if (D.LinkType.empty() || D.LinkLimit == 0)
-    {
-        L.LinkLimit = 0;
-    }
-    else
-    {
-        L.LinkLimit = D.LinkLimit;
-        if (UsedStrings)
-            UsedStrings->insert(D.LinkType);
-        else
-        {
-            auto& DefaultSubSec = SubSec_Default[DefaultSubSecName];
-            DefaultSubSec.Lines_ByName.push_back(D.Name);
-            DefaultSubSec.Lines[D.Name] = L;
-            IBB_DefaultRegType::EnsureRegType(D.LinkType);
-        }
-    }
+    L.InputName = NewPoolStr(D.Input);
+    L.TypeAlt = NewPoolStr(D.LinkType);
+    L.LinkLimit = D.LinkLimit;
+    IBB_DefaultRegType::EnsureRegType(D.LinkType);
 }
 
 void IBB_DefaultTypeList::EnsureType(const std::string& Key, const std::string& LinkType)
@@ -62,27 +45,13 @@ void IBB_DefaultTypeList::EnsureType(const std::string& Key, const std::string& 
     EnsureType(Alt);
 }
 
-bool IBB_DefaultTypeList::LoadFromAlt(const IBB_DefaultTypeAltList& AltList)
+bool IBB_DefaultTypeList::LoadFromAlt()
 {
-    Require_Default.clear();
-
-    std::set<std::string> UsedStrings;
-    for (const auto& D : AltList.List)EnsureType(D, &UsedStrings);
-
-    IBB_IniLine_Default& InheritLine = IniLine_Default[InheritKeyName];
-    IBB_IniLine_Default& ImportLine = IniLine_Default[ImportKeyName];
-
     auto& DefaultSubSec = SubSec_Default[DefaultSubSecName];
     DefaultSubSec.Name = DefaultSubSecName;
-    DefaultSubSec.Lines_ByName.reserve(IniLine_Default.size());
 
-    {
-        for (auto& [k, v] : IniLine_Default)
-            if (k != InheritKeyName && k != ImportKeyName)DefaultSubSec.Lines_ByName.push_back(k);
-        DefaultSubSec.Lines = IniLine_Default;
-        DefaultSubSec.Lines.erase(InheritKeyName);
-        DefaultSubSec.Lines.erase(ImportKeyName);
-    }
+    //默认都在DefaultSubSec里，然后再分出去
+    for (auto& [k, v] : IniLine_Default)v.InSubSec = &DefaultSubSec;
     
     DefaultSubSec.Type = IBB_SubSec_Default::Default;
 
@@ -91,21 +60,16 @@ bool IBB_DefaultTypeList::LoadFromAlt(const IBB_DefaultTypeAltList& AltList)
         
         auto& InheritSubSec = SubSec_Default[InheritSubSecName];
         InheritSubSec.Name = InheritSubSecName;
-        InheritSubSec.Lines_ByName = { InheritKeyName };
-        InheritSubSec.Lines[InheritKeyName] = InheritLine;
         InheritSubSec.Type = IBB_SubSec_Default::Inherit;
+        IniLine_Default[InheritKeyName].InSubSec = &InheritSubSec;
     }
 
     {
         auto& ImportSubSec = SubSec_Default[ImportSubSecName];
         ImportSubSec.Name = ImportSubSecName;
-        ImportSubSec.Lines_ByName = { ImportKeyName };
-        ImportSubSec.Lines[ImportKeyName] = ImportLine;
         ImportSubSec.Type = IBB_SubSec_Default::Import;
+        IniLine_Default[ImportKeyName].InSubSec = &ImportSubSec;
     }
-
-    for (const auto& s : UsedStrings)
-        IBB_DefaultRegType::EnsureRegType(s);
 
     return true;
 }
@@ -129,6 +93,17 @@ const char* SelectDefaultInput(const std::string& LinkType)
     if (!_strcmpi(LinkType.c_str(), "bool"))return "Bool";
     if (!_strcmpi(LinkType.c_str(), "string"))return "String";
     return "Link";
+}
+
+void IBB_DefaultTypeAlt::Clear()
+{
+    Name.clear();
+    DescShort.clear();
+    DescLong.clear();
+    LinkType.clear();
+    Input.clear();
+    LinkLimit = 1;
+    Color = 0xFF000000;
 }
 
 bool IBB_DefaultTypeAlt::Load(JsonObject FromJson)
@@ -157,17 +132,22 @@ bool IBB_DefaultTypeAlt::Load(const std::vector<std::string>& FromCSV)
     return true;
 }
 
-bool IBB_DefaultTypeAltList::Load(JsonObject FromJson)
+bool IBB_DefaultTypeList::LoadFromJsonObject(JsonObject FromJson)
 {
     auto V = FromJson.ItemArrayObjectOr("IniLine");
-    auto Sz = List.size();
-    List.resize(Sz + V.size());
+
+    IBB_DefaultTypeAlt Alt;
     for (size_t i = 0; i < V.size(); i++)
-        List[Sz + i].Load(V[i]);
+    {
+        Alt.Clear();
+        Alt.Load(V[i]);
+        EnsureType(Alt);
+    }
+
     return true;
 }
 
-bool IBB_DefaultTypeAltList::LoadFromJsonFile(const wchar_t* Name)
+bool IBB_DefaultTypeList::LoadFromJsonFile(const wchar_t* Name)
 {
     std::wstring FileName(const std::wstring & ss);
     JsonFile F;
@@ -175,8 +155,10 @@ bool IBB_DefaultTypeAltList::LoadFromJsonFile(const wchar_t* Name)
     IBR_PopupManager::AddJsonParseErrorPopup(F.ParseFromFileChecked(UnicodetoUTF8(Name).c_str(), loc("Error_JsonParseErrorPos"), nullptr),
         UnicodetoUTF8(std::vformat(locw("Error_JsonSyntaxError"), std::make_wformat_args(V))));
     if (!F.Available())return false;
-    Load(F);
+    LoadFromJsonObject(F);
 
+    //Should no longer auto convert to CSV after 1.0
+    /*
     ExtFileClass Et;
     Et.Open((Name + std::wstring(L".csv")).c_str(), L"w");
     for (auto& L : List)
@@ -189,21 +171,27 @@ bool IBB_DefaultTypeAltList::LoadFromJsonFile(const wchar_t* Name)
     }
     Et.Close();
     MessageBoxW(NULL, locwc("GUI_TypeAltConverted"), _AppNameW, MB_OK);
+    */
 
     return true;
 }
 
-bool IBB_DefaultTypeAltList::LoadFromCSVFile(const wchar_t* Name)
+bool IBB_DefaultTypeList::LoadFromCSVFile(const wchar_t* Name)
 {
     CSVReader Reader;
     Reader.ReadFromFile(Name);
     auto& D = Reader.GetData();
     if (D.size() <= 1)return false;
-    auto Sz = List.size();
-    List.resize(Sz + D.size());
     bool Ret = true;
+
+    IBB_DefaultTypeAlt Alt;
     for (size_t i = 1; i < D.size(); i++)
-        Ret &= List[Sz + i - 1].Load(D[i]);
+    {
+        Alt.Clear();
+        Alt.Load(D[i]);
+        EnsureType(Alt);
+    }
+
     return Ret;
 }
 
@@ -226,18 +214,6 @@ bool IBB_Project::CreateIni(const std::string& Name)
         return true;
     }
     else return false;
-}
-bool IBB_Project::AddIni(const IBB_Ini& Ini, bool IsDuplicate)
-{
-    IBB_Project_Index IniIndex(Ini.Name, "");
-    auto IniF = GetIni(IniIndex);
-    if (IniF == nullptr)
-    {
-        Inis.emplace_back(Ini);
-        Inis.back().Root = this;
-        return true;
-    }
-    else return IniF->Merge(Ini, IsDuplicate);
 }
 
 const char* __WTF__ = "_KENOSIS_SB_";
@@ -374,38 +350,6 @@ bool IBB_Project::AddNewLinkToLinkGroup(const IBB_Section_Desc& From, const IBB_
     return true;
 }
 
-bool IBB_Project::AddModule(const IBB_ModuleAlt& Module)
-{
-    if (EnableLogEx)
-    {
-        GlobalLogB.AddLog_CurTime(false);
-        sprintf_s(LogBufB, "IBB_Project::AddModule -> IBB_ModuleAlt Module=%p(Name=%s)", &Module, Module.Name.c_str());
-        GlobalLogB.AddLog(LogBufB);
-    }
-
-    bool Ret = true;
-
-    for (auto& R : Module.Modules)
-    {
-        if (R.IsLinkGroup)continue;
-        if (!AddModule(R))Ret = false;
-    }
-
-    for (auto& R : Module.Modules)
-    {
-        if (!R.IsLinkGroup)continue;
-        if (!AddModule(R))Ret = false;
-    }
-
-    if (EnableLogEx)
-    {
-        GlobalLogB.AddLog_CurTime(false);
-        sprintf_s(LogBufB, "IBB_Project::AddModule -> bool Ret=%s", IBD_BoolStr(Ret)); GlobalLogB.AddLog(LogBufB);
-    }
-
-    return Ret;
-}
-
 bool IBB_Project::AddModule(const ModuleClipData& Module)
 {
     IBB_Project_Index Tg(Module.Desc.A, Module.Desc.B);
@@ -443,7 +387,7 @@ bool IBB_Project::AddModule(const ModuleClipData& Module)
         if (EnableLog)
         {
             GlobalLogB.AddLog_CurTime(false);
-            GlobalLogB.AddLog("IBB_Project::AddNewSection ：无法添加字段。");
+            GlobalLogB.AddLog((u8"IBB_Project::AddModule ：" + loc("Log_CreateSectionFailed")).c_str());
         }
         return false;
     }

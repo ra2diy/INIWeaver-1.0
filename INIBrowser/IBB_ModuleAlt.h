@@ -215,6 +215,7 @@ struct IBB_ClipBoardData
 struct IBB_ModuleAlt
 {
     bool Available{ false };
+    bool FullyLoaded{ false };//使用时现场加载完整内容
     bool FromClipBoard{ false };
     std::string Name;
     std::string DescShort;
@@ -225,12 +226,15 @@ struct IBB_ModuleAlt
     std::vector<ModuleClipData> Modules;
     std::wstring Path;
 
-    std::string GetFirstINI() const;
-    JsonFile ToJson() const;
+    std::string GetFirstINI();
+    JsonFile ToJson();
     bool Search(const std::string& Str, bool ConsiderRegName, bool ConsiderDescName, bool ConsiderDesc);
     void LoadFromFile(const wchar_t* FileName);
     void LoadFromFile(const char* FileName);
     void LoadFromString(std::wstring_view FileName, std::string&& FileStr);
+    void PreLoadFromFile(const wchar_t* FileName);
+    void PreLoadFromFile(const char* FileName);
+    void FullyLoad();
     bool SaveToFile();
 };
 

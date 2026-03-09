@@ -60,6 +60,11 @@ void IBR_ToolTip(const std::wstring& Str)
 
 void IBR_ToolTip(const std::string& Str)
 {
+    IBR_ToolTip(Str.c_str());
+}
+
+void IBR_ToolTip(const char* Str)
+{
     //Autowrap & Use String
     auto awt = IBF_Inst_Setting.AutoWrapThreshold();
     auto ScrH = IBR_UICondition::CurrentScreenHeight - IBR_HintManager::GetHeight();
@@ -70,13 +75,13 @@ void IBR_ToolTip(const std::string& Str)
         if (PosY > ScrH)
             ImGui::SetNextWindowPos({ ImGui::GetMousePos().x, ScrH - PreH });
         ImGui::BeginTooltip();
-        ImGui::Text(Str.c_str());
+        ImGui::Text(Str);
         ImGui::EndTooltip();
     }
     else
     {
         auto Wrap = FontHeight * awt * 1.0F;
-        auto Pos = ImGui::CalcTextSize(Str.c_str(), 0, false, Wrap);
+        auto Pos = ImGui::CalcTextSize(Str, 0, false, Wrap);
         auto PreH = Pos.y + ImGui::GetTextLineHeightWithSpacing();
         auto PosY = ImGui::GetMousePos().y + PreH;
         if (PosY > ScrH)
@@ -84,58 +89,36 @@ void IBR_ToolTip(const std::string& Str)
 
         ImGui::BeginTooltip();
         ImGui::PushTextWrapPos(Wrap);
-        ImGui::Text(Str.c_str());
+        ImGui::Text(Str);
         ImGui::PopTextWrapPos();
         ImGui::EndTooltip();
     }
     
 }
 
-bool Matches(std::string& str, const InputTextOption& opt)
-{
-    //不分大小写，Text或者Desc包含str就算匹配
-    auto StrLower = str;
-    for (auto& c : StrLower)c = (char)tolower(c);
-    return opt.Pattern.contains(StrLower);
+
+
+// 判断 a 是否在 b 中出现（不区分大小写）
+bool contains_ignore_case(const std::string& a, const std::string& b) {
+    auto it = std::search(
+        b.begin(), b.end(),
+        a.begin(), a.end(),
+        [](unsigned char c1, unsigned char c2) {
+            return std::tolower(c1) == std::tolower(c2);
+        }
+    );
+    return it != b.end();
 }
 
-bool InputTextStdStringWithOption(
-    const char* label,
-    std::string& str,
-    ImGuiInputTextFlags flags,
-    const std::vector<InputTextOption>& options)
+inline bool Matches(std::string& str, const std::string& Name, const IBB_IniLine_Default& opt)
 {
-    const ImVec2 Cursor = ImGui::GetCursorScreenPos();
-    auto Ret = InputTextStdString(label, str, flags);
-
-    ImGui::SameLine();
-    ImGui::SetCursorPosX(ImGui::GetCursorPosX() - ImGui::GetStyle().ItemSpacing.x);
-    if (ImGui::BeginComboEx("##TYPEALT_DICT", str.c_str(), ImGuiComboFlags_NoPreview, false, Cursor))
-    {
-        ComboRects.push_back(ImGui::GetCurrentWindow()->Rect());
-        ImGui::PushOrderFront(ImGui::GetCurrentWindow());
-
-        for (auto& opt : options)
-        {
-            if (!Matches(str, opt))
-                continue;
-            if (ImGui::Selectable((opt.Text + " : " + opt.Desc).c_str(), false))
-                str = opt.Text;
-            if (ImGui::IsItemHovered() && ImGui::IsMouseDown(ImGuiMouseButton_Left))
-                str = opt.Text;
-            if (ImGui::IsItemHovered())
-                IBR_ToolTip(opt.Hint);
-        }
-        ImGui::EndCombo();
-    }
-
-    return Ret;
+    //不分大小写，Name或者DescShort包含str就算匹配
+    return contains_ignore_case(str, Name) || contains_ignore_case(str, PoolDesc(opt.DescShort));
 }
 
 void EditStringWithOptions(
     bool Active,
-    std::string& str,
-    const std::vector<InputTextOption>& options)
+    std::string& str)
 {
     static bool LastActive = false;
     static bool LastActive2 = false;
@@ -147,16 +130,24 @@ void EditStringWithOptions(
         //Scrollbar cannot work properly here
         ImGui::BeginChildFrame(ImGui::GetID("##TYPEALT_DICT"), { 0, FontHeight * 10.0f },
             ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoScrollbar);
-        for (auto& opt : options)
+
+        int Count = 0;
+        for (auto& [Name, Line] : IBF_Inst_DefaultTypeList.List.IniLine_Default)
         {
-            if (!Matches(str, opt))
-                continue;
-            if (ImGui::Selectable((opt.Text + " : " + opt.Desc).c_str(), false))
-                str = opt.Text;
+            if (!Line.Known)continue;
+            if (!Matches(str, Name, Line))continue;
+            if(Count++ > 100)
+            {
+                ImGui::TextDisabled(locc("GUI_TooManyOptions"));
+                break;
+            }
+
+            if (ImGui::Selectable((Name + " : " + PoolDesc(Line.DescShort)).c_str(), false))
+                str = Name;
             if (ImGui::IsItemHovered() && ImGui::IsMouseDown(ImGuiMouseButton_Left))
-                str = opt.Text;
+                str = Name;
             if(ImGui::IsItemHovered())
-                IBR_ToolTip(opt.Hint);
+                IBR_ToolTip(PoolDesc(Line.DescLong));
         }
         ImGui::EndChildFrame();
     }

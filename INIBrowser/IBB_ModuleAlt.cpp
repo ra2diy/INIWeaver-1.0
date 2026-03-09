@@ -148,6 +148,9 @@ void IniToken::Tokenize(std::string_view Line, bool UseDesc)
 {
     Line = TrimView(Line);
     HasDesc = Empty = IsSection = false;
+    Key.clear();
+    Value.clear();
+    Desc.clear();
     if (Line.empty() || Line.front() == ';')
     {
         Empty = true;
@@ -769,8 +772,9 @@ JsonFile ModuleClipData::ToJson() const
     return F;
 }
 
-std::string IBB_ModuleAlt::GetFirstINI() const
+std::string IBB_ModuleAlt::GetFirstINI()
 {
+    FullyLoad();
     if (Modules.empty())return "";
     else return Modules[0].Desc.A;
 }
@@ -998,6 +1002,85 @@ int GetClipFormatVersion(int AppVersion)
     return 0;
 }
 
+//！这个函数应该是单出口的！
+//这里是懒加载机制的主要实现。
+void IBB_ModuleAlt::PreLoadFromFile(const wchar_t* FileName)
+{
+    //如果已经完全加载了，就不需要再加载了。
+    if (FullyLoaded) return;
+
+    Path = FileName;
+    Available = false;
+    FullyLoaded = false;
+    FromClipBoard = false;
+    Name.clear();
+    DescShort.clear();
+    DescLong.clear();
+    ParamDescShort.clear();
+    ParamDescLong.clear();
+
+    /*
+    来自Info块的信息：
+    std::string Name;
+    std::string DescShort;
+    std::string DescLong;
+    std::string ParamDescShort;
+    std::string ParamDescLong;
+    std::string Parameter;
+    */
+
+    //接下来：打开文件，找到Info块，读取信息，直到找到下一个块或者文件结束。
+    ExtFileClass E;
+    E.Open(FileName, L"r");
+    if (!E.Available())return;
+    std::string Line;
+    IniToken Tok;
+    bool InInfo = false;
+    while (E.ReadLine(Line))
+    {
+        Tok.Tokenize(Line);
+        if (!InInfo)
+        {
+            if (Tok.IsSection && Tok.Key == "Info")
+            {
+                InInfo = true;
+            }
+        }
+        else
+        {
+            if (Tok.IsSection)break;
+            if (!Tok.Empty)
+            {
+                if (Tok.Key == "Name")
+                {
+                    Name = Tok.Value;
+                }
+                else if (Tok.Key == "DescShort")
+                {
+                    DescShort = Tok.Value;
+                }
+                else if (Tok.Key == "DescLong")
+                {
+                    DescLong = Tok.Value;
+                }
+                else if (Tok.Key == "ParamDescShort")
+                {
+                    ParamDescShort = Tok.Value;
+                }
+                else if (Tok.Key == "ParamDescLong")
+                {
+                    ParamDescLong = Tok.Value;
+                }
+            }
+        }
+    }
+
+    Parameter = "****";
+    if (Name.empty())Name = DescShort;
+    Available = InInfo;
+}
+
+//！这个函数应该是单出口的！
 void IBB_ModuleAlt::LoadFromString(std::wstring_view FileName, std::string&& FileStr)
 {
     Available = false;
@@ -1152,6 +1235,7 @@ void IBB_ModuleAlt::LoadFromString(std::wstring_view FileName, std::string&& Fil
 
     FromClipBoard = FromClip;
     Available = FromClip || (HasReg && HasInfo && !Modules.empty());
+    FullyLoaded = Available;
 }
 
 void IBB_ClipBoardData::Generate(const std::vector<IBB_Section_Desc>& Module)
@@ -1179,6 +1263,22 @@ void IBB_ClipBoardData::GenerateAll(bool UsePosAsDelta, bool FromClipBoard)
         if (!Sec.GetClipData(Modules.back(), UsePosAsDelta))
             Modules.pop_back();
     }
+}
+
+void IBB_ModuleAlt::FullyLoad()
+{
+    if(!FullyLoaded)
+    {
+        if (Available)
+        {
+            LoadFromFile(Path.c_str());
+        }
+    }
+}
+
+void IBB_ModuleAlt::PreLoadFromFile(const char* FileName)
+{
+    PreLoadFromFile(UTF8toUnicode(FileName).c_str());
 }
 
 void IBB_ModuleAlt::LoadFromFile(const wchar_t* FileName)
@@ -1363,8 +1463,9 @@ JsonFile IBB_ClipBoardData::ToJson() const
     return F;
 }
 
-JsonFile IBB_ModuleAlt::ToJson() const
+JsonFile IBB_ModuleAlt::ToJson()
 {
+    FullyLoad();
     JsonFile F;
     auto Obj = F.GetObj();
     Obj.SetOrCreateObject();
@@ -1546,7 +1647,7 @@ namespace IBB_ModuleAltDefault
                     IBB_FileCheck(File.FullPath, false, true, false);
                     //MessageBoxW(NULL, File.FullPath.c_str(), L"File", MB_OK);
                     IBB_ModuleAlt Mod;
-                    Mod.LoadFromFile(File.FullPath.c_str());
+                    Mod.PreLoadFromFile(File.FullPath.c_str());
                     NewModule(std::move(Mod));
                 }
             }
@@ -1585,27 +1686,37 @@ namespace IBB_ModuleAltDefault
     //Voxel
     IBB_ModuleAlt* DefaultArt_Voxel()
     {
-        return GetModuleII("DefaultArt_Voxel");
+        auto md = GetModuleII("DefaultArt_Voxel");
+        md->FullyLoad();
+        return md;
     }
     //DefaultArt_SHPVehicle
     IBB_ModuleAlt* DefaultArt_SHPVehicle()
     {
-        return GetModuleII("DefaultArt_SHPVehicle");
+        auto md = GetModuleII("DefaultArt_SHPVehicle");
+        md->FullyLoad();
+        return md;
     }
     //DefaultArt_SHPBuilding
     IBB_ModuleAlt* DefaultArt_SHPBuilding()
     {
-        return GetModuleII("DefaultArt_SHPBuilding");
+        auto md = GetModuleII("DefaultArt_SHPBuilding");
+        md->FullyLoad();
+        return md;
     }
     //DefaultArt_SHPInfantry
     IBB_ModuleAlt* DefaultArt_SHPInfantry()
     {
-        return GetModuleII("DefaultArt_SHPInfantry");
+        auto md = GetModuleII("DefaultArt_SHPInfantry");
+        md->FullyLoad();
+        return md;
     }
     //DefaultArt_Animation
     IBB_ModuleAlt* DefaultArt_Animation()
     {
-        return GetModuleII("DefaultArt_Animation");
+        auto md = GetModuleII("DefaultArt_Animation");
+        md->FullyLoad();
+        return md;
     }
     void Load(const wchar_t* FileRange, const wchar_t* FileRange2, const wchar_t* FileRange3)
     {
@@ -1617,7 +1728,7 @@ namespace IBB_ModuleAltDefault
         {
             IBB_FileCheck(File.FullPath, false, true, false);
             IBB_ModuleAlt Mod;
-            Mod.LoadFromFile(File.FullPath.c_str());
+            Mod.PreLoadFromFile(File.FullPath.c_str());
             NewModuleII(std::move(Mod));
         }
         //for (auto& [K, V] : ArtModules)MessageBoxA(NULL, K.c_str(), "ArtModules", MB_OK);

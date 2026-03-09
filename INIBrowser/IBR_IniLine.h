@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include "IBG_InputType.h"
 #include "IBR_LinkNode.h"
+#include "IBB_PropStringPool.h"
 
 struct IBR_InputManager
 {
@@ -36,7 +37,7 @@ struct IBR_IniLine
         }
     };
     bool NeedInit() { return HasInput && !Input; }
-    void RenderUI(const std::string& Line, const std::string& Hint, InitType* Init = nullptr);
+    void RenderUI(const std::string& Line, const char* Hint, InitType* Init = nullptr);
     void CloseInput();
 };
 
@@ -46,7 +47,7 @@ struct BufferedLine
     const IBG_InputType* InputType;
     LinkNodeSetting LinkNode;
     std::string Buffer;
-    std::string Hint;
+    DescPoolOffset Hint;
     std::string OnShowBuf;
     bool InputOnshow;
 };

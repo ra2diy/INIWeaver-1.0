@@ -30,6 +30,7 @@ struct IBB_RegisterList
 
 struct IBB_ModuleAlt;
 struct ModuleClipData;
+struct IBB_DefaultTypeList;
 
 struct IBB_Project
 {
@@ -53,7 +54,6 @@ struct IBB_Project
     IBB_Project_Index GetSecIndex(const std::string& Name, const std::string& PriorIni) const;
 
     bool CreateIni(const std::string& Name);
-    bool AddIni(const IBB_Ini& Ini, bool IsDuplicate);
     bool CreateRegisterList(const std::string& Name, const std::string& IniName);
     bool AddRegisterList(const IBB_RegisterList& List);
     IBB_Section* CreateNewSection(const IBB_Section_Desc& Desc);
@@ -63,7 +63,6 @@ struct IBB_Project
     bool RegisterSection(const std::string& Name, const std::string& IniName, IBB_Section& Section);
     bool RegisterSection(size_t RegListID, IBB_Section& Section);
 
-    bool AddModule(const IBB_ModuleAlt& Module);
     bool AddModule(const ModuleClipData& Module);
     bool UpdateAll();//After AddModule - It affects the WHOLE project. Don't use it frequently.
     _TEXT_UTF8 std::string GetText(bool PrintExtraData) const;
@@ -77,19 +76,16 @@ struct IBB_DefaultTypeAlt
 {
     std::string Name, DescLong, DescShort, LinkType, Input;
     int LinkLimit{ 1 };
-    ImU32 Color;
+    ImU32 Color{ 0xFF000000 };
 
+    void Clear();
     bool Load(JsonObject FromJson);
     bool Load(const std::vector<std::string>& FromCSV);
 };
 
 struct IBB_DefaultTypeAltList
 {
-    std::vector<IBB_DefaultTypeAlt> List;
-
-    bool Load(JsonObject FromJson);
-    bool LoadFromJsonFile(const wchar_t* Name);
-    bool LoadFromCSVFile(const wchar_t* Name);
+    
 };
 
 struct IBB_DefaultTypeList
@@ -97,39 +93,18 @@ struct IBB_DefaultTypeList
 private:
 public:
     // std::unordered_map<Name, Object>
-    std::unordered_map<std::string, JsonObject> Require_Default;
     std::unordered_map<std::string, IBB_IniLine_Default> IniLine_Default;
     std::unordered_map<std::string, IBB_SubSec_Default> SubSec_Default;//一个IniLine只能属于一个SubSec
 
-    struct _Query
-    {
-        // pair<match, line(to unordered_maps)>
-        std::unordered_map<std::string, IBB_IniLine_Default*> IniLine_Default_Full;//Likely
-        std::vector<std::pair<std::string, IBB_IniLine_Default*>> IniLine_Default_RegexFull;
-        std::vector<std::pair<std::string, IBB_IniLine_Default*>> IniLine_Default_RegexNotFull;
-        std::vector<std::pair<std::string, IBB_IniLine_Default*>> IniLine_Default_RegexNone;
-        std::vector<std::pair<std::string, IBB_IniLine_Default*>> IniLine_Default_RegexNotNone;
-        std::vector<std::pair<std::string, IBB_IniLine_Default*>> IniLine_Default_Special;
-        /* Initalized in constructor */std::unordered_map<std::string, std::function<bool(const std::string&)>> IniLine_Default_Special_FunctionList;
+    bool LoadFromAlt();
 
-        // <LineName,SubSec>
-        std::unordered_map<std::string, IBB_SubSec_Default*> SubSec_Default_FromLineID;
-
-        // From TypeAlt built with IniLine_Default
-        std::vector<InputTextOption> InputTextOptions;
-
-        _Query();
-    }Query;
-
-
-    JsonFile RootJson;
-
-    bool LoadFromAlt(const IBB_DefaultTypeAltList& AltList);
-
-    bool BuildQuery();//call after load
     void EnsureType(const std::string& Key, const std::string& LinkType);
-    void EnsureType(const IBB_DefaultTypeAlt& Alt, std::set<std::string>* pSet = nullptr);
+    void EnsureType(const IBB_DefaultTypeAlt& Alt);
     void CreateUnknownType(const std::string& KeyName);
+
+    bool LoadFromJsonObject(JsonObject FromJson);
+    bool LoadFromJsonFile(const wchar_t* Name);
+    bool LoadFromCSVFile(const wchar_t* Name);
 
     IBB_IniLine_Default* KeyBelongToLine(const std::string& KeyName);//Order:String-Special-Regex
     IBB_SubSec_Default* KeyBelongToSubSec(const std::string& KeyName);

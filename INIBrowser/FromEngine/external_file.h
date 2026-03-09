@@ -108,6 +108,19 @@ public:
         return fflush(fp);
     }
 
+    bool ReadLine(std::string& Str)const
+    {
+        Str.clear();
+        int c;
+        while ((c = fgetc(fp)) != EOF)
+        {
+            if (c == '\n')break;
+            Str.push_back((char)c);
+        }
+        if (!Str.empty() && Str.back() == '\r')
+            Str.pop_back();
+        return !Str.empty() || c != EOF;
+    }
     bool ReadData(std::string& Str)const
     {
         const size_t MaxSize = 65536;

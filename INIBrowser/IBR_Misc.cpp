@@ -71,7 +71,7 @@ IBR_InputManager::~IBR_InputManager()
     //GlobalLogB.AddLog(this);
 }
 
-void IBR_IniLine::RenderUI(const std::string& Line, const std::string& Hint, InitType* Init)
+void IBR_IniLine::RenderUI(const std::string& Line, const char* Hint, InitType* Init)
 {
     LinkNodeContext::CurLineChangeCompStatus = false;
     ImGui::TextWrappedEx(Line.c_str());
@@ -79,7 +79,7 @@ void IBR_IniLine::RenderUI(const std::string& Line, const std::string& Hint, Ini
     if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
         LinkNodeContext::CurLineChangeCompStatus = true;
     //ImGui::TextEx(Line.c_str(), nullptr, ImGuiTextFlags_NoWidthForLargeClippedText);
-    if (!Hint.empty() && ImGui::IsItemHovered())
+    if (ImGui::IsItemHovered())
     {
         IBR_ToolTip(Hint);
     }
@@ -321,10 +321,7 @@ namespace IBR_EditFrame
                 Line.LinkNode = V.Default->GetNodeSetting();
                 Line.OnShowBuf = rsc->GetOnShow(K);
                 Line.InputOnshow = false;
-
-                Line.InputType = V.Default->Known ?
-                    V.Default->Input :
-                    &IBB_DefaultRegType::SelectInputTypeByValue(Line.Buffer);
+                Line.InputType = V.Default->GetInputTypeByValue(Line.Buffer);
             }
         }
     }
@@ -474,7 +471,7 @@ namespace IBR_EditFrame
             }
         }
 
-        EditStringWithOptions(Active, NewLineKey, IBF_Inst_DefaultTypeList.List.Query.InputTextOptions);
+        EditStringWithOptions(Active, NewLineKey);
     }
 
     void RenderUI_SwitchToText()
@@ -599,12 +596,12 @@ namespace IBR_EditFrame
                          } ,
                     V.InputType->Sidebar,
                     std::move(L)};
-                V.Edit.RenderUI(K, V.Hint, &It);
+                V.Edit.RenderUI(K, PoolDesc(V.Hint), &It);
             }
             else
             {
-                if (V.Edit.HasInput)V.Edit.RenderUI(K, V.Hint);
-                else V.Edit.RenderUI(K + " = " + V.Buffer, V.Hint);
+                if (V.Edit.HasInput)V.Edit.RenderUI(K, PoolDesc(V.Hint));
+                else V.Edit.RenderUI(K + " = " + V.Buffer, PoolDesc(V.Hint));
             }
         }
     }
