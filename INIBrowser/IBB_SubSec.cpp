@@ -42,7 +42,7 @@ void MergeList(std::vector<std::string>& Value, const std::string& Str)
 
 std::string IBB_NewLink::GetText() const
 {
-    return "FROM " + From.operator IBB_Section_Desc().GetText() + "." + FromKey + " TO " + To.operator IBB_Section_Desc().GetText();
+    return "FROM " + From.operator IBB_Section_Desc().GetText() + "." + PoolStr(FromKey) + " TO " + To.operator IBB_Section_Desc().GetText();
 }
 
 bool IBB_NewLink::Empty() const
@@ -54,7 +54,7 @@ IBB_SubSec::IBB_SubSec(IBB_SubSec&& A) noexcept :
     Root(A.Root), Default(A.Default), Lines_ByName(std::move(A.Lines_ByName)), Lines(std::move(A.Lines)), NewLinkTo(std::move(A.NewLinkTo))
 {}
 
-bool IBB_SubSec::MergeLine(const std::string& Key, const std::string& Value, bool InitOnShow, IBB_IniMergeMode Mode, bool NoUpdate)
+bool IBB_SubSec::MergeLine(StrPoolID Key, const std::string& Value, bool InitOnShow, IBB_IniMergeMode Mode, bool NoUpdate)
 {
     /*sprintf_s(LogBufB, __FUNCTION__ ":  %s=%s Mode=%d InitOnShow=%s NoUpdate=%s",
         Line.first.c_str(), Line.second.c_str(), Mode, IBD_BoolStr(InitOnShow), IBD_BoolStr(NoUpdate));
@@ -99,25 +99,20 @@ bool IBB_SubSec::ChangeRoot(IBB_Section* NewRoot)
     return true;
 }
 
-std::vector<std::string> IBB_SubSec::GetKeys(bool PrintExtraData) const
+std::vector<StrPoolID> IBB_SubSec::GetKeys(bool PrintExtraData) const
 {
-    std::vector<std::string> Ret;
-    if (PrintExtraData)Ret.push_back("_DEFAULT_NAME");
+    std::vector<StrPoolID> Ret;
+    if (PrintExtraData)Ret.push_back(NewPoolStr("_DEFAULT_NAME"));
     for (const auto& sn : Lines_ByName)
     {
         if (Lines.find(sn) == Lines.end())
             if (EnableLog)
             {
                 GlobalLogB.AddLog_CurTime(false);
-                auto sl = UTF8toUnicode(sn);
+                auto sl = UTF8toUnicode(PoolStr(sn));
                 GlobalLogB.AddLog(std::vformat(L"IBB_SubSec::GetKeys ：" + locw("Log_SubSecNotExist"), std::make_wformat_args(sl)));
             }
         Ret.push_back(sn);
-    }
-    if (PrintExtraData)for (const auto& L : NewLinkTo)
-    {
-        auto pf = L.From.GetSec(*(Root->Root->Root));
-        if (pf != nullptr)Ret.push_back("_LINK_FROM_" + pf->Name);
     }
     return Ret;
 }
@@ -132,19 +127,19 @@ IBB_VariableList IBB_SubSec::GetLineList(bool PrintExtraData, bool FromExport, s
             if (EnableLog)
             {
                 GlobalLogB.AddLog_CurTime(false);
-                auto sl = UTF8toUnicode(sn);
+                auto sl = UTF8toUnicode(PoolStr(sn));
                 GlobalLogB.AddLog(std::vformat(L"IBB_SubSec::GetLineList ：" + locw("Log_SubSecNotExist"), std::make_wformat_args(sl)));
             }
         auto& L = It->second;
         if (FromExport)
         {
-            if (sn == InheritKeyName)continue;
+            if (sn == InheritKeyID())continue;
             L.MakeKVForExport(Ret, Root, TmpLineOrder);
         }
         else
         {
-            if (sn == InheritKeyName)continue;
-            Ret.Value[sn] = L.Data->GetString();
+            if (sn == InheritKeyID())continue;
+            Ret.Value[PoolStr(sn)] = L.Data->GetString();
         }
     }
     if (PrintExtraData)for (const auto& L : NewLinkTo)
@@ -172,7 +167,7 @@ void IBB_SubSec::ClaimLink(size_t LineIdx, size_t ComponentIdx, size_t LinkIdx)
     LinkSrc.insert({ i, LinkIdx });
 }
 
-bool IBB_SubSec::CanOwnKey(const std::string& Key) const
+bool IBB_SubSec::CanOwnKey(StrPoolID Key) const
 {
     auto pSub = IBF_Inst_DefaultTypeList.List.KeyBelongToSubSec(Key);
     return pSub == Default;
@@ -227,14 +222,14 @@ void IBB_SubSec::UpdateNewLinkTo(std::vector<IBB_NewLink>&& NewLT)
 {
     auto& Proj = *(Root->Root->Root);
     for (auto& L : NewLinkTo)
-        if (L.FromKey == ImportKeyName)
+        if (L.FromKey == ImportKeyID())
         {
             auto pf = L.To.GetSec(Proj);
             if (!pf)continue;
             pf->Dynamic.ImportCount--;
         }
     for (auto& L : NewLT)
-        if (L.FromKey == ImportKeyName)
+        if (L.FromKey == ImportKeyID())
         {
             auto pf = L.To.GetSec(Proj);
             if (!pf)continue;
@@ -254,11 +249,6 @@ bool IBB_SubSec::UpdateAll()
 
     for (auto&& [LineIdx, L] : std::views::zip(std::views::iota(0u), Lines_ByName))
     {
-        if (EnableLogEx)
-        {
-            GlobalLogB.AddLog_CurTime(false); GlobalLogB.AddLog("IBB_SubSec::UpdateAll Line : ", false); GlobalLogB.AddLog(L.c_str());
-        }
-
         auto& Line = Lines[L];
         if (!Line.Default)continue;
 
@@ -366,7 +356,7 @@ bool IBB_SubSec::UpdateAll()
 
     if (Default->Type == IBB_SubSec_Default::Inherit)
     {
-        auto it = Lines.find(InheritKeyName);
+        auto it = Lines.find(InheritKeyID());
         if (it != Lines.end())Root->Inherit = it->second.Data->GetString(); 
     }
 

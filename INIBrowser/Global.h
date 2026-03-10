@@ -45,6 +45,10 @@ extern const char* DefaultIniName;
 extern const char* InheritKeyName;
 extern const char* ImportKeyName;
 extern const char* SingleValName;
+StrPoolID InheritKeyID();
+StrPoolID ImportKeyID();
+StrPoolID SingleValID();
+
 
 //日志
 extern LogClass GlobalLog;

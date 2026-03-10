@@ -42,9 +42,7 @@ public:
 struct IBF_DefaultTypeList
 {
     IBB_DefaultTypeList List;
-    void EnsureType(const std::string& Key, const std::string& LinkType);
     bool ReadAltSetting(const wchar_t* Name);
-    const IBB_IniLine_Default* GetDefault(const std::string& Key) const;
 };
 
 

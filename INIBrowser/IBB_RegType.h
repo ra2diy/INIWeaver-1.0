@@ -63,7 +63,7 @@ namespace IBB_DefaultRegType
     LinkNodeSetting GetDefaultLinkNodeSetting();
     IBG_InputType& SelectInputTypeByValue(const _TEXT_UTF8 std::string& Value);
     const bool MatchType(const _TEXT_UTF8 std::string& TypeA, const _TEXT_UTF8 std::string& TypeB);
-    void GenerateDLK(const std::vector<PairClipString>& DLK1, const std::string& Register, IBB_VariableList& DefaultLinkKey);
+    void GenerateDLK(const std::vector<PairClipString>& DLK1, const std::string& Register, std::unordered_map<std::string, StrPoolID>& DefaultLinkKey, IBB_VariableList*& UpValue);
     void SwitchLightColor();
     void SwitchDarkColor();
     void ClearModuleCount();

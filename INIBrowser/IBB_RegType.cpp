@@ -456,15 +456,15 @@ R"({
         if (TypeA == TypeB)return true;
         return ContainType(TypeA, TypeB) || ContainType(TypeB, TypeA);
     }
-    void GenerateDLK(const std::vector<PairClipString>& DLK1, const std::string& Register, IBB_VariableList& DefaultLinkKey)
+    void GenerateDLK(const std::vector<PairClipString>& DLK1, const std::string& Register, std::unordered_map<std::string, StrPoolID>& DefaultLinkKey, IBB_VariableList*& UpValue)
     {
         for (auto& L : DLK1)
         {
             auto it = CompoundTypes.find(L.A);
-            if (it == CompoundTypes.end())DefaultLinkKey.Value[L.A] = L.B;
-            else for (auto& V : it->second.Regs)DefaultLinkKey.Value[V] = L.B;
+            if (it == CompoundTypes.end())DefaultLinkKey[L.A] = NewPoolStr(L.B);
+            else for (auto& V : it->second.Regs)DefaultLinkKey[V] = NewPoolStr(L.B);
         }
         auto& Reg = GetRegType(Register);
-        DefaultLinkKey.UpValue = &Reg.DefaultLinks;
+        UpValue = &Reg.DefaultLinks;
     }
 }

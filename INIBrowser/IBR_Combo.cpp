@@ -2,6 +2,7 @@
 #include <imgui_internal.h>
 #include "Global.h"
 #include "IBR_Components.h"
+#include "IBB_PropStringPool.h"
 
 namespace ImGui
 {
@@ -137,17 +138,18 @@ void EditStringWithOptions(
         for (auto& [Name, Line] : IBF_Inst_DefaultTypeList.List.IniLine_Default)
         {
             if (!Line.Known)continue;
-            if (!Matches(str, Name, Line))continue;
+            auto NameStr = PoolStr(Name);
+            if (!Matches(str, NameStr, Line))continue;
             if(Count++ > 100)
             {
                 ImGui::TextDisabled(locc("GUI_TooManyOptions"));
                 break;
             }
 
-            if (ImGui::Selectable((Name + " : " + PoolDesc(Line.DescShort)).c_str(), false))
-                str = Name;
+            if (ImGui::Selectable((NameStr + " : " + PoolDesc(Line.DescShort)).c_str(), false))
+                str = NameStr;
             if (ImGui::IsItemHovered() && ImGui::IsMouseDown(ImGuiMouseButton_Left))
-                str = Name;
+                str = NameStr;
             if(ImGui::IsItemHovered())
                 IBR_ToolTip(PoolDesc(Line.DescLong));
         }

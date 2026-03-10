@@ -365,7 +365,7 @@ void IBR_SectionData::UnfoldComposed()
 
 // ---------- RENDER UI ----------
 
-bool IBR_SectionData::RenderUI_Line(const std::string& OnShow, const std::string& Name)
+bool IBR_SectionData::RenderUI_Line(const std::string& OnShow, StrPoolID Name)
 {
     if (OnShow.empty())return true;
 
@@ -379,7 +379,7 @@ bool IBR_SectionData::RenderUI_Line(const std::string& OnShow, const std::string
         if (EnableLog)
         {
             GlobalLog.AddLog_CurTime(false);
-            auto W = UTF8toUnicode(Desc.GetText() + u8" : " + Name);
+            auto W = UTF8toUnicode(Desc.GetText() + u8" : " + PoolStr(Name));
             GlobalLog.AddLog(std::vformat(L"IBR_SectionData::RenderUI_KnownLine ： " + locw("Log_INILineNotExist"),
                 std::make_wformat_args(W)));
         }
@@ -388,7 +388,7 @@ bool IBR_SectionData::RenderUI_Line(const std::string& OnShow, const std::string
     LinkNodeContext::LineIndex = idx;
 
     const auto ShowInherit = [&]() {
-        auto it = ActiveLines.find(InheritKeyName);
+        auto it = ActiveLines.find(InheritKeyID());
         if (it == ActiveLines.end()) return true;
         auto& in = it->second.Edit.Input;
         if (!in)return true;
@@ -410,7 +410,7 @@ bool IBR_SectionData::RenderUI_Line(const std::string& OnShow, const std::string
     std::string DescShort;
     std::string DescShort2;
 
-    if (Name == InheritKeyName)
+    if (Name == InheritKeyID())
     {
         std::tie(DescShort2, DescShort) = InheritStr();
     }
@@ -420,7 +420,7 @@ bool IBR_SectionData::RenderUI_Line(const std::string& OnShow, const std::string
             DescShort = DescShort2 = PoolDesc(line->Default->DescShort);
         else DescShort = DescShort2 = OnShow;
     }
-    else DescShort = DescShort2 = Name;
+    else DescShort = DescShort2 = PoolStr(Name);
 
     float Width = ImGui::CalcTextSize(DescShort2.c_str()).x;
     const float ReservedWidth = FontHeight * 5.0f;
@@ -449,7 +449,7 @@ bool IBR_SectionData::RenderUI_Line(const std::string& OnShow, const std::string
     {
         Line.Edit.RenderUI(DescShort, DescLong);
     }
-    ExportContext::Key = "";
+    ExportContext::Key = EmptyPoolStr;
     return PoolStr(line->Default->TypeAlt).empty() ? true : HasInput;
 }
 
@@ -476,10 +476,10 @@ void IBR_SectionData::RenderUI_Acceptor(float LastFinalY)
 
                 if (back && srcback)
                 {
-                    if (auto& DLK = srcback->GetDLK(back->Register); !DLK.empty())
+                    if (auto DLK = srcback->GetDLK(back->Register); DLK != EmptyPoolStr)
                     {
                         if (payload->IsPreview())
-                            IBR_Inst_Project.DragConditionText = Desc.Ini + " -> " + DisplayName + " : " + DLK;
+                            IBR_Inst_Project.DragConditionText = Desc.Ini + " -> " + DisplayName + " : " + PoolStr(DLK);
                         if (payload->IsDelivery())
                         {
                             IBG_Undo.SomethingShouldBeHere();
@@ -835,7 +835,7 @@ void IBR_SectionData::RenderUI_Collapsed(IBB_Section* Bsec, ImVec2 HeadLineRN, I
         for (const auto& lt : sub.NewLinkTo)
         {
             IBB_Section_Desc _Desc = lt.To;
-            bool FromImport = (lt.FromKey == ImportKeyName);
+            bool FromImport = (lt.FromKey == ImportKeyID());
             bool IsLinkingToSelf = (gtd == _Desc);
             IBR_LinkNode::PushLinkForDraw(HeadLineRN, _Desc, lt.DefaultColor, FromImport, IsLinkingToSelf);
         }

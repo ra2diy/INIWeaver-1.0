@@ -78,7 +78,7 @@ namespace KVFormatter
                     const auto& INI = [&]() -> const auto& {
                         if (IsMyType) return AtSec->Root->Name;
                         if (IsLinkType) {
-                            auto Line = AtSec->GetLineFromSubSecs(Key);
+                            auto Line = AtSec->GetLineFromSubSecs(NewPoolStr(Key));
                             if(!Line || !Line->Default) return INIType;
                             return Line->Default->GetIniType();
                         }
@@ -102,7 +102,7 @@ namespace KVFormatter
                 IM_UNUSED(AtSec);
 
                 //Set Context
-                ExportContext::Key = Key;
+                ExportContext::Key = NewPoolStr(Key);
 
                 //Initialize InputForm
                 IBG_InputForm Form;
@@ -124,7 +124,7 @@ namespace KVFormatter
                     AddUniqueTmpLine(TmpLineOrder, K);
                 }
                 //Reset Context
-                ExportContext::Key.clear();
+                ExportContext::Key = EmptyPoolStr;
             };
     }
 }

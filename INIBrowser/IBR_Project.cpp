@@ -420,8 +420,8 @@ IBR_Section _PROJ_CMD_READ _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE I
     auto BSec = RSec.GetBack();
     assert(BSec != nullptr);
     BSec->SingleVal = true;
-    BSec->MergeLine(SingleValName, InitialValue, IBB_IniMergeMode::Replace);
-    BSec->OnShow[SingleValName] = EmptyOnShowDesc;
+    BSec->MergeLine(SingleValID(), InitialValue, IBB_IniMergeMode::Replace);
+    BSec->OnShow[SingleValID()] = EmptyOnShowDesc;
     BSec->Register = "_AnyType";
 
     auto RD = RSec.GetSectionData();

@@ -304,7 +304,7 @@ namespace IBR_EditFrame
     bool Empty{ true };
     char EditBuf[100000];
     bool TextEditError{ false }, OnTextEdit{ false }, TextEditReset{ false };
-    std::unordered_map<std::string, BufferedLine> EditLines;
+    std::unordered_map<StrPoolID, BufferedLine> EditLines;
     std::string NewLineKey, NewLineValue;
     
     void AFTER_INTERRUPT_F ResetEdit(IBB_Section* rsc)
@@ -397,7 +397,7 @@ namespace IBR_EditFrame
     }
 
 
-    void UpdateLine(const std::string& Line, const std::string& NewValue)
+    void UpdateLine(StrPoolID Line, const std::string& NewValue)
     {
         if (Empty)return;
         if (OnTextEdit)return;
@@ -411,7 +411,7 @@ namespace IBR_EditFrame
         }
     }
 
-    void AFTER_INTERRUPT_F Modify(const std::string& s, BufferedLine& L)
+    void AFTER_INTERRUPT_F Modify(StrPoolID s, BufferedLine& L)
     {
         auto back = CurSection.GetBack();
         back->MergeLine(s, L.Buffer, IBB_IniMergeMode::Replace, false);
@@ -433,13 +433,15 @@ namespace IBR_EditFrame
         
         if (ImGui::Button(" + "))
         {
+            auto NewKeyID = NewPoolStr(NewLineKey);
+
             IBG_Undo.SomethingShouldBeHere();
             {
                 IBD_RInterruptF(x);
 
                 if (NewLineValue.empty())
                 {
-                    auto pLine = IBF_Inst_DefaultTypeList.List.KeyBelongToLine(NewLineKey);
+                    auto pLine = IBF_Inst_DefaultTypeList.List.KeyBelongToLine(NewKeyID);
                     if (pLine)
                     {
                         auto& Input = pLine->GetInputType();
@@ -447,9 +449,9 @@ namespace IBR_EditFrame
                     }
                 }
 
-                pbk->OnShow[NewLineKey] = EmptyOnShowDesc;//默认在画布上显示
-                pbk->MergeLine(NewLineKey, NewLineValue, IBB_IniMergeMode::Replace);//添加或替换
-                pbk->OrderKey(NewLineKey, 0);//调整到最前面，方便用户看到
+                pbk->OnShow[NewKeyID] = EmptyOnShowDesc;//默认在画布上显示
+                pbk->MergeLine(NewKeyID, NewLineValue, IBB_IniMergeMode::Replace);//添加或替换
+                pbk->OrderKey(NewKeyID, 0);//调整到最前面，方便用户看到
                 IBF_Inst_Project.UpdateAll();
             }
             ResetEdit(pbk);
@@ -553,15 +555,16 @@ namespace IBR_EditFrame
             //like Waiting for SYNC
             if (!EditLines.contains(K))continue;
 
-            //if (K == InheritKeyName)continue;
             auto& V = EditLines.at(K);
 
-            if (ImGui::RadioButton(("##" + K).c_str(), pbk->IsOnShow(K), GlobalNodeStyle))
+            ImGui::PushID(K);
+            if (ImGui::RadioButton("", pbk->IsOnShow(K), GlobalNodeStyle))
             {
                 IBG_Undo.SomethingShouldBeHere();
                 if (pbk->OnShow[K].empty())pbk->OnShow[K] = EmptyOnShowDesc;
                 else pbk->OnShow[K].clear();
             }
+            ImGui::PopID();
 
             if (ImGui::IsItemClicked(ImGuiMouseButton_Right))
             {
@@ -572,7 +575,7 @@ namespace IBR_EditFrame
 
             if (V.InputOnshow)
             {
-                ImGui::PushID(K.c_str());
+                ImGui::PushID(K);
                 bool Show = pbk->IsOnShow(K);
                 if (V.OnShowBuf == EmptyOnShowDesc)V.OnShowBuf = "";
                 auto Changed = InputTextStdString("", V.OnShowBuf);
@@ -585,6 +588,7 @@ namespace IBR_EditFrame
                 ImGui::PopID();
             }
 
+            auto KeyName = PoolStr(K);
             if (V.Edit.NeedInit())
             {
                 auto L = V.LinkNode;
@@ -596,12 +600,12 @@ namespace IBR_EditFrame
                          } ,
                     V.InputType->Sidebar,
                     std::move(L)};
-                V.Edit.RenderUI(K, PoolDesc(V.Hint), &It);
+                V.Edit.RenderUI(KeyName, PoolDesc(V.Hint), &It);
             }
             else
             {
-                if (V.Edit.HasInput)V.Edit.RenderUI(K, PoolDesc(V.Hint));
-                else V.Edit.RenderUI(K + " = " + V.Buffer, PoolDesc(V.Hint));
+                if (V.Edit.HasInput)V.Edit.RenderUI(KeyName, PoolDesc(V.Hint));
+                else V.Edit.RenderUI(KeyName + " = " + V.Buffer, PoolDesc(V.Hint));
             }
         }
     }

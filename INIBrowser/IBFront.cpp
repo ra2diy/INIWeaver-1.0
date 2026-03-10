@@ -168,18 +168,6 @@ void IBF_Setting::UploadSettingBoard(std::function<void(const std::vector<IBF_Se
 
 
 
-void IBF_DefaultTypeList::EnsureType(const std::string& Key, const std::string& LinkType)
-{
-    List.EnsureType(Key, LinkType);
-}
-
-const IBB_IniLine_Default* IBF_DefaultTypeList::GetDefault(const std::string& Key) const
-{
-    auto it = List.IniLine_Default.find(Key);
-    if (it == List.IniLine_Default.end())return nullptr;
-    else return std::addressof(it->second);
-}
-
 bool IBF_DefaultTypeList::ReadAltSetting(const wchar_t* Name)
 {
     std::vector<std::wstring> FindFileVec(const std::wstring & pattern);

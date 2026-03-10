@@ -421,7 +421,7 @@ IFC_Export_UseKey::IFC_Export_UseKey()
 }
 
 const IBB_ValueFormat& IFC_Export_UseKey::GetFormat() {
-    Format.Format.String = ExportContext::Key;
+    Format.Format.String = PoolStr(ExportContext::Key);
     return Format;
 }
 
@@ -1072,7 +1072,7 @@ std::string IIC_InputText::FormatValue(IBB_ValueContainer& Cont, IBB_InputValue&
         auto pSec = IBF_Inst_Project.Project.GetSecIndex(V, "").GetSec(IBF_Inst_Project.Project);
         if (pSec && pSec->SingleVal)
         {
-            auto pLine = pSec->GetLineFromSubSecs(SingleValName);
+            auto pLine = pSec->GetLineFromSubSecs(SingleValID());
             if (pLine)V = pLine->Data->GetStringForExport();
         }
         Val.NeedsUpdate(Cont, *this);
@@ -1464,7 +1464,7 @@ std::string IIC_InputInt::FormatValue(IBB_ValueContainer& Cont, IBB_InputValue& 
         auto pSec = IBF_Inst_Project.Project.GetSecIndex(V, "").GetSec(IBF_Inst_Project.Project);
         if (pSec && pSec->SingleVal)
         {
-            auto pLine = pSec->GetLineFromSubSecs(SingleValName);
+            auto pLine = pSec->GetLineFromSubSecs(SingleValID());
             if (pLine)V = pLine->Data->GetStringForExport();
         }
         Val.NeedsUpdate(Cont, *this);

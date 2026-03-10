@@ -145,7 +145,7 @@ struct IBB_IniLine
 struct IBB_NewLink
 {
     IBB_Project_Index From, To;
-    std::string FromKey;
+    StrPoolID FromKey;
     ImU32 DefaultColor;
 
     std::string GetText() const;
@@ -157,8 +157,8 @@ struct IBB_SubSec
     IBB_Section* Root{ nullptr };
 
     IBB_SubSec_Default* Default{ nullptr };
-    std::vector<std::string> Lines_ByName;//KeyName
-    std::unordered_map<std::string, IBB_IniLine> Lines;//<KeyName,LineData>
+    std::vector<StrPoolID> Lines_ByName;//KeyName
+    std::unordered_map<StrPoolID, IBB_IniLine> Lines;//<KeyName,LineData>
     std::vector<IBB_NewLink> NewLinkTo;
     std::multimap<uint64_t, size_t> LinkSrc;
     //Key复制了2遍：Lines_ByName / Lines.find(x)->first
@@ -168,18 +168,18 @@ struct IBB_SubSec
     IBB_SubSec(const IBB_SubSec&) = default;
     IBB_SubSec(IBB_SubSec&& A) noexcept;
 
-    std::vector<std::string> GetKeys(bool PrintExtraData) const;//RARELY USED
+    std::vector<StrPoolID> GetKeys(bool PrintExtraData) const;//RARELY USED
     IBB_VariableList GetLineList(bool PrintExtraData, bool FromExport, std::vector<std::string>* TmpLineOrder = nullptr) const;
     std::pair< std::multimap<uint64_t, size_t>::const_iterator, std::multimap<uint64_t, size_t>::const_iterator>
         GetLink(size_t LineIdx, size_t ComponentIdx) const;
     void ClaimLink(size_t LineIdx, size_t ComponentIdx, size_t LinkIdx);
     bool RenameInLinkTo(size_t LinkIdx, const std::string& OldName, const std::string& NewName);
-    bool CanOwnKey(const std::string& Key) const;
+    bool CanOwnKey(StrPoolID Key) const;
 
     bool UpdateAll();
     void UpdateNewLinkTo(std::vector<IBB_NewLink>&& NewLT);
 
-    bool MergeLine(const std::string& Key, const std::string& Value, bool InitOnShow, IBB_IniMergeMode Mode, bool NoUpdate = false);
+    bool MergeLine(StrPoolID Key, const std::string& Value, bool InitOnShow, IBB_IniMergeMode Mode, bool NoUpdate = false);
     bool ChangeRoot(IBB_Section* NewRoot);
     IBB_SubSec& ChangeRootAndBack(IBB_Section* NewRoot) { ChangeRoot(NewRoot); return *this; }
 };
@@ -196,9 +196,10 @@ struct IBB_Section
 
     bool IsLinkGroup{ false };//no subsec varlist unklines
     std::vector<IBB_NewLink> LinkGroup_NewLinkTo;
-    IBB_VariableList DefaultLinkKey;
-    std::unordered_map<std::string, std::string> OnShow;//EmptyOnShowDesc means no desc
-    std::vector<std::string> LineOrder;
+    std::unordered_map<std::string, StrPoolID> DefaultLinkKey;
+    IBB_VariableList* DefaultLinkKey_UpValue;
+    std::unordered_map<StrPoolID, std::string> OnShow;//EmptyOnShowDesc means no desc
+    std::vector<StrPoolID> LineOrder;
     std::string Inherit;
     std::string Comment{};
     std::string Register;
@@ -214,9 +215,9 @@ struct IBB_Section
     //增删改时相应修改移动构造函数
 
     // MergeType is unused to a LinkGroup
-    bool MergeLine(const std::string& Key, const std::string& Value, IBB_IniMergeMode Mode, bool NoUpdate = false);
+    bool MergeLine(StrPoolID Key, const std::string& Value, IBB_IniMergeMode Mode, bool NoUpdate = false);
     bool GenerateLines(const IBB_VariableList& Lines, const std::vector<std::string>& Order = {}, bool InitOnShow = true);
-    void OrderKey(const std::string& Key, size_t NewOrder);
+    void OrderKey(StrPoolID Key, size_t NewOrder);
     void CheckSubsecOrder();
 
     bool UpdateAll();
@@ -235,35 +236,36 @@ struct IBB_Section
     bool RemoveNameInLinkTo(IBB_Section* Target);//配合Isolate
     bool Isolate();//切断所有Link
 
-    IBB_IniLine* GetLineFromSubSecs(const std::string& Name);
-    std::pair <IBB_IniLine*, IBB_SubSec*> GetLineFromSubSecsEx2(const std::string& Name);
-    std::pair <IBB_IniLine*, size_t> GetLineFromSubSecsEx(const std::string& Name);
+    IBB_IniLine* GetLineFromSubSecs(StrPoolID Name);
+    std::pair <IBB_IniLine*, IBB_SubSec*> GetLineFromSubSecsEx2(StrPoolID Name);
+    std::pair <IBB_IniLine*, size_t> GetLineFromSubSecsEx(StrPoolID Name);
     IBB_SubSec& GetSubSecByDef(IBB_SubSec_Default* Def);//返回Def对应的SubSec，若没有则构造一个新的SubSec并返回
     IBB_SubSec& GetSubSecByLine(const std::string& Key);//返回包含Key的SubSec，若没有则构造一个新的SubSec并返回
 
     std::vector<IBB_NewLink>& GetLinkedBy_NoCached() const;
     std::vector<IBB_NewLink>& GetLinkedBy_Cached() const;
-    const IBB_IniLine* GetLineFromSubSecs(const std::string& Name) const;
+    const IBB_IniLine* GetLineFromSubSecs(StrPoolID Name) const;
     IBB_Project_Index GetThisIndex() const;
     IBB_Section_Desc GetThisDesc() const;
-    std::vector<std::string> GetKeys(bool PrintExtraData) const;//RARELY USED
+    std::vector<StrPoolID> GetKeys(bool PrintExtraData) const;
+    std::vector<std::string> GetLineOrderString() const;
     IBB_VariableList GetLineList(bool PrintExtraData, bool FromExport, std::vector<std::string>* TmpLineOrder = nullptr) const;//RARELY USED
     std::string GetText(bool PrintExtraData, bool FromExport = false, bool ForEdit = false) const;
     std::string GetTextForEdit() const;
     std::vector<size_t> GetRegisteredPosition() const;//Project的RegList序号
     std::vector<std::pair<size_t, size_t>> GetRegisteredPositionAlt() const;//pair<Project的RegList序号,RegList的Sec*序号>
-    IIFWrapper_Wrapper GetLineIIF(const std::string& Key) const;
-    IIFWrapper_Wrapper GetNewLineIIF(const std::string& Key) const;
+    IIFWrapper_Wrapper GetLineIIF(StrPoolID Key) const;
+    IIFWrapper_Wrapper GetNewLineIIF(StrPoolID Key) const;
     bool IsComment() const { return CreateAsCommentBlock || !Comment.empty(); }
-    bool HasLine(const std::string& Key) const;
-    bool IsOnShow(const std::string& Key) const;
-    const std::string& GetOnShow(const std::string& Key) const;
-    const std::string& GetDLK(const std::string& Reg) const;
-    void SyncLineOnUI(const std::string& Key, const std::string& Value) const;
+    bool HasLine(StrPoolID Key) const;
+    bool IsOnShow(StrPoolID Key) const;
+    const std::string& GetOnShow(StrPoolID Key) const;
+    StrPoolID GetDLK(const std::string& Reg) const;
+    void SyncLineOnUI(StrPoolID Key, const std::string& Value) const;
     
-    void SetOnShow(const std::string& Key, const std::string& Value, bool AllowReapply);
-    void SetOnShow(const std::string& Key);
-    void PushLineOrder(const std::string& Key);
+    void SetOnShow(StrPoolID Key, const std::string& Value, bool AllowReapply);
+    void SetOnShow(StrPoolID Key);
+    void PushLineOrder(StrPoolID Key);
     void RecheckLineOrder();
     bool SetText(char* Text);//mess Text up
     bool SetText(const std::vector<IniToken>& Tokens);//do not consider section&inherit

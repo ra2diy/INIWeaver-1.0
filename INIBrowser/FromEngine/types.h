@@ -10,3 +10,7 @@ typedef void (*callback_t)();
 #define _TEXT_UTF8
 #define _TEXT_ANSI
 #define _TEXT_WIDE
+
+
+using DescPoolOffset = size_t;
+using StrPoolID = size_t;

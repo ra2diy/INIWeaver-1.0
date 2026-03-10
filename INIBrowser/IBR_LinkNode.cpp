@@ -24,7 +24,7 @@ namespace LinkNodeContext
 
 namespace ExportContext
 {
-    std::string Key;
+    StrPoolID Key;
     size_t SameKeyIdx;//用于当Key重复时区分不同的Key
     std::set<IBB_Section_Desc> MergedDescs;//被Import而合并的Section列表
     bool OnExport;
@@ -274,7 +274,7 @@ namespace IBR_LinkNode
             std::views::transform([&](auto p) { return FromSub.NewLinkTo[p.second]; });
         bool Empty = (LinkBegin == LinkEnd);
         auto Col = AdjustNodeCol(LinkNode.LinkCol, Empty, IsInherit);
-        auto& KeyName = FromSub.Lines_ByName[LineIdx];
+        auto KeyName = FromSub.Lines_ByName[LineIdx];
         auto& Session = IBR_NodeSession::GetSessionValue(
             Data.Desc.Ini, Data.Desc.Sec, FromSub.Default->Name, LineIdx, CompIdx
         );
@@ -311,7 +311,7 @@ namespace IBR_LinkNode
         {
             //TriggeredRightMenu = true;
             //原来这里是有一行这个的，但是这个变量本就没有引用，所以不知道是干什么的，先注释掉了
-            auto PopupName = Data.DisplayName + "__LINK__" + KeyName;
+            auto PopupName = Data.DisplayName + "__LINK__" + PoolStr(KeyName);
             if (LinkNode.LinkLimit == 1)
             {
                 Session.Renew();
@@ -401,7 +401,7 @@ namespace IBR_LinkNode
                 auto ws = UTF8toUnicode((Data.Desc.Ini + " -> " + Data.DisplayName));
                 ImGui::Text(UnicodetoUTF8(std::vformat(locw("GUI_InheritTo"), std::make_wformat_args(ws))).c_str());
             }
-            else ImGui::Text((Data.Desc.Ini + " -> " + Data.DisplayName + " : " + KeyName).c_str());
+            else ImGui::Text((Data.Desc.Ini + " -> " + Data.DisplayName + " : " + PoolStr(KeyName)).c_str());
 
             if (LinkNode.LinkLimit == 0)DrawDragPreviewIcon_LinkLim0();
             else DrawDragPreviewIcon();
@@ -472,7 +472,7 @@ namespace IBR_LinkNode
                     Center,
                     link.To,
                     link.DefaultColor,
-                    (link.FromKey == ImportKeyName),
+                    (link.FromKey == ImportKeyID()),
                     false
                 );
             }

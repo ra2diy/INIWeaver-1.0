@@ -74,7 +74,8 @@ struct IBB_Project
 
 struct IBB_DefaultTypeAlt
 {
-    std::string Name, DescLong, DescShort, LinkType, Input;
+    StrPoolID Name, LinkType, Input;
+    DescPoolOffset DescLong, DescShort;
     int LinkLimit{ 1 };
     ImU32 Color{ 0xFF000000 };
 
@@ -83,31 +84,26 @@ struct IBB_DefaultTypeAlt
     bool Load(const std::vector<std::string>& FromCSV);
 };
 
-struct IBB_DefaultTypeAltList
-{
-    
-};
-
 struct IBB_DefaultTypeList
 {
-private:
 public:
     // std::unordered_map<Name, Object>
-    std::unordered_map<std::string, IBB_IniLine_Default> IniLine_Default;
+    std::unordered_map<StrPoolID, IBB_IniLine_Default> IniLine_Default;
     std::unordered_map<std::string, IBB_SubSec_Default> SubSec_Default;//一个IniLine只能属于一个SubSec
 
     bool LoadFromAlt();
 
-    void EnsureType(const std::string& Key, const std::string& LinkType);
     void EnsureType(const IBB_DefaultTypeAlt& Alt);
-    void CreateUnknownType(const std::string& KeyName);
+    void CreateUnknownType(StrPoolID KeyName);
 
     bool LoadFromJsonObject(JsonObject FromJson);
     bool LoadFromJsonFile(const wchar_t* Name);
     bool LoadFromCSVFile(const wchar_t* Name);
 
-    IBB_IniLine_Default* KeyBelongToLine(const std::string& KeyName);//Order:String-Special-Regex
+    IBB_IniLine_Default* KeyBelongToLine(const std::string& KeyName);
     IBB_SubSec_Default* KeyBelongToSubSec(const std::string& KeyName);
+    IBB_IniLine_Default* KeyBelongToLine(StrPoolID KeyName);
+    IBB_SubSec_Default* KeyBelongToSubSec(StrPoolID KeyName);
 };
 
 

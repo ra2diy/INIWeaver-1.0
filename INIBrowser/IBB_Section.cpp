@@ -29,7 +29,7 @@ bool IBB_Section::Generate(const ModuleClipData& Clip)
         LineOrder.clear();
         Inherit = Clip.Inherit;
         Register = Clip.Register;
-        IBB_DefaultRegType::GenerateDLK(Clip.DefaultLinkKey, Register, DefaultLinkKey);
+        IBB_DefaultRegType::GenerateDLK(Clip.DefaultLinkKey, Register, DefaultLinkKey, DefaultLinkKey_UpValue);
         for (auto& L : Clip.LinkGroup_LinkTo)
             Root->Root->AddNewLinkToLinkGroup({ Root->Name,Name }, { L.A, L.B });
     }
@@ -75,7 +75,7 @@ bool IBB_Section::Generate(const ModuleClipData& Clip)
             LinkGroup_NewLinkTo.clear();
             Register = Clip.Register;
             Inherit = Clip.Inherit;
-            IBB_DefaultRegType::GenerateDLK(Clip.DefaultLinkKey, Register, DefaultLinkKey);
+            IBB_DefaultRegType::GenerateDLK(Clip.DefaultLinkKey, Register, DefaultLinkKey, DefaultLinkKey_UpValue);
             IBB_VariableList VL;
             std::vector<std::string> Order;
 
@@ -84,16 +84,16 @@ bool IBB_Section::Generate(const ModuleClipData& Clip)
             if (SingleVal)
             {
                 VL.Value[SingleValName];
-                OnShow[SingleValName] = EmptyOnShowDesc;
+                OnShow[SingleValID()] = EmptyOnShowDesc;
             }
 
             VL.Value[InheritKeyName] = Inherit;
-            OnShow[InheritKeyName] = EmptyOnShowDesc;
+            OnShow[InheritKeyID()] = EmptyOnShowDesc;
 
             for (auto& L : Clip.Lines)
             {
                 VL.Value[L.Key] = L.Value;
-                OnShow[L.Key] = L.Desc;
+                OnShow[NewPoolStr(L.Key)] = L.Desc;
                 std::string dsc;
                 Order.push_back(L.Key); 
             }
@@ -123,8 +123,8 @@ void IBB_Section::GetClipData(ModuleClipData& Clip)
         Clip.Desc.B = Name;
         //IBB_VariableList DD;
         //DefaultLinkKey.Flatten(DD);
-        for (auto& [A, B] : DefaultLinkKey.Value)
-            Clip.DefaultLinkKey.push_back({ A, B });
+        for (auto& [A, B] : DefaultLinkKey)
+            Clip.DefaultLinkKey.push_back({ A, PoolStr(B) });
         for (auto& L : LinkGroup_NewLinkTo)
             Clip.LinkGroup_LinkTo.push_back(L.To);
         for (auto& [A, B] : VarList.Value)
@@ -175,23 +175,23 @@ void IBB_Section::GetClipData(ModuleClipData& Clip)
             {
                 for (auto& [key, lin] : sec.Lines)
                 {
-                    if (key == InheritKeyName)
+                    if (key == InheritKeyID())
                     {
                         Clip.Inherit = lin.Data->GetStringForExport();
                         continue;
                     }
-                    auto& Tok = Tokens[key];
+                    auto& Tok = Tokens[PoolStr(key)];
                     Tok.Empty = false;
                     Tok.HasDesc = !OnShow[key].empty();
                     Tok.IsSection = false;
-                    Tok.Key = key;
+                    Tok.Key = PoolStr(key);
                     Tok.Value = lin.Data->GetStringForExport();
                     Tok.Desc = OnShow[key];
                 }
             }
             for (auto& s : LineOrder)
             {
-                if (auto It = Tokens.find(s); It != Tokens.end())
+                if (auto It = Tokens.find(PoolStr(s)); It != Tokens.end())
                 {
                     Clip.Lines.push_back(std::move(It->second));
                     Tokens.erase(It);
@@ -204,8 +204,8 @@ void IBB_Section::GetClipData(ModuleClipData& Clip)
 
             //IBB_VariableList DD;
             //DefaultLinkKey.Flatten(DD);
-            for (auto& [A, B] : DefaultLinkKey.Value)
-                Clip.DefaultLinkKey.push_back({ A, B });
+            for (auto& [A, B] : DefaultLinkKey)
+                Clip.DefaultLinkKey.push_back({ A, PoolStr(B) });
             for (auto& [A, B] : VarList.Value)
                 Clip.VarList.push_back({ A, B });
 
@@ -223,13 +223,13 @@ bool IBB_Section::SetText(const std::vector<IniToken>& Tokens)
 {
     IsLinkGroup = false;
     bool Ret = true;
-    auto l = this->GetLineFromSubSecs(InheritKeyName);
+    auto l = this->GetLineFromSubSecs(InheritKeyID());
     if (l)Inherit = l->Data->GetString();
     SubSecs.clear();
     LineOrder.clear();
     OnShow.clear();
     std::unordered_map<IBB_SubSec_Default*, int> SubSecList;
-    std::unordered_set<std::string> UsedKeys;
+    std::unordered_set<StrPoolID> UsedKeys;
     auto u = [&](const IniToken& tok) {
         //if (tok.Value.empty())MessageBoxA(MainWindowHandle, tok.Key.c_str(), "fff1", MB_OK);
 
@@ -240,20 +240,26 @@ bool IBB_Section::SetText(const std::vector<IniToken>& Tokens)
             It = SubSecList.insert({ ptr,SubSecs.size() }).first;
             SubSecs.emplace_back(ptr, this);
         }
+
+        auto TokKeyID = NewPoolStr(tok.Key);
+
         auto& Sub = SubSecs.at(It->second);
         {
-            if (!Sub.MergeLine(tok.Key, tok.Value, false, IBB_IniMergeMode::Replace, false))Ret = false;
+            if (!Sub.MergeLine(TokKeyID, tok.Value, false, IBB_IniMergeMode::Replace, false))Ret = false;
         }
 
         if (tok.HasDesc)
         {
-            if (tok.Desc.empty())OnShow[tok.Key] = EmptyOnShowDesc;
-            else OnShow[tok.Key] = tok.Desc;
+            if (tok.Desc.empty())OnShow[TokKeyID] = EmptyOnShowDesc;
+            else OnShow[TokKeyID] = tok.Desc;
         }
-        else OnShow.erase(tok.Key);
+        else OnShow.erase(TokKeyID);
 
-        if(!UsedKeys.contains(tok.Key))
-            LineOrder.push_back(tok.Key);
+        if (!UsedKeys.contains(TokKeyID))
+        {
+            LineOrder.push_back(TokKeyID);
+            UsedKeys.insert(TokKeyID);
+        }
     };
 
     IniToken i;
@@ -274,26 +280,19 @@ bool IBB_Section::SetText(const std::vector<IniToken>& Tokens)
     return Ret;
 }
 
-std::vector<std::string> IBB_Section::GetKeys(bool PrintExtraData) const
+std::vector<std::string> IBB_Section::GetLineOrderString() const
 {
-    std::vector<std::string> Ret;
+    return LineOrder |
+        std::views::transform([](auto ID) { return PoolStr(ID); }) |
+        std::ranges::to<std::vector>();
+}
+
+std::vector<StrPoolID> IBB_Section::GetKeys(bool PrintExtraData) const
+{
+    std::vector<StrPoolID> Ret;
     if (IsLinkGroup)
     {
-        for (const auto& L : LinkGroup_NewLinkTo)
-        {
-            auto pf = L.From.GetSec(*(Root->Root)), pt = L.To.GetSec(*(Root->Root));
-            if (pf != nullptr && pt != nullptr)
-                Ret.push_back("_LINK_FROM_" + pf->Name);
-        }
-        if (PrintExtraData)
-        {
-            Ret.push_back("_SECTION_NAME");
-            Ret.push_back("_IS_LINKGROUP");
-            IBB_VariableList VL;
-            VarList.Flatten(VL);
-            for (const auto& V : VL.Value)
-                Ret.push_back(V.first);
-        }
+        return Ret;
     }
     else
     {
@@ -304,12 +303,12 @@ std::vector<std::string> IBB_Section::GetKeys(bool PrintExtraData) const
         }
         if (PrintExtraData)
         {
-            Ret.push_back("_SECTION_NAME");
-            Ret.push_back("_IS_LINKGROUP");
+            Ret.push_back(NewPoolStr("_SECTION_NAME"));
+            Ret.push_back(NewPoolStr("_IS_LINKGROUP"));
             IBB_VariableList VL;
             VarList.Flatten(VL);
             for (const auto& V : VL.Value)
-                Ret.push_back(V.first);
+                Ret.push_back(NewPoolStr(V.first));
         }
     }
     return Ret;
@@ -369,16 +368,16 @@ std::string IBB_Section::GetText(bool PrintExtraData, bool FromExport, bool ForE
     }
     else
     {
-        auto TmpLineOrder = LineOrder;
+        auto TmpLineOrder = GetLineOrderString();
         auto LineList = GetLineList(PrintExtraData, FromExport, &TmpLineOrder);
         for (auto& s : TmpLineOrder)
         {
             if (LineList.HasValue(s))
             {
                 auto& Val = LineList.GetVariable(s);
-                if (ForEdit && OnShow.find(s) != OnShow.end())
+                if (ForEdit && OnShow.find(NewPoolStr(s)) != OnShow.end())
                 {
-                    auto& ons = OnShow.at(s);
+                    auto& ons = OnShow.at(NewPoolStr(s));
                     if (ons.empty()) Text += s + "=" + LineList.GetVariable(s) + "\n";
                     else if (ons == EmptyOnShowDesc) Text += "#" + s + "=" + LineList.GetVariable(s) + "\n";
                     else Text += ons + "#" + s + "=" + LineList.GetVariable(s) + "\n";
@@ -400,7 +399,7 @@ std::string IBB_Section::GetText(bool PrintExtraData, bool FromExport, bool ForE
 std::string IBB_Section::GetTextForEdit() const
 {
     std::string Ret;
-    if (!GetLineFromSubSecs(InheritKeyName) && !Inherit.empty())
+    if (!GetLineFromSubSecs(InheritKeyID()) && !Inherit.empty())
     {
         Ret += InheritKeyName;
         Ret += "=";
@@ -436,7 +435,7 @@ std::vector<std::pair<size_t, size_t>> IBB_Section::GetRegisteredPositionAlt() c
     return Ret;
 }
 
-IIFWrapper_Wrapper IBB_Section::GetNewLineIIF(const std::string& Key) const
+IIFWrapper_Wrapper IBB_Section::GetNewLineIIF(StrPoolID Key) const
 {
     auto NewIIF = [&]() -> IIFWrapper {
         auto pLine = GetLineFromSubSecs(Key);
@@ -459,7 +458,7 @@ IIFWrapper_Wrapper IBB_Section::GetNewLineIIF(const std::string& Key) const
     return { NewIIF() };
 }
 
-IIFWrapper_Wrapper IBB_Section::GetLineIIF(const std::string& Key) const
+IIFWrapper_Wrapper IBB_Section::GetLineIIF(StrPoolID Key) const
 {
     auto pbk = IBR_EditFrame::CurSection.GetBack();
     if (pbk == this)
@@ -487,7 +486,7 @@ IIFWrapper_Wrapper IBB_Section::GetLineIIF(const std::string& Key) const
     return GetNewLineIIF(Key);
 }
 
-bool IBB_Section::HasLine(const std::string& Key) const
+bool IBB_Section::HasLine(StrPoolID Key) const
 {
     if (IsLinkGroup || IsComment()) return false;
     if (SubSecs.empty())return false;
@@ -495,44 +494,52 @@ bool IBB_Section::HasLine(const std::string& Key) const
     return false;
 }
 
-bool IBB_Section::IsOnShow(const std::string& Key) const
+bool IBB_Section::IsOnShow(StrPoolID Key) const
 {
     auto _F = this->OnShow.find(Key);
     if (_F == this->OnShow.end() || _F->second.empty())return false;
     else return true;
 }
 
-const std::string& IBB_Section::GetOnShow(const std::string& Key) const
+const std::string& IBB_Section::GetOnShow(StrPoolID Key) const
 {
     const static std::string Empty{};
     auto _F = this->OnShow.find(Key);
     return _F == this->OnShow.end() ? Empty : _F->second;
 }
 
-const std::string& IBB_Section::GetDLK(const std::string& Reg) const
+StrPoolID IBB_Section::GetDLK(const std::string& Reg) const
 {
-    const static std::string Empty{};
-    if(DefaultLinkKey.HasValue(Reg))
-        return DefaultLinkKey.GetVariable(Reg);
-    if (Reg == Register && DefaultLinkKey.HasValue("_MyType"))
-        return DefaultLinkKey.GetVariable("_MyType");
-    if (DefaultLinkKey.HasValue("_AnyType"))
-        return DefaultLinkKey.GetVariable("_AnyType");
-    return Empty;
+    if(DefaultLinkKey.contains(Reg))
+        return DefaultLinkKey.at(Reg);
+    if (DefaultLinkKey_UpValue->HasValue(Reg))
+        return NewPoolStr(DefaultLinkKey_UpValue->GetVariable(Reg));
+
+    if (Reg == Register && DefaultLinkKey.contains("_MyType"))
+        return DefaultLinkKey.at("_MyType");
+    if (Reg == Register && DefaultLinkKey_UpValue->HasValue("_MyType"))
+        return NewPoolStr(DefaultLinkKey_UpValue->GetVariable("_MyType"));
+
+    if (DefaultLinkKey.contains("_AnyType"))
+        return DefaultLinkKey.at("_AnyType");
+    if (DefaultLinkKey_UpValue->HasValue("_AnyType"))
+        return NewPoolStr(DefaultLinkKey_UpValue->GetVariable("_AnyType"));
+
+    return EmptyPoolStr;
 }
 
-void IBB_Section::SetOnShow(const std::string& Key, const std::string& Value, bool AllowReapply)
+void IBB_Section::SetOnShow(StrPoolID Key, const std::string& Value, bool AllowReapply)
 {
     if (!IsOnShow(Key))OnShow[Key] = Value;
     else if(AllowReapply)OnShow[Key] = Value;
 }
 
-void IBB_Section::SetOnShow(const std::string& Key)
+void IBB_Section::SetOnShow(StrPoolID Key)
 {
     if (!IsOnShow(Key))OnShow[Key] = EmptyOnShowDesc;
 }
 
-void IBB_Section::PushLineOrder(const std::string& Key)
+void IBB_Section::PushLineOrder(StrPoolID Key)
 {
     if (std::find(LineOrder.begin(), LineOrder.end(), Key) == LineOrder.end())
         LineOrder.push_back(Key);
@@ -540,8 +547,8 @@ void IBB_Section::PushLineOrder(const std::string& Key)
 
 void IBB_Section::RecheckLineOrder()
 {
-    std::unordered_set<std::string> LineOrderKeys;
-    std::vector<std::string> NewLineOrder;
+    std::unordered_set<StrPoolID> LineOrderKeys;
+    std::vector<StrPoolID> NewLineOrder;
     for (auto& s : LineOrder)
     {
         if (LineOrderKeys.insert(s).second)
@@ -552,7 +559,7 @@ void IBB_Section::RecheckLineOrder()
     LineOrder = std::move(NewLineOrder);
 }
 
-const IBB_IniLine* IBB_Section::GetLineFromSubSecs(const std::string& KeyName) const
+const IBB_IniLine* IBB_Section::GetLineFromSubSecs(StrPoolID KeyName) const
 {
     if (SubSecs.empty())return nullptr;
     for (auto& Sub : SubSecs)
@@ -566,7 +573,7 @@ const IBB_IniLine* IBB_Section::GetLineFromSubSecs(const std::string& KeyName) c
     return nullptr;
 }
 
-IBB_IniLine* IBB_Section::GetLineFromSubSecs(const std::string& KeyName)
+IBB_IniLine* IBB_Section::GetLineFromSubSecs(StrPoolID KeyName)
 {
     if (SubSecs.empty())return nullptr;
     for (auto& Sub : SubSecs)
@@ -580,7 +587,7 @@ IBB_IniLine* IBB_Section::GetLineFromSubSecs(const std::string& KeyName)
     return nullptr;
 }
 
-std::pair <IBB_IniLine*, IBB_SubSec*> IBB_Section::GetLineFromSubSecsEx2(const std::string& KeyName)
+std::pair <IBB_IniLine*, IBB_SubSec*> IBB_Section::GetLineFromSubSecsEx2(StrPoolID KeyName)
 {
     if (SubSecs.empty())return { nullptr, nullptr };
     for (auto& Sub : SubSecs)
@@ -597,7 +604,7 @@ std::pair <IBB_IniLine*, IBB_SubSec*> IBB_Section::GetLineFromSubSecsEx2(const s
     return { nullptr, nullptr };
 }
 
-std::pair<IBB_IniLine*, size_t> IBB_Section::GetLineFromSubSecsEx(const std::string& KeyName)
+std::pair<IBB_IniLine*, size_t> IBB_Section::GetLineFromSubSecsEx(StrPoolID KeyName)
 {
     if (SubSecs.empty())return { nullptr, 0 };
     for (auto& Sub : SubSecs)
@@ -638,7 +645,9 @@ bool IBB_Section::GenerateLines(const IBB_VariableList& Par, const std::vector<s
     bool Ret = true;
     SubSecs.clear();
     bool RemakeOrder = Order.empty();
-    LineOrder = Order;
+    LineOrder = Order |
+        std::views::transform([](auto ID) {return NewPoolStr(ID); }) |
+        std::ranges::to<std::vector>();
     std::unordered_map<IBB_SubSec_Default*, int> SubSecList;
     for (const auto& [Key, Value] : Par.Value)
     {
@@ -650,15 +659,16 @@ bool IBB_Section::GenerateLines(const IBB_VariableList& Par, const std::vector<s
             SubSecs.emplace_back(ptr, this);
         }
         auto& Sub = SubSecs.at(It->second);
-        if (!Sub.MergeLine(Key, Value, InitOnShow, IBB_IniMergeMode::Replace))Ret = false;
-        if (RemakeOrder)LineOrder.push_back(Key);
+        auto KeyID = NewPoolStr(Key);
+        if (!Sub.MergeLine(KeyID, Value, InitOnShow, IBB_IniMergeMode::Replace))Ret = false;
+        if (RemakeOrder)LineOrder.push_back(KeyID);
     }
     return Ret;
 }
 
 const std::vector<std::string>& SplitParamCached(const std::string& Text);
 
-void IBB_Section::SyncLineOnUI(const std::string& Key, const std::string& Value) const
+void IBB_Section::SyncLineOnUI(StrPoolID Key, const std::string& Value) const
 {
     auto RSec = IBR_Inst_Project.GetSection(GetThisDesc());
     IBRF_CoreBump.SendToR({ [=] {
@@ -693,7 +703,7 @@ IBB_SubSec& IBB_Section::GetSubSecByLine(const std::string& Key)
     return GetSubSecByDef(ptr);
 }
 
-bool IBB_Section::MergeLine(const std::string& Key, const std::string& Value, IBB_IniMergeMode Mode, bool NoUpdate)
+bool IBB_Section::MergeLine(StrPoolID Key, const std::string& Value, IBB_IniMergeMode Mode, bool NoUpdate)
 {
     switch (Mode)
     {
@@ -742,7 +752,7 @@ bool IBB_Section::MergeLine(const std::string& Key, const std::string& Value, IB
 
 
 
-void IBB_Section::OrderKey(const std::string& Key, size_t NewOrder)
+void IBB_Section::OrderKey(StrPoolID Key, size_t NewOrder)
 {
     if (NewOrder > LineOrder.size())NewOrder = LineOrder.size();
     auto it = std::find(LineOrder.begin(), LineOrder.end(), Key);
@@ -963,7 +973,7 @@ bool IBB_Section::UpdateAll()
             if (NL.To.GetSec(*PProj) != nullptr)NewGroup.push_back(NL);
         }
         for (auto& L : NewGroup)
-            L.FromKey.clear();
+            L.FromKey = EmptyPoolStr;
         LinkGroup_NewLinkTo = NewGroup;
     }
     else
@@ -992,7 +1002,7 @@ bool IBB_Section::UpdateLineOrder()
 
     //update LineOrder
     //add new lines and remove deleted lines
-    std::unordered_set<std::string> NewLineOrder;
+    std::unordered_set<StrPoolID> NewLineOrder;
     for (const auto& ss : SubSecs)
     {
         for (const auto& [K, V] : ss.Lines)

@@ -112,7 +112,7 @@ OrderCheckResult TopoSortByImport(const IBB_Project& Proj)
             {
                 for (auto& Sub : Sec->SubSecs)
                     for(auto& Link : Sub.NewLinkTo)
-                        if (Link.FromKey == ImportKeyName)
+                        if (Link.FromKey == ImportKeyID())
                         {
                             auto pSec = Link.To.GetSec(Proj);
                             if (pSec)Ret.push_back(pSec);

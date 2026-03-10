@@ -12,7 +12,7 @@ extern const char* LinkAltPropType;
 
 namespace ExportContext
 {
-    extern std::string Key;
+    extern StrPoolID Key;
     extern size_t SameKeyIdx;//用于当Key重复时区分不同的Key
     extern bool OnExport;
 }
@@ -145,7 +145,7 @@ std::string DecodeListForExport(const std::string& Val)
     }
     if (pSec && pSec->SingleVal)
     {
-        auto pLine = pSec->GetLineFromSubSecs(SingleValName);
+        auto pLine = pSec->GetLineFromSubSecs(SingleValID());
         if (pLine)return pLine->Data->GetStringForExport();
         else return Val;
     }
@@ -703,24 +703,22 @@ bool IBB_Ini::UpdateAll()
 
 
 
+StrPoolID SelectDefaultInput(StrPoolID LinkType);
+const char* SelectDefaultInput(const std::string& LinkType);
 
-
-
-
-void IBB_DefaultTypeList::CreateUnknownType(const std::string& KeyName)
+void IBB_DefaultTypeList::CreateUnknownType(StrPoolID KeyName)
 {
     IBB_DefaultTypeAlt Alt;
 
     Alt.Name = KeyName;
-    Alt.DescShort = KeyName;
-    Alt.DescLong = "";
+    Alt.DescShort = NewPoolDesc(PoolStr(KeyName));
+    Alt.DescLong = NewPoolDesc("");
 
     const auto& link = IBB_DefaultRegType::GetDefaultLinkNodeSetting();
-    Alt.LinkType = link.LinkType;
+    Alt.LinkType = NewPoolStr(link.LinkType);
     Alt.LinkLimit = link.LinkLimit;
     Alt.Color = link.LinkCol;
 
-    const char* SelectDefaultInput(const std::string & LinkType);
     Alt.Input = SelectDefaultInput(Alt.LinkType);
 
     EnsureType(Alt);
@@ -735,6 +733,17 @@ void IBB_DefaultTypeList::CreateUnknownType(const std::string& KeyName)
 
 IBB_IniLine_Default* IBB_DefaultTypeList::KeyBelongToLine(const std::string& KeyName)
 {
+    return KeyBelongToLine(NewPoolStr(KeyName));
+}
+
+IBB_SubSec_Default* IBB_DefaultTypeList::KeyBelongToSubSec(const std::string& KeyName)
+{
+    auto ptr = KeyBelongToLine(KeyName);
+    return ptr ? ptr->InSubSec : nullptr;
+}
+
+IBB_IniLine_Default* IBB_DefaultTypeList::KeyBelongToLine(StrPoolID KeyName)
+{
     auto it = IniLine_Default.find(KeyName);
     if (it == IniLine_Default.end())CreateUnknownType(KeyName);
     it = IniLine_Default.find(KeyName);
@@ -742,7 +751,7 @@ IBB_IniLine_Default* IBB_DefaultTypeList::KeyBelongToLine(const std::string& Key
     return &it->second;
 }
 
-IBB_SubSec_Default* IBB_DefaultTypeList::KeyBelongToSubSec(const std::string& KeyName)
+IBB_SubSec_Default* IBB_DefaultTypeList::KeyBelongToSubSec(StrPoolID KeyName)
 {
     auto ptr = KeyBelongToLine(KeyName);
     return ptr ? ptr->InSubSec : nullptr;

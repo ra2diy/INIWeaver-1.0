@@ -15,34 +15,16 @@ const char* ImportSubSecName  = "D__IMPORT_SUBSEC";
 void IBB_DefaultTypeList::EnsureType(const IBB_DefaultTypeAlt& D)
 {
     auto& L = IniLine_Default[D.Name];
-    L.Name = NewPoolStr(D.Name);
-    L.DescShort = NewPoolDesc(D.DescShort);
-    L.DescLong = NewPoolDesc(D.DescLong);
+    L.Name = D.Name;
+    L.DescShort = D.DescShort;
+    L.DescLong = D.DescLong;
     L.Color = D.Color;
     L.Known = true;
-    L.Input = &IBB_DefaultRegType::GetInputType(D.Input);
-    L.InputName = NewPoolStr(D.Input);
-    L.TypeAlt = NewPoolStr(D.LinkType);
+    L.Input = &IBB_DefaultRegType::GetInputType(PoolStr(D.Input));
+    L.InputName = D.Input;
+    L.TypeAlt = D.LinkType;
     L.LinkLimit = D.LinkLimit;
-    IBB_DefaultRegType::EnsureRegType(D.LinkType);
-}
-
-void IBB_DefaultTypeList::EnsureType(const std::string& Key, const std::string& LinkType)
-{
-    auto it = IniLine_Default.find(Key);
-    if (it != IniLine_Default.end())return;//Exists
-    {
-        auto K = UTF8toUnicode(Key);
-        auto LT = UTF8toUnicode(LinkType);
-        MessageBoxW(NULL, std::vformat(locw("Error_LinkTypeNotExist"), std::make_wformat_args(K, LT)).c_str(),
-            L"IBB_DefaultTypeList::EnsureType", MB_OK);
-    }
-    IBB_DefaultTypeAlt Alt;
-    Alt.LinkType = LinkType;
-    Alt.Name = Key;
-    Alt.LinkLimit = -1;
-    Alt.DescShort = Alt.DescLong = Key;
-    EnsureType(Alt);
+    IBB_DefaultRegType::EnsureRegType(PoolStr(D.LinkType));
 }
 
 bool IBB_DefaultTypeList::LoadFromAlt()
@@ -61,14 +43,14 @@ bool IBB_DefaultTypeList::LoadFromAlt()
         auto& InheritSubSec = SubSec_Default[InheritSubSecName];
         InheritSubSec.Name = InheritSubSecName;
         InheritSubSec.Type = IBB_SubSec_Default::Inherit;
-        IniLine_Default[InheritKeyName].InSubSec = &InheritSubSec;
+        IniLine_Default[InheritKeyID()].InSubSec = &InheritSubSec;
     }
 
     {
         auto& ImportSubSec = SubSec_Default[ImportSubSecName];
         ImportSubSec.Name = ImportSubSecName;
         ImportSubSec.Type = IBB_SubSec_Default::Import;
-        IniLine_Default[ImportKeyName].InSubSec = &ImportSubSec;
+        IniLine_Default[ImportKeyID()].InSubSec = &ImportSubSec;
     }
 
     return true;
@@ -95,26 +77,35 @@ const char* SelectDefaultInput(const std::string& LinkType)
     return "Link";
 }
 
+StrPoolID SelectDefaultInput(StrPoolID LinkType)
+{
+    auto Str = PoolStr(LinkType);
+    if (!_strcmpi(Str.c_str(), "bool"))return NewPoolStr("Bool");
+    if (!_strcmpi(Str.c_str(), "string"))return NewPoolStr("String");
+    return NewPoolStr("Link");
+}
+
 void IBB_DefaultTypeAlt::Clear()
 {
-    Name.clear();
-    DescShort.clear();
-    DescLong.clear();
-    LinkType.clear();
-    Input.clear();
+    Name = EmptyPoolStr;
+    DescShort = EmptyPoolStr;
+    DescLong = EmptyPoolStr;
+    LinkType = EmptyPoolStr;
+    Input = EmptyPoolStr;
     LinkLimit = 1;
     Color = 0xFF000000;
 }
 
 bool IBB_DefaultTypeAlt::Load(JsonObject FromJson)
 {
-    Name = FromJson.ItemStringOr("Name");
-    DescLong = FromJson.ItemStringOr("DescLong");
-    DescShort = FromJson.ItemStringOr("DescShort");
-    LinkType = FromJson.ItemStringOr("LinkType");
+    Name = NewPoolStr(FromJson.ItemStringOr("Name"));
+    DescLong = NewPoolDesc(FromJson.ItemStringOr("DescLong"));
+    DescShort = NewPoolDesc(FromJson.ItemStringOr("DescShort"));
+    LinkType = NewPoolStr(FromJson.ItemStringOr("LinkType"));
     LinkLimit = FromJson.ItemIntOr("LinkLimit", 1);
     Color = StrToCol(FromJson.ItemStringOr("LineColor", "00000000").c_str());
-    Input = FromJson.ItemStringOr("InputType", SelectDefaultInput(LinkType));
+    auto InStr = FromJson.ItemStringOr("InputType", "");
+    Input = InStr.empty() ? SelectDefaultInput(LinkType) : NewPoolStr(InStr);
     return true;
 }
 
@@ -122,13 +113,13 @@ bool IBB_DefaultTypeAlt::Load(const std::vector<std::string>& FromCSV)
 {
     if (FromCSV.size() < 5)return false;
     // Name LinkType LinkLimit DescShort DescLong;
-    Name = FromCSV[0];
-    LinkType = FromCSV[1];
+    Name = NewPoolStr(FromCSV[0]);
+    LinkType = NewPoolStr(FromCSV[1]);
     LinkLimit = atoi(FromCSV[2].c_str());
-    DescShort = IBR_L10n::ProcessEscape(FromCSV[3]);
-    DescLong = IBR_L10n::ProcessEscape(FromCSV[4]);
+    DescShort = NewPoolDesc(IBR_L10n::ProcessEscape(FromCSV[3]));
+    DescLong = NewPoolDesc(IBR_L10n::ProcessEscape(FromCSV[4]));
     Color = StrToCol((FromCSV.size() > 5 && !FromCSV[5].empty()) ? FromCSV[5].c_str() : "00000000");
-    Input = (FromCSV.size() > 6 && !FromCSV[6].empty()) ? FromCSV[6] : SelectDefaultInput(LinkType);
+    Input = (FromCSV.size() > 6 && !FromCSV[6].empty()) ? NewPoolStr(FromCSV[6]) : SelectDefaultInput(LinkType);
     return true;
 }
 
@@ -346,7 +337,7 @@ bool IBB_Project::AddNewLinkToLinkGroup(const IBB_Section_Desc& From, const IBB_
             return false;
         }
     }
-    FromPtr->LinkGroup_NewLinkTo.push_back({ FIn,TIn,"", IBB_DefaultRegType::GetDefaultNodeColor() });
+    FromPtr->LinkGroup_NewLinkTo.push_back({ FIn,TIn, EmptyPoolStr , IBB_DefaultRegType::GetDefaultNodeColor() });
     return true;
 }
 
