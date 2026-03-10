@@ -370,6 +370,7 @@ namespace IBR_ProjectManager
     void OpenRecentOptAction(const std::wstring& Path);
     void OutputAction();
     void AutoOutputAction();
+    void OutputOnSaveAction();
     void OnDropFile(GLFWwindow* window, int argc, const char** argv);
     void ProjActionByKey();
 };

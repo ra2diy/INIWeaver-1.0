@@ -368,16 +368,7 @@ bool IBS_Project::Save(const std::wstring& _Path)
         IBF_Inst_Project.Project.LastOutputDir = LastOutputDir;
     }
     bool R = ProjSL.Write(Path.c_str());
-    if (IBF_Inst_Setting.OutputOnSave())
-    {
-        auto AllNotEmpty = std::ranges::all_of(
-            IBF_Inst_Project.Project.Inis,
-            [](auto& ini) { return !IBF_Inst_Project.Project.LastOutputIniName[ini.Name].empty(); }
-        );
-
-        if(AllNotEmpty)IBRF_CoreBump.SendToR({ [=]() {IBR_ProjectManager::AutoOutputAction(); } });
-        else IBRF_CoreBump.SendToR({ [=]() {IBR_ProjectManager::OutputAction(); } });
-    }
+    IBR_ProjectManager::OutputOnSaveAction();
     return R;
 }
 bool IBS_Project::Load(const std::wstring& _Path)

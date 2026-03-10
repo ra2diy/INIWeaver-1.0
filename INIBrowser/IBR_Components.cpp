@@ -440,6 +440,10 @@ namespace IBR_PopupManager
     {
         AddErrorPopup(std::move(ErrorStr), loc("GUI_LoadConfigError"), Info, locw("Log_LoadConfigErrorInfo"), false);
     }
+    void AddOutputErrorPopup(std::string&& ErrorStr, const std::string& Info)
+    {
+        AddErrorPopup(std::move(ErrorStr), loc("GUI_ExportIniError"), Info, locw("Log_ExportIniErrorInfo"), false);
+    }
 
     bool IsMouseOnPopup()
     {

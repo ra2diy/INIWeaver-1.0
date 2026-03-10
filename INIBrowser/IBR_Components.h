@@ -84,6 +84,7 @@ namespace IBR_PopupManager
     void AddJsonParseErrorPopup(std::string&& ErrorStr, const std::string& Info);
     void AddModuleParseErrorPopup(std::string&& ErrorStr, const std::string& Info);
     void AddLoadConfigErrorPopup(std::string&& ErrorStr, const std::string& Info);
+    void AddOutputErrorPopup(std::string&& ErrorStr, const std::string& Info);
     void CurrentPopupFixPos(int OldW, int OldH, int NewW, int NewH);
 }
 

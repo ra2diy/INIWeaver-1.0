@@ -7,10 +7,12 @@
 #include "IBB_ModuleAlt.h"
 #include <imgui_internal.h>
 #include <shlwapi.h>
+#include <ranges>
 #include <format>
 #include "IBR_HotKey.h"
 #include "IBR_ListView.h"
 #include "IBR_Components.h"
+#include "IBB_OutputOrder.h"
 
 extern wchar_t CurrentDirW[];
 extern bool ShouldCloseShellLoop;
@@ -276,12 +278,58 @@ namespace IBR_ProjectManager
         std::map<IBB_Section_Desc, std::string> DisplayRev;
         for (auto& [K, V] : IBF_Inst_Project.DisplayNames)DisplayRev[V] = K;
 
+        auto ImportOrder = TopoSortByImport(IBF_Inst_Project.Project);
+        auto InheritOrder = TopoSortByInherit(IBF_Inst_Project.Project);
+
+        if (ImportOrder.HasCycle || InheritOrder.HasCycle)
+        {
+            IBRF_CoreBump.SendToR({ [] {
+                IBR_HintManager::SetHint(loc("GUI_OutputFailure"),HintStayTimeMillis);
+                IBR_PopupManager::ClearCurrentPopup();
+            } });
+        }
+        if (ImportOrder.HasCycle)
+        {
+            auto Str = ImportOrder.Order_Or_Ring |
+                std::views::transform([&DisplayRev](const IBB_Section* Sec) -> std::string {
+                    auto Desc = Sec->GetThisDesc();
+                    if (DisplayRev.contains(Desc))return DisplayRev[Desc];
+                    else return Desc.GetText();
+                }) |
+                std::views::join_with(" -> \n"s) |
+                std::ranges::to<std::string>();
+                
+            auto StrW = UTF8toUnicode(Str);
+            auto Fmt = UnicodetoUTF8(std::vformat(locw("Log_CycleInfo"), std::make_wformat_args(StrW)));
+            IBRF_CoreBump.SendToR({ [F=std::move(Fmt)] () mutable {
+                IBR_PopupManager::AddOutputErrorPopup(std::move(F), loc("Log_ImportCycleDetected"));
+            } });
+        }
+        if (InheritOrder.HasCycle)
+        {
+            auto Str = InheritOrder.Order_Or_Ring |
+                std::views::transform([&DisplayRev](const IBB_Section* Sec) -> std::string {
+                auto Desc = Sec->GetThisDesc();
+                if (DisplayRev.contains(Desc))return DisplayRev[Desc];
+                else return Desc.GetText();
+                    }) |
+                std::views::join_with(" -> \n"s) |
+                        std::ranges::to<std::string>();
+
+                auto StrW = UTF8toUnicode(Str);
+                auto Fmt = UnicodetoUTF8(std::vformat(locw("Log_CycleInfo"), std::make_wformat_args(StrW)));
+                IBRF_CoreBump.SendToR({ [F = std::move(Fmt)] () mutable {
+                    IBR_PopupManager::AddOutputErrorPopup(std::move(F), loc("Log_InheritCycleDetected"));
+                } });
+        }
+        if (ImportOrder.HasCycle || InheritOrder.HasCycle)return;
+
         size_t N = TargetIniPath.size();
         std::vector<std::unordered_map<std::string, std::string>>TextPieces;
+        std::unordered_map<std::string, std::vector<std::string>>TextPieceOrder;
+
+        //Generate TextPieces
         TextPieces.resize(N);
-
-
-
         OutputRegister(TextPieces);
         for (size_t I = 0; I < N; I++)
         {
@@ -302,9 +350,13 @@ namespace IBR_ProjectManager
             }
         }
 
+        for (auto Sec : InheritOrder.Order_Or_Ring)
+            TextPieceOrder[Sec->Root->Name].push_back(Sec->Name);
+
         for (size_t I = 0; I < N; I++)
         {
-            if (Inis[I].Name == Internal_IniName)continue;//不导出这个
+            auto& IniName = Inis[I].Name;
+            if (IniName == Internal_IniName)continue;//不导出这个
             if (TextPieces[I].empty())continue;
 
             ExtFileClass F;
@@ -315,11 +367,27 @@ namespace IBR_ProjectManager
                 F.PutStr(";" + UnicodetoUTF8(std::vformat(locw("Back_OutputINILine1"), std::make_wformat_args(cwa, VersionW)))); F.Ln();
                 F.PutStr(";" + UnicodetoUTF8(std::vformat(locw("Back_OutputINILine2"), std::make_wformat_args(IBF_Inst_Project.Project.ProjName)))); F.Ln();
                 F.PutStr(";" + UnicodetoUTF8(std::vformat(locw("Back_OutputINILine3"), std::make_wformat_args(cwb)))); F.Ln();
+
+                F.Ln();
+                F.PutStr(";" + loc("Back_OutputINILine4")); F.Ln();
+                F.PutStr("[INI_INFO]"); F.Ln();
+                F.PutStr("IniType = " + IniName); F.Ln(); F.Ln();
+
+                for (auto& S : TextPieceOrder[IniName])
+                {
+                    if (ExportContext::MergedDescs.contains({ IniName, S }))
+                        continue;
+                    auto& V = TextPieces[I][S];
+                    F.PutStr(V);
+                    F.Ln();
+                    F.Ln();
+                    TextPieces[I].erase(S);
+                }
+
                 for (auto& [K, V] : TextPieces[I])
                 {
-                    if (ExportContext::MergedDescs.contains({ Inis[I].Name, K }))
+                    if (ExportContext::MergedDescs.contains({ IniName, K }))
                         continue;
-
                     F.PutStr(V);
                     F.Ln();
                     F.Ln();
@@ -471,8 +539,11 @@ namespace IBR_ProjectManager
     }
     void _IN_RENDER_THREAD SaveAction()
     {
-
-        if (!IBF_Inst_Project.Project.ChangeAfterSave)return;
+        if (!IBF_Inst_Project.Project.ChangeAfterSave)
+        {
+            IBR_ProjectManager::OutputOnSaveAction();
+            return;
+        }
         //make someone happy
         //SetWaitingPopup();
         IBS_Push([=]()
@@ -678,6 +749,19 @@ namespace IBR_ProjectManager
             else TgPath.push_back(WP + L"\\" + U);
         }
         IBRF_CoreBump.SendToF([=] {Output(WP, TgPath, GetIgnoredSection(), true); });
+    }
+    void _IN_RENDER_THREAD OutputOnSaveAction()
+    {
+        if (IBF_Inst_Setting.OutputOnSave())
+        {
+            auto AllNotEmpty = std::ranges::all_of(
+                IBF_Inst_Project.Project.Inis,
+                [](auto& ini) { return !IBF_Inst_Project.Project.LastOutputIniName[ini.Name].empty(); }
+            );
+
+            if (AllNotEmpty)IBRF_CoreBump.SendToR({ [=]() {IBR_ProjectManager::AutoOutputAction(); } });
+            else IBRF_CoreBump.SendToR({ [=]() {IBR_ProjectManager::OutputAction(); } });
+        }
     }
 
     void _IN_RENDER_THREAD ProjOpen_CreateAction()

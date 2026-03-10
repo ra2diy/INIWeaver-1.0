@@ -1030,13 +1030,11 @@ void IBB_ModuleAlt::PreLoadFromFile(const wchar_t* FileName)
     */
 
     //接下来：打开文件，找到Info块，读取信息，直到找到下一个块或者文件结束。
-    ExtFileClass E;
-    E.Open(FileName, L"r");
-    if (!E.Available())return;
-    std::string Line;
-    IniToken Tok;
     bool InInfo = false;
-    while (E.ReadLine(Line))
+    IniToken Tok;
+    auto Str = GetStringFromFile(FileName);
+    auto Lines = GetLines(std::move(Str));
+    for(auto& Line : Lines)
     {
         Tok.Tokenize(Line);
         if (!InInfo)
