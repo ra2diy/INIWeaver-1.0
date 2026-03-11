@@ -1098,8 +1098,8 @@ void IIC_InputText::ResetState(IBB_ValueContainer& Cont) const
 
 // ========== IIC_MultipleChoice ==========
 
-IIC_MultipleChoice::IIC_MultipleChoice(IBB_ValueContainer& Cont, int valueid, const std::string& InitialText, bool sameline, int maxInOneLine, const std::unordered_map<std::string, IICDescStr>& options, const std::vector<std::string>& order)
-    : Hint(RandStr(12)), ValueID(valueid), SameLine(sameline), MaxInOneLine(maxInOneLine), Options(options), OptionOrder(order)
+IIC_MultipleChoice::IIC_MultipleChoice(IBB_ValueContainer& Cont, int valueid, const std::string& InitialText, const std::string& DelimStr, bool sameline, int maxInOneLine, const std::unordered_map<std::string, IICDescStr>& options, const std::vector<std::string>& order)
+    : Hint(RandStr(12)), ValueID(valueid), SameLine(sameline), MaxInOneLine(maxInOneLine), Options(options), OptionOrder(order), Delim(DelimStr)
 {
     auto& Val = Cont.GetValue(ValueID);
     Val.ResetState<IIS_String>(InitialText);
@@ -1116,7 +1116,7 @@ IBB_UpdateResult IIC_MultipleChoice::RenderUI(IBB_ValueContainer& Cont, IICStatu
 
 
     auto SelectedValue = CurrentValue |
-        std::views::split(',') |
+        std::views::split(Delim) |
         std::ranges::to<std::unordered_set<std::string>>();
     auto SelectedCond = OptionOrder |
         std::views::transform([&](auto& Val) { return (uint8_t)SelectedValue.contains(Val); }) |
@@ -1154,7 +1154,7 @@ IBB_UpdateResult IIC_MultipleChoice::RenderUI(IBB_ValueContainer& Cont, IICStatu
         CurrentValue = std::views::zip(SelectedCond, OptionOrder) |
             std::views::filter([&](auto&& t) { return std::get<0>(t); }) |
             std::views::transform([&](auto&& t) { return std::get<1>(t); }) |
-            std::views::join_with(',') |
+            std::views::join_with(Delim) |
             std::ranges::to<std::string>();
 
         auto State = Var.StateValue<IIS_String>();

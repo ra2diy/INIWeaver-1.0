@@ -210,8 +210,9 @@ IICPtr InputFormComponentFactory::CreateInputComponent_Special(IBB_ValueContaine
             auto SameLine = Obj.ItemBoolOr("SameLine", false);
             auto MaxInOneLine = Obj.ItemIntOr("MaxInOneLine", -1);
             auto OptionOrder = Obj.ItemArrayKeyOr("Options");
+            auto Delim = Obj.ItemStringOr("Delim", ",");
 
-            return std::make_unique<IIC_MultipleChoice>(Cont, ValueID, InitValue, SameLine, MaxInOneLine, Options, OptionOrder);
+            return std::make_unique<IIC_MultipleChoice>(Cont, ValueID, InitValue, Delim, SameLine, MaxInOneLine, Options, OptionOrder);
         }
         else if (typeStr == "EnumCombo")
         {
