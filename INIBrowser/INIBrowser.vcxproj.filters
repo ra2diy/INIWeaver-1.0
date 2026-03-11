@@ -219,6 +219,9 @@
     <ClInclude Include="IBB_OutputOrder.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="IBB_Ini_Derived.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="INIBrowser.cpp">
@@ -378,6 +381,9 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="IBB_OutputOrder.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="IBB_IniLine.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

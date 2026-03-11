@@ -58,13 +58,7 @@ struct IBB_IniLine_Default
 
 struct IBB_SubSec_Default
 {
-    struct _Require
-    {
-        std::vector<JsonObject> RequiredValues;
-        std::vector<JsonObject> ForbiddenValues;
-    }Require;
-
-    std::string Name, DescShort, DescLong;
+    std::string Name;
     enum _Type
     {
         Default,
@@ -89,23 +83,6 @@ struct IBB_IniLine_Data_Base
 
     IBB_IniLine_Data_Base() {}
     virtual ~IBB_IniLine_Data_Base() {}
-};
-
-struct IBB_IniLine_Data_String final : public IBB_IniLine_Data_Base
-{
-    std::string Value{};
-
-    IBB_IniLine_Data_String() {}
-
-    bool SetValue(const std::string& Val);
-    bool MergeValue(const std::string& Val);
-    bool MergeData(const IBB_IniLine_Data_Base* data);
-    bool Clear();
-
-    std::string GetString() const { return Value; }
-    std::string GetStringForExport() const;
-
-    virtual ~IBB_IniLine_Data_String() {}
 };
 
 struct IBB_IniLine
