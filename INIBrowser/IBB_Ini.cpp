@@ -101,27 +101,12 @@ bool IBB_IniLine_Data_String::SetValue(const std::string& Val)
     return true;
 }
 bool IBB_IniLine_Data_String::MergeValue(const std::string& Val) { return SetValue(Val); }
-bool IBB_IniLine_Data_String::MergeData(const IBB_IniLine_Data_Base* data)
-{
-    auto Data = dynamic_cast<const IBB_IniLine_Data_String*>(data);
-    if (Data == nullptr)return false;
-    if (Data->_Empty)return true;
-    Value = Data->Value;
-    return true;
-}
 bool IBB_IniLine_Data_String::Clear()
 {
     _Empty = true;
     Value.clear();
     return true;
 }
-LineData IBB_IniLine_Data_String::Duplicate() const
-{
-    LineData R{ new IBB_IniLine_Data_String };
-    R->MergeData(this);
-    return R;
-}
-
 
 std::string DecodeListForExport(const std::string& Val)
 {

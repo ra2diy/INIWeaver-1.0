@@ -18,8 +18,7 @@ struct IBB_IniLine_Data_String;
 struct IBB_RegType;
 struct IBG_InputType;
 enum class ValidateResult;
-//using LineData = std::shared_ptr<IBB_IniLine_Data_Base>;
-using LineData = std::shared_ptr<IBB_IniLine_Data_String>;
+using LineData = std::shared_ptr<IBB_IniLine_Data_Base>;
 struct IIFWrapper_Wrapper;
 struct IBB_SubSec_Default;
 
@@ -84,11 +83,8 @@ struct IBB_IniLine_Data_Base
 
     virtual bool SetValue(const std::string&) = 0;
     virtual bool MergeValue(const std::string&) = 0;
-    virtual bool MergeData(const IBB_IniLine_Data_Base*) = 0;
     virtual std::string GetString() const = 0;
     virtual std::string GetStringForExport() const = 0;
-    virtual LineData Duplicate() const = 0;
-    virtual const char* GetName() const = 0;
     virtual bool Clear() = 0;
 
     IBB_IniLine_Data_Base() {}
@@ -97,7 +93,6 @@ struct IBB_IniLine_Data_Base
 
 struct IBB_IniLine_Data_String final : public IBB_IniLine_Data_Base
 {
-    static constexpr const char* TypeName{ "String" };
     std::string Value{};
 
     IBB_IniLine_Data_String() {}
@@ -106,12 +101,9 @@ struct IBB_IniLine_Data_String final : public IBB_IniLine_Data_Base
     bool MergeValue(const std::string& Val);
     bool MergeData(const IBB_IniLine_Data_Base* data);
     bool Clear();
-    LineData Duplicate() const;
 
     std::string GetString() const { return Value; }
     std::string GetStringForExport() const;
-
-    virtual const char* GetName() const { return TypeName; }
 
     virtual ~IBB_IniLine_Data_String() {}
 };
