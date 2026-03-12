@@ -165,6 +165,8 @@ struct IBG_InputForm
     bool Load(const JsonObject& Obj);
     IIFPtr Duplicate() const;
     void EnableLinkNode() { LinkNodeEnabled = true; }
+    void DisableLinkNode() { LinkNodeEnabled = false; }
+    void SetInWorkSpace(bool InWorkspace) { LinkNodeEnabled = InWorkspace; }
     const std::string& RegenFormattedString();
 
 private:
@@ -193,11 +195,11 @@ struct IBG_InputType
     enum _Type
     {
         Link,
-        Form
-    }Type;
+        Bool,
+        IIF
+    }Type { IIF };
 
-    IIFPtr Sidebar;
-    IIFPtr WorkSpace;
+    IIFPtr Form;
     KVFormatter_t KVFmt;
     bool Load(const JsonObject& Obj);
 

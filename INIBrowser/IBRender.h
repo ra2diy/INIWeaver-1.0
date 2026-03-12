@@ -75,7 +75,7 @@ struct IBR_SectionData
     bool Hidden{ false };
     float FinalY{ 0.0f };
     float WidthFix{ 0.0f };
-    std::unordered_map<StrPoolID, ActiveLine> ActiveLines;
+    std::unordered_map<StrPoolID, WorkSpaceLine> ActiveLines;
     std::shared_ptr<BufString> CommentEdit;
     ImVec2 ReWindowUL, ReOffset;
     IBB_Section* BackPtr_Cached;
@@ -469,10 +469,9 @@ namespace IBR_EditFrame
     extern IBR_Section CurSection;
     extern ModuleID_t PrevId;
     extern bool Empty;
-    extern std::unordered_map<StrPoolID, BufferedLine> EditLines;
+    extern std::unordered_map<StrPoolID, SidebarLine> EditLines;
     void SetActive(ModuleID_t id);
     void ActivateAndEdit(ModuleID_t id, bool TextMode);
-    void UpdateLine(StrPoolID Line, const std::string& NewValue);
     void RenderUI();
     void Clear();
     void SwitchToText();

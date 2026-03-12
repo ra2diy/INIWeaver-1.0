@@ -80,6 +80,9 @@ struct IBB_IniLine_Data_Base
     virtual std::string GetString() const = 0;
     virtual std::string GetStringForExport() const = 0;
     virtual bool Clear() = 0;
+    virtual void RenderUI(IBB_IniLine_Default* Default, const LinkNodeSetting& LinkNode, bool IsWorkspace) = 0;
+
+    virtual bool FirstIsLink() const = 0;
 
     IBB_IniLine_Data_Base() {}
     virtual ~IBB_IniLine_Data_Base() {}
@@ -101,7 +104,11 @@ struct IBB_IniLine
     template<typename T> T* GetData() const { return dynamic_cast<T*>(Data.get()); }
 
     bool Merge(const std::string& Another, IBB_IniMergeMode Mode);
-    bool Generate(const std::string& Value, IBB_IniLine_Default* Def = nullptr);//don't change Default if Def == nullptr 
+    bool Generate(const std::string& Value, IBB_IniLine_Default* Def = nullptr);//don't change Default if Def == nullptr
+
+    void RenderUI(const LinkNodeSetting& LinkNode, bool IsWorkspace);
+    void RenderUI(bool IsWorkspace);
+    const void* GetComponentID();
 
     IBB_IniLine() {}
     IBB_IniLine(const std::string& Value, IBB_IniLine_Default* Def) { Generate(Value, Def); }
@@ -223,14 +230,12 @@ struct IBB_Section
     std::string GetTextForEdit() const;
     std::vector<size_t> GetRegisteredPosition() const;//Project的RegList序号
     std::vector<std::pair<size_t, size_t>> GetRegisteredPositionAlt() const;//pair<Project的RegList序号,RegList的Sec*序号>
-    IIFWrapper_Wrapper GetLineIIF(StrPoolID Key) const;
     IIFWrapper_Wrapper GetNewLineIIF(StrPoolID Key) const;
     bool IsComment() const { return CreateAsCommentBlock || !Comment.empty(); }
     bool HasLine(StrPoolID Key) const;
     bool IsOnShow(StrPoolID Key) const;
     const std::string& GetOnShow(StrPoolID Key) const;
     StrPoolID GetDLK(const std::string& Reg) const;
-    void SyncLineOnUI(StrPoolID Key, const std::string& Value) const;
     
     void SetOnShow(StrPoolID Key, const std::string& Value, bool AllowReapply);
     void SetOnShow(StrPoolID Key);

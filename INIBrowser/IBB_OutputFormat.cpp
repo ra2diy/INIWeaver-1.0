@@ -158,8 +158,8 @@ namespace KVFormatterFactory
             }
             else if (Type == "Recompose")
             {
-                auto& SaveFormat = AtType.Sidebar->FormatComponents;
-                auto& SaveInput = AtType.Sidebar->InputComponents;
+                auto& SaveFormat = AtType.Form->FormatComponents;
+                auto& SaveInput = AtType.Form->InputComponents;
                 auto oExportLines = j.GetObjectItem("ExportLines");
                 if(!oExportLines)return Default();
                 IBB_ValueContainer TmpCont;

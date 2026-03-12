@@ -443,7 +443,7 @@ IIFWrapper_Wrapper IBB_Section::GetNewLineIIF(StrPoolID Key) const
         {
             if (pLine->Default)
             {
-                auto& piif = pLine->Default->GetInputType().Sidebar;
+                auto& piif = pLine->Default->GetInputType().Form;
                 if (piif) {
                     auto dup = piif->Duplicate();
                     dup->ParseFromString(pLine->Data->GetString());
@@ -458,33 +458,6 @@ IIFWrapper_Wrapper IBB_Section::GetNewLineIIF(StrPoolID Key) const
     return { NewIIF() };
 }
 
-IIFWrapper_Wrapper IBB_Section::GetLineIIF(StrPoolID Key) const
-{
-    auto pbk = IBR_EditFrame::CurSection.GetBack();
-    if (pbk == this)
-    {
-        auto it = IBR_EditFrame::EditLines.find(Key);
-        if (it == IBR_EditFrame::EditLines.end())
-            return { std::monostate{} };// FUCK YOU IF IT HAPPENS
-        if (it->second.Edit.Input)
-            return { &(it->second.Edit.Input->Form) };
-        else
-            return GetNewLineIIF(Key);
-    }
-    auto Rsec = IBR_Inst_Project.GetSection(GetThisDesc());
-    auto pSD = Rsec.GetSectionData();
-    if (pSD)
-    {
-        auto it = pSD->ActiveLines.find(Key);
-        if (it == pSD->ActiveLines.end())
-            return GetNewLineIIF(Key);
-        if (it->second.Edit.Input)
-            return { &(it->second.Edit.Input->Form) };
-        else
-            return GetNewLineIIF(Key);
-    }
-    return GetNewLineIIF(Key);
-}
 
 bool IBB_Section::HasLine(StrPoolID Key) const
 {
@@ -667,21 +640,6 @@ bool IBB_Section::GenerateLines(const IBB_VariableList& Par, const std::vector<s
 }
 
 const std::vector<std::string>& SplitParamCached(const std::string& Text);
-
-void IBB_Section::SyncLineOnUI(StrPoolID Key, const std::string& Value) const
-{
-    auto RSec = IBR_Inst_Project.GetSection(GetThisDesc());
-    IBRF_CoreBump.SendToR({ [=] {
-        if(IBR_EditFrame::CurSection.ID == RSec.ID)
-            IBR_EditFrame::UpdateLine(Key, Value);
-    } });
-    auto RootRData = RSec.GetSectionData();
-    if (RootRData && RootRData->ActiveLines.contains(Key))
-    {
-        auto& in = RootRData->ActiveLines[Key].Edit.Input;
-        if (in)in->Form->ParseFromString(Value);
-    }
-}
 
 //返回Def对应的SubSec，若没有则构造一个新的SubSec并返回
 IBB_SubSec& IBB_Section::GetSubSecByDef(IBB_SubSec_Default* Def)

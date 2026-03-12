@@ -23,6 +23,7 @@ struct IBB_PropStringPool
     IBB_PropConstDescPool Pool;
     //Get返回的引用可能会失效！请在调用Get后立即使用返回的引用，不要保存它！如果需要保存，请先复制一份！
     std::string Get(StrPoolID ID) const;
+    const char* GetCStr(StrPoolID ID) const;
     StrPoolID Add(const std::string& Str);
     void Clear();
 };
@@ -32,6 +33,7 @@ extern const DescPoolOffset EmptyStrOffset;
 
 #define NewPoolStr(Str) IBB_Inst_StrPool.Add(Str)
 #define PoolStr(Str) IBB_Inst_StrPool.Get(Str)
+#define PoolCStr(Str) IBB_Inst_StrPool.GetCStr(Str)
 
 #define NewPoolDesc(Str) IBB_Inst_DescPool.Add(Str)
 #define PoolDesc(Str) IBB_Inst_DescPool.Get(Str)

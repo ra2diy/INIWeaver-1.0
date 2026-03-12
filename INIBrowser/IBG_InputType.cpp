@@ -77,14 +77,10 @@ void IBG_InputForm::CheckStatus()
         for (size_t i = ComponentStatus.size(); i < InputComponents->size(); i++)
             ComponentStatus.push_back(InputComponents->at(i)->InitialStatus);
 
-    bool TryUpdateLink = LinkNodeEnabled && LinkNodeContext::CurSub;
+    bool TryUpdateLink = LinkNodeContext::CurSub;
     if (!TryUpdateLink)
     {
-        for (auto& CS : ComponentStatus)
-        {
-            if (CS.InputMethod == IICStatus::Link)
-                CS.InputMethod = IICStatus::Input;
-        }
+
     }
     else if (LinkNodeContext::CurLineChangeCompStatus)
     {
@@ -109,13 +105,17 @@ IBG_InputFormUIResult IBG_InputForm::RenderUI(const LinkNodeSetting& Default)
     bool TryUpdateLink = LinkNodeEnabled && LinkNodeContext::CurSub;
     std::unordered_set<uint64_t> UsedLinks;
     bool NeedsUpdateLink = IBR_LinkNode::UpdateLinkInitial();
+    IICStatus StatusAlwaysInput;
 
-    for (auto&& [CompIdx, IC, CS] : std::views::zip(std::views::iota(0u), *InputComponents, ComponentStatus))
+    for (auto&& [CompIdx, IC, CSOrig] : std::views::zip(std::views::iota(0u), *InputComponents, ComponentStatus))
     {
         LinkNodeContext::CompIndex = CompIdx;
         //存在不可缓存的状态
         if (!IC->CanProvideState(ValueContainer))
             GetFormattedString();//确保状态正确
+
+        StatusAlwaysInput.InputMethod = IICStatus::Input;
+        auto& CS = LinkNodeEnabled ? CSOrig : StatusAlwaysInput;
 
         if (CS.InputMethod == IICStatus::Link && !IC->UseCustomSetting)
             IC->NodeSetting = Default;
@@ -1350,6 +1350,12 @@ IIC_Bool::IIC_Bool(IBB_ValueContainer& Cont, int valueid, bool InitialValue, Str
     Val.NeedsUpdate(Cont, *this);
 }
 
+void RenderIICBool(IIC_Bool* pBool, bool& Val)
+{
+    ImGui::Checkbox(pBool->Hint.Short.c_str(), &Val);
+    if (ImGui::IsItemHovered())IBR_ToolTip(pBool->Hint.Long);
+}
+
 IBB_UpdateResult IIC_Bool::RenderUI(IBB_ValueContainer& Cont, IICStatus&)
 {
     //TODO STATUS
@@ -1364,8 +1370,7 @@ IBB_UpdateResult IIC_Bool::RenderUI(IBB_ValueContainer& Cont, IICStatus&)
 
     bool Old = Val;
 
-    ImGui::Checkbox(Hint.Short.c_str(), &Val);
-    if (ImGui::IsItemHovered())IBR_ToolTip(Hint.Long);
+    RenderIICBool(this, Val);
 
     bool Changed = (Old != Val);
 
@@ -1653,7 +1658,7 @@ std::string IIC_Error::FormatValue(IBB_ValueContainer&, IBB_InputValue&, const I
 // ---------- DUPLICATION ----------
 
 IBG_InputType::IBG_InputType(const IBG_InputType& rhs)
-    : Type(rhs.Type), Sidebar(rhs.Sidebar->Duplicate()), WorkSpace(rhs.WorkSpace->Duplicate())
+    : Type(rhs.Type), Form(rhs.Form->Duplicate())
 {
 }
 

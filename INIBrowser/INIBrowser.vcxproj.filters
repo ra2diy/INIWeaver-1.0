@@ -219,7 +219,7 @@
     <ClInclude Include="IBB_OutputOrder.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="IBB_Ini_Derived.h">
+    <ClInclude Include="IBB_IniLine.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

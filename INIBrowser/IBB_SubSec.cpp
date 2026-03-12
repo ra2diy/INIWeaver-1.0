@@ -75,13 +75,10 @@ bool IBB_SubSec::MergeLine(StrPoolID Key, const std::string& Value, bool InitOnS
             if (!Str.empty() && Str != "bool")
                 Root->OnShow[Key] = EmptyOnShowDesc;
         }
-
-        Root->SyncLineOnUI(Key, Value);
     }
     else
     {
         Ret = it->second.Merge(Value, Mode);
-        Root->SyncLineOnUI(Key, Value);
     }
 
     if (NoUpdate) return Ret;
@@ -293,8 +290,6 @@ bool IBB_SubSec::UpdateAll()
 
             auto& val = iif->GetValues();
             auto DefaultLinkLimit = Line.Default->GetLinkLimit();
-            auto CurrentEditBSec = IBR_EditFrame::CurSection.GetBack();
-            auto RootRData = IBR_Inst_Project.GetSection(Root->GetThisDesc()).GetSectionData();
 
             for (auto&& [id, cidx] : SelectValues)
             {
@@ -313,17 +308,9 @@ bool IBB_SubSec::UpdateAll()
                         std::views::take(LinkLimit) |
                         std::views::join_with(',') |
                         std::ranges::to<std::string>();
-                    Line.Data->SetValue(NewStr);
-                    if (CurrentEditBSec == Root)
-                    {
-                        auto& Input = IBR_EditFrame::EditLines[KeyName].Edit.Input;
-                        if (Input)Input->Form->ParseFromString(NewStr);
-                    }
-                    if (RootRData && RootRData->ActiveLines.contains(KeyName))
-                    {
-                        auto& Input = RootRData->ActiveLines[KeyName].Edit.Input;
-                        if (Input)Input->Form->ParseFromString(NewStr);
-                    }
+                    V.Value = NewStr;
+                    V.Dirty = false;
+                    Line.Data->SetValue(iif->RegenFormattedString());
                 }
                 else if (!LimitFix)
                     for (auto&& str : spc)

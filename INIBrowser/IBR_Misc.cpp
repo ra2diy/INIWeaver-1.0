@@ -31,87 +31,39 @@ bool InputTextStdString(const char* label, std::string& str,
 int HintStayTimeMillis = 3000;
 
 
-
-
-
-
-std::shared_ptr<IBR_InputManager> NewInput(const std::string& InitialText, const std::string& id, const IBR_InputManager::AfterInputType& Fn, IIFPtr&& InitialForm, LinkNodeSetting&& LNS)
+void SidebarLine::RenderUI(const char* Line, const char* _Hint, IBB_IniLine& Back)
 {
-    return std::make_shared<IBR_InputManager>(InitialText, id, Fn, std::move(InitialForm), std::move(LNS));
-}
-IBR_InputManager::IBR_InputManager(const std::string& InitialText, const std::string& id, const AfterInputType& Fn, IIFPtr&& InitialForm, LinkNodeSetting&& LNS)
-    :ID(id), AfterInput(Fn), Form(std::move(InitialForm)), LinkNode(std::move(LNS))
-{
-    if (!Form)DebugBreak();
-    Form->ParseFromString(InitialText);
-}
-bool IBR_InputManager::RenderUI()
-{
-    ImGui::BeginGroup();
-    ImGui::PushID(Form.get());
-    auto Result = Form->RenderUI(LinkNode);
-    ImGui::PopID();
-    ImGui::EndGroup();
-    if (Result.Changed)
-    {
-        //创建新字符串并传递给回调函数，避免在回调函数中访问已被销毁的内部状态
-        auto S = Form->GetFormattedString();
-        AfterInput(S);
-    }
-    if (Result.Active)IBR_WorkSpace::OperateOnText = true;
-    return Result.Active;
+    Edit.RenderUI(Line, _Hint, Back, false);
 }
 
-//std::unordered_set<IBR_InputManager*> AllInputs;
-
-IBR_InputManager::~IBR_InputManager()
+void WorkSpaceLine::RenderUI(const char* Line, const char* Hint, IBB_IniLine& Back)
 {
-    //if (AllInputs.contains(this))GlobalLogB.AddLog("DOUBLE FREE!");
-    //else AllInputs.insert(this);
-    //GlobalLogB.AddLog(this);
+    Edit.RenderUI(Line, Hint, Back, true);
 }
 
-void IBR_IniLine::RenderUI(const std::string& Line, const char* Hint, InitType* Init)
+void IBR_IniLine::RenderUI(const char* Line, const char* Hint, IBB_IniLine& Back, bool IsWorkSpace)
 {
     LinkNodeContext::CurLineChangeCompStatus = false;
-    ImGui::TextWrappedEx(Line.c_str());
+    ImGui::TextWrappedEx(Line);
 
     if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
         LinkNodeContext::CurLineChangeCompStatus = true;
-    //ImGui::TextEx(Line.c_str(), nullptr, ImGuiTextFlags_NoWidthForLargeClippedText);
+    //ImGui::TextEx(Line, nullptr, ImGuiTextFlags_NoWidthForLargeClippedText);
     if (ImGui::IsItemHovered())
     {
         IBR_ToolTip(Hint);
     }
-    if (!HasInput)
-    {
-        HasInput = true;
-        UseInput = false;
-    }
-    else if (HasInput)
-    {
-        if (Input)
-        {
-            ImGui::SameLine();
-            UseInput = true;
-            Input->RenderUI();
-        }
-        else
-        {
-            Input = NewInput(Init->InitText , Init->ID, Init->AfterInput, Init->InitialForm->Duplicate(), std::move(Init->LinkNode));
-        }
-    }
+
+    ImGui::SameLine();
+    ImGui::BeginGroup();
+    ImGui::PushID(Back.GetComponentID());
+    Back.RenderUI(IsWorkSpace);
+    ImGui::PopID();
+    ImGui::EndGroup();
 }
 
 
 
-void IBR_IniLine::CloseInput()
-{
-    if(Input)Input->AfterInput(Input->Form->GetFormattedString());
-    Input.reset();
-    HasInput = false;
-    UseInput = false;
-}
 
 
 extern const char* Internal_IniName;
@@ -304,7 +256,7 @@ namespace IBR_EditFrame
     bool Empty{ true };
     char EditBuf[100000];
     bool TextEditError{ false }, OnTextEdit{ false }, TextEditReset{ false };
-    std::unordered_map<StrPoolID, BufferedLine> EditLines;
+    std::unordered_map<StrPoolID, SidebarLine> EditLines;
     std::string NewLineKey, NewLineValue;
     
     void AFTER_INTERRUPT_F ResetEdit(IBB_Section* rsc)
@@ -320,7 +272,7 @@ namespace IBR_EditFrame
                 Line.Hint = V.Default->DescLong;
                 Line.LinkNode = V.Default->GetNodeSetting();
                 Line.OnShowBuf = rsc->GetOnShow(K);
-                Line.InputOnshow = false;
+                Line.InputOnShow = false;
                 Line.InputType = V.Default->GetInputTypeByValue(Line.Buffer);
             }
         }
@@ -396,22 +348,7 @@ namespace IBR_EditFrame
         IBR_Inst_Project.UpdateAll();
     }
 
-
-    void UpdateLine(StrPoolID Line, const std::string& NewValue)
-    {
-        if (Empty)return;
-        if (OnTextEdit)return;
-        auto it = EditLines.find(Line);
-        if (it != EditLines.end())
-        {
-            it->second.Buffer = NewValue;
-            auto& L = it->second;
-            if (L.Edit.Input && L.Edit.Input->Form)
-                L.Edit.Input->Form->ParseFromString(NewValue);
-        }
-    }
-
-    void AFTER_INTERRUPT_F Modify(StrPoolID s, BufferedLine& L)
+    void AFTER_INTERRUPT_F Modify(StrPoolID s, SidebarLine& L)
     {
         auto back = CurSection.GetBack();
         back->MergeLine(s, L.Buffer, IBB_IniMergeMode::Replace, false);
@@ -445,7 +382,7 @@ namespace IBR_EditFrame
                     if (pLine)
                     {
                         auto& Input = pLine->GetInputType();
-                        NewLineValue = Input.Sidebar->GetFormattedString();
+                        NewLineValue = Input.Form->GetFormattedString();
                     }
                 }
 
@@ -465,7 +402,7 @@ namespace IBR_EditFrame
             if (pLine)
             {
                 auto& Input = pLine->GetInputType();
-                auto& Str = Input.Sidebar->GetFormattedString();
+                auto& Str = Input.Form->GetFormattedString();
                 if (!Str.empty())
                 {
                     ImGui::TextDisabled(locc("GUI_UseInitialValue"), Str.c_str());
@@ -548,6 +485,40 @@ namespace IBR_EditFrame
         else TextEditReset = true;
     }
 
+    void RenderUI_OnShow(StrPoolID K, SidebarLine& V, IBB_Section* pbk)
+    {
+        ImGui::PushID(K);
+        if (ImGui::RadioButton("", pbk->IsOnShow(K), GlobalNodeStyle))
+        {
+            IBG_Undo.SomethingShouldBeHere();
+            if (pbk->OnShow[K].empty())pbk->OnShow[K] = EmptyOnShowDesc;
+            else pbk->OnShow[K].clear();
+        }
+        ImGui::PopID();
+
+        if (ImGui::IsItemClicked(ImGuiMouseButton_Right))
+        {
+            V.InputOnShow = !V.InputOnShow;
+        }
+
+        ImGui::SameLine();
+
+        if (V.InputOnShow)
+        {
+            ImGui::PushID(K);
+            bool Show = pbk->IsOnShow(K);
+            if (V.OnShowBuf == EmptyOnShowDesc)V.OnShowBuf = "";
+            auto Changed = InputTextStdString("", V.OnShowBuf);
+            if (Changed)
+            {
+                IBG_Undo.SomethingShouldBeHere();
+                if (Show && V.OnShowBuf.empty())pbk->OnShow[K] = EmptyOnShowDesc;
+                else pbk->OnShow[K] = V.OnShowBuf;
+            }
+            ImGui::PopID();
+        }
+    }
+
     void RenderUI_Lines(IBB_Section* pbk)
     {
         for (auto& K : pbk->LineOrder)
@@ -556,57 +527,12 @@ namespace IBR_EditFrame
             if (!EditLines.contains(K))continue;
 
             auto& V = EditLines.at(K);
+            RenderUI_OnShow(K, V, pbk);
 
-            ImGui::PushID(K);
-            if (ImGui::RadioButton("", pbk->IsOnShow(K), GlobalNodeStyle))
-            {
-                IBG_Undo.SomethingShouldBeHere();
-                if (pbk->OnShow[K].empty())pbk->OnShow[K] = EmptyOnShowDesc;
-                else pbk->OnShow[K].clear();
-            }
-            ImGui::PopID();
-
-            if (ImGui::IsItemClicked(ImGuiMouseButton_Right))
-            {
-                V.InputOnshow = !V.InputOnshow;
-            }
-
-            ImGui::SameLine();
-
-            if (V.InputOnshow)
-            {
-                ImGui::PushID(K);
-                bool Show = pbk->IsOnShow(K);
-                if (V.OnShowBuf == EmptyOnShowDesc)V.OnShowBuf = "";
-                auto Changed = InputTextStdString("", V.OnShowBuf);
-                if (Changed)
-                {
-                    IBG_Undo.SomethingShouldBeHere();
-                    if (Show && V.OnShowBuf.empty())pbk->OnShow[K] = EmptyOnShowDesc;
-                    else pbk->OnShow[K] = V.OnShowBuf;
-                }
-                ImGui::PopID();
-            }
-
-            auto KeyName = PoolStr(K);
-            if (V.Edit.NeedInit())
-            {
-                auto L = V.LinkNode;
-                IBR_IniLine::InitType It{ V.Buffer ,"##" + RandStr(8),[Str = K](const std::string& S)
-                         {
-                             IBG_Undo.SomethingShouldBeHere();
-                             EditLines[Str].Buffer = S;
-                             Modify(Str, EditLines[Str]);
-                         } ,
-                    V.InputType->Sidebar,
-                    std::move(L)};
-                V.Edit.RenderUI(KeyName, PoolDesc(V.Hint), &It);
-            }
-            else
-            {
-                if (V.Edit.HasInput)V.Edit.RenderUI(KeyName, PoolDesc(V.Hint));
-                else V.Edit.RenderUI(KeyName + " = " + V.Buffer, PoolDesc(V.Hint));
-            }
+            auto pLine = pbk->GetLineFromSubSecs(K);
+            if(pLine) V.RenderUI(PoolCStr(K), PoolDesc(V.Hint), *pLine);
+            else ImGui::TextColored(IBR_Color::IllegalLineColor, "%s", locc("GUI_MissingLineData"));
+           
         }
     }
 

@@ -189,7 +189,7 @@
     <ClInclude Include="IBB_Index.h" />
     <ClInclude Include="IBB_Components.h" />
     <ClInclude Include="IBB_Ini.h" />
-    <ClInclude Include="IBB_Ini_Derived.h" />
+    <ClInclude Include="IBB_IniLine.h" />
     <ClInclude Include="IBB_ModuleAlt.h" />
     <ClInclude Include="IBB_OutputFormat.h" />
     <ClInclude Include="IBB_OutputOrder.h" />

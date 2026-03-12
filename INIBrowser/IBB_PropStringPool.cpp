@@ -31,6 +31,11 @@ std::string IBB_PropStringPool::Get(StrPoolID ID) const
     if(ID == EmptyStrOffset) return "";
     return std::string(Pool.Get((DescPoolOffset)ID));
 }
+const char* IBB_PropStringPool::GetCStr(StrPoolID ID) const
+{
+    if (ID == EmptyStrOffset) return "";
+    return Pool.Get((DescPoolOffset)ID);
+}
 StrPoolID IBB_PropStringPool::Add(const std::string& Str)
 {
     if (Str.empty()) return EmptyStrOffset;

@@ -61,7 +61,7 @@ namespace IBB_DefaultRegType
 
         static std::string StrTypeJSON =
 R"({
-    "Type" : "Form",
+    "Type" : "Link",
     "Form" : {
         "Input" : [
             {"Type": "InputText", "ValueID": 0 }
@@ -73,7 +73,7 @@ R"({
 })";
         static std::string BoolTypeJSON =
 R"({
-    "Type" : "Form",
+    "Type" : "Bool",
     "Form" : {
         "Input" : [
             {"Type": "Bool", "ValueID": 0, "InitialValue": false, "Fmt": <DEFAULT_FORMAT> }

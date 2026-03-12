@@ -370,8 +370,6 @@ bool IBR_SectionData::RenderUI_Line(const std::string& OnShow, StrPoolID Name)
     if (OnShow.empty())return true;
 
     auto& Line = ActiveLines[Name];
-    bool HasInput{ false };
-    if (Line.Edit.Input)HasInput = true;
     auto back = GetBack_Inl();
     auto [line, idx] = back->GetLineFromSubSecsEx(Name);
     if (!line)
@@ -388,69 +386,36 @@ bool IBR_SectionData::RenderUI_Line(const std::string& OnShow, StrPoolID Name)
     LinkNodeContext::LineIndex = idx;
 
     const auto ShowInherit = [&]() {
-        auto it = ActiveLines.find(InheritKeyID());
-        if (it == ActiveLines.end()) return true;
-        auto& in = it->second.Edit.Input;
-        if (!in)return true;
-        auto& status = in->Form->GetComponentStatus();
-        if (status.empty())return true;
-        return status.front().InputMethod == IICStatus::Link;
-        };
+        return line->Data->FirstIsLink();
+    };
 
     const auto InheritStr = [&]() {
         auto& Q = back->Inherit;
         auto w = IBR_WorkSpace::ShowRegName ? UTF8toUnicode(Q) :
             (IBR_Inst_Project.HasSection({ Desc.Ini, Q }) ? UTF8toUnicode(IBR_Inst_Project.GetSection({ Desc.Ini, Q }).GetDisplayName()) : UTF8toUnicode(Q));
         std::wstring Nul;
-        if (w.empty()) return std::make_pair(loc("GUI_NoInherit"), loc("GUI_NoInherit"));
-        else return std::make_pair(loc("GUI_InheritFrom"), UnicodetoUTF8(std::vformat(locw("GUI_InheritFrom"), std::make_wformat_args(ShowInherit() ? w : Nul))));
+        if (w.empty()) return loc("GUI_NoInherit");
+        else return UnicodetoUTF8(std::vformat(locw("GUI_InheritFrom"), std::make_wformat_args(ShowInherit() ? w : Nul)));
         };
 
     auto DescLong = PoolDesc(line->Default->DescLong);
-    std::string DescShort;
-    std::string DescShort2;
 
+    ExportContext::Key = Name;
     if (Name == InheritKeyID())
     {
-        std::tie(DescShort2, DescShort) = InheritStr();
+        auto DescShort = InheritStr();
+        Line.RenderUI(DescShort.c_str(), DescLong, *line);
     }
     else if (!IBR_WorkSpace::ShowRegName)
     {
         if (OnShow == EmptyOnShowDesc)
-            DescShort = DescShort2 = PoolDesc(line->Default->DescShort);
-        else DescShort = DescShort2 = OnShow;
+            Line.RenderUI(PoolDesc(line->Default->DescShort), DescLong, *line);
+        else Line.RenderUI(OnShow.c_str(), DescLong, *line);
     }
-    else DescShort = DescShort2 = PoolStr(Name);
-
-    float Width = ImGui::CalcTextSize(DescShort2.c_str()).x;
-    const float ReservedWidth = FontHeight * 5.0f;
-    WidthFix = std::max(WidthFix, Width + ReservedWidth);
-
-    ExportContext::Key = Name;
-    if (Line.Edit.NeedInit())
-    {
-        auto Value = line->Data->GetString();
-        auto& Input = *line->Default->GetInputTypeByValue(Value);
-        //SYNC : WORKSPACE -> EDIT MENU
-        IBR_IniLine::InitType It{ Value ,
-            "##" + RandStr(8),[Name, idx = IBB_Project_Index(this->Desc)](const std::string& S)
-                {
-                    IBG_Undo.SomethingShouldBeHere();
-                    auto Back = idx.GetSec(IBF_Inst_Project.Project);
-                    if (!Back)return;
-                    Back->MergeLine(Name, S, IBB_IniMergeMode::Replace);
-                },
-            Input.WorkSpace,//内部会Duplicate一次，此处不需要
-            line->Default->GetNodeSetting()
-        };
-        Line.Edit.RenderUI(DescShort, DescLong, &It);
-    }
-    else
-    {
-        Line.Edit.RenderUI(DescShort, DescLong);
-    }
+    else Line.RenderUI(PoolCStr(Name), DescLong, *line);
     ExportContext::Key = EmptyPoolStr;
-    return PoolStr(line->Default->TypeAlt).empty() ? true : HasInput;
+
+    return true;
 }
 
 void IBR_SectionData::RenderUI_Acceptor(float LastFinalY)

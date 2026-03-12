@@ -1,7 +1,8 @@
-﻿#include "IBB_Ini_Derived.h"
+﻿#include "IBB_IniLine.h"
 #include "Global.h"
 #include <ranges>
 #include "IBB_RegType.h"
+#include "IBG_InputType_Derived.h"
 
 namespace ExportContext
 {
@@ -47,6 +48,27 @@ std::string DecodeListForExport(const std::string& Val)
     }
 }
 
+std::string GetExportString(const std::string& StrValue)
+{
+    const std::string& Delim = ",";
+    return StrValue |
+        std::views::split(Delim) |
+        std::views::transform([](const auto& subrange) -> std::string {
+        if (subrange.empty()) return "";
+        return
+            DecodeListForExport(
+                std::string(
+                    TrimView(
+                        std::string_view(
+                            &*subrange.begin(), std::ranges::distance(subrange)
+                        )
+                    )
+                )
+            );
+            }) |
+        std::views::join_with(Delim) |
+                std::ranges::to<std::string>();
+}
 
 
 /*
@@ -306,33 +328,103 @@ bool IBB_IniLine_Data_String::Clear()
     Value.clear();
     return true;
 }
+
+bool IBB_IniLine_Data_String::FirstIsLink() const
+{
+    return Status_Workspace.InputMethod == IICStatus::Link;
+}
 std::string IBB_IniLine_Data_String::GetStringForExport() const
 {
-
-    const std::string& Delim = ",";
-    return GetString() |
-        std::views::split(Delim) |
-        std::views::transform([](const auto& subrange) -> std::string {
-        if (subrange.empty()) return "";
-        return
-            DecodeListForExport(
-                std::string(
-                    TrimView(
-                        std::string_view(
-                            &*subrange.begin(), std::ranges::distance(subrange)
-                        )
-                    )
-                )
-            );
-            }) |
-        std::views::join_with(Delim) |
-                std::ranges::to<std::string>();
+    return GetExportString(GetString());
+}
+void IBB_IniLine_Data_String::RenderUI(IBB_IniLine_Default* Default, const LinkNodeSetting& LinkNode, bool IsWorkspace)
+{
+    auto& Form = Default->GetInputType().Form;
+    Status_Sidebar.InputMethod = IICStatus::Input;
+    auto& Status = IsWorkspace ? Status_Workspace : Status_Sidebar;
+    //Form->SetInWorkSpace(IsWorkspace);
+    //IIC_InputText* test;
+    //test->RenderUI()
 }
 
+// ---------------------------------------------------------------
+// -------------------- IBB_IniLine_Data_Bool --------------------
+// ---------------------------------------------------------------
+
+void RenderIICBool(IIC_Bool* pBool, bool& Val);
+
+bool IBB_IniLine_Data_Bool::SetValue(const std::string& Val)
+{
+    Value = IsTrueString(Val);
+}
+bool IBB_IniLine_Data_Bool::MergeValue(const std::string& Val) { return SetValue(Val); }
+bool IBB_IniLine_Data_Bool::Clear()
+{
+    _Empty = true;
+    Value = false;
+    return true;
+}
+void IBB_IniLine_Data_Bool::RenderUI(IBB_IniLine_Default* Default, const LinkNodeSetting& LinkNode, bool IsWorkspace)
+{
+    auto& Form = Default->GetInputType().Form;
+    Form->SetInWorkSpace(IsWorkspace);
+    auto pBool = dynamic_cast<IIC_Bool*>(Form->InputComponents->at(0).get());
+    Type = pBool->FmtType;
+    RenderIICBool(pBool, Value);
+}
+bool IBB_IniLine_Data_Bool::FirstIsLink() const
+{
+    return false;
+}
+std::string IBB_IniLine_Data_Bool::GetString() const
+{
+    return StrBoolImpl(Value, Type);
+}
+std::string IBB_IniLine_Data_Bool::GetStringForExport() const
+{
+    return GetString();
+}
+
+// ---------------------------------------------------------------
+// -------------------- IBB_IniLine_Data_IIF ---------------------
+// ---------------------------------------------------------------
+
+IBB_IniLine_Data_IIF::IBB_IniLine_Data_IIF(const IBB_IniLine_Default* Default)
+    : Value(Default->GetInputType().Form->Duplicate())
+{}
 
 
+bool IBB_IniLine_Data_IIF::SetValue(const std::string& Val)
+{
+    Value->ParseFromString(Val);
+    return true;
+}
+bool IBB_IniLine_Data_IIF::MergeValue(const std::string& Val) { return SetValue(Val); }
+bool IBB_IniLine_Data_IIF::Clear()
+{
+    Value->ResetState();
+    return true;
+}
+void IBB_IniLine_Data_IIF::RenderUI(IBB_IniLine_Default* Default, const LinkNodeSetting& LinkNode, bool IsWorkspace)
+{
+    Value->SetInWorkSpace(IsWorkspace);
+    Value->RenderUI(LinkNode);
+}
 
-
+bool IBB_IniLine_Data_IIF::FirstIsLink() const
+{
+    auto& status = Value->GetComponentStatus();
+    if (status.empty())return true;
+    return status.front().InputMethod == IICStatus::Link;
+}
+std::string IBB_IniLine_Data_IIF::GetString() const
+{
+    return Value->GetFormattedString();
+}
+std::string IBB_IniLine_Data_IIF::GetStringForExport() const
+{
+    return GetExportString(GetString());
+}
 
 // ---------------------------------------------------------------
 // --------------------- IBB_IniLine_Default ---------------------
@@ -340,7 +432,8 @@ std::string IBB_IniLine_Data_String::GetStringForExport() const
 
 LineData IBB_IniLine_Default::Create() const
 {
-    return std::make_shared<IBB_IniLine_Data_String>();
+    //return std::make_shared<IBB_IniLine_Data_String>();
+    return std::make_shared<IBB_IniLine_Data_IIF>(this);
 }
 
 const IBB_RegType& IBB_IniLine_Default::GetRegType() const
@@ -454,7 +547,7 @@ void IBB_IniLine::MakeKVForExport(IBB_VariableList& vl, IBB_Section* AtSec, std:
     auto& input = Default->GetInputType();
     auto key = PoolStr(Default->Name);
 
-    auto IIF = Default->GetInputType().Sidebar->Duplicate();
+    auto IIF = Default->GetInputType().Form->Duplicate();
     auto Str = Data->GetString();
     IIF->ParseFromString(Str);
     ExportContext::OnExport = true;
@@ -469,4 +562,23 @@ IBB_IniLine::IBB_IniLine(IBB_IniLine&& F) noexcept
 {
     if (EnableLogEx) { GlobalLogB.AddLog_CurTime(false); GlobalLogB.AddLog("IBB_IniLine : Move Ctor"); }
     Default = F.Default; Data = F.Data;
+}
+
+void IBB_IniLine::RenderUI(const LinkNodeSetting& LinkNode, bool IsWorkspace)
+{
+    if (!Default)
+    {
+        ImGui::TextColored(IBR_Color::IllegalLineColor, "%s", locc("GUI_MissingLineDefault"));
+        return;
+    }
+    Data->RenderUI(Default, LinkNode, IsWorkspace);
+}
+void IBB_IniLine::RenderUI(bool IsWorkspace)
+{
+    if (!Default)RenderUI(LinkNodeSetting{}, IsWorkspace);
+    else RenderUI(Default->GetNodeSetting(), IsWorkspace);
+}
+const void* IBB_IniLine::GetComponentID()
+{
+    return Data.get();
 }

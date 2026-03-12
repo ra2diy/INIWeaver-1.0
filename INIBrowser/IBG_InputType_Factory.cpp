@@ -543,33 +543,23 @@ bool IBG_InputType::Load(const JsonObject& Obj)
     auto TypeStr = Obj.ItemStringOr("Type", "Form");
     if (TypeStr == "Link")
         Type = IBG_InputType::Link;
+    else if (TypeStr == "Bool")
+        Type = IBG_InputType::Bool;
     else if (TypeStr == "Form")
-        Type = IBG_InputType::Form;
+        Type = IBG_InputType::IIF;
     else
         return false;
 
     //if (Type == IBG_InputType::Link)
     //    return true;
 
-    auto oSidebar = Obj.GetObjectItem("Sidebar");
-    if (!oSidebar)
-        oSidebar = Obj.GetObjectItem("Form");
-    if (!oSidebar)
+    auto oForm = Obj.GetObjectItem("Form");
+    if (!oForm)
         return false;
 
-    auto oWorkSpace = Obj.GetObjectItem("WorkSpace");
-    if (!oWorkSpace)
-        oWorkSpace = Obj.GetObjectItem("Form");
-    if (!oWorkSpace)
-        return false;
+    Form.reset(new IBG_InputForm());
 
-    Sidebar.reset(new IBG_InputForm());
-    WorkSpace.reset(new IBG_InputForm());
-
-    bool Ret1 = Sidebar->Load(oSidebar);
-    bool Ret2 = WorkSpace->Load(oWorkSpace);
-
-    WorkSpace->EnableLinkNode();
+    bool Ret1 = Form->Load(oForm);
 
     auto oFormatter = Obj.GetObjectItem("ExportMode");
     if (oFormatter)
@@ -577,7 +567,7 @@ bool IBG_InputType::Load(const JsonObject& Obj)
     else
         KVFmt = KVFormatter::Default();
 
-    return Ret1 && Ret2;
+    return Ret1;
 }
 
 IICDescStr IICDescStr::Load(JsonObject Obj)
