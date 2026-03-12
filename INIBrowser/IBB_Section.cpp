@@ -435,29 +435,6 @@ std::vector<std::pair<size_t, size_t>> IBB_Section::GetRegisteredPositionAlt() c
     return Ret;
 }
 
-IIFWrapper_Wrapper IBB_Section::GetNewLineIIF(StrPoolID Key) const
-{
-    auto NewIIF = [&]() -> IIFWrapper {
-        auto pLine = GetLineFromSubSecs(Key);
-        if (pLine)
-        {
-            if (pLine->Default)
-            {
-                auto& piif = pLine->Default->GetInputType().Form;
-                if (piif) {
-                    auto dup = piif->Duplicate();
-                    dup->ParseFromString(pLine->Data->GetString());
-                    return dup;
-                }
-                else return std::monostate{};
-            }
-            else return std::monostate{};
-        }
-        else return std::monostate{};
-        };
-    return { NewIIF() };
-}
-
 
 bool IBB_Section::HasLine(StrPoolID Key) const
 {

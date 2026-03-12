@@ -70,6 +70,27 @@ std::string GetExportString(const std::string& StrValue)
                 std::ranges::to<std::string>();
 }
 
+const std::vector<std::string>& SplitParamCached(const std::string& Text);
+std::string ReplaceList(const std::string& Value, const std::string& OldName, const std::string& NewName)
+{
+    return SplitParamCached(Value) |
+        std::views::filter([&](auto&& s) {return !s.empty(); }) |
+        std::views::transform([&](auto& s) { return (s == OldName) ? NewName : s; }) |
+        std::views::filter([&](auto&& s) {return !s.empty(); }) |
+        std::views::join_with(',') |
+        std::ranges::to<std::string>();
+}
+void TakeByLinkLimit(std::string& Value, int LinkLimit)
+{
+    if (LinkLimit == -1 || LinkLimit == 0)return;
+    auto& spc = SplitParamCached(Value);
+    if ((int)spc.size() <= LinkLimit) return;
+    if (LinkLimit == 1)Value = spc.back();
+    Value = spc |
+        std::views::take(LinkLimit) |
+        std::views::join_with(',') |
+        std::ranges::to<std::string>();
+}
 
 /*
 ValidateResult IBB_IniLine::ValidateValue() const
@@ -315,6 +336,24 @@ struct IBB_IniLine_Data_Double : public IBB_IniLine_Data_Base
 // ------------------- IBB_IniLine_Data_String -------------------
 // ---------------------------------------------------------------
 
+IBB_UpdateResult RenderIICInputText(
+    IIC_InputText* pIn,
+    IICStatus& Status,
+    std::string& InitialValue,
+    const LinkNodeSetting& LinkNode,
+    const std::function<IBB_UpdateResult(const std::string& NewValue, bool Active)>& ModifyFunc
+);
+
+IBB_IniLine_Data_String::IBB_IniLine_Data_String(const IBG_InputType& inp)
+{
+    auto& Form = inp.Form;
+    auto& Components = Form->InputComponents;
+    if (Components->empty())return;
+    auto pText = dynamic_cast<IIC_InputText*>(Components->at(0).get());
+    if (!pText)return;
+    Status_Workspace = pText->InitialStatus;
+}
+
 bool IBB_IniLine_Data_String::SetValue(const std::string& Val)
 {
     Value = Val;
@@ -342,9 +381,35 @@ void IBB_IniLine_Data_String::RenderUI(IBB_IniLine_Default* Default, const LinkN
     auto& Form = Default->GetInputType().Form;
     Status_Sidebar.InputMethod = IICStatus::Input;
     auto& Status = IsWorkspace ? Status_Workspace : Status_Sidebar;
-    //Form->SetInWorkSpace(IsWorkspace);
-    //IIC_InputText* test;
-    //test->RenderUI()
+    auto& Components = Form->InputComponents;
+    if (Components->empty())return;
+    auto pText = dynamic_cast<IIC_InputText*>(Components->at(0).get());
+    if (!pText)return;
+
+    if(LinkNodeContext::CurLineChangeCompStatus && IsWorkspace)
+    {
+        if (Status.InputMethod == IICStatus::Link)Status.InputMethod = IICStatus::Input;
+        else if (Status.InputMethod == IICStatus::Input)Status.InputMethod = IICStatus::Link;
+    }
+    LinkNodeContext::CompIndex = 0;
+
+    auto Result = RenderIICInputText(pText, Status, Value, LinkNode,
+        [&](const std::string& NewValue, bool Active) {
+            SetValue(NewValue);
+            TakeByLinkLimit(Value, LinkNode.LinkLimit);
+            return IBB_UpdateResult{ true, Active, 0 };
+    });
+
+    LinkNodeContext::CompIndex = UINT_MAX;
+    IBR_LinkNode::UpdateLink(*LinkNodeContext::CurSub, LinkNodeContext::LineIndex, 0, nullptr);
+
+    if (Result.Updated)
+        LinkNodeContext::CurSub->UpdateAll();
+}
+void IBB_IniLine_Data_String::Replace(size_t CompIdx, const std::string& OldName, const std::string& NewName)
+{
+    if (CompIdx != 0) return;
+    Value = ReplaceList(Value, OldName, NewName);
 }
 
 // ---------------------------------------------------------------
@@ -353,9 +418,24 @@ void IBB_IniLine_Data_String::RenderUI(IBB_IniLine_Default* Default, const LinkN
 
 void RenderIICBool(IIC_Bool* pBool, bool& Val);
 
+StrBoolType GetTypeFromInput(const IBG_InputType& inp)
+{
+    auto& Form = inp.Form;
+    auto& Components = Form->InputComponents;
+    if (Components->empty())return IBB_DefaultRegType::GetDefaultStrBoolType();
+    auto pBool = dynamic_cast<IIC_Bool*>(Components->at(0).get());
+    if (pBool)return pBool->FmtType;
+    else return IBB_DefaultRegType::GetDefaultStrBoolType();
+}
+
+IBB_IniLine_Data_Bool::IBB_IniLine_Data_Bool(const IBG_InputType& inp)
+    : Type(GetTypeFromInput(inp))
+{ }
+
 bool IBB_IniLine_Data_Bool::SetValue(const std::string& Val)
 {
     Value = IsTrueString(Val);
+    return true;
 }
 bool IBB_IniLine_Data_Bool::MergeValue(const std::string& Val) { return SetValue(Val); }
 bool IBB_IniLine_Data_Bool::Clear()
@@ -366,9 +446,13 @@ bool IBB_IniLine_Data_Bool::Clear()
 }
 void IBB_IniLine_Data_Bool::RenderUI(IBB_IniLine_Default* Default, const LinkNodeSetting& LinkNode, bool IsWorkspace)
 {
+    IM_UNUSED(LinkNode);
     auto& Form = Default->GetInputType().Form;
     Form->SetInWorkSpace(IsWorkspace);
-    auto pBool = dynamic_cast<IIC_Bool*>(Form->InputComponents->at(0).get());
+    auto& Components = Form->InputComponents;
+    if (Components->empty())return;
+    auto pBool = dynamic_cast<IIC_Bool*>(Components->at(0).get());
+    if (!pBool)return;
     Type = pBool->FmtType;
     RenderIICBool(pBool, Value);
 }
@@ -383,6 +467,10 @@ std::string IBB_IniLine_Data_Bool::GetString() const
 std::string IBB_IniLine_Data_Bool::GetStringForExport() const
 {
     return GetString();
+}
+void IBB_IniLine_Data_Bool::Replace(size_t, const std::string&, const std::string&)
+{
+    //DO NOTHING
 }
 
 // ---------------------------------------------------------------
@@ -407,8 +495,11 @@ bool IBB_IniLine_Data_IIF::Clear()
 }
 void IBB_IniLine_Data_IIF::RenderUI(IBB_IniLine_Default* Default, const LinkNodeSetting& LinkNode, bool IsWorkspace)
 {
+    IM_UNUSED(Default);
     Value->SetInWorkSpace(IsWorkspace);
-    Value->RenderUI(LinkNode);
+    auto Result = Value->RenderUI(LinkNode);
+    if (Result.Changed)
+        LinkNodeContext::CurSub->UpdateAll();
 }
 
 bool IBB_IniLine_Data_IIF::FirstIsLink() const
@@ -425,6 +516,15 @@ std::string IBB_IniLine_Data_IIF::GetStringForExport() const
 {
     return GetExportString(GetString());
 }
+void IBB_IniLine_Data_IIF::Replace(size_t CompIdx, const std::string& OldName, const std::string& NewName)
+{
+    auto& iic = (*Value->InputComponents)[CompIdx];
+    auto vid = iic->GetCurrentTargetValueID();
+    //没有值，跳过
+    if (!Value->GetValues().Values.contains(vid)) return;
+    Value->GetValue(vid).Value = ReplaceList(Value->GetValue(vid).Value, OldName, NewName);
+    Value->RegenFormattedString();
+}
 
 // ---------------------------------------------------------------
 // --------------------- IBB_IniLine_Default ---------------------
@@ -432,7 +532,9 @@ std::string IBB_IniLine_Data_IIF::GetStringForExport() const
 
 LineData IBB_IniLine_Default::Create() const
 {
-    //return std::make_shared<IBB_IniLine_Data_String>();
+    auto FormType = GetInputType().Type;
+    if (FormType == IBG_InputType::Bool)return std::make_shared<IBB_IniLine_Data_Bool>(GetInputType());
+    if (FormType == IBG_InputType::Link)return std::make_shared<IBB_IniLine_Data_String>(GetInputType());
     return std::make_shared<IBB_IniLine_Data_IIF>(this);
 }
 

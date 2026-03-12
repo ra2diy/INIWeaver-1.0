@@ -183,11 +183,6 @@ public:
     void SetValues(IBB_ValueContainer&& Cont) { ValueContainer = std::move(Cont); }
 };
 
-using IIFWrapper = std::variant< IIFPtr, IIFPtr*, std::monostate >;
-struct IIFWrapper_Wrapper
-{
-    IIFWrapper _;
-};
 
 
 struct IBG_InputType

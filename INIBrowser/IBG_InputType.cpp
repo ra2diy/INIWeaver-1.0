@@ -1030,6 +1030,34 @@ IIC_InputText::IIC_InputText(IBB_ValueContainer& Cont, int valueid, const std::s
     Val.NeedsUpdate(Cont, *this);
 }
 
+IBB_UpdateResult RenderIICInputText(
+    IIC_InputText* pIn,
+    IICStatus& Status,
+    std::string& InitialValue,
+    const LinkNodeSetting& LinkNode,
+    const std::function<IBB_UpdateResult(const std::string& NewValue, bool Active)>& ModifyFunc
+)
+{
+    if (Status.InputMethod == IICStatus::Link)
+    {
+        IBB_UpdateResult def = { false, false, -1 };
+        return IBR_LinkNode::RenderUI_Node(pIn->Hint.Short, pIn->Hint.Long, def, LinkNode, ModifyFunc);
+    }
+    else
+    {
+        //auto Size = ImGui::CalcTextSize(Hint.c_str(), NULL, true);
+        //ImGui::SetNextItemWidth(ImGui::GetWindowContentRegionWidth() - ImGui::GetCursorPosX() - Size.x);
+        auto Changed = InputTextStdString(pIn->Hint.Short.c_str(), InitialValue);
+        if (ImGui::IsItemHovered())IBR_ToolTip(pIn->Hint.Long);
+
+
+        auto Active = ImGui::IsItemActive();
+        if (Changed)return ModifyFunc(InitialValue, Active);
+        else return { false, Active, -1 };
+
+    }
+}
+
 IBB_UpdateResult IIC_InputText::RenderUI(IBB_ValueContainer& Cont, IICStatus& Status)
 {
     auto& Var = Cont.GetValue(ValueID);
@@ -1040,28 +1068,10 @@ IBB_UpdateResult IIC_InputText::RenderUI(IBB_ValueContainer& Cont, IICStatus& St
             else Var.ResetState<IIS_String>(NewValue);
             return { true, Active, vid };
         };
+    static const IBB_InputFormat Fmt = { IBB_InputFormat::ToString, "" };
+    auto CurrentValue = Var.Dirty ? Var.StateValPtr->Format(Fmt) : Var.Value;
 
-    if (Status.InputMethod == IICStatus::Link)  
-    {
-        IBB_UpdateResult def = { false, false, -1 };
-        return IBR_LinkNode::RenderUI_Node(Hint.Short, Hint.Long, def, NodeSetting, mf);
-    }
-    else
-    {
-        static const IBB_InputFormat Fmt = { IBB_InputFormat::ToString, "" };
-        auto CurrentValue = Var.Dirty ? Var.StateValPtr->Format(Fmt) : Var.Value;
-
-        //auto Size = ImGui::CalcTextSize(Hint.c_str(), NULL, true);
-        //ImGui::SetNextItemWidth(ImGui::GetWindowContentRegionWidth() - ImGui::GetCursorPosX() - Size.x);
-        auto Changed = InputTextStdString(Hint.Short.c_str(), CurrentValue);
-        if(ImGui::IsItemHovered())IBR_ToolTip(Hint.Long);
-            
-
-        auto Active = ImGui::IsItemActive();
-        if (Changed)return mf(CurrentValue, Active);
-        else return { false, Active, -1 };
-        
-    }
+    return RenderIICInputText(this, Status, CurrentValue, NodeSetting, mf);
 }
 
 std::string IIC_InputText::FormatValue(IBB_ValueContainer& Cont, IBB_InputValue& Val, const IBB_InputFormat& Format)

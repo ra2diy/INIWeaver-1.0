@@ -436,6 +436,10 @@ R"({
             "_AnyType", -1, DefaultNodeColor
         };
     }
+    StrBoolType GetDefaultStrBoolType()
+    {
+        return DefaultStrBoolType;
+    }
     IBG_InputType& SelectInputTypeByValue(const _TEXT_UTF8 std::string& Value)
     {
         if (AcceptStrAsBool(Value.c_str(), DefaultStrBoolType))

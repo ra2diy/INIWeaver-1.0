@@ -529,8 +529,13 @@ namespace IBR_EditFrame
             auto& V = EditLines.at(K);
             RenderUI_OnShow(K, V, pbk);
 
-            auto pLine = pbk->GetLineFromSubSecs(K);
-            if(pLine) V.RenderUI(PoolCStr(K), PoolDesc(V.Hint), *pLine);
+            auto [pLine, pSub] = pbk->GetLineFromSubSecsEx2(K);
+            if (pLine)
+            {
+                LinkNodeContext::CurSub = pSub;
+                V.RenderUI(PoolCStr(K), PoolDesc(V.Hint), *pLine);
+                LinkNodeContext::CurSub = nullptr;
+            }
             else ImGui::TextColored(IBR_Color::IllegalLineColor, "%s", locc("GUI_MissingLineData"));
            
         }

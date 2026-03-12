@@ -6,6 +6,7 @@
 #include "IBB_RegType.h"
 #include <imgui_internal.h>
 #include <ranges>
+#include "IBB_IniLine.h"
 
 extern const char* Internal_IniName;
 
@@ -187,29 +188,11 @@ bool IBB_SubSec::RenameInLinkTo(size_t LinkIdx, const std::string& OldName, cons
             size_t LineIdx = (size_t)l;
             size_t CompIdx = (size_t)c;
             auto& Key = Lines_ByName[LineIdx];
-            auto&& wp = Root->GetNewLineIIF(Key);
-            auto& wpw = wp._;
-            //获取失败，跳过
-            if (std::holds_alternative<std::monostate>(wpw))
-                continue;
-            auto& iif = std::holds_alternative<IIFPtr>(wpw) ? std::get<0>(wpw) : *std::get<1>(wpw);
-            auto& iic = (*iif->InputComponents)[CompIdx];
-            auto vid = iic->GetCurrentTargetValueID();
-            //没有值，跳过
-            if (!iif->GetValues().Values.contains(vid)) continue;
-
-            iif->GetValue(vid).Value = SplitParamCached(iif->GetValue(vid).Value) |
-                std::views::filter([&](auto&& s) {return !s.empty(); }) |
-                std::views::transform([&](auto& s) { return (s == OldName) ? NewName : s; }) |
-                std::views::filter([&](auto&& s) {return !s.empty(); }) |
-                std::views::join_with(',') |
-                std::ranges::to<std::string>();
-
-            auto& NewVal = iif->RegenFormattedString();
-
-            Ret &= Root->MergeLine(Key, NewVal, IBB_IniMergeMode::Replace, true);
+            auto& line = Lines.find(Key)->second;
+            line.Data->Replace(CompIdx, OldName, NewName);
         }
     }
+    UpdateAll();
     return Ret;
 }
 
@@ -248,27 +231,12 @@ bool IBB_SubSec::UpdateAll()
     {
         auto& Line = Lines[L];
         if (!Line.Default)continue;
+        auto& KeyName = L;
 
-        auto wpw = Root->GetNewLineIIF(L);
-        auto& wp = wpw._;
-        if (std::holds_alternative<std::monostate>(wp))
-            continue;
-        else
+        if (auto pd = Line.GetData<IBB_IniLine_Data_IIF>(); pd)
         {
-            IIFPtr* piif;
-            if (std::holds_alternative<IIFPtr>(wp))
-                piif = &std::get<0>(wp);
-            else
-                piif = std::get<1>(wp);
-            auto& iif = *piif;
+            auto& iif = pd->Value;
 
-            if (!iif)
-            {
-                Ret = false;
-                continue;
-            }
-
-            auto& KeyName = L;
             auto ldd = Line.Default && IBB_DefaultRegType::HasRegType(PoolStr(Line.Default->TypeAlt));
             std::set<std::pair<int, int>> SelectValues;
 
@@ -277,13 +245,13 @@ bool IBB_SubSec::UpdateAll()
             {
                 if (!iic->SupportLinks())continue;
                 auto id = iic->GetCurrentTargetValueID();
-                if(ldd)
+                if (ldd)
                     SelectValues.insert({ id, i });
                 else if (iic->UseCustomSetting)//确实是常驻的Node
                     SelectValues.insert({ id, i });
-                else if(iic->InitialStatus.InputMethod == IICStatus::Link)
+                else if (iic->InitialStatus.InputMethod == IICStatus::Link)
                     SelectValues.insert({ id, i });
-                else if(iif->GetComponentStatus()[i].InputMethod == IICStatus::Link)
+                else if (iif->GetComponentStatus()[i].InputMethod == IICStatus::Link)
                     SelectValues.insert({ id, i });
                 i++;
             }
@@ -295,7 +263,7 @@ bool IBB_SubSec::UpdateAll()
             {
                 if (!val.Values.contains(id))continue;
                 auto& V = val.Values[id];
-                
+
                 auto& piic = iif->InputComponents->at(cidx);
                 auto LinkLimit = piic->UseCustomSetting ? piic->NodeSetting.LinkLimit : DefaultLinkLimit;
                 auto& spc = SplitParamCached(V.Value);
@@ -333,10 +301,28 @@ bool IBB_SubSec::UpdateAll()
                             Col
                         );
                     }
-                
 
-                
+
+
                 //GlobalLogB.AddLog("");
+            }
+        }
+        if (auto pd = Line.GetData<IBB_IniLine_Data_String>(); pd)
+        {
+            auto& spc = SplitParamCached(pd->Value);
+            for (auto&& str : spc)
+            {
+                auto& IniType = Line.Default->GetIniType();
+                auto toidx = IBF_Inst_Project.Project.GetSecIndex(str, IniType);
+                if (toidx.Empty())continue;//目标不存在，跳过
+                ClaimLink(LineIdx, 0, NewLT.size());
+                ImU32 Col = (Line.Default ? Line.Default->Color : (ImU32)IBB_DefaultRegType::GetDefaultNodeColor());
+                NewLT.emplace_back(
+                    Root->GetThisIndex(),
+                    toidx,
+                    KeyName,
+                    Col
+                );
             }
         }
     }

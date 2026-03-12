@@ -19,7 +19,6 @@ struct IBB_RegType;
 struct IBG_InputType;
 enum class ValidateResult;
 using LineData = std::shared_ptr<IBB_IniLine_Data_Base>;
-struct IIFWrapper_Wrapper;
 struct IBB_SubSec_Default;
 
 enum class IBB_IniMergeMode
@@ -77,12 +76,13 @@ struct IBB_IniLine_Data_Base
 
     virtual bool SetValue(const std::string&) = 0;
     virtual bool MergeValue(const std::string&) = 0;
-    virtual std::string GetString() const = 0;
-    virtual std::string GetStringForExport() const = 0;
     virtual bool Clear() = 0;
     virtual void RenderUI(IBB_IniLine_Default* Default, const LinkNodeSetting& LinkNode, bool IsWorkspace) = 0;
+    virtual void Replace(size_t CompIdx, const std::string& OldName, const std::string& NewName) = 0;
 
     virtual bool FirstIsLink() const = 0;
+    virtual std::string GetString() const = 0;
+    virtual std::string GetStringForExport() const = 0;
 
     IBB_IniLine_Data_Base() {}
     virtual ~IBB_IniLine_Data_Base() {}
@@ -230,7 +230,6 @@ struct IBB_Section
     std::string GetTextForEdit() const;
     std::vector<size_t> GetRegisteredPosition() const;//Project的RegList序号
     std::vector<std::pair<size_t, size_t>> GetRegisteredPositionAlt() const;//pair<Project的RegList序号,RegList的Sec*序号>
-    IIFWrapper_Wrapper GetNewLineIIF(StrPoolID Key) const;
     bool IsComment() const { return CreateAsCommentBlock || !Comment.empty(); }
     bool HasLine(StrPoolID Key) const;
     bool IsOnShow(StrPoolID Key) const;
