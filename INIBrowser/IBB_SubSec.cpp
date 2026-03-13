@@ -192,7 +192,6 @@ bool IBB_SubSec::RenameInLinkTo(size_t LinkIdx, const std::string& OldName, cons
             line.Data->Replace(CompIdx, OldName, NewName);
         }
     }
-    UpdateAll();
     return Ret;
 }
 

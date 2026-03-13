@@ -200,6 +200,7 @@ struct IBR_Project
     {
         IBB_SectionID Dest;
         uint64_t SourceID;
+        ModuleID_t SrcModuleID;
         ImU32 Color;
         bool FromImport;
         bool IsSelfLinked;

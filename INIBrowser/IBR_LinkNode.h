@@ -51,6 +51,7 @@ namespace IBR_NodeSession
         std::string ValueToMerge;
         std::vector<SessionLinkList> LinkList;
         ImVec2 LastCenter;
+        bool Collapsed;
 
         void Renew()
         {
@@ -74,8 +75,8 @@ namespace IBR_NodeSession
 
     uint64_t GetSessionIdx(const std::string& Ini, const std::string& Sec, const std::string& Sub, size_t Line, size_t Comp);
     uint64_t GetSessionIdx(IBB_SectionID SecID, const std::string& Sub, size_t Line, size_t Comp);
-    ImVec2 GetSessionBeginR(uint64_t SessionID);
-    void SetSessionBeginR(uint64_t SessionID, ImVec2 Center);
+    SessionValue& GetSessionValue(uint64_t SessionID);
+    void SetSessionStatus(uint64_t SessionID, ImVec2 Center, bool Collapsed);
 }
 
 namespace IBR_LinkNode
@@ -111,6 +112,7 @@ namespace IBR_LinkNode
         ImU32 LineCol,
         bool FromImport,
         bool SelfLink,
+        bool Collapsed,
         bool SrcDragging = false
     );
 

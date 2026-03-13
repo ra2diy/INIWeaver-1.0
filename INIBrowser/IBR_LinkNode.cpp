@@ -145,6 +145,17 @@ namespace IBR_NodeSession
     {
         SessionData[SessionID].LastCenter = Center;
     }
+    bool GetSessionCollapsed(uint64_t SessionID)
+    {
+        return SessionData[SessionID].Collapsed;
+    }
+
+    void SetSessionStatus(uint64_t SessionID, ImVec2 Center, bool Collapsed)
+    {
+        auto& Sess = SessionData[SessionID];
+        Sess.LastCenter = Center;
+        Sess.Collapsed = Collapsed;
+    }
 
     size_t SourceNodeKey::ID() const
     {
@@ -231,8 +242,7 @@ namespace IBR_LinkNode
         auto SessID = IBR_NodeSession::GetSessionIdx(
             SecID, FromSub.Default->Name, LineIdx, CompIdx
         );
-        auto& Session = IBR_NodeSession::GetSessionValue(SessID);
-        Session.LastCenter = Center;
+        IBR_NodeSession::SetSessionStatus(SessID, Center, false);
         PushIdx(LineIdx, CompIdx, Pushed);
         if (!IBR_Inst_Project.RefreshLinkList) return;
 
@@ -250,13 +260,14 @@ namespace IBR_LinkNode
         //GlobalLogB.AddLog(LogBufB, false);
         for (auto& L : Links)
         {
-            //GlobalLogB.AddLog((L.To.operator IBB_Section_Desc().GetText() + " , ").c_str(), false);
+            //OutputDebugStringA(std::format("{} ; {}.{} -> {}",L.GetText(), L.From.ID, L.FromKey, L.To.ID).c_str());
             PushLinkForDraw(
                 Center,
                 L.To,
                 L.SessionID,
                 L.DefaultColor,
-                L.To == FromSub.Root->GetThisID(),
+                L.FromKey == ImportKeyID(),
+                L.To == L.From,
                 false
             );
         }
@@ -517,8 +528,6 @@ namespace IBR_LinkNode
         auto& Bsec = *FromSub.Root;
         for (auto& link : FromSub.NewLinkTo)
         {
-            //这个时候连自己的会折成一条线
-            if (link.To == FromSub.Root->ID)continue;
             if (!Bsec.IsOnShow(link.FromKey))
             {
                 if (IBR_Inst_Project.RefreshLinkList)
@@ -528,12 +537,14 @@ namespace IBR_LinkNode
                         link.SessionID,
                         link.DefaultColor,
                         (link.FromKey == ImportKeyID()),
-                        false
+                        link.To == link.From,
+                        true
                     );
                 else
-                    IBR_NodeSession::SetSessionBeginR(
+                    IBR_NodeSession::SetSessionStatus(
                         link.SessionID,
-                        Center
+                        Center,
+                        true
                     );
             }
         }
@@ -559,13 +570,15 @@ namespace IBR_LinkNode
                     link.To,
                     link.SessionID,
                     link.DefaultColor,
-                    link.To == FromSub.Root->GetThisID(),
-                    SrcDragging
+                    link.To == link.From,
+                    SrcDragging,
+                    false
                 );
             else
-                IBR_NodeSession::SetSessionBeginR(
+                IBR_NodeSession::SetSessionStatus(
                     link.SessionID,
-                    Center
+                    Center,
+                    false
                 );
         }
     }

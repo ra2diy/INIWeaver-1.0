@@ -1450,7 +1450,8 @@ namespace IBR_WorkSpace
                 //auto KList = IBR_PopupManager::HasPopup ? ImGui::GetBackgroundDrawList() : ImGui::GetForegroundDrawList();
                 KList->PushClipRect(IBR_RealCenter::WorkSpaceUL, IBR_RealCenter::WorkSpaceDR, true);
                 ImColor Col;
-                if (IBR_EditFrame::CurSection.ID == Rsec.ID
+                auto& CurID = IBR_EditFrame::CurSection.ID;
+                if ((CurID == Rsec.ID || CurID == Link.SrcModuleID)
                     && !ImGui::GetCurrentContext()->OpenPopupStack.Size)
                 {
                     Col = IBR_Color::FocusLineColor;
@@ -1464,13 +1465,15 @@ namespace IBR_WorkSpace
                     Col.Value.w *= IBF_Inst_Setting.TransparencyBase() * 0.625f;
 
                 {
-                    ImVec2 pa = IBR_NodeSession::GetSessionBeginR(Link.SourceID);
+                    auto& Sess = IBR_NodeSession::GetSessionValue(Link.SourceID);
+                    ImVec2 pa = Sess.LastCenter;
                     ImVec2 pb = RSD->ReWindowUL + RSD->ReOffset;
                     float LineWidth = FontHeight / 5.0f;
                     ImVec2 Mid = (pa + pb) / 2.0F;
                     bool Straight = (pb.x - pa.x >= FontHeight * 5.0F);
 
-                    if (Straight)KList->AddBezierCubic(
+                    if (Link.IsSelfLinked && Sess.Collapsed);
+                    else if (Straight)KList->AddBezierCubic(
                         pa,
                         { (pa.x + 4 * pb.x) / 5,pa.y },
                         { (4 * pa.x + pb.x) / 5,pb.y },
@@ -1479,17 +1482,8 @@ namespace IBR_WorkSpace
                         LineWidth);
                     else
                     {
-                        if (Link.FromImport)
-                        {
-                            KList->AddBezierCubic(
-                                pa,
-                                { (pa.x + 4 * pb.x) / 5,pa.y },
-                                { (4 * pa.x + pb.x) / 5,pb.y },
-                                pb,
-                                Col,
-                                LineWidth);
-                        }
-                        else if (Link.IsSelfLinked)
+                        
+                        if (Link.IsSelfLinked)
                         {
                             KList->AddBezierCubic(
                                 pa,
@@ -1510,6 +1504,16 @@ namespace IBR_WorkSpace
                             //KList->AddCircleFilled({ Mid }, LineWidth * 2.0F, Col);
                             //KList->AddCircleFilled({ pa.x ,(5 * pb.y - pa.y) / 4 }, LineWidth * 2.0F, Col);
                             //KList->AddCircleFilled({ (7 * pb.x - 2 * pa.x) / 5,(5 * pa.y - pb.y) / 4 }, LineWidth * 2.0F, Col);
+                        }
+                        else if (Link.FromImport)
+                        {
+                            KList->AddBezierCubic(
+                                pa,
+                                { (pa.x + 4 * pb.x) / 5,pa.y },
+                                { (4 * pa.x + pb.x) / 5,pb.y },
+                                pb,
+                                Col,
+                                LineWidth);
                         }
                         else
                         {
@@ -1583,14 +1587,11 @@ namespace IBR_WorkSpace
         {
             auto RSec = IBR_Inst_Project.GetSectionFromID(sp.first);
 
-            //IBR_Inst_Debug.AddMsgCycle([=]() {ImGui::TextWrapped("Render Section %s", sp.second.Desc.GetText().c_str());});
-
             auto& sd = sp.second;
-            sd.ModuleStrID = std::to_string(sp.first);
+            if (sd.ModuleStrID.empty())
+                sd.ModuleStrID = std::to_string(sp.first) + " : " + sd.Desc.GetText();
             if (sd.IsIncluded())continue;
             
-
-            //sd.BackPtr_Cached = RSec.GetBack();
             CurOnRender = &sd;
             CurOnRender_ID = sp.first;
             _RenderUI_OnRender = sd.Desc;

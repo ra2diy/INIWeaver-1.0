@@ -794,7 +794,6 @@ void IBR_SectionData::RenderUI_Comment(IBB_Section* Bsec)
 void IBR_SectionData::RenderUI_Collapsed(IBB_Section* Bsec, ImVec2 HeadLineRN, IBR_Section Rsec)
 {
     IM_UNUSED(Rsec);
-    auto gtd = Bsec->GetThisID();
     for (auto i : Bsec->SubSecOrder)
     {
         const auto& sub = Bsec->SubSecs[i];
@@ -803,12 +802,12 @@ void IBR_SectionData::RenderUI_Collapsed(IBB_Section* Bsec, ImVec2 HeadLineRN, I
             if (IBR_Inst_Project.RefreshLinkList)
             {
                 bool FromImport = (lt.FromKey == ImportKeyID());
-                bool IsLinkingToSelf = (gtd == lt.To);
-                IBR_LinkNode::PushLinkForDraw(HeadLineRN, lt.To, lt.SessionID, lt.DefaultColor, FromImport, IsLinkingToSelf);
+                bool IsLinkingToSelf = (lt.From == lt.To);
+                IBR_LinkNode::PushLinkForDraw(HeadLineRN, lt.To, lt.SessionID, lt.DefaultColor, FromImport, IsLinkingToSelf, true);
             }
             else
             {
-                IBR_NodeSession::SetSessionBeginR(lt.SessionID, HeadLineRN);
+                IBR_NodeSession::SetSessionStatus(lt.SessionID, HeadLineRN, true);
             }
         }
     }
@@ -967,10 +966,10 @@ namespace IBR_LinkNode
         return ImGui::GetStyleColorVec4(ImGuiCol_CheckMark);
     }
 
-    void PushLinkForDraw(ImVec2 Center, IBB_SectionID Dest, uint64_t SessionID, ImU32 LineCol, bool FromImport, bool SelfLink, bool SrcDragging)
+    void PushLinkForDraw(ImVec2 Center, IBB_SectionID Dest, uint64_t SessionID, ImU32 LineCol, bool FromImport, bool SelfLink, bool Collapsed, bool SrcDragging)
     {
-        IBR_NodeSession::SetSessionBeginR(SessionID, Center);
-        IBR_Inst_Project.LinkList.push_back({ Dest, SessionID, AdjustLineCol(LineCol), FromImport, SelfLink, SrcDragging });
+        IBR_NodeSession::SetSessionStatus(SessionID, Center, Collapsed);
+        IBR_Inst_Project.LinkList.push_back({ Dest, SessionID, IBR_WorkSpace::CurOnRender_ID, LineCol, FromImport, SelfLink, SrcDragging });
     }
 }
 

@@ -208,6 +208,7 @@ bool _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE IBR_Section::Rename(con
             Node.key() = NewName;
             auto sp = pIni->Secs.insert(std::move(Node));
             for (auto& s : pIni->Secs_ByName)if (s == OldName)s = NewName;
+            IBF_Inst_Project.UpdateAll();
         }
 
         auto& d = IBF_Inst_Project.DisplayNames;
