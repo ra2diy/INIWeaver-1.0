@@ -1045,8 +1045,9 @@ IBB_UpdateResult RenderIICInputText(
     }
     else
     {
-        //auto Size = ImGui::CalcTextSize(Hint.c_str(), NULL, true);
-        //ImGui::SetNextItemWidth(ImGui::GetWindowContentRegionWidth() - ImGui::GetCursorPosX() - Size.x);
+        auto Size = ImGui::CalcTextSize(pIn->Hint.Short.c_str(), NULL, true);
+        auto W = ImGui::GetWindowContentRegionWidth() - ImGui::GetCursorPosX() - Size.x;
+        ImGui::SetNextItemWidth(std::max(W, FontHeight * 12.0f - Size.x));
         auto Changed = InputTextStdString(pIn->Hint.Short.c_str(), InitialValue);
         if (ImGui::IsItemHovered())IBR_ToolTip(pIn->Hint.Long);
 
@@ -1448,8 +1449,9 @@ IBB_UpdateResult IIC_InputInt::RenderUI(IBB_ValueContainer& Cont, IICStatus& Sta
         static const IBB_InputFormat Fmt = { IBB_InputFormat::ToString, "" };
         auto CurrentValue = Var.Dirty ? Var.StateValPtr->Format(Fmt) : Var.Value;
 
-        //auto Size = ImGui::CalcTextSize(Hint.c_str(), NULL, true);
-        //ImGui::SetNextItemWidth(ImGui::GetWindowContentRegionWidth() - ImGui::GetCursorPosX() - Size.x);
+        auto Size = ImGui::CalcTextSize(Hint.Short.c_str(), NULL, true);
+        auto W = ImGui::GetWindowContentRegionWidth() - ImGui::GetCursorPosX() - Size.x;
+        ImGui::SetNextItemWidth(std::max(W, FontHeight * 12.0f - Size.x));
         auto Changed = InputTextStdString(Hint.Short.c_str(), CurrentValue);
         if (ImGui::IsItemHovered())IBR_ToolTip(Hint.Long);
         if (Changed)

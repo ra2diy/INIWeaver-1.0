@@ -337,6 +337,9 @@ bool IBB_SubSec::UpdateAll()
 
     if (LimitFix)Ret &= UpdateAll();
 
+    IBR_Inst_Project.TriggerRefreshLink();
+    IBR_HintManager::SetHint("REFRESH LINK", HintStayTimeMillis);
+
     return Ret;
 }
 

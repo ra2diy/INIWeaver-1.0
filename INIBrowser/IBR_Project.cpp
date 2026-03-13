@@ -10,6 +10,10 @@
 #include <ranges>
 #include "IBR_ListView.h"
 
+void _PROJ_CMD_WRITE  _PROJ_CMD_UPDATE IBR_Project::TriggerRefreshLink()
+{
+    RefreshLinkList = true;
+}
 
 std::pair<bool, std::vector<ModuleID_t>> _PROJ_CMD_WRITE  _PROJ_CMD_UPDATE IBR_Project::AddModule(const IBB_ModuleAlt& Module, const std::string& Argument, bool UseMouseCenter)
 {

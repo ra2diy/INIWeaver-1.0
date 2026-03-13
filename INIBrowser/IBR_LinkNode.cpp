@@ -85,11 +85,34 @@ namespace IBR_NodeSession
         return a.Comp < b.Comp;
     }
 
-    std::map<SessionKey, SessionValue> SessionData;
+    uint64_t GetSessionIdx(const std::string& Ini, const std::string& Sec, const std::string& Sub, size_t Line, size_t Comp)
+    {
+        //Very hot path
+        //as fast as possible
+        size_t i = 0, j = 0, h;
+        h = std::hash<std::string>{}(Ini);
+        i ^= h + 0x9e3779b9 + (i << 6) + (i >> 2);
+        j ^= h + 0x9ddfea08 + (j << 6) + (j >> 2);
+        h = std::hash<std::string>{}(Sec);
+        i ^= h + 0x9e3779b9 + (i << 6) + (i >> 2);
+        j ^= h + 0x9ddfea08 + (j << 6) + (j >> 2);
+        h = std::hash<std::string>{}(Sub);
+        i ^= h + 0x9e3779b9 + (i << 6) + (i >> 2);
+        j ^= h + 0x9ddfea08 + (j << 6) + (j >> 2);
+        h = std::hash<size_t>{}(Line);
+        i ^= h + 0x9e3779b9 + (i << 6) + (i >> 2);
+        j ^= h + 0x9ddfea08 + (j << 6) + (j >> 2);
+        h = std::hash<size_t>{}(Comp);
+        i ^= h + 0x9e3779b9 + (i << 6) + (i >> 2);
+        j ^= h + 0x9ddfea08 + (j << 6) + (j >> 2);
+        return (uint64_t(i) << 32) | uint64_t(j);
+    }
+
+    std::map<uint64_t, SessionValue> SessionData;
 
     SessionValue& NewSessionValue(const std::string& Ini, const std::string& Sec, const std::string& Sub, size_t Line, size_t Comp)
     {
-        SessionKey key{ Ini, Sec, Sub, Line, Comp };
+        auto key = GetSessionIdx(Ini, Sec, Sub, Line, Comp);
         auto& val = SessionData[key];
         val.Renew();
         return val;
@@ -97,7 +120,7 @@ namespace IBR_NodeSession
 
     SessionValue& GetSessionValue(const std::string& Ini, const std::string& Sec, const std::string& Sub, size_t Line, size_t Comp)
     {
-        SessionKey key{ Ini, Sec, Sub, Line, Comp };
+        auto key = GetSessionIdx(Ini, Sec, Sub, Line, Comp);
         return SessionData[key];
     }
 
@@ -180,6 +203,8 @@ namespace IBR_LinkNode
         std::unordered_set<uint64_t>* Pushed
     )
     {
+        if (!IBR_Inst_Project.RefreshLinkList) return;
+
         PushIdx(LineIdx, CompIdx, Pushed);
         auto&& [LinkBegin, LinkEnd] = FromSub.GetLink(LineIdx, CompIdx);
         if (LinkBegin == LinkEnd)return;
@@ -459,6 +484,8 @@ namespace IBR_LinkNode
         ImVec2 Center
     )
     {
+        if (!IBR_Inst_Project.RefreshLinkList) return;
+
         auto& Bsec = *FromSub.Root;
         auto& OnShow = Bsec.OnShow;
         for (auto& link : FromSub.NewLinkTo)
@@ -487,6 +514,8 @@ namespace IBR_LinkNode
         bool SrcDragging
     )
     {
+        if (!IBR_Inst_Project.RefreshLinkList) return;
+
         for (auto&& [idx, lidx] : FromSub.LinkSrc)
         {
             /*

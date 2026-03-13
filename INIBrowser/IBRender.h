@@ -213,6 +213,9 @@ struct IBR_Project
     std::string DragConditionText;
     std::string DragConditionTextAlt;
     std::vector<_Plink> LinkList;
+    bool RefreshLinkList{ true };
+
+    void _PROJ_CMD_WRITE  _PROJ_CMD_UPDATE TriggerRefreshLink();
 
     std::pair<bool, std::vector<ModuleID_t>> _PROJ_CMD_WRITE  _PROJ_CMD_UPDATE AddModule(const IBB_ModuleAlt& Module, const std::string& Argument, bool UseMouseCenter = true);
     std::pair<bool, std::vector<ModuleID_t>> _PROJ_CMD_WRITE  _PROJ_CMD_UPDATE AddModule(const std::vector<ModuleClipData>& Modules, bool UseMouseCenter = true);
