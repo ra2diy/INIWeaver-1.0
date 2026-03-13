@@ -106,7 +106,7 @@ std::optional<ModuleID_t> _PROJ_CMD_WRITE _PROJ_CMD_UPDATE IBR_Project::AddModul
     bool Ret = true;
     Ret &= IBF_Inst_Project.Project.AddModule(Module);
     IBB_Section_Desc D = { Module.Desc.A,Module.Desc.B };
-    EnsureSection(D, Module.DisplayName);
+    EnsureSection(D, Module.Register, Module.DisplayName);
     auto Sec = GetSection(D);
     //if (Module.FromClipBoard || !UseMouseCenter )
     {
@@ -151,8 +151,10 @@ bool _PROJ_CMD_WRITE IBR_Project::SetModuleIncludeLink(const std::vector<ModuleI
 std::optional<ModuleID_t> _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE IBR_Project::ComposeSections(const std::vector<ModuleID_t>& IDs)
 {
     using namespace std::ranges;
+    auto& Reg = loc("Back_ComposeBlockName");
     auto RSec = CreateSectionAndBack(
         IBB_Section_Desc{ DefaultIniName, GenerateModuleTag() },
+        Reg,
         loc("Back_ComposeBlockName")
     );
 
@@ -162,7 +164,7 @@ std::optional<ModuleID_t> _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE IB
     if(RD == nullptr)return std::nullopt;
     IBG_Undo.SomethingShouldBeHere();
 
-    BSec->Register = NewPoolStr(loc("Back_ComposeBlockName"));
+    BSec->Register = NewPoolStr(Reg);
     RD->IncludingModules = IDs;
 
     //剔除被缩合的模块
@@ -325,7 +327,47 @@ IBR_Section _PROJ_CMD_READ IBR_Project::GetSection(IBB_SectionID id) _PROJ_CMD_B
     else return GetSection(id.ToDesc());
 }
 
-void _PROJ_CMD_NOINTERRUPT _PROJ_CMD_READ IBR_Project::EnsureSection(const IBB_Section_Desc& Desc, const std::string& DisplayName) _PROJ_CMD_BACK_CONST
+std::string GenerateDisplayName(const std::string& Register, const std::string& DisplayName, const IBB_Section* pBack)
+{
+    std::string S;
+    if (DisplayName.empty())
+    {
+        if (pBack)
+        {
+            auto& RegType = IBB_DefaultRegType::GetRegType(pBack->Register);
+            if (RegType.RegNameAsDisplay)S = RegType.GetNoName(pBack->Name);
+            else S = RegType.GetNoName();
+        }
+    }
+    else
+    {
+        IBG_Undo.SomethingShouldBeHere();
+        auto& RegType = IBB_DefaultRegType::GetRegType(Register);
+
+        if (DisplayName.starts_with(RegType.Name))
+        {
+            auto Suffix = DisplayName.substr(RegType.Name.size());
+            //如果Suffix是纯数字，则认为是自动生成的，按空DisplayName处理
+            if (!Suffix.empty() && std::ranges::all_of(Suffix, ::isdigit))
+            {
+                if (RegType.RegNameAsDisplay)S = RegType.GetNoName(pBack->Name);
+                else S = RegType.GetNoName();
+                return S;
+            }
+        }
+
+        auto it = IBF_Inst_Project.DisplayNames.find(DisplayName);
+        int I = 0;
+        while (it != IBF_Inst_Project.DisplayNames.end())
+            it = IBF_Inst_Project.DisplayNames.find(DisplayName + "_" + std::to_string(++I));
+        if (I) S = DisplayName + "_" + std::to_string(I);
+        else S = DisplayName;
+    }
+
+    return S;
+}
+
+void _PROJ_CMD_NOINTERRUPT _PROJ_CMD_READ IBR_Project::EnsureSection(const IBB_Section_Desc& Desc, _TEXT_UTF8 const std::string& Register, const std::string& DisplayName) _PROJ_CMD_BACK_CONST
 {
     
     auto rit = IBR_Rev_SectionMap.find(Desc);
@@ -334,28 +376,7 @@ void _PROJ_CMD_NOINTERRUPT _PROJ_CMD_READ IBR_Project::EnsureSection(const IBB_S
         auto pBack = IBF_Inst_Project.Project.GetSec(IBB_Project_Index{ Desc });
         IBR_Rev_SectionMapII.insert({ IBB_SectionID{ Desc }, MaxID });
         rit = IBR_Rev_SectionMap.insert({ Desc,MaxID }).first;
-        std::string S;
-        if (DisplayName.empty())
-        {
-            if (pBack)
-            {
-                IBD_RInterruptF(x);
-                auto& RegType = IBB_DefaultRegType::GetRegType(pBack->Register);
-                if (RegType.RegNameAsDisplay)S = RegType.GetNoName(pBack->Name);
-                else S = RegType.GetNoName();
-            }
-        }
-        else
-        {
-            IBG_Undo.SomethingShouldBeHere();
-            auto it = IBF_Inst_Project.DisplayNames.find(DisplayName);
-            int I = 0;
-            while (it != IBF_Inst_Project.DisplayNames.end())
-                it = IBF_Inst_Project.DisplayNames.find(DisplayName + "_" + std::to_string(++I));
-            if (I) S = DisplayName + "_" + std::to_string(I);
-            else S = DisplayName;
-        }
-        //MessageBoxA(MainWindowHandle, S.c_str(), Desc.GetText().c_str(), MB_OK);
+        std::string S = GenerateDisplayName(Register, DisplayName, pBack);
         IBF_Inst_Project.DisplayNames[S] = Desc;
 
         if (pBack)IBR_SectionMap.insert({ MaxID,IBR_SectionData{Desc, std::move(S)} });
@@ -392,15 +413,17 @@ bool _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE IBR_Project::CreateSect
 
 IBR_Section _PROJ_CMD_READ _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE IBR_Project::CreateCommentBlock(ImVec2 InitialEqPos, std::string_view InitialText, ImVec2 InitialEqSize)
 {
+    auto& Reg = loc("Back_CommentBlockName");
     auto RSec = CreateSectionAndBack(
         IBB_Section_Desc { DefaultIniName, GenerateModuleTag() },
+        Reg,
         loc("Back_CommentBlockName")
     );
 
     auto BSec = RSec.GetBack();
     assert(BSec != nullptr);
     BSec->CreateAsCommentBlock = true;
-    BSec->Register = NewPoolStr(loc("Back_CommentBlockName"));
+    BSec->Register = NewPoolStr(Reg);
 
     auto RD = RSec.GetSectionData();
     assert(RD != nullptr);
@@ -422,6 +445,7 @@ IBR_Section _PROJ_CMD_READ _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE I
 {
     auto RSec = CreateSectionAndBack(
         IBB_Section_Desc{ DefaultIniName, RandStr(16) },
+        AnyTypeName,
         loc("Back_SingleValBlockName")
     );
 
@@ -442,10 +466,10 @@ IBR_Section _PROJ_CMD_READ _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE I
     return RSec;
 }
 
-IBR_Section _PROJ_CMD_READ _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE IBR_Project::CreateSectionAndBack(const IBB_Section_Desc& Desc, _TEXT_UTF8 const std::string& DisplayName)
+IBR_Section _PROJ_CMD_READ _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE IBR_Project::CreateSectionAndBack(const IBB_Section_Desc& Desc, _TEXT_UTF8 const std::string& Register, _TEXT_UTF8 const std::string& DisplayName)
 {
     CreateSection(Desc);
-    EnsureSection(Desc, DisplayName);
+    EnsureSection(Desc, Register, DisplayName);
     return GetSection(Desc);
 }
 

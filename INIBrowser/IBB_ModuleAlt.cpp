@@ -902,22 +902,21 @@ bool IBB_ModuleAlt::SaveToFile()
         }
 
         {
+            //DisplayName
+            E.PutStr("DisplayName#Prop = " + M.DisplayName); E.Ln();
             //EqDelta
             E.PutStr("ImportDeltaX = " + std::to_string(M.EqDelta.x / RFontHeight)); E.Ln();
             E.PutStr("ImportDeltaY = " + std::to_string(M.EqDelta.y / RFontHeight)); E.Ln();
         }
-
         for (auto& D : M.DefaultLinkKey)
         {
             E.PutStr(D.A + "#DefaultLink = " + D.B); E.Ln();
         }
-
         for (auto& D : M.VarList)
         {
             if (D.A == "_Local_AtFile")continue;
             E.PutStr(D.A + "#Var = " + D.B); E.Ln();
         }
-
         if (M.Frozen)
         {
             E.PutStr("Frozen#Prop = true");
@@ -1209,6 +1208,10 @@ void IBB_ModuleAlt::LoadFromString(std::wstring_view FileName, std::string&& Fil
                     {
                         auto sv = SplitView_ToSV(sec[i].Value);
                         if (sv.size() >= 2)M.IncludingSections.emplace_back(sv[0], sv[1]);
+                    }
+                    else if (sec[i].Desc == "DisplayName")
+                    {
+                        M.DisplayName = sec[i].Value;
                     }
                 }
                 else

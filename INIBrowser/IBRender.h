@@ -254,7 +254,7 @@ struct IBR_Project
 
     //不建议，会缺少模板里面约定的一部分Variable（包括类型标记）
     bool _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE CreateSection(const IBB_Section_Desc& Desc);
-    IBR_Section _PROJ_CMD_READ _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE CreateSectionAndBack(const IBB_Section_Desc& Desc, _TEXT_UTF8 const std::string& DisplayName);
+    IBR_Section _PROJ_CMD_READ _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE CreateSectionAndBack(const IBB_Section_Desc& Desc, _TEXT_UTF8 const std::string& Register, _TEXT_UTF8 const std::string& DisplayName);
 
     //特殊类型
     IBR_Section _PROJ_CMD_READ _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE CreateCommentBlock(ImVec2 InitialEqPos, std::string_view InitialText = "", ImVec2 InitialEqSize = {0.0F,0.0F});
@@ -278,7 +278,7 @@ struct IBR_Project
     inline IBR_Section _PROJ_CMD_NOINTERRUPT _PROJ_CMD_READ GetSectionFromID(ModuleID_t id) _PROJ_CMD_BACK_CONST { return { this,id }; }
 
     std::optional<ModuleID_t> _PROJ_CMD_NOINTERRUPT _PROJ_CMD_READ GetSectionID(const IBB_Section_Desc& Desc) _PROJ_CMD_BACK_CONST;
-    void _PROJ_CMD_NOINTERRUPT _PROJ_CMD_READ EnsureSection(const IBB_Section_Desc& Desc, const std::string& DisplayName = "") _PROJ_CMD_BACK_CONST;
+    void _PROJ_CMD_NOINTERRUPT _PROJ_CMD_READ EnsureSection(const IBB_Section_Desc& Desc, _TEXT_UTF8 const std::string& Register, const std::string& DisplayName = "") _PROJ_CMD_BACK_CONST;
 
     bool _PROJ_CMD_UPDATE DataCheck();
 
