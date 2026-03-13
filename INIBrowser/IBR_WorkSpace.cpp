@@ -1464,7 +1464,7 @@ namespace IBR_WorkSpace
                     Col.Value.w *= IBF_Inst_Setting.TransparencyBase() * 0.625f;
 
                 {
-                    ImVec2 pa = Link.BeginR;
+                    ImVec2 pa = IBR_NodeSession::GetSessionBeginR(Link.SourceID);
                     ImVec2 pb = RSD->ReWindowUL + RSD->ReOffset;
                     float LineWidth = FontHeight / 5.0f;
                     ImVec2 Mid = (pa + pb) / 2.0F;

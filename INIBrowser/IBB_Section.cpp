@@ -579,6 +579,10 @@ IBB_Section_Desc IBB_Section::GetThisDesc() const
 {
     return IBB_Section_Desc{ Root->Name,Name };
 }
+IBB_SectionID IBB_Section::GetThisID() const
+{
+    return ID;
+}
 
 std::vector<IBB_NewLink>& IBB_Section::GetLinkedBy_Cached() const
 {
@@ -713,7 +717,9 @@ void IBB_Section::CheckSubsecOrder()
 IBB_Section::IBB_Section(const std::string& N, IBB_Ini* R) :
     Name(N),
     Root(R),
-    IsLinkGroup(false)
+    IsLinkGroup(false),
+    DefaultLinkKey_UpValue(nullptr),
+    ID(Root->Name, N)
 {
     this->VarList.Value["_InitialSecName"] = N;
 }
@@ -726,7 +732,10 @@ IBB_Section::IBB_Section(IBB_Section&& S) noexcept :
     SubSecs(std::move(S.SubSecs)),
     VarList(std::move(S.VarList)),
     LinkGroup_NewLinkTo(std::move(S.LinkGroup_NewLinkTo)),
-    LineOrder(std::move(S.LineOrder))
+    LineOrder(std::move(S.LineOrder)),
+    ID(S.ID),
+    DefaultLinkKey(std::move(S.DefaultLinkKey)),
+    DefaultLinkKey_UpValue(S.DefaultLinkKey_UpValue)
 {
     if (EnableLogEx)
     {
@@ -739,10 +748,11 @@ IBB_Section::IBB_Section(IBB_Section&& S) noexcept :
 bool IBB_Section::ChangeRoot(const IBB_Ini* NewRoot)
 {
     Root = const_cast<IBB_Ini*>(NewRoot);
+    ID = IBB_SectionID{ Root->Name,Name };
     return true;
 }
 
-bool IBB_Section::AcceptNewNameInLinkTo(IBB_Section* Target, const std::string& NewName)
+bool IBB_Section::AcceptNewNameInLinkTo(IBB_SectionID NewID, IBB_Section* Target, const std::string& NewName)
 {
     //现在this的有些Link的To指向Target，处理他们。
     //同时，修改里面的值。
@@ -754,7 +764,7 @@ bool IBB_Section::AcceptNewNameInLinkTo(IBB_Section* Target, const std::string& 
         //直接修改链接本身
         for (auto& Link : LinkGroup_NewLinkTo)
             if (Link.To.GetSec(Proj) == Target)
-                Link.To.Section.Assign(NewName);
+                Link.To = { Link.To.Ini(), NewName };
     }
     else
     {
@@ -765,7 +775,7 @@ bool IBB_Section::AcceptNewNameInLinkTo(IBB_Section* Target, const std::string& 
                     //按照这个Link，找到所有from的地方并修改to到新name
                     Ret &= Sub.RenameInLinkTo(idx, Target->Name, NewName);
                     //然后修改链接本身
-                    Link.To.Section.Assign(NewName);
+                    Link.To = NewID;
                 }
     }
     return Ret;
@@ -811,7 +821,7 @@ bool IBB_Section::RemoveNameInLinkTo(IBB_Section* Target)
     return Ret;
 }
 
-bool IBB_Section::AcceptNewNameInLinkedBy(const IBB_Project_Index& OldIndex, const std::string& NewName)
+bool IBB_Section::AcceptNewNameInLinkedBy(IBB_SectionID OldIndex, const std::string& NewName)
 {
     //LinkedBy已经无辣！
     IM_UNUSED(OldIndex);
@@ -823,6 +833,7 @@ bool IBB_Section::Rename(const std::string& NewName)
 {
     bool Ret = true;
     auto& Proj = *Root->Root;
+    IBB_SectionID NewID = IBB_SectionID(Root->Name, NewName);
     if (IsLinkGroup)
     {
         for (auto& Link : LinkGroup_NewLinkTo)
@@ -830,10 +841,10 @@ bool IBB_Section::Rename(const std::string& NewName)
             //找到连到的对象，改他们linkedby
             Ret &= AcceptNewNameInLinkedBy(Link.To, NewName);
             //然后修改链接本身From
-            Link.From.Section.Assign(NewName);
+            Link.From = NewID;
             //自连则也要修改To
-            if(Link.To.GetSec(Proj) == this)
-                Link.To.Section.Assign(NewName);
+            if (Link.To == ID)
+                Link.To = NewID;
         }
     }
     else
@@ -846,10 +857,10 @@ bool IBB_Section::Rename(const std::string& NewName)
                 //找到连到的对象，改他们linkedby
                 Ret &= AcceptNewNameInLinkedBy(Link.To, NewName);
                 //然后修改链接本身
-                Link.From.Section.Assign(NewName);
+                Link.From = NewID;
                 //自连则也要修改To
-                if (Link.To.GetSec(Proj) == this)
-                    Link.To.Section.Assign(NewName);
+                if (Link.To == ID)
+                    Link.To = NewID;
             }
     }
     for (auto& Link : GetLinkedBy_NoCached())
@@ -861,15 +872,16 @@ bool IBB_Section::Rename(const std::string& NewName)
             continue;
         //自连则也要修改From
         else if (Src == this)
-            Link.From.Section.Assign(NewName);
+            Link.From = NewID;
         //非自连则修改LinkTo的情况
         else
-            Ret &= Src->AcceptNewNameInLinkTo(this, NewName);
+            Ret &= Src->AcceptNewNameInLinkTo(NewID, this, NewName);
         //然后修改链接本身
-        Link.To.Section.Assign(NewName);
+        Link.To = NewID;
         
     }
     Name = NewName;
+    ID = NewID;
     return Ret;
 }
 

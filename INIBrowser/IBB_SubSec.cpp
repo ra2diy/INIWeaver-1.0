@@ -90,7 +90,7 @@ bool IBB_SubSec::ChangeRoot(IBB_Section* NewRoot)
 {
     if (NewRoot != nullptr)
     {
-        auto ti = NewRoot->GetThisIndex();
+        auto ti = NewRoot->GetThisID();
         for (auto& L : NewLinkTo)L.From = ti;
     }
     Root = NewRoot;
@@ -240,9 +240,10 @@ bool IBB_SubSec::UpdateAll()
             auto ldd = Line.Default && IBB_DefaultRegType::HasRegType(PoolStr(Line.Default->TypeAlt));
             std::set<std::pair<int, int>> SelectValues;
 
-            int i = 0;
+            int i = -1;
             for (auto& iic : *iif->InputComponents)
             {
+                i++;
                 if (!iic->SupportLinks())continue;
                 auto id = iic->GetCurrentTargetValueID();
                 if (ldd)
@@ -253,7 +254,6 @@ bool IBB_SubSec::UpdateAll()
                     SelectValues.insert({ id, i });
                 else if (iif->GetComponentStatus()[i].InputMethod == IICStatus::Link)
                     SelectValues.insert({ id, i });
-                i++;
             }
 
             auto& val = iif->GetValues();
@@ -284,7 +284,7 @@ bool IBB_SubSec::UpdateAll()
                     for (auto&& str : spc)
                     {
                         auto& IniType = Line.Default->GetIniType();
-                        auto toidx = IBF_Inst_Project.Project.GetSecIndex(str, IniType);
+                        auto toidx = IBF_Inst_Project.Project.GetSecID(str, IniType);
 
                         if (toidx.Empty())continue;//目标不存在，跳过
 
@@ -294,11 +294,19 @@ bool IBB_SubSec::UpdateAll()
 
                         ImU32 Col = piic->UseCustomSetting ? piic->NodeSetting.LinkCol :
                             (Line.Default ? Line.Default->Color : (ImU32)IBB_DefaultRegType::GetDefaultNodeColor());
+                        auto RootID = Root->GetThisID();
+                        auto seid = IBR_NodeSession::GetSessionIdx(
+                            RootID,
+                            Default->Name,
+                            LineIdx,
+                            cidx
+                        );
                         NewLT.emplace_back(
-                            Root->GetThisIndex(),
+                            RootID,
                             toidx,
                             KeyName,
-                            Col
+                            Col,
+                            seid
                         );
                     }
 
@@ -313,15 +321,24 @@ bool IBB_SubSec::UpdateAll()
             for (auto&& str : spc)
             {
                 auto& IniType = Line.Default->GetIniType();
-                auto toidx = IBF_Inst_Project.Project.GetSecIndex(str, IniType);
+                auto toidx = IBF_Inst_Project.Project.GetSecID(str, IniType);
                 if (toidx.Empty())continue;//目标不存在，跳过
+                if (!toidx.GetSec(IBF_Inst_Project.Project)) continue;//目标不存在，跳过
                 ClaimLink(LineIdx, 0, NewLT.size());
                 ImU32 Col = (Line.Default ? Line.Default->Color : (ImU32)IBB_DefaultRegType::GetDefaultNodeColor());
+                auto RootID = Root->GetThisID();
+                auto seid = IBR_NodeSession::GetSessionIdx(
+                    RootID,
+                    Default->Name,
+                    LineIdx,
+                    0
+                );
                 NewLT.emplace_back(
-                    Root->GetThisIndex(),
+                    RootID,
                     toidx,
                     KeyName,
-                    Col
+                    Col,
+                    seid
                 );
             }
         }
@@ -338,7 +355,6 @@ bool IBB_SubSec::UpdateAll()
     if (LimitFix)Ret &= UpdateAll();
 
     IBR_Inst_Project.TriggerRefreshLink();
-    IBR_HintManager::SetHint("REFRESH LINK", HintStayTimeMillis);
 
     return Ret;
 }

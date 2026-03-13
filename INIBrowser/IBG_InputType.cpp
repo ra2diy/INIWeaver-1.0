@@ -103,8 +103,8 @@ IBG_InputFormUIResult IBG_InputForm::RenderUI(const LinkNodeSetting& Default)
     CheckStatus();
 
     bool TryUpdateLink = LinkNodeEnabled && LinkNodeContext::CurSub;
-    std::unordered_set<uint64_t> UsedLinks;
-    bool NeedsUpdateLink = IBR_LinkNode::UpdateLinkInitial();
+    //std::unordered_set<uint64_t> UsedLinks;
+    //UsedLinks.clear();
     IICStatus StatusAlwaysInput;
 
     for (auto&& [CompIdx, IC, CSOrig] : std::views::zip(std::views::iota(0u), *InputComponents, ComponentStatus))
@@ -124,26 +124,20 @@ IBG_InputFormUIResult IBG_InputForm::RenderUI(const LinkNodeSetting& Default)
         auto R = IC->RenderUI(ValueContainer, CS);
         ImGui::PopID();
 
-        if (TryUpdateLink)
-            IBR_LinkNode::UpdateLink(*LinkNodeContext::CurSub, LinkNodeContext::LineIndex, CompIdx, &UsedLinks);
+        if (TryUpdateLink && IC->SupportLinks())
+            IBR_LinkNode::UpdateLink(*LinkNodeContext::CurSub, LinkNodeContext::LineIndex, CompIdx, nullptr);
 
         Changed |= R.Updated;
         Active |= R.Active;
         if (R.Updated)
         {
             GetValue(R.ValueID).NeedsUpdate(ValueContainer, *IC);
-            if (
-                !NeedsUpdateLink && (
-                    IC->UseCustomSetting ||
-                    IC->InitialStatus.InputMethod == IICStatus::Link ||
-                    CS.InputMethod == IICStatus::Link
-                    )
-                )NeedsUpdateLink = true;
         }
     }
 
     LinkNodeContext::CompIndex = UINT_MAX;
 
+    /*
     if (TryUpdateLink)
     {
         IBR_LinkNode::PushRestLinkForDraw(
@@ -153,19 +147,12 @@ IBG_InputFormUIResult IBG_InputForm::RenderUI(const LinkNodeSetting& Default)
             IBR_LinkNode::DefaultCenterInWindow()
         );
     }
+    */
 
     if (Changed)
     {
         Dirty = true;
         IBG_Undo.SomethingShouldBeHere();
-        if (TryUpdateLink && NeedsUpdateLink)
-        {
-            //auto& KeyName = LinkNodeContext::CurSub->Lines_ByName[LinkNodeContext::LineIndex];
-            //auto Snapshot =
-            //GetFormattedString();
-            //LinkNodeContext::CurSub->Root->MergeLine(KeyName, Snapshot, IBB_IniMergeMode::Replace, true);
-            //ParseFromString(Snapshot);
-        }
     }
     return { Changed, Active };
 }

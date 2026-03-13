@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include "FromEngine/Include.h"
+#include "IBB_Index.h"
 #include <functional>
 
 struct LinkNodeSetting
@@ -56,6 +57,7 @@ namespace IBR_NodeSession
         bool NotifyValueToMerge;
         std::string ValueToMerge;
         std::vector<SessionLinkList> LinkList;
+        ImVec2 LastCenter;
 
         void Renew()
         {
@@ -76,6 +78,11 @@ namespace IBR_NodeSession
     {
         ImVec2 Center;
     };
+
+    uint64_t GetSessionIdx(const std::string& Ini, const std::string& Sec, const std::string& Sub, size_t Line, size_t Comp);
+    uint64_t GetSessionIdx(IBB_SectionID SecID, const std::string& Sub, size_t Line, size_t Comp);
+    ImVec2 GetSessionBeginR(uint64_t SessionID);
+    void SetSessionBeginR(uint64_t SessionID, ImVec2 Center);
 }
 
 namespace IBR_LinkNode
@@ -106,7 +113,8 @@ namespace IBR_LinkNode
 
     void PushLinkForDraw(
         ImVec2 Center,
-        const IBB_Section_Desc& Target,
+        IBB_SectionID Dest,
+        uint64_t SessionID,
         ImU32 LineCol,
         bool FromImport,
         bool SelfLink,

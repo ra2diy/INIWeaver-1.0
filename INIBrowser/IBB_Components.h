@@ -13,6 +13,7 @@ struct IBB_Section;
 struct IBB_Ini;
 struct IBB_Project;
 struct IBB_Project_Index;
+struct IBB_SectionID;
 struct IBB_VariableList;
 struct IBB_Link;
 

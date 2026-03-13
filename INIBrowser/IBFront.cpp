@@ -288,4 +288,5 @@ void IBF_Project::Clear()
     Project.Clear();
     this->DisplayNames.clear();
     IBR_NodeSession::ClearSession();
+    IBB_SectionID::ClearCache();
 }

@@ -392,7 +392,7 @@ bool IBR_SectionData::RenderUI_Line(const std::string& OnShow, StrPoolID Name)
     const auto InheritStr = [&]() {
         auto& Q = back->Inherit;
         auto w = IBR_WorkSpace::ShowRegName ? UTF8toUnicode(Q) :
-            (IBR_Inst_Project.HasSection({ Desc.Ini, Q }) ? UTF8toUnicode(IBR_Inst_Project.GetSection({ Desc.Ini, Q }).GetDisplayName()) : UTF8toUnicode(Q));
+            (IBR_Inst_Project.HasSection({ Desc.Ini, Q }) ? UTF8toUnicode(IBR_Inst_Project.GetSection(IBB_Section_Desc{ Desc.Ini, Q }).GetDisplayName()) : UTF8toUnicode(Q));
         std::wstring Nul;
         if (w.empty()) return loc("GUI_NoInherit");
         else return UnicodetoUTF8(std::vformat(locw("GUI_InheritFrom"), std::make_wformat_args(ShowInherit() ? w : Nul)));
@@ -793,16 +793,22 @@ void IBR_SectionData::RenderUI_Comment(IBB_Section* Bsec)
 void IBR_SectionData::RenderUI_Collapsed(IBB_Section* Bsec, ImVec2 HeadLineRN, IBR_Section Rsec)
 {
     IM_UNUSED(Rsec);
-    auto gtd = Bsec->GetThisDesc();
+    auto gtd = Bsec->GetThisID();
     for (auto i : Bsec->SubSecOrder)
     {
         const auto& sub = Bsec->SubSecs[i];
         for (const auto& lt : sub.NewLinkTo)
         {
-            IBB_Section_Desc _Desc = lt.To;
-            bool FromImport = (lt.FromKey == ImportKeyID());
-            bool IsLinkingToSelf = (gtd == _Desc);
-            IBR_LinkNode::PushLinkForDraw(HeadLineRN, _Desc, lt.DefaultColor, FromImport, IsLinkingToSelf);
+            if (IBR_Inst_Project.RefreshLinkList)
+            {
+                bool FromImport = (lt.FromKey == ImportKeyID());
+                bool IsLinkingToSelf = (gtd == lt.To);
+                IBR_LinkNode::PushLinkForDraw(HeadLineRN, lt.To, lt.SessionID, lt.DefaultColor, FromImport, IsLinkingToSelf);
+            }
+            else
+            {
+                IBR_NodeSession::SetSessionBeginR(lt.SessionID, HeadLineRN);
+            }
         }
     }
     ImGui::SetCursorPos({ ImGui::GetWindowWidth() - FontHeight * 4.0f, FinalY - FontHeight * 0.15f });
@@ -960,9 +966,10 @@ namespace IBR_LinkNode
         return ImGui::GetStyleColorVec4(ImGuiCol_CheckMark);
     }
 
-    void PushLinkForDraw(ImVec2 Center, const IBB_Section_Desc& Target, ImU32 LineCol, bool FromImport, bool SelfLink, bool SrcDragging)
+    void PushLinkForDraw(ImVec2 Center, IBB_SectionID Dest, uint64_t SessionID, ImU32 LineCol, bool FromImport, bool SelfLink, bool SrcDragging)
     {
-        IBR_Inst_Project.LinkList.push_back({ Center, Target, AdjustLineCol(LineCol), FromImport, SelfLink, SrcDragging });
+        IBR_NodeSession::SetSessionBeginR(SessionID, Center);
+        IBR_Inst_Project.LinkList.push_back({ Dest, SessionID, AdjustLineCol(LineCol), FromImport, SelfLink, SrcDragging });
     }
 }
 

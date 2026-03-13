@@ -13,6 +13,7 @@ struct IBB_Section;
 struct IBB_Ini;
 struct IBB_Project;
 struct IBB_Project_Index;
+struct IBB_SectionID;
 struct IBB_VariableList;
 struct IBB_Link;
 struct IBB_Section_Desc;
@@ -103,7 +104,6 @@ struct IBB_Project_Index
     {
         return A.Ini == Ini && A.Section == Section;
     }
-    bool SameTarget(const IBB_Project& Proj, const IBB_Project_Index& A) const;
 
     std::string GetText() const;
 };
@@ -390,4 +390,63 @@ typename std::unordered_map<Str, T>::const_iterator IBB_TDIndex<Str>::Search(con
         }
         return Source.find(Nr);
     }
+}
+
+//这个东西实际上是IBB_Project_Index的代理。
+struct IBB_SectionID
+{
+    uint64_t ID;
+
+    bool operator==(const IBB_SectionID& A) const
+    {
+        return ID == A.ID;
+    }
+
+    bool operator<(const IBB_SectionID& A) const
+    {
+        return ID < A.ID;
+    }
+
+    IBB_SectionID() = default;
+    IBB_SectionID(const IBB_SectionID&) = default;
+    IBB_SectionID& operator=(const IBB_SectionID&) = default;
+    IBB_SectionID(uint64_t _ID) :ID(_ID) {}
+    IBB_SectionID(const IBB_Section_Desc& Desc);
+    IBB_SectionID(const std::string& Ini, const std::string& Sec = "");
+
+
+    const IBB_Ini* GetIni(const IBB_Project& Proj);
+    const IBB_Section* GetSec(const IBB_Project& Proj);
+    const IBB_Ini* GetIni(const IBB_Project& Proj) const;
+    const IBB_Section* GetSec(const IBB_Project& Proj) const;
+    IBB_Ini* GetIni(IBB_Project& Proj);
+    IBB_Section* GetSec(IBB_Project& Proj);
+    IBB_Ini* GetIni(IBB_Project& Proj) const;
+    IBB_Section* GetSec(IBB_Project& Proj) const;
+    bool Empty() const;
+
+    std::string GetText() const;
+    std::string Ini() const;
+    std::string Section() const;
+
+    IBB_Section_Desc ToDesc() const;
+    PairClipString ToClipPair() const;
+    IBB_Project_Index& ToIndex() const;
+
+    operator IBB_Section_Desc() const;
+    operator PairClipString() const;
+
+    static void ClearCache();
+};
+
+namespace std
+{
+    template<>
+    struct hash<IBB_SectionID>
+    {
+        size_t operator()(const IBB_SectionID& ID) const
+        {
+            return hash<uint64_t>()(ID.ID);
+        }
+    };
 }

@@ -198,8 +198,8 @@ struct IBR_Project
 {
     struct _Plink
     {
-        ImVec2 BeginR;
-        IBB_Section_Desc Dest;
+        IBB_SectionID Dest;
+        uint64_t SourceID;
         ImU32 Color;
         bool FromImport;
         bool IsSelfLinked;
@@ -246,6 +246,7 @@ struct IBR_Project
 
     //这个东西没啥开销，除了复制一份Desc ； 不保证是否存在
     IBR_Section _PROJ_CMD_NOINTERRUPT _PROJ_CMD_READ GetSection(const IBB_Section_Desc& Desc) _PROJ_CMD_BACK_CONST;
+    IBR_Section _PROJ_CMD_NOINTERRUPT _PROJ_CMD_READ GetSection(IBB_SectionID id) _PROJ_CMD_BACK_CONST;
 
     bool _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE RenameAll();
 

@@ -120,9 +120,10 @@ struct IBB_IniLine
 
 struct IBB_NewLink
 {
-    IBB_Project_Index From, To;
+    IBB_SectionID From, To;
     StrPoolID FromKey;
     ImU32 DefaultColor;
+    uint64_t SessionID;
 
     std::string GetText() const;
     bool Empty() const;//From和To都不能为空，有一个是"":""就返回true
@@ -181,6 +182,7 @@ struct IBB_Section
     std::string Register;
     bool CreateAsCommentBlock{ false };
     bool SingleVal{ false };//为True时只有一个值
+    IBB_SectionID ID;
 
     struct _Dynamic
     {
@@ -206,8 +208,8 @@ struct IBB_Section
 
     bool ChangeRoot(const IBB_Ini* NewRoot);
     bool Rename(const std::string& NewName);//无效化指向它的所有IBB_Section_Desc
-    bool AcceptNewNameInLinkTo(IBB_Section* Target, const std::string& NewName);//配合Rename
-    bool AcceptNewNameInLinkedBy(const IBB_Project_Index& OldIndex, const std::string& NewName);//配合Rename
+    bool AcceptNewNameInLinkTo(IBB_SectionID NewID, IBB_Section* Target, const std::string& NewName);//配合Rename
+    bool AcceptNewNameInLinkedBy(IBB_SectionID OldIndex, const std::string& NewName);//配合Rename
     bool ChangeAddress();//用于不改变内容但是改变存储位置时,供移动构造
     bool RemoveNameInLinkTo(IBB_Section* Target);//配合Isolate
     bool Isolate();//切断所有Link
@@ -223,6 +225,7 @@ struct IBB_Section
     const IBB_IniLine* GetLineFromSubSecs(StrPoolID Name) const;
     IBB_Project_Index GetThisIndex() const;
     IBB_Section_Desc GetThisDesc() const;
+    IBB_SectionID GetThisID() const;
     std::vector<StrPoolID> GetKeys(bool PrintExtraData) const;
     std::vector<std::string> GetLineOrderString() const;
     IBB_VariableList GetLineList(bool PrintExtraData, bool FromExport, std::vector<std::string>* TmpLineOrder = nullptr) const;//RARELY USED

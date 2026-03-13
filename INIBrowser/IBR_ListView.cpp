@@ -58,7 +58,7 @@ bool StringMatch(std::string str, std::string match, bool Full, bool CaseSensiti
 
 namespace IBR_ListView
 {
-    std::vector<IBB_Project_Index> CurrentList;
+    std::vector<IBB_SectionID> CurrentList;
     bool Search_Full{ false }, Search_CaseSensitive{ false }, Search_Regex{ false }, Search_ByRegistry{ false };
     bool NeedsUpdateV{ false };
 
@@ -229,7 +229,7 @@ namespace IBR_ListView
 
         }
 
-        std::set<IBB_Project_Index> InvalidSet;
+        std::set<IBB_SectionID> InvalidSet;
         SelAndFrozenN = 0;
         SelAndHiddenN = 0;
 
@@ -242,7 +242,7 @@ namespace IBR_ListView
         for (auto& idx : CurrentList)
         {
             auto rsc = IBR_Inst_Project.GetSection(idx);
-            auto secName = idx.Section.GetText();
+            auto secName = idx.Section();
             auto psec = idx.GetSec(IBF_Inst_Project.Project);
             if (psec == nullptr)
             {
@@ -301,7 +301,7 @@ namespace IBR_ListView
                 IBR_FullView::EqCenter = dat->EqPos + (dat->EqSize / 2.0);
             }
         }
-        std::erase_if(CurrentList, [&](const IBB_Project_Index& idx) { return InvalidSet.count(idx) != 0; });
+        std::erase_if(CurrentList, [&](const IBB_SectionID& idx) { return InvalidSet.count(idx) != 0; });
 
         ImGui::NewLine();
 
@@ -338,7 +338,7 @@ namespace IBR_ListView
             }
         }
 
-        bool SortOrderByDefault(const IBB_Project_Index& l, const IBB_Project_Index& r)
+        bool SortOrderByDefault(const IBB_SectionID& l, const IBB_SectionID& r)
         {
             auto sl = IBR_Inst_Project.GetSection(l);
             auto sr = IBR_Inst_Project.GetSection(r);
@@ -347,21 +347,21 @@ namespace IBR_ListView
             if (rl != rr)return rl < rr;
             return StrCmpZHCN(sl.GetDisplayName(), sr.GetDisplayName());
         }
-        bool SortOrderByRegName(const IBB_Project_Index& l, const IBB_Project_Index& r)
+        bool SortOrderByRegName(const IBB_SectionID& l, const IBB_SectionID& r)
         {
             return l < r;
         }
-        bool SortOrderByDisplayName(const IBB_Project_Index& l, const IBB_Project_Index& r)
+        bool SortOrderByDisplayName(const IBB_SectionID& l, const IBB_SectionID& r)
         {
             return StrCmpZHCN(IBR_Inst_Project.GetSection(l).GetDisplayName(),IBR_Inst_Project.GetSection(r).GetDisplayName());
         }
-        bool SortOrderByRegType(const IBB_Project_Index& l, const IBB_Project_Index& r)
+        bool SortOrderByRegType(const IBB_SectionID& l, const IBB_SectionID& r)
         {
             return IBR_Inst_Project.GetSection(l).GetRegTypeName() < IBR_Inst_Project.GetSection(r).GetRegTypeName();
         }
        
 
-        void SortByImpl(bool (*fn)(const IBB_Project_Index& l, const IBB_Project_Index& r))
+        void SortByImpl(bool (*fn)(const IBB_SectionID& l, const IBB_SectionID& r))
         {
             if (CurrentList.empty())RemakeSort();
             std::ranges::sort(CurrentList, fn);

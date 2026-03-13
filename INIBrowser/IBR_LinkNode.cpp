@@ -89,13 +89,12 @@ namespace IBR_NodeSession
     {
         //Very hot path
         //as fast as possible
+        IBB_SectionID SecID(Ini, Sec);
+        return GetSessionIdx(SecID, Sub, Line, Comp);
+    }
+    uint64_t GetSessionIdx(IBB_SectionID SecID, const std::string& Sub, size_t Line, size_t Comp)
+    {
         size_t i = 0, j = 0, h;
-        h = std::hash<std::string>{}(Ini);
-        i ^= h + 0x9e3779b9 + (i << 6) + (i >> 2);
-        j ^= h + 0x9ddfea08 + (j << 6) + (j >> 2);
-        h = std::hash<std::string>{}(Sec);
-        i ^= h + 0x9e3779b9 + (i << 6) + (i >> 2);
-        j ^= h + 0x9ddfea08 + (j << 6) + (j >> 2);
         h = std::hash<std::string>{}(Sub);
         i ^= h + 0x9e3779b9 + (i << 6) + (i >> 2);
         j ^= h + 0x9ddfea08 + (j << 6) + (j >> 2);
@@ -105,7 +104,9 @@ namespace IBR_NodeSession
         h = std::hash<size_t>{}(Comp);
         i ^= h + 0x9e3779b9 + (i << 6) + (i >> 2);
         j ^= h + 0x9ddfea08 + (j << 6) + (j >> 2);
-        return (uint64_t(i) << 32) | uint64_t(j);
+        auto Com = (uint64_t(i) << 32) | uint64_t(j);
+        Com ^= SecID.ID + 0x9e3779b97f4a7c15 + (Com << 12) + (Com >> 4);
+        return Com;
     }
 
     std::map<uint64_t, SessionValue> SessionData;
@@ -122,6 +123,26 @@ namespace IBR_NodeSession
     {
         auto key = GetSessionIdx(Ini, Sec, Sub, Line, Comp);
         return SessionData[key];
+    }
+
+    SessionValue& GetSessionValue(IBB_SectionID SecID, const std::string& Sub, size_t Line, size_t Comp)
+    {
+        auto key = GetSessionIdx(SecID, Sub, Line, Comp);
+        return SessionData[key];
+    }
+
+    SessionValue& GetSessionValue(uint64_t SessionID)
+    {
+        return SessionData[SessionID];
+    }
+
+    ImVec2 GetSessionBeginR(uint64_t SessionID)
+    {
+        return SessionData[SessionID].LastCenter;
+    }
+    void SetSessionBeginR(uint64_t SessionID, ImVec2 Center)
+    {
+        SessionData[SessionID].LastCenter = Center;
     }
 
     size_t SourceNodeKey::ID() const
@@ -203,9 +224,17 @@ namespace IBR_LinkNode
         std::unordered_set<uint64_t>* Pushed
     )
     {
+        bool IsImport = (FromSub.Default->Type == IBB_SubSec_Default::Import);
+        auto Center = IsImport ? ImportCenter() : DefaultCenter();
+        auto SecID = FromSub.Root->GetThisID();
+        auto SessID = IBR_NodeSession::GetSessionIdx(
+            SecID, FromSub.Default->Name, LineIdx, CompIdx
+        );
+        auto& Session = IBR_NodeSession::GetSessionValue(SessID);
+        Session.LastCenter = Center;
+        PushIdx(LineIdx, CompIdx, Pushed);
         if (!IBR_Inst_Project.RefreshLinkList) return;
 
-        PushIdx(LineIdx, CompIdx, Pushed);
         auto&& [LinkBegin, LinkEnd] = FromSub.GetLink(LineIdx, CompIdx);
         if (LinkBegin == LinkEnd)return;
         auto Links =
@@ -214,8 +243,7 @@ namespace IBR_LinkNode
                 return FromSub.NewLinkTo[p.second];
             });
 
-        bool IsImport = (FromSub.Default->Type == IBB_SubSec_Default::Import);
-        auto Center = IsImport ? ImportCenter() : DefaultCenter();
+        
 
         //sprintf_s(LogBufB, "<%p->%u:%u>%s PushLink : ", &FromSub, LineIdx, CompIdx, FromSub.Lines_ByName[LineIdx].c_str());
         //GlobalLogB.AddLog(LogBufB, false);
@@ -225,8 +253,9 @@ namespace IBR_LinkNode
             PushLinkForDraw(
                 Center,
                 L.To,
+                L.SessionID,
                 L.DefaultColor,
-                L.To.GetSec(IBF_Inst_Project.Project) == FromSub.Root,
+                L.To == FromSub.Root->GetThisID(),
                 false
             );
         }
@@ -301,7 +330,7 @@ namespace IBR_LinkNode
         auto Col = AdjustNodeCol(LinkNode.LinkCol, Empty, IsInherit);
         auto KeyName = FromSub.Lines_ByName[LineIdx];
         auto& Session = IBR_NodeSession::GetSessionValue(
-            Data.Desc.Ini, Data.Desc.Sec, FromSub.Default->Name, LineIdx, CompIdx
+            FromSub.Root->GetThisID(), FromSub.Default->Name, LineIdx, CompIdx
         );
         auto ModifyAndShow = [&](const std::string& NewValue, bool Active) -> auto
             {
@@ -357,7 +386,7 @@ namespace IBR_LinkNode
                 Session.LinkList = Links |
                         std::views::transform([&](auto p) {
                         auto Sec = IBR_Inst_Project.GetSection(p.To);
-                        auto T = p.To.Section.GetText();
+                        auto T = p.To.Section();
                         return IBR_NodeSession::SessionLinkList{ Sec.HasBack() ? Sec.GetDisplayName() : T, T, true };
                     }) |
                     std::views::filter([&](auto&& s) { return !s.Section.empty(); }) |
@@ -399,7 +428,7 @@ namespace IBR_LinkNode
             std::string Str;
             if (ShowReg)
                 Str = Links |
-                std::views::transform([&](auto p) {return p.To.Section.GetText(); }) |
+                std::views::transform([&](auto p) {return p.To.Section(); }) |
                 std::views::filter([&](auto&& s) { return !s.empty(); }) |
                 std::views::join_with(',') |
                 std::ranges::to<std::string>();
@@ -407,7 +436,7 @@ namespace IBR_LinkNode
                 Str = Links |
                 std::views::transform([&](auto p) {
                 auto Sec = IBR_Inst_Project.GetSection(p.To);
-                return Sec.HasBack() ? Sec.GetDisplayName() : p.To.Section.GetText();
+                return Sec.HasBack() ? Sec.GetDisplayName() : p.To.Section();
                     }) |
                 std::views::filter([&](auto&& s) { return !s.empty(); }) |
                         std::views::join_with(',') |
@@ -454,7 +483,7 @@ namespace IBR_LinkNode
             if (LinkNode.LinkLimit != 0)
             {
                 auto s = Links |
-                    std::views::transform([&](auto p) {return p.To.Section.GetText(); }) |
+                    std::views::transform([&](auto p) {return p.To.Section(); }) |
                     std::views::filter([&](auto&& s) { return !s.empty(); }) |
                     std::ranges::to<std::vector>();
                 bool Used = false;
@@ -484,24 +513,27 @@ namespace IBR_LinkNode
         ImVec2 Center
     )
     {
-        if (!IBR_Inst_Project.RefreshLinkList) return;
-
         auto& Bsec = *FromSub.Root;
-        auto& OnShow = Bsec.OnShow;
         for (auto& link : FromSub.NewLinkTo)
         {
-            auto it = OnShow.find(link.FromKey);
             //这个时候连自己的会折成一条线
             if (link.To.GetSec(IBF_Inst_Project.Project) == FromSub.Root)continue;
-            if (it == OnShow.end() || it->second.empty())
+            if (!Bsec.IsOnShow(link.FromKey))
             {
-                PushLinkForDraw(
-                    Center,
-                    link.To,
-                    link.DefaultColor,
-                    (link.FromKey == ImportKeyID()),
-                    false
-                );
+                if (IBR_Inst_Project.RefreshLinkList)
+                    PushLinkForDraw(
+                        Center,
+                        link.To,
+                        link.SessionID,
+                        link.DefaultColor,
+                        (link.FromKey == ImportKeyID()),
+                        false
+                    );
+                else
+                    IBR_NodeSession::SetSessionBeginR(
+                        link.SessionID,
+                        Center
+                    );
             }
         }
     }
@@ -514,26 +546,26 @@ namespace IBR_LinkNode
         bool SrcDragging
     )
     {
-        if (!IBR_Inst_Project.RefreshLinkList) return;
-
         for (auto&& [idx, lidx] : FromSub.LinkSrc)
         {
-            /*
-            uint64_t l = LineIdx;
-            uint64_t c = CompIdx;
-            uint64_t i = (l << 32) | c;
-            */
             size_t Line = idx >> 32;
             if (Line != LineIdx)continue;
             if (Pushed.contains(idx))continue;
             auto& link = FromSub.NewLinkTo[lidx];
-            PushLinkForDraw(
-                Center,
-                link.To,
-                link.DefaultColor,
-                link.To.GetSec(IBF_Inst_Project.Project) == FromSub.Root,
-                SrcDragging
-            );
+            if (IBR_Inst_Project.RefreshLinkList)
+                PushLinkForDraw(
+                    Center,
+                    link.To,
+                    link.SessionID,
+                    link.DefaultColor,
+                    link.To == FromSub.Root->GetThisID(),
+                    SrcDragging
+                );
+            else
+                IBR_NodeSession::SetSessionBeginR(
+                    link.SessionID,
+                    Center
+                );
         }
     }
 }

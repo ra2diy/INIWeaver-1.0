@@ -322,6 +322,11 @@ IBR_Section _PROJ_CMD_READ IBR_Project::GetSection(const IBB_Section_Desc& Desc)
     return IBR_Section{ this,rit->second };
 }
 
+IBR_Section _PROJ_CMD_READ IBR_Project::GetSection(IBB_SectionID id) _PROJ_CMD_BACK_CONST
+{
+    return GetSection(id.ToDesc());
+}
+
 void _PROJ_CMD_NOINTERRUPT _PROJ_CMD_READ IBR_Project::EnsureSection(const IBB_Section_Desc& Desc, const std::string& DisplayName) _PROJ_CMD_BACK_CONST
 {
     

@@ -307,7 +307,7 @@ IBB_Section* IBB_Project::CreateNewSection(const IBB_Section_Desc& Desc)
 
 bool IBB_Project::AddNewLinkToLinkGroup(const IBB_Section_Desc& From, const IBB_Section_Desc& To)
 {
-    IBB_Project_Index FIn(From), TIn(To);
+    IBB_SectionID FIn(From), TIn(To);
     auto FromPtr = FIn.GetSec(*this);
     if (FromPtr == nullptr)
     {

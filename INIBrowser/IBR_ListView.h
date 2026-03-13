@@ -16,7 +16,7 @@ namespace IBR_ListView
         COUNT
     };
     const static int SortTypeCount = static_cast<int>(SortBy::COUNT);
-    extern std::vector<IBB_Project_Index> CurrentList;
+    extern std::vector<IBB_SectionID> CurrentList;
 
     void RenderUI();
 

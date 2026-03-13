@@ -99,7 +99,12 @@ IBB_Project_Index IBB_Project::GetSecIndex(const std::string& Name, const std::s
 
     return { "","" };
 }
-
+IBB_SectionID IBB_Project::GetSecID(const std::string& Name, const std::string& PriorIni) const
+{
+    auto Idx = GetSecIndex(Name, PriorIni);
+    if (Idx.Empty())return {};
+    else return IBB_SectionID(Idx.Ini.Name, Idx.Section.Name);
+}
 
 
 
