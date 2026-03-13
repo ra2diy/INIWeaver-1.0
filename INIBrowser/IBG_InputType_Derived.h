@@ -214,9 +214,9 @@ struct IIC_EnumCombo final : public IBG_InputComponent
 {
     std::unordered_map<std::string, IICDescStr> Options;//AllowedValue : DisplayName ; if empty then any value allowed
     std::vector<std::string> OptionOrder;
-    std::string Hint;
+    IICDescStr Hint;
     int ValueID;
-    IIC_EnumCombo(IBB_ValueContainer& Cont, int valueid, const std::string& InitialValue, const std::string& hint, const std::unordered_map<std::string, IICDescStr>& options, const std::vector<std::string>& OptionOrder);
+    IIC_EnumCombo(IBB_ValueContainer& Cont, int valueid, const std::string& InitialValue, const IICDescStr& hint, const std::unordered_map<std::string, IICDescStr>& options, const std::vector<std::string>& OptionOrder);
 
     IBB_UpdateResult RenderUI(IBB_ValueContainer& Cont, IICStatus& Status);
     std::string FormatValue(IBB_ValueContainer&, IBB_InputValue& Val, const IBB_InputFormat& Format);

@@ -86,7 +86,7 @@ void TakeByLinkLimit(std::string& Value, int LinkLimit)
     auto& spc = SplitParamCached(Value);
     if ((int)spc.size() <= LinkLimit) return;
     if (LinkLimit == 1)Value = spc.back();
-    Value = spc |
+    else Value = spc |
         std::views::take(LinkLimit) |
         std::views::join_with(',') |
         std::ranges::to<std::string>();
@@ -359,6 +359,7 @@ bool IBB_IniLine_Data_String::SetValue(const std::string& Val)
     Value = Val;
     _Empty = Val.empty();
     return true;
+    //return LinkNodeContext::CurSub ? LinkNodeContext::CurSub->UpdateAll() : true;
 }
 bool IBB_IniLine_Data_String::MergeValue(const std::string& Val) { return SetValue(Val); }
 bool IBB_IniLine_Data_String::Clear()
@@ -485,7 +486,8 @@ IBB_IniLine_Data_IIF::IBB_IniLine_Data_IIF(const IBB_IniLine_Default* Default)
 bool IBB_IniLine_Data_IIF::SetValue(const std::string& Val)
 {
     Value->ParseFromString(Val);
-    return true;
+    _Empty = Val.empty();
+    return LinkNodeContext::CurSub ? LinkNodeContext::CurSub->UpdateAll() : true;
 }
 bool IBB_IniLine_Data_IIF::MergeValue(const std::string& Val) { return SetValue(Val); }
 bool IBB_IniLine_Data_IIF::Clear()

@@ -225,7 +225,8 @@ IICPtr InputFormComponentFactory::CreateInputComponent_Special(IBB_ValueContaine
             int ValueID = oValueID.GetInt();
 
             auto InitValue = Obj.ItemStringOr("InitialValue", "");
-            auto Hint = Obj.ItemStringOr("Hint", "");
+            auto oHint = Obj.GetObjectItem("Hint");
+            IICDescStr Hint = IICDescStr::Load(oHint);
             auto Options = Obj.ItemMapObjectOr("Options") |
                 std::views::transform([](auto&& p) {return std::make_pair(p.first, IICDescStr::Load(p.second)); }) |
                 std::ranges::to<std::unordered_map<std::string, IICDescStr>>();

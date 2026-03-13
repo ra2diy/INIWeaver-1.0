@@ -1185,10 +1185,10 @@ void IIC_MultipleChoice::ResetState(IBB_ValueContainer& Cont) const
 }
 
 // ========== IIC_EnumCombo ==========
-IIC_EnumCombo::IIC_EnumCombo(IBB_ValueContainer& Cont, int valueid, const std::string& InitialValue, const std::string& hint, const std::unordered_map<std::string, IICDescStr>& options, const std::vector<std::string>& order)
+IIC_EnumCombo::IIC_EnumCombo(IBB_ValueContainer& Cont, int valueid, const std::string& InitialValue, const IICDescStr& hint, const std::unordered_map<std::string, IICDescStr>& options, const std::vector<std::string>& order)
     : Options(options), Hint(hint), ValueID(valueid), OptionOrder(order) {
-    Hint += "##";
-    Hint += RandStr(12);
+    Hint.Short += "##";
+    Hint.Short += RandStr(12);
     auto& Val = Cont.GetValue(ValueID);
     Val.ResetState<IIS_String>(InitialValue);
     Val.NeedsUpdate(Cont, *this);
@@ -1205,10 +1205,13 @@ IBB_UpdateResult IIC_EnumCombo::RenderUI(IBB_ValueContainer& Cont, IICStatus&) {
     auto CurrentValue = Var.Dirty ? Var.StateValPtr->Format(Fmt) : Var.Value;
 
     auto Active = false;
-    auto Size = ImGui::CalcTextSize(Hint.c_str(), NULL, true);
-    ImGui::SetNextItemWidth(ImGui::GetWindowContentRegionWidth() - ImGui::GetCursorPosX() - Size.x);
-    IBR_Combo(Hint.c_str(), (Options.contains(CurrentValue) ? Options[CurrentValue].Short : CurrentValue).c_str(), 0,
+    auto Size = ImGui::CalcTextSize(Hint.Short.c_str(), NULL, true);
+    ImGui::SetNextItemWidth(
+        ImGui::GetWindowContentRegionWidth() - ImGui::GetCursorPosX() - Size.x - ImGui::GetStyle().FramePadding.x);
+    if(IBR_Combo(Hint.Short.c_str(),
+        (Options.contains(CurrentValue) ? Options[CurrentValue].Short : CurrentValue).c_str(), 0,
         [&] {
+            
             Active = ImGui::IsItemActive();
             for (auto& Key : OptionOrder)
             {
@@ -1228,7 +1231,15 @@ IBB_UpdateResult IIC_EnumCombo::RenderUI(IBB_ValueContainer& Cont, IICStatus&) {
                 Active |= ImGui::IsItemActive();
             }
         }
-    );
+    ));
+    else if (ImGui::IsItemHovered())
+    {
+        IBR_ToolTip(Hint.Long);
+    }
+
+    ImGui::SameLine();
+    ImGui::NewLine();
+    
 
     if (Changed)
     {

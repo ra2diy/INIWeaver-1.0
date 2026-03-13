@@ -1579,7 +1579,12 @@ namespace IBR_WorkSpace
         if (!IBR_ProjectManager::IsOpen())return;
         auto vu = ExtSetPos.Release();
 
-        if(IBR_Inst_Project.RefreshLinkList)IBR_Inst_Project.LinkList.clear();
+        bool Cleared = false;
+        if (IBR_Inst_Project.RefreshLinkList)
+        {
+            IBR_Inst_Project.LinkList.clear();
+            Cleared = true;
+        }
 
         bool HasFocusedModule{ false };
 
@@ -1827,7 +1832,7 @@ namespace IBR_WorkSpace
         CurOnRender = nullptr;
         CurOnRender_ID = UINT64_MAX;
 
-        IBR_Inst_Project.RefreshLinkList = false;
+        if(Cleared)IBR_Inst_Project.RefreshLinkList = false;
         RenderUI_Links();
     }
 }
