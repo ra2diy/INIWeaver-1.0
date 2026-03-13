@@ -1441,7 +1441,7 @@ namespace IBR_WorkSpace
 
             auto Rsec = IBR_Inst_Project.GetSection(Link.Dest);
             auto RSD = Rsec.GetSectionData();
-            if (RSD != nullptr && Rsec.HasBack())
+            if (RSD != nullptr)
             {
                 if (RSD->Hidden)continue;
 
@@ -1582,7 +1582,6 @@ namespace IBR_WorkSpace
         for (auto& sp : IBR_Inst_Project.IBR_SectionMap)
         {
             auto RSec = IBR_Inst_Project.GetSectionFromID(sp.first);
-            if (!RSec.HasBack())continue;
 
             //IBR_Inst_Debug.AddMsgCycle([=]() {ImGui::TextWrapped("Render Section %s", sp.second.Desc.GetText().c_str());});
 
@@ -1652,7 +1651,7 @@ namespace IBR_WorkSpace
             if (!sd.Hidden || sd.First)
             {
                 //ImGuiWindowFlags_NoClamping 是非标的私货，小朋友们不要学坏哦~
-                ImGui::Begin((sd.Desc.Ini + u8" - " + sd.Desc.Sec).c_str(), &sd.IsOpen,
+                ImGui::Begin(sd.ModuleStrID.c_str(), &sd.IsOpen,
                     ImGuiWindowFlags_NoClamping |
                     ImGuiWindowFlags_NoTitleBar |
                     ImGuiWindowFlags_NoScrollbar |

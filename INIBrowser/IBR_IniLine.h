@@ -6,7 +6,7 @@
 
 struct IBR_IniLine
 {
-    void RenderUI(const char* Line, const char* Hint, IBB_IniLine& Back, bool IsWorkSpace);
+    static void RenderUI(const char* Line, const char* Hint, IBB_IniLine& Back, bool IsWorkSpace);
 };
 
 struct SidebarLine
@@ -24,6 +24,6 @@ struct SidebarLine
 
 struct WorkSpaceLine
 {
-    IBR_IniLine Edit;
-    void RenderUI(const char* Line, const char* Hint, IBB_IniLine& Back);
+    static IBR_IniLine Edit;
+    static void RenderUI(const char* Line, const char* Hint, IBB_IniLine& Back);
 };

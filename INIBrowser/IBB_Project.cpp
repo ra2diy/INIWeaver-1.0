@@ -18,12 +18,12 @@ void IBB_DefaultTypeList::EnsureType(const IBB_DefaultTypeAlt& D)
     L.Name = D.Name;
     L.DescShort = D.DescShort;
     L.DescLong = D.DescLong;
-    L.Color = D.Color;
+    L.LinkNode.LinkCol = D.Color;
     L.Known = true;
     L.Input = &IBB_DefaultRegType::GetInputType(PoolStr(D.Input));
     L.InputName = D.Input;
-    L.TypeAlt = D.LinkType;
-    L.LinkLimit = D.LinkLimit;
+    L.LinkNode.LinkType = D.LinkType;
+    L.LinkNode.LinkLimit = D.LinkLimit;
     IBB_DefaultRegType::EnsureRegType(PoolStr(D.LinkType));
 }
 
@@ -253,14 +253,14 @@ bool IBB_Project::RegisterSection(const std::string& Name, const std::string& In
 {
     IBB_RegisterList& Li = GetRegisterList(Name, IniName);
     Li.List.push_back(const_cast<IBB_Section*>(&Section));
-    Section.Register = Li.Type;
+    Section.Register = NewPoolStr(Li.Type);
     return true;
 }
 bool IBB_Project::RegisterSection(size_t RegListID, IBB_Section& Section)
 {
     if (RegListID >= RegisterLists.size())return false;
     RegisterLists.at(RegListID).List.push_back(const_cast<IBB_Section*>(&Section));
-    Section.Register = RegisterLists.at(RegListID).Type;
+    Section.Register = NewPoolStr(RegisterLists.at(RegListID).Type);
     return true;
 }
 IBB_Section* IBB_Project::CreateNewSection(const IBB_Section_Desc& Desc)

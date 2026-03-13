@@ -28,7 +28,7 @@ bool IBB_Section::Generate(const ModuleClipData& Clip)
         OnShow.clear();
         LineOrder.clear();
         Inherit = Clip.Inherit;
-        Register = Clip.Register;
+        Register = NewPoolStr(Clip.Register);
         IBB_DefaultRegType::GenerateDLK(Clip.DefaultLinkKey, Register, DefaultLinkKey, DefaultLinkKey_UpValue);
         for (auto& L : Clip.LinkGroup_LinkTo)
             Root->Root->AddNewLinkToLinkGroup({ Root->Name,Name }, { L.A, L.B });
@@ -49,7 +49,7 @@ bool IBB_Section::Generate(const ModuleClipData& Clip)
             SubSecs.clear();
             OnShow.clear();
             Inherit.clear();
-            Register.clear();
+            Register = EmptyPoolStr;
             LineOrder.clear();
             Comment = Clip.Comment;
         }
@@ -73,7 +73,7 @@ bool IBB_Section::Generate(const ModuleClipData& Clip)
             OnShow.clear();
             LineOrder.clear();
             LinkGroup_NewLinkTo.clear();
-            Register = Clip.Register;
+            Register = NewPoolStr(Clip.Register);
             Inherit = Clip.Inherit;
             IBB_DefaultRegType::GenerateDLK(Clip.DefaultLinkKey, Register, DefaultLinkKey, DefaultLinkKey_UpValue);
             IBB_VariableList VL;
@@ -124,7 +124,7 @@ void IBB_Section::GetClipData(ModuleClipData& Clip)
         //IBB_VariableList DD;
         //DefaultLinkKey.Flatten(DD);
         for (auto& [A, B] : DefaultLinkKey)
-            Clip.DefaultLinkKey.push_back({ A, PoolStr(B) });
+            Clip.DefaultLinkKey.push_back({ PoolStr(A), PoolStr(B) });
         for (auto& L : LinkGroup_NewLinkTo)
             Clip.LinkGroup_LinkTo.push_back(L.To);
         for (auto& [A, B] : VarList.Value)
@@ -169,7 +169,7 @@ void IBB_Section::GetClipData(ModuleClipData& Clip)
             Clip.Desc.A = Root->Name;
             Clip.Desc.B = Name;
             Clip.Inherit = Inherit;
-            Clip.Register = Register;
+            Clip.Register = PoolStr(Register);
             std::unordered_map <std::string, IniToken> Tokens;
             for (auto& sec : SubSecs)
             {
@@ -205,7 +205,7 @@ void IBB_Section::GetClipData(ModuleClipData& Clip)
             //IBB_VariableList DD;
             //DefaultLinkKey.Flatten(DD);
             for (auto& [A, B] : DefaultLinkKey)
-                Clip.DefaultLinkKey.push_back({ A, PoolStr(B) });
+                Clip.DefaultLinkKey.push_back({ PoolStr(A), PoolStr(B) });
             for (auto& [A, B] : VarList.Value)
                 Clip.VarList.push_back({ A, B });
 
@@ -458,22 +458,22 @@ const std::string& IBB_Section::GetOnShow(StrPoolID Key) const
     return _F == this->OnShow.end() ? Empty : _F->second;
 }
 
-StrPoolID IBB_Section::GetDLK(const std::string& Reg) const
+StrPoolID IBB_Section::GetDLK(StrPoolID Reg) const
 {
     if(DefaultLinkKey.contains(Reg))
         return DefaultLinkKey.at(Reg);
-    if (DefaultLinkKey_UpValue->HasValue(Reg))
-        return NewPoolStr(DefaultLinkKey_UpValue->GetVariable(Reg));
+    if (DefaultLinkKey_UpValue->contains(Reg))
+        return DefaultLinkKey_UpValue->at(Reg);
 
-    if (Reg == Register && DefaultLinkKey.contains("_MyType"))
-        return DefaultLinkKey.at("_MyType");
-    if (Reg == Register && DefaultLinkKey_UpValue->HasValue("_MyType"))
-        return NewPoolStr(DefaultLinkKey_UpValue->GetVariable("_MyType"));
+    if (Reg == Register && DefaultLinkKey.contains(MyTypeID()))
+        return DefaultLinkKey.at(MyTypeID());
+    if (Reg == Register && DefaultLinkKey_UpValue->contains(MyTypeID()))
+        return DefaultLinkKey_UpValue->at(MyTypeID());
 
-    if (DefaultLinkKey.contains("_AnyType"))
-        return DefaultLinkKey.at("_AnyType");
-    if (DefaultLinkKey_UpValue->HasValue("_AnyType"))
-        return NewPoolStr(DefaultLinkKey_UpValue->GetVariable("_AnyType"));
+    if (DefaultLinkKey.contains(AnyTypeID()))
+        return DefaultLinkKey.at(AnyTypeID());
+    if (DefaultLinkKey_UpValue->contains(AnyTypeID()))
+        return DefaultLinkKey_UpValue->at(AnyTypeID());
 
     return EmptyPoolStr;
 }

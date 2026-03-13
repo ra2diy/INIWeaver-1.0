@@ -3,14 +3,7 @@
 #include "IBB_Index.h"
 #include <functional>
 
-struct LinkNodeSetting
-{
-    std::string LinkType;
-    int LinkLimit;//1 for single;0 for no links;-1 for unlimited;others for limited
-    ImU32 LinkCol;
 
-    bool Load(JsonObject Obj, bool* HasCustom = nullptr);
-};
 
 enum class ValidateResult
 {

@@ -75,10 +75,10 @@ struct IBR_SectionData
     bool Hidden{ false };
     float FinalY{ 0.0f };
     float WidthFix{ 0.0f };
-    std::unordered_map<StrPoolID, WorkSpaceLine> ActiveLines;
     std::shared_ptr<BufString> CommentEdit;
     ImVec2 ReWindowUL, ReOffset;
     IBB_Section* BackPtr_Cached;
+    std::optional<ImColor> TitleCol_Cached;
 
     std::string ModuleStrID;
     uint64_t IncludedByModule{ INVALID_MODULE_ID };
@@ -188,7 +188,7 @@ struct SectionDragData
 struct LineDragData
 {
     IBB_Section_Desc Desc;
-    std::string TypeAlt;
+    StrPoolID TypeAlt;
     IBR_NodeSession::SessionValue* pSession;
 };
 
@@ -209,6 +209,7 @@ struct IBR_Project
     ModuleID_t MaxID{ 0 };//TODO:你还能使用超过ULL_MAX个ID？要是真的如此那就修一修
     std::map<ModuleID_t, IBR_SectionData> IBR_SectionMap;
     std::map<IBB_Section_Desc, ModuleID_t> IBR_Rev_SectionMap;
+    std::map<IBB_SectionID, ModuleID_t> IBR_Rev_SectionMapII;
     std::unordered_map<std::string, SectionDragData> IBR_SecDragMap;
     std::string DragConditionText;
     std::string DragConditionTextAlt;

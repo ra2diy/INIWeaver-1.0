@@ -242,7 +242,7 @@ namespace IBR_ProjectManager
         std::unordered_map<std::string, std::vector<std::string>> Reg;
         for (auto& Ini : Proj.Inis)
             for (auto& [SN, Sec] : Ini.Secs)
-                Reg[Sec.Register].push_back(Sec.Name);
+                Reg[PoolStr(Sec.Register)].push_back(Sec.Name);
         for (auto& [N, R] : Reg)
         {
             auto& RegType = IBB_DefaultRegType::GetRegType(N);

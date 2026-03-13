@@ -188,6 +188,10 @@ bool _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE IBR_Section::Rename(con
     Root->IBR_Rev_SectionMap.erase(Desc);
     Root->IBR_Rev_SectionMap[desc] = ID;
 
+    auto sid = IBB_SectionID{ Desc };
+    Root->IBR_Rev_SectionMapII.erase(sid);
+    Root->IBR_Rev_SectionMapII[sid] = ID;
+
     {
         IBD_RInterruptF(x);
         auto pSec = const_cast<IBB_Section*>(IBF_Inst_Project.Project.GetSec(IBB_Project_Index{ Desc }));

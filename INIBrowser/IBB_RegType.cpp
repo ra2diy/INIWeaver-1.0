@@ -28,9 +28,22 @@ std::wstring FileName(const std::wstring& ss);
 std::vector<std::wstring> FindFileVec(const std::wstring& pattern);
 void subreplace(std::string& dst_str, const std::string& sub_str, const std::string& new_str);
 
+const char* AnyTypeName = "_AnyType";
+const char* MyTypeName = "_MyType";
+StrPoolID AnyTypeID()
+{
+    static StrPoolID ID = NewPoolStr(AnyTypeName);
+    return ID;
+}
+StrPoolID MyTypeID()
+{
+    static StrPoolID ID = NewPoolStr(MyTypeName);
+    return ID;
+}
+
 namespace IBB_DefaultRegType
 {
-    std::unordered_map<_TEXT_UTF8 std::string, std::set<_TEXT_UTF8 std::string>>CompoundTypeIndex;
+    std::unordered_map<StrPoolID, std::set<StrPoolID>>CompoundTypeIndex;
     std::unordered_map<_TEXT_UTF8 std::string, IBB_CompoundRegType>CompoundTypes;
     std::unordered_map<_TEXT_UTF8 std::string, IBB_RegType>RegisterTypes;
     const ImColor DefaultColor{ ImColor(255, 255, 255, 0) };
@@ -198,7 +211,9 @@ R"({
         Reg.UseOwnName = Obj.ItemBoolOr(u8"UseOwnName", false);
         Reg.ValidateOptions = Obj.ItemBoolOr(u8"ValidateOptions", false);
 
-        Reg.DefaultLinks.Value = Obj.ItemMapStringOr(u8"DefaultLinks");
+        auto Val = Obj.ItemMapStringOr(u8"DefaultLinks");
+        for (auto&& [k, v] : Val)Reg.DefaultLinks.emplace(NewPoolStr(k), NewPoolStr(v));
+
         Reg.Options = Obj.ItemMapStringOr(u8"Options");
 
         S = Obj.GetObjectItem(u8"Name");
@@ -263,7 +278,7 @@ R"({
         auto& P = CompoundTypes[Com.Name];
         P = std::move(Com);
         for (auto& V : P.Regs)
-            CompoundTypeIndex[V].insert(P.Name);
+            CompoundTypeIndex[NewPoolStr(V)].insert(NewPoolStr(P.Name));
     }
     void EnsureRegType(const _TEXT_UTF8 std::string& Type)
     {
@@ -321,32 +336,33 @@ R"({
 
         for (auto& [Name, Reg] : RegisterTypes)
         {
-            auto it = CompoundTypeIndex.find(Name);
+            auto it = CompoundTypeIndex.find(NewPoolStr(Name));
             if (it != CompoundTypeIndex.end())
             {
                 for (auto& Comp : it->second)
                 {
-                    auto cit = CompoundTypes.find(Comp);
+                    auto cit = CompoundTypes.find(PoolStr(Comp));
                     if (cit != CompoundTypes.end())
                     {
-                        Reg.DefaultLinks.Merge(cit->second.DefaultLinks, true);
+                        for(auto& [k, v] : cit->second.DefaultLinks.Value)
+                            Reg.DefaultLinks[NewPoolStr(k)] = NewPoolStr(v);
                     }
                 }
             }
         }
         for (auto& [Name, Reg] : RegisterTypes)
         {
-            std::unordered_map<std::string, std::string> Temp;
-            for (auto& [K, V] : Reg.DefaultLinks.Value)
+            std::unordered_map<StrPoolID, StrPoolID> Temp;
+            for (auto& [K, V] : Reg.DefaultLinks)
             {
-                auto it = CompoundTypes.find(K);
+                auto it = CompoundTypes.find(PoolStr(K));
                 if (it != CompoundTypes.end())
                 {
                     for (auto& R : it->second.Regs)
-                        Temp[R] = V;
+                        Temp[NewPoolStr(R)] = V;
                 }
             }
-            Reg.DefaultLinks.Value.insert(Temp.begin(), Temp.end());
+            Reg.DefaultLinks.insert(Temp.begin(), Temp.end());
         }
 
 
@@ -391,9 +407,19 @@ R"({
     {
         return RegisterTypes.find(Type) != RegisterTypes.end();
     }
+    bool HasRegType(StrPoolID Type)
+    {
+        return RegisterTypes.find(PoolStr(Type)) != RegisterTypes.end();
+    }
     IBB_RegType& GetRegType(const _TEXT_UTF8 std::string& Type)
     {
         auto it = RegisterTypes.find(Type);
+        if (it == RegisterTypes.end())return __Default;
+        else return it->second;
+    }
+    IBB_RegType& GetRegType(StrPoolID Type)
+    {
+        auto it = RegisterTypes.find(PoolStr(Type));
         if (it == RegisterTypes.end())return __Default;
         else return it->second;
     }
@@ -410,6 +436,10 @@ R"({
             }
         }
         return GetRegType(Type).IniType;
+    }
+    const _TEXT_UTF8 std::string& GetIniTypeOfReg(StrPoolID Type)
+    {
+        return GetIniTypeOfReg(PoolStr(Type));
     }
 
     bool HasInputType(const _TEXT_UTF8 std::string& Type)
@@ -433,7 +463,7 @@ R"({
     LinkNodeSetting GetDefaultLinkNodeSetting()
     {
         return LinkNodeSetting{
-            "_AnyType", -1, DefaultNodeColor
+            AnyTypeID(), -1, DefaultNodeColor
         };
     }
     StrBoolType GetDefaultStrBoolType()
@@ -448,25 +478,25 @@ R"({
             return GetDefaultInputType();
     }
     //A 属于 B
-    const bool ContainType(const _TEXT_UTF8 std::string& TypeA, const _TEXT_UTF8 std::string& TypeB)
+    const bool ContainType(StrPoolID TypeA, StrPoolID TypeB)
     {
-        if (TypeB == "_AnyType")return true;
+        if (TypeB == AnyTypeID())return true;
         auto it = CompoundTypeIndex.find(TypeA);
         if (it == CompoundTypeIndex.end())return false;
         return it->second.contains(TypeB);
     }
-    const bool MatchType(const _TEXT_UTF8 std::string& TypeA, const _TEXT_UTF8 std::string& TypeB)
+    const bool MatchType(StrPoolID TypeA, StrPoolID TypeB)
     {
         if (TypeA == TypeB)return true;
         return ContainType(TypeA, TypeB) || ContainType(TypeB, TypeA);
     }
-    void GenerateDLK(const std::vector<PairClipString>& DLK1, const std::string& Register, std::unordered_map<std::string, StrPoolID>& DefaultLinkKey, IBB_VariableList*& UpValue)
+    void GenerateDLK(const std::vector<PairClipString>& DLK1, StrPoolID Register, std::unordered_map<StrPoolID, StrPoolID>& DefaultLinkKey, std::unordered_map<StrPoolID, StrPoolID>*& UpValue)
     {
         for (auto& L : DLK1)
         {
             auto it = CompoundTypes.find(L.A);
-            if (it == CompoundTypes.end())DefaultLinkKey[L.A] = NewPoolStr(L.B);
-            else for (auto& V : it->second.Regs)DefaultLinkKey[V] = NewPoolStr(L.B);
+            if (it == CompoundTypes.end())DefaultLinkKey[NewPoolStr(L.A)] = NewPoolStr(L.B);
+            else for (auto& V : it->second.Regs)DefaultLinkKey[NewPoolStr(V)] = NewPoolStr(L.B);
         }
         auto& Reg = GetRegType(Register);
         UpValue = &Reg.DefaultLinks;

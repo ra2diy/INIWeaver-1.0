@@ -34,7 +34,8 @@ bool LinkNodeSetting::Load(JsonObject Obj, bool* HasCustom)
 {
     if (!Obj)return false;
     auto LNS = IBB_DefaultRegType::GetDefaultLinkNodeSetting();
-    LinkType = Obj.ItemStringOr("Type", LNS.LinkType);
+    auto TypeStr = Obj.ItemStringOr("Type", "");
+    LinkType = TypeStr.empty() ? LNS.LinkType : NewPoolStr(TypeStr);
     LinkLimit = Obj.ItemIntOr("Limit", LNS.LinkLimit);
     auto oDNC = Obj.GetObjectItem(u8"Color");
     if (oDNC.Available())
@@ -109,7 +110,7 @@ namespace IBR_NodeSession
         return Com;
     }
 
-    std::map<uint64_t, SessionValue> SessionData;
+    std::unordered_map<uint64_t, SessionValue> SessionData;
 
     SessionValue& NewSessionValue(const std::string& Ini, const std::string& Sec, const std::string& Sub, size_t Line, size_t Comp)
     {
@@ -185,7 +186,7 @@ namespace IBR_LinkNode
         {
             auto& ln = LinkNodeContext::CurSub->Lines_ByName[LinkNodeContext::LineIndex];
             auto& Line = LinkNodeContext::CurSub->Lines[ln];
-            if (Line.Default && IBB_DefaultRegType::HasRegType(PoolStr(Line.Default->TypeAlt)))
+            if (Line.Default && IBB_DefaultRegType::HasRegType(Line.Default->LinkNode.LinkType))
                 return true;
         }
         return false;
@@ -517,7 +518,7 @@ namespace IBR_LinkNode
         for (auto& link : FromSub.NewLinkTo)
         {
             //这个时候连自己的会折成一条线
-            if (link.To.GetSec(IBF_Inst_Project.Project) == FromSub.Root)continue;
+            if (link.To == FromSub.Root->ID)continue;
             if (!Bsec.IsOnShow(link.FromKey))
             {
                 if (IBR_Inst_Project.RefreshLinkList)

@@ -27,7 +27,7 @@ struct IBB_RegType
     std::string Name;
     std::string ExportName;
     int Count;
-    IBB_VariableList DefaultLinks;
+    std::unordered_map<StrPoolID, StrPoolID> DefaultLinks;
     std::unordered_map<std::string, std::string> Options;//AllowedValue : DisplayName ; if empty then any value allowed
 
     std::string GetNoName();
@@ -46,6 +46,11 @@ struct PairClipString;
 struct LinkNodeSetting;
 struct IBG_InputType;
 
+extern const char* AnyTypeName;
+extern const char* MyTypeName;
+StrPoolID AnyTypeID();
+StrPoolID MyTypeID();
+
 namespace IBB_DefaultRegType
 {
     extern const ImColor DefaultColor;
@@ -54,8 +59,11 @@ namespace IBB_DefaultRegType
     bool Load(JsonObject Obj);
     bool LoadFromFile(const wchar_t* FileName);
     bool HasRegType(const _TEXT_UTF8 std::string& Type);
+    bool HasRegType(StrPoolID Type);
     IBB_RegType& GetRegType(const _TEXT_UTF8 std::string& Type);
+    IBB_RegType& GetRegType(StrPoolID Type);
     const _TEXT_UTF8 std::string& GetIniTypeOfReg(const _TEXT_UTF8 std::string& Type);
+    const _TEXT_UTF8 std::string& GetIniTypeOfReg(StrPoolID Type);
     bool HasInputType(const _TEXT_UTF8 std::string& Type);
     IBG_InputType& GetInputType(const _TEXT_UTF8 std::string& Type);
     IBG_InputType& GetDefaultInputType();
@@ -63,8 +71,8 @@ namespace IBB_DefaultRegType
     LinkNodeSetting GetDefaultLinkNodeSetting();
     StrBoolType GetDefaultStrBoolType();
     IBG_InputType& SelectInputTypeByValue(const _TEXT_UTF8 std::string& Value);
-    const bool MatchType(const _TEXT_UTF8 std::string& TypeA, const _TEXT_UTF8 std::string& TypeB);
-    void GenerateDLK(const std::vector<PairClipString>& DLK1, const std::string& Register, std::unordered_map<std::string, StrPoolID>& DefaultLinkKey, IBB_VariableList*& UpValue);
+    const bool MatchType(StrPoolID TypeA, StrPoolID TypeB);
+    void GenerateDLK(const std::vector<PairClipString>& DLK1, StrPoolID Register, std::unordered_map<StrPoolID, StrPoolID>& DefaultLinkKey, std::unordered_map<StrPoolID, StrPoolID>*& UpValue);
     void SwitchLightColor();
     void SwitchDarkColor();
     void ClearModuleCount();

@@ -339,7 +339,6 @@ namespace IBR_EditFrame
 
         IBG_Undo.SomethingShouldBeHere();
 
-        rsd->ActiveLines.clear();
         pbk->SetText(EditBuf);
         ResetEdit(pbk);
 

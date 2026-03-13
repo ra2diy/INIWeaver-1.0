@@ -162,7 +162,7 @@ std::optional<ModuleID_t> _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE IB
     if(RD == nullptr)return std::nullopt;
     IBG_Undo.SomethingShouldBeHere();
 
-    BSec->Register = loc("Back_ComposeBlockName");
+    BSec->Register = NewPoolStr(loc("Back_ComposeBlockName"));
     RD->IncludingModules = IDs;
 
     //剔除被缩合的模块
@@ -286,16 +286,11 @@ bool _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE IBR_Project::RenameAll(
 
 IBR_Section _PROJ_CMD_READ IBR_Project::GetSection(const IBB_Section_Desc& Desc)
 {
-    if (EnableLogEx)
-    {
-        sprintf_s(LogBuf, "IBR_Project::GetSection : Desc=%s", Desc.GetText().c_str());
-        GlobalLog.AddLog_CurTime(false); GlobalLog.AddLog(LogBuf);
-    }
-
     auto rit = IBR_Rev_SectionMap.find(Desc);
     if (rit == IBR_Rev_SectionMap.end())
     {
         auto pBack = IBF_Inst_Project.Project.GetSec(IBB_Project_Index{ Desc });
+        IBR_Rev_SectionMapII.insert({ IBB_SectionID{ Desc }, MaxID });
         rit = IBR_Rev_SectionMap.insert({ Desc,MaxID }).first;
         if (pBack)
         {
@@ -324,7 +319,10 @@ IBR_Section _PROJ_CMD_READ IBR_Project::GetSection(const IBB_Section_Desc& Desc)
 
 IBR_Section _PROJ_CMD_READ IBR_Project::GetSection(IBB_SectionID id) _PROJ_CMD_BACK_CONST
 {
-    return GetSection(id.ToDesc());
+    auto rit = IBR_Rev_SectionMapII.find(id);
+    if (rit != IBR_Rev_SectionMapII.end())
+        return IBR_Section{ this,rit->second };
+    else return GetSection(id.ToDesc());
 }
 
 void _PROJ_CMD_NOINTERRUPT _PROJ_CMD_READ IBR_Project::EnsureSection(const IBB_Section_Desc& Desc, const std::string& DisplayName) _PROJ_CMD_BACK_CONST
@@ -334,6 +332,7 @@ void _PROJ_CMD_NOINTERRUPT _PROJ_CMD_READ IBR_Project::EnsureSection(const IBB_S
     if (rit == IBR_Rev_SectionMap.end())
     {
         auto pBack = IBF_Inst_Project.Project.GetSec(IBB_Project_Index{ Desc });
+        IBR_Rev_SectionMapII.insert({ IBB_SectionID{ Desc }, MaxID });
         rit = IBR_Rev_SectionMap.insert({ Desc,MaxID }).first;
         std::string S;
         if (DisplayName.empty())
@@ -401,7 +400,7 @@ IBR_Section _PROJ_CMD_READ _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE I
     auto BSec = RSec.GetBack();
     assert(BSec != nullptr);
     BSec->CreateAsCommentBlock = true;
-    BSec->Register = loc("Back_CommentBlockName");
+    BSec->Register = NewPoolStr(loc("Back_CommentBlockName"));
 
     auto RD = RSec.GetSectionData();
     assert(RD != nullptr);
@@ -431,7 +430,7 @@ IBR_Section _PROJ_CMD_READ _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE I
     BSec->SingleVal = true;
     BSec->MergeLine(SingleValID(), InitialValue, IBB_IniMergeMode::Replace);
     BSec->OnShow[SingleValID()] = EmptyOnShowDesc;
-    BSec->Register = "_AnyType";
+    BSec->Register = AnyTypeID();
 
     auto RD = RSec.GetSectionData();
     assert(RD != nullptr);
@@ -503,6 +502,7 @@ bool _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE IBR_Project::DeleteSect
         IBF_Inst_Project.DisplayNames.erase(IBR_SectionMap[RS.ID].DisplayName);
         IBR_SectionMap.erase(RS.ID);
         IBR_Rev_SectionMap.erase(Desc);
+        IBR_Rev_SectionMapII.erase(IBB_SectionID{ Desc });
     }
     if(UpdateCount)
     {
@@ -532,6 +532,7 @@ bool _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE IBR_Project::DeleteSect
     IBF_Inst_Project.DisplayNames.erase(IBR_SectionMap[RS.ID].DisplayName);
     IBR_SectionMap.erase(RS.ID);
     IBR_Rev_SectionMap.erase(_Desc);
+    IBR_Rev_SectionMapII.erase(IBB_SectionID{_Desc});
     return Ret;
 }//TODO
 
@@ -643,6 +644,7 @@ void IBR_Project::Clear()
     MaxID = 0;
     IBR_SectionMap.clear();
     IBR_Rev_SectionMap.clear();
+    IBR_Rev_SectionMapII.clear();
     IBR_SecDragMap.clear();
     DragConditionText.clear();
     DragConditionTextAlt.clear();

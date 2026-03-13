@@ -260,7 +260,7 @@ void IBB_DefaultTypeList::CreateUnknownType(StrPoolID KeyName)
     Alt.DescLong = NewPoolDesc("");
 
     const auto& link = IBB_DefaultRegType::GetDefaultLinkNodeSetting();
-    Alt.LinkType = NewPoolStr(link.LinkType);
+    Alt.LinkType = link.LinkType;
     Alt.LinkLimit = link.LinkLimit;
     Alt.Color = link.LinkCol;
 
@@ -291,6 +291,8 @@ IBB_IniLine_Default* IBB_DefaultTypeList::KeyBelongToLine(StrPoolID KeyName)
 {
     auto it = IniLine_Default.find(KeyName);
     if (it == IniLine_Default.end())CreateUnknownType(KeyName);
+    else return &it->second;
+
     it = IniLine_Default.find(KeyName);
     if (it == IniLine_Default.end())return nullptr;
     return &it->second;

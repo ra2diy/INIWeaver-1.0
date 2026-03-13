@@ -540,12 +540,12 @@ LineData IBB_IniLine_Default::Create() const
 
 const IBB_RegType& IBB_IniLine_Default::GetRegType() const
 {
-    return IBB_DefaultRegType::GetRegType(PoolStr(TypeAlt));
+    return IBB_DefaultRegType::GetRegType(LinkNode.LinkType);
 }
 
 const std::string& IBB_IniLine_Default::GetIniType() const
 {
-    return IBB_DefaultRegType::GetIniTypeOfReg(PoolStr(TypeAlt));
+    return IBB_DefaultRegType::GetIniTypeOfReg(PoolStr(LinkNode.LinkType));
 }
 
 const IBG_InputType* IBB_IniLine_Default::GetInputTypeByValue(const std::string& Value) const
@@ -562,16 +562,12 @@ const IBG_InputType& IBB_IniLine_Default::GetInputType() const
 
 int IBB_IniLine_Default::GetLinkLimit() const
 {
-    return LinkLimit;
+    return LinkNode.LinkLimit;
 }
 
 LinkNodeSetting IBB_IniLine_Default::GetNodeSetting() const
 {
-    return LinkNodeSetting{
-        PoolStr(TypeAlt),
-        LinkLimit,
-        Color
-    };
+    return LinkNode;
 }
 
 // ---------------------------------------------------------------

@@ -369,7 +369,6 @@ bool IBR_SectionData::RenderUI_Line(const std::string& OnShow, StrPoolID Name)
 {
     if (OnShow.empty())return true;
 
-    auto& Line = ActiveLines[Name];
     auto back = GetBack_Inl();
     auto [line, idx] = back->GetLineFromSubSecsEx(Name);
     if (!line)
@@ -404,15 +403,15 @@ bool IBR_SectionData::RenderUI_Line(const std::string& OnShow, StrPoolID Name)
     if (Name == InheritKeyID())
     {
         auto DescShort = InheritStr();
-        Line.RenderUI(DescShort.c_str(), DescLong, *line);
+        WorkSpaceLine::RenderUI(DescShort.c_str(), DescLong, *line);
     }
     else if (!IBR_WorkSpace::ShowRegName)
     {
         if (OnShow == EmptyOnShowDesc)
-            Line.RenderUI(PoolDesc(line->Default->DescShort), DescLong, *line);
-        else Line.RenderUI(OnShow.c_str(), DescLong, *line);
+            WorkSpaceLine::RenderUI(PoolDesc(line->Default->DescShort), DescLong, *line);
+        else WorkSpaceLine::RenderUI(OnShow.c_str(), DescLong, *line);
     }
-    else Line.RenderUI(PoolCStr(Name), DescLong, *line);
+    else WorkSpaceLine::RenderUI(PoolCStr(Name), DescLong, *line);
     ExportContext::Key = EmptyPoolStr;
 
     return true;
@@ -455,7 +454,7 @@ void IBR_SectionData::RenderUI_Acceptor(float LastFinalY)
                     else if (payload->IsPreview())
                     {
                         IBR_Inst_Project.DragConditionText = "HOLY_SHIT\nWHAT_HAD_JUST_HAPPENED\nONE_MINUTE_AGO";
-                        auto W = UTF8toUnicode(back->Register);
+                        auto W = UTF8toUnicode(PoolStr(back->Register));
                         IBR_Inst_Project.DragConditionTextAlt = UnicodetoUTF8(std::vformat(locw("GUI_Preview_NoDefaultLink"),
                             std::make_wformat_args(W)));
                     }
@@ -481,14 +480,14 @@ void IBR_SectionData::RenderUI_Acceptor(float LastFinalY)
                 if (back && tgback)
                 {
                     bool Check = true;
-                    if (!back->Register.empty())
+                    if (back->Register != EmptyPoolStr)
                     {
-                        auto& alt = lin.TypeAlt;
-                        if (!alt.empty())
+                        auto& typealt = lin.TypeAlt;
+                        if (typealt != EmptyPoolStr)
                         {
-                            if (alt == "_MyType")Check = IBB_DefaultRegType::MatchType(back->Register, tgback->Register);
-                            else if (alt == "_AnyType")Check = true;
-                            else Check = IBB_DefaultRegType::MatchType(alt, tgback->Register);
+                            if (typealt == MyTypeID())Check = IBB_DefaultRegType::MatchType(back->Register, tgback->Register);
+                            else if (typealt == AnyTypeID())Check = true;
+                            else Check = IBB_DefaultRegType::MatchType(typealt, tgback->Register);
 
                         }
                     }
@@ -508,10 +507,10 @@ void IBR_SectionData::RenderUI_Acceptor(float LastFinalY)
                         IBR_Inst_Project.DragConditionText = "HOLY_SHIT\nWHAT_HAD_JUST_HAPPENED\nONE_MINUTE_AGO";
                         auto& alt = lin.TypeAlt;
                         std::wstring W1;
-                        if (alt == "_MyType")W1 = UTF8toUnicode(back->Register);
-                        else if (alt == "_AnyType")W1 = UTF8toUnicode(back->Register);
-                        else W1 = UTF8toUnicode(alt);
-                        auto W2 = UTF8toUnicode(tgback->Register);
+                        if (alt == MyTypeID())W1 = UTF8toUnicode(PoolStr(back->Register));
+                        else if (alt == AnyTypeID())W1 = UTF8toUnicode(PoolStr(back->Register));
+                        else W1 = UTF8toUnicode(PoolStr(alt));
+                        auto W2 = UTF8toUnicode(PoolStr(tgback->Register));
                         IBR_Inst_Project.DragConditionTextAlt = UnicodetoUTF8(std::vformat(locw("GUI_Preview_WrongType"),
                             std::make_wformat_args(W1, W2)));
                     }
@@ -694,7 +693,9 @@ void IBR_SectionData::RenderUI_TitleBar(IBR_Section Rsec, IBB_Section* Bsec, boo
         ), ImGui::GetMousePos());
     }
 
-    auto Col = Rsec.GetRegTypeColor();
+    if (!TitleCol_Cached) TitleCol_Cached = Rsec.GetRegTypeColor();
+    ImColor& Col = *TitleCol_Cached;
+
     auto PPos = ImGui::GetWindowPos();
     ImU32 UCol = Col.Value.w < 1e-6 ? ImGui::GetColorU32(ImGuiCol_TitleBg) : (ImU32)Col;
     ImGui::GetWindowDrawList()->AddRectFilled(ImVec2{ PPos.x, PPos.y + CurL.y },
@@ -943,7 +944,7 @@ namespace IBR_LinkNode
         else
         {
             auto R = IBR_Inst_Project.GetSectionFromID(IBR_WorkSpace::CurOnRender_ID);
-            if(!R.HasBack())Illegal = true;
+            if(!R.GetSectionData())Illegal = true;//Reduce 3.5% CPU Time than R.HasBack()
         }
         if (Illegal)
         {

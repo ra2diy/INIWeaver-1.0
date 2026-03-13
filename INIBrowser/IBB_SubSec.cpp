@@ -72,7 +72,7 @@ bool IBB_SubSec::MergeLine(StrPoolID Key, const std::string& Value, bool InitOnS
         auto rp = Lines.insert({ Key, IBB_IniLine(Value, Def) });
         if (InitOnShow && Root->OnShow[Key].empty())
         {
-            auto Str = PoolStr(Def->TypeAlt);
+            auto Str = PoolStr(Def->LinkNode.LinkType);
             if (!Str.empty() && Str != "bool")
                 Root->OnShow[Key] = EmptyOnShowDesc;
         }
@@ -237,7 +237,7 @@ bool IBB_SubSec::UpdateAll()
         {
             auto& iif = pd->Value;
 
-            auto ldd = Line.Default && IBB_DefaultRegType::HasRegType(PoolStr(Line.Default->TypeAlt));
+            auto ldd = Line.Default && IBB_DefaultRegType::HasRegType(Line.Default->LinkNode.LinkType);
             std::set<std::pair<int, int>> SelectValues;
 
             int i = -1;
@@ -293,7 +293,7 @@ bool IBB_SubSec::UpdateAll()
                         ClaimLink(LineIdx, cidx, NewLT.size());
 
                         ImU32 Col = piic->UseCustomSetting ? piic->NodeSetting.LinkCol :
-                            (Line.Default ? Line.Default->Color : (ImU32)IBB_DefaultRegType::GetDefaultNodeColor());
+                            (Line.Default ? Line.Default->LinkNode.LinkCol : (ImU32)IBB_DefaultRegType::GetDefaultNodeColor());
                         auto RootID = Root->GetThisID();
                         auto seid = IBR_NodeSession::GetSessionIdx(
                             RootID,
@@ -325,7 +325,7 @@ bool IBB_SubSec::UpdateAll()
                 if (toidx.Empty())continue;//目标不存在，跳过
                 if (!toidx.GetSec(IBF_Inst_Project.Project)) continue;//目标不存在，跳过
                 ClaimLink(LineIdx, 0, NewLT.size());
-                ImU32 Col = (Line.Default ? Line.Default->Color : (ImU32)IBB_DefaultRegType::GetDefaultNodeColor());
+                ImU32 Col = (Line.Default ? Line.Default->LinkNode.LinkCol : (ImU32)IBB_DefaultRegType::GetDefaultNodeColor());
                 auto RootID = Root->GetThisID();
                 auto seid = IBR_NodeSession::GetSessionIdx(
                     RootID,

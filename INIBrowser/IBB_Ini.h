@@ -31,17 +31,15 @@ enum class IBB_IniMergeMode
 
 struct IBB_IniLine_Default
 {
-    int LinkLimit;
     bool Known;
-    StrPoolID TypeAlt;//一个RegType的名字
 
     //从TypeAlt加载
     StrPoolID Name;
     DescPoolOffset DescShort;
     DescPoolOffset DescLong;
-    ImU32 Color;
     StrPoolID InputName;
     const IBG_InputType* Input;
+    LinkNodeSetting LinkNode;
 
     //SubSec关联
     IBB_SubSec_Default* InSubSec;
@@ -173,13 +171,13 @@ struct IBB_Section
 
     bool IsLinkGroup{ false };//no subsec varlist unklines
     std::vector<IBB_NewLink> LinkGroup_NewLinkTo;
-    std::unordered_map<std::string, StrPoolID> DefaultLinkKey;
-    IBB_VariableList* DefaultLinkKey_UpValue;
+    std::unordered_map<StrPoolID, StrPoolID> DefaultLinkKey;
+    std::unordered_map<StrPoolID, StrPoolID>* DefaultLinkKey_UpValue;
     std::unordered_map<StrPoolID, std::string> OnShow;//EmptyOnShowDesc means no desc
     std::vector<StrPoolID> LineOrder;
     std::string Inherit;
     std::string Comment{};
-    std::string Register;
+    StrPoolID Register;
     bool CreateAsCommentBlock{ false };
     bool SingleVal{ false };//为True时只有一个值
     IBB_SectionID ID;
@@ -237,7 +235,7 @@ struct IBB_Section
     bool HasLine(StrPoolID Key) const;
     bool IsOnShow(StrPoolID Key) const;
     const std::string& GetOnShow(StrPoolID Key) const;
-    StrPoolID GetDLK(const std::string& Reg) const;
+    StrPoolID GetDLK(StrPoolID Reg) const;
     
     void SetOnShow(StrPoolID Key, const std::string& Value, bool AllowReapply);
     void SetOnShow(StrPoolID Key);
