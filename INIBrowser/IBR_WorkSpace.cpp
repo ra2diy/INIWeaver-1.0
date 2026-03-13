@@ -611,6 +611,7 @@ namespace IBR_WorkSpace
         MassTarget.clear();
         for (auto& [D, I] : IBR_Inst_Project.IBR_Rev_SectionMap)
             MassTarget.push_back(I);
+        ExtendMassSelect();
         IBR_PopupManager::ClearRightClickMenu();
     }
 
