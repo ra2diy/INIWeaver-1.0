@@ -34,6 +34,7 @@ int DynamicDataXDelta, DynamicDataYDelta;
 
 bool Await{ true };
 bool ProjectLoad_Final{ false };
+bool InputStdStringActive{ false }, LastInputStdStringActive{ false };
 
 void ControlPanel();
 void ControlPanel_Debug();
@@ -116,6 +117,8 @@ void ControlPanel()
     IBR_UICondition::UpdateWindowTitle();
     IBR_WorkSpace::UpdatePrev();
     IBR_FullView::UpdateCurrentEqMax();
+    LastInputStdStringActive = InputStdStringActive;
+    InputStdStringActive = false;
 
     if (First)
     {

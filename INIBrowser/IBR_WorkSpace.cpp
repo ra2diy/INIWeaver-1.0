@@ -11,7 +11,7 @@
 #include "IBR_Combo.h"
 #include "IBR_Components.h"
 
-
+extern bool LastInputStdStringActive;
 
 bool IsExistingDir(const wchar_t* Path)
 {
@@ -916,17 +916,17 @@ namespace IBR_WorkSpace
         }
 
         //PROCESSING II : Respond to HotKeys
-        if (IsHotKeyPressed(Paste))
+        if (!LastInputStdStringActive && IsHotKeyPressed(Paste))
         {
             Paste();
+        }
+        else if (!LastInputStdStringActive && IsHotKeyPressed(SelectAll))
+        {
+            SelectAll();
         }
         else if (IsHotKeyPressed(Center))
         {
             MoveToCenter();
-        }
-        else if (IsHotKeyPressed(SelectAll))
-        {
-            SelectAll();
         }
         else if (IsHotKeyPressed(Refresh))
         {
@@ -1120,13 +1120,13 @@ namespace IBR_WorkSpace
             else if (IsMassAfter)
             {
                 //PROCESSING V : Respond to Other HotKeys
-                if (IsHotKeyPressed(Delete))
+                if (!LastInputStdStringActive && IsHotKeyPressed(Delete))
                 {
                     IsMassAfter = false;
                     IsBgDragging = false;
                     DeleteSelected();
                 }
-                else if (IsHotKeyPressed(Copy))
+                else if (!LastInputStdStringActive && IsHotKeyPressed(Copy))
                 {
                     CopySelected();
                 }
@@ -1134,7 +1134,7 @@ namespace IBR_WorkSpace
                 {
                     DuplicateSelected();
                 }
-                else if (IsHotKeyPressed(Cut))
+                else if (!LastInputStdStringActive && IsHotKeyPressed(Cut))
                 {
                     CutSelected();
                 }
@@ -1595,6 +1595,13 @@ namespace IBR_WorkSpace
             Cleared = true;
         }
 
+        IBRF_CoreBump.SendToR({ [=]() {
+            if (std::ranges::all_of(IBF_Inst_Project.Project.Inis, [](auto& Ini) { return Ini.Secs.empty(); }))
+            {
+                IBR_Inst_Project.Clear();
+            }
+        } });
+
         bool HasFocusedModule{ false };
 
         for (auto& sp : IBR_Inst_Project.IBR_SectionMap)
@@ -1605,6 +1612,7 @@ namespace IBR_WorkSpace
             if (sd.ModuleStrID.empty())
                 sd.ModuleStrID = std::to_string(sp.first) + " : " + sd.Desc.GetText();
             if (sd.IsIncluded())continue;
+            if (!sd.GetBack_Inl())continue;
             
             CurOnRender = &sd;
             CurOnRender_ID = sp.first;
@@ -1809,7 +1817,7 @@ namespace IBR_WorkSpace
                 if (sp.first == IBR_EditFrame::CurSection.ID && !IsMassSelecting && !IsMassAfter && LastCont)
                 {
                     HasFocusedModule = true;
-                    if (IsHotKeyPressed(Delete))
+                    if (!LastInputStdStringActive && IsHotKeyPressed(Delete))
                         IBRF_CoreBump.SendToR({ [desc = sd.Desc]() { IBG_Undo.SomethingShouldBeHere(); IBR_Inst_Project.DeleteSection(desc); } });
                     else if (IsHotKeyPressed(RenameModule))
                     {
@@ -1821,9 +1829,9 @@ namespace IBR_WorkSpace
                         sd.RenameRegister();
                         //IBR_PopupManager::ClearRightClickMenu();
                     }
-                    else if (IsHotKeyPressed(Copy))sd.CopyToClipBoard();
+                    else if (!LastInputStdStringActive && IsHotKeyPressed(Copy))sd.CopyToClipBoard();
                     else if (IsHotKeyPressed(Duplicate))sd.Duplicate();
-                    else if (IsHotKeyPressed(Cut))sd.CutToClipBoard();
+                    else if (!LastInputStdStringActive && IsHotKeyPressed(Cut))sd.CutToClipBoard();
                 }
 
                 ImGui::PopClipRect();

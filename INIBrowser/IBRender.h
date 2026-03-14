@@ -123,7 +123,7 @@ struct IBR_SectionData
     bool Decomposable() const;
     void Decompose();
     bool IsIncluded() const;
-private:
+
     IBB_Section* GetBack_Inl();
 };
 

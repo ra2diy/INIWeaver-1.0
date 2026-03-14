@@ -781,9 +781,6 @@ void IBR_SectionData::RenderUI_TitleBar(IBR_Section Rsec, IBB_Section* Bsec, boo
 void IBR_SectionData::RenderUI_Error()
 {
     ImGui::TextColored(IBR_Color::ErrorTextColor, locc("GUI_MissingSectionLink"));
-    IBRF_CoreBump.SendToR({ [=]() {
-        IBR_Inst_Project.CreateSection(Desc);
-    } });
 }
 
 void IBR_SectionData::RenderUI_Comment(IBB_Section* Bsec)

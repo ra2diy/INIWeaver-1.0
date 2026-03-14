@@ -6,6 +6,8 @@
 #include <fmt/scan.h>
 #include <ranges>
 
+extern bool InputStdStringActive;
+
 bool InputTextStdString(const char* label, std::string& str,
     ImGuiInputTextFlags flags)
 {
@@ -21,12 +23,14 @@ bool InputTextStdString(const char* label, std::string& str,
         };
 
     flags |= ImGuiInputTextFlags_CallbackResize;
-    return ImGui::InputText(label,
+    auto Changed = ImGui::InputText(label,
         (char*)str.c_str(),
         str.capacity() + 1,
         flags,
         resizeCallback,
         (void*)&str);
+    InputStdStringActive |= ImGui::IsItemActive();
+    return Changed;
 }
 
 
