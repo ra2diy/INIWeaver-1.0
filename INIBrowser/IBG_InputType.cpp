@@ -1124,8 +1124,8 @@ void IIC_InputText::ResetState(IBB_ValueContainer& Cont) const
 
 // ========== IIC_MultipleChoice ==========
 
-IIC_MultipleChoice::IIC_MultipleChoice(IBB_ValueContainer& Cont, int valueid, const std::string& InitialText, const std::string& DelimStr, bool sameline, int maxInOneLine, const std::unordered_map<std::string, IICDescStr>& options, const std::vector<std::string>& order)
-    : Hint(RandStr(12)), ValueID(valueid), SameLine(sameline), MaxInOneLine(maxInOneLine), Options(options), OptionOrder(order), Delim(DelimStr)
+IIC_MultipleChoice::IIC_MultipleChoice(IBB_ValueContainer& Cont, int valueid, const std::string& InitialText, const IICDescStr& hint, const std::string& DelimStr, bool sameline, int maxInOneLine, const std::unordered_map<std::string, IICDescStr>& options, const std::vector<std::string>& order)
+    : HintID(RandStr(12)), ValueID(valueid), Hint(hint), SameLine(sameline), MaxInOneLine(maxInOneLine), Options(options), OptionOrder(order), Delim(DelimStr)
 {
     auto& Val = Cont.GetValue(ValueID);
     Val.ResetState<IIS_String>(InitialText);
@@ -1147,7 +1147,14 @@ IBB_UpdateResult IIC_MultipleChoice::RenderUI(IBB_ValueContainer& Cont, IICStatu
     auto SelectedCond = OptionOrder |
         std::views::transform([&](auto& Val) { return (uint8_t)SelectedValue.contains(Val); }) |
         std::ranges::to<std::vector>();
-    ImGui::PushID(Hint.c_str());
+    ImGui::PushID(HintID.c_str());
+
+    if (!Hint.Short.empty())
+    {
+        ImGui::TextWrapped("%s", Hint.Short.c_str());
+        if (ImGui::IsItemHovered())
+            IBR_ToolTip(Hint.Long);
+    }
 
     for (auto&& [idx, Selected, Choice] : std::views::zip(std::views::iota(1), SelectedCond, OptionOrder))
     {
@@ -1168,7 +1175,7 @@ IBB_UpdateResult IIC_MultipleChoice::RenderUI(IBB_ValueContainer& Cont, IICStatu
             IBR_ToolTip(DescLong.c_str());
         if (SameLine)
         {
-            if (MaxInOneLine <= 0 || (idx % MaxInOneLine))
+            if (MaxInOneLine <= 0 || (idx % MaxInOneLine && idx != (int)OptionOrder.size()))
                 ImGui::SameLine();
         }
     }
@@ -1339,7 +1346,7 @@ IBB_UpdateResult IIC_EnumRadio::RenderUI(IBB_ValueContainer& Cont, IICStatus&) {
         Active |= ImGui::IsItemActive();
         if (SameLine)
         {
-            if (MaxInOneLine <= 0 || (idx % MaxInOneLine))
+            if (MaxInOneLine <= 0 || (idx % MaxInOneLine && idx != (int)OptionOrder.size()))
                 ImGui::SameLine();
         }
     }

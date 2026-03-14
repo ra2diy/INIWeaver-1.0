@@ -83,10 +83,14 @@ std::string ReplaceKey(const std::string& Value, const std::string& OldName, con
     }
     else
     {
-        auto KeyName = Value.substr(pos);
         auto MainPart = Value.substr(0, pos);
-        if (MainPart == OldName) MainPart = NewName;
-        return MainPart + KeyName;
+        if (MainPart == OldName)
+        {
+            auto KeyName = Value.substr(pos);
+            if (NewName.empty())return "";
+            return NewName + KeyName;
+        }
+        else return Value;
     }
 }
 std::string ReplaceList(const std::string& Value, const std::string& OldName, const std::string& NewName)

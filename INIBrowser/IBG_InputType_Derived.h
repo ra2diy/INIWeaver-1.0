@@ -196,10 +196,11 @@ struct IIC_MultipleChoice final : public IBG_InputComponent
     std::vector<std::string> OptionOrder;
     bool SameLine;
     int MaxInOneLine;//如果SameLine为true，设置每行最大选项数，超过则换行；如果SameLine为false，则此项无效
-    std::string Hint;
+    std::string HintID;
     std::string Delim;
     int ValueID;
-    IIC_MultipleChoice(IBB_ValueContainer& Cont, int valueid, const std::string& InitialText, const std::string& DelimStr, bool sameline, int MaxInOneLine, const std::unordered_map<std::string, IICDescStr>& options, const std::vector<std::string>& OptionOrder);
+    IICDescStr Hint;
+    IIC_MultipleChoice(IBB_ValueContainer& Cont, int valueid, const std::string& InitialText, const IICDescStr& Hint, const std::string& DelimStr, bool sameline, int MaxInOneLine, const std::unordered_map<std::string, IICDescStr>& options, const std::vector<std::string>& OptionOrder);
 
     IBB_UpdateResult RenderUI(IBB_ValueContainer& Cont, IICStatus& Status);
     std::string FormatValue(IBB_ValueContainer&, IBB_InputValue& Val, const IBB_InputFormat& Format);
