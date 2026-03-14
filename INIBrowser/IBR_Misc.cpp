@@ -81,7 +81,7 @@ void WorkSpaceLine::RenderUI(const char* Line, const char* Hint, IBB_IniLine& Ba
                 const auto& lin = **(LineDragData**)(payload->Data);
                 auto sec = IBR_Inst_Project.GetSection(lin.Desc);
                 auto back = sec.GetBack();
-                auto& rsd = *IBR_WorkSpace::CurOnRender;
+                auto& rsd = *IBR_Inst_Project.GetSection(tgback->GetThisID()).GetSectionData();
                 if (back && tgback)
                 {
                     bool Check = Acceptor_CheckLinkType(back->Register, tgreg, lin.TypeAlt);
@@ -114,6 +114,21 @@ void WorkSpaceLine::RenderUI(const char* Line, const char* Hint, IBB_IniLine& Ba
 void IBR_IniLine::RenderUI(const char* Line, const char* Hint, IBB_IniLine& Back, bool IsWorkSpace)
 {
     LinkNodeContext::CurLineChangeCompStatus = false;
+
+    if (IBR_Inst_Debug.LinkDebugMode)
+    {
+        for (auto& [k, l] : LinkNodeContext::CurSub->LinkSrc)
+        {
+            if ((k >> 32) ^ LinkNodeContext::LineIndex)continue;
+            ImGui::TextWrappedEx(LinkNodeContext::CurSub->NewLinkTo[l].GetText().c_str());
+        }
+        if (Back.Data)
+        {
+            ImGui::TextWrapped("Value = %s", Back.Data->GetString().c_str());
+        }
+    }
+
+
     ImGui::TextWrappedEx(Line);
 
     if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))

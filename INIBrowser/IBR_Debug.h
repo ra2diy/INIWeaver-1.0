@@ -12,6 +12,7 @@ struct IBR_Debug
     bool ShowWorkspaceWindowFrame{ false };
     bool DontGoToEdit{ false };
     bool DontDrawBg{ false };
+    bool LinkDebugMode{ false };
     std::vector<StdMessage>DebugVec, DebugVecOnce;
     std::string PoolQueryBuf, LastQueryResult;
     void AddMsgCycle(const StdMessage& Msg);

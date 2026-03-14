@@ -113,6 +113,7 @@ IBG_InputFormUIResult IBG_InputForm::RenderUI(const LinkNodeSetting& Default)
 
     for (auto&& [CompIdx, IC, CSOrig] : std::views::zip(std::views::iota(0u), *InputComponents, ComponentStatus))
     {
+        OutputDebugStringA(std::to_string(IC.get()).c_str());
         LinkNodeContext::CompIndex = CompIdx;
         //存在不可缓存的状态
         if (!IC->CanProvideState(ValueContainer))

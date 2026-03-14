@@ -41,6 +41,12 @@ void MergeList(std::vector<std::string>& Value, const std::string& Str)
     //Value.erase(std::remove_if(Value.begin(), Value.end(), [&](const std::string& s)->bool {return !SS.insert(s).second; }), Value.end());
 }
 
+std::string IBB_NewLink::TargetValue() const
+{
+    if (ToKey == EmptyPoolStr) return To.Section();
+    else return To.Section() + "$$" + PoolStr(ToKey);
+}
+
 std::string IBB_NewLink::GetText() const
 {
     return
@@ -339,7 +345,6 @@ bool IBB_SubSec::UpdateAll()
                 auto& IniType = Line.Default->GetIniType();
                 auto&& [toidx, ToKey] = IBF_Inst_Project.Project.GetSecAndLineID(str, IniType);
                 if (toidx.Empty())continue;//目标不存在，跳过
-                if (!toidx.GetSec(IBF_Inst_Project.Project)) continue;//目标不存在，跳过
                 ClaimLink(LineIdx, 0, NewLT.size());
                 ImU32 Col = (Line.Default ? Line.Default->LinkNode.LinkCol : (ImU32)IBB_DefaultRegType::GetDefaultNodeColor());
                 auto RootID = Root->GetThisID();
@@ -373,7 +378,6 @@ bool IBB_SubSec::UpdateAll()
     if (LimitFix)Ret &= UpdateAll();
 
     IBR_Inst_Project.TriggerRefreshLink();
-    IBR_HintManager::SetHint("REFRESH", HintStayTimeMillis);
 
     return Ret;
 }

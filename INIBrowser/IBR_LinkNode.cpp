@@ -283,8 +283,8 @@ namespace IBR_LinkNode
         const std::function<IBB_UpdateResult(const std::string& NewValue, bool Active)>& ModifyFunc
     )
     {
-        auto psd = IBR_WorkSpace::CurOnRender;
         auto pss = LinkNodeContext::CurSub;
+        auto psd = IBR_Inst_Project.GetSection(pss->Root->GetThisID()).GetSectionData();
         auto cidx = LinkNodeContext::CompIndex;
         auto lidx = LinkNodeContext::LineIndex;
         if (
@@ -399,7 +399,7 @@ namespace IBR_LinkNode
                 Session.LinkList = Links |
                         std::views::transform([&](auto p) {
                         auto Sec = IBR_Inst_Project.GetSection(p.To);
-                        auto T = p.To.Section();
+                        auto T = p.TargetValue();
                         return IBR_NodeSession::SessionLinkList{ Sec.HasBack() ? Sec.GetDisplayName() : T, T, true };
                     }) |
                     std::views::filter([&](auto&& s) { return !s.Section.empty(); }) |
@@ -441,7 +441,7 @@ namespace IBR_LinkNode
             std::string Str;
             if (ShowReg)
                 Str = Links |
-                std::views::transform([&](auto p) {return p.To.Section(); }) |
+                std::views::transform([&](auto p) {return p.TargetValue(); }) |
                 std::views::filter([&](auto&& s) { return !s.empty(); }) |
                 std::views::join_with(',') |
                 std::ranges::to<std::string>();
@@ -496,7 +496,7 @@ namespace IBR_LinkNode
             if (LinkNode.LinkLimit != 0)
             {
                 auto s = Links |
-                    std::views::transform([&](auto p) {return p.To.Section(); }) |
+                    std::views::transform([&](auto p) {return p.TargetValue(); }) |
                     std::views::filter([&](auto&& s) { return !s.empty(); }) |
                     std::ranges::to<std::vector>();
                 bool Used = false;
@@ -506,9 +506,24 @@ namespace IBR_LinkNode
                     break;
                 }
                 if (!Used)s.push_back(Session.ValueToMerge);
-                auto str = s |
-                    std::views::join_with(',') |
-                    std::ranges::to<std::string>();
+                std::string str;
+                if ((int)s.size() <= LinkNode.LinkLimit)
+                {
+                    str = s |
+                        std::views::join_with(',') |
+                        std::ranges::to<std::string>();
+                }
+                else if (LinkNode.LinkLimit == 1)
+                {
+                    str = s.back();
+                }
+                else
+                {
+                    str = s |
+                        std::views::take(LinkNode.LinkLimit) |
+                        std::views::join_with(',') |
+                        std::ranges::to<std::string>();
+                }
                 UR = ModifyAndShow(str, UR.Active);
             }
             Session.NotifyValueToMerge = false;

@@ -130,6 +130,7 @@ struct IBB_NewLink
 
     std::string GetText() const;
     bool Empty() const;//From和To都不能为空，有一个是"":""就返回true
+    std::string TargetValue() const;
 };
 
 struct IBB_SubSec

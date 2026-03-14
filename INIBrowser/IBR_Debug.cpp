@@ -89,6 +89,7 @@ void IBR_Debug::RenderUI()
     ImGui::Checkbox(locc("GUI_DebugShowDecisionBox"), &ShowWorkspaceWindowFrame);
     ImGui::Checkbox(locc("GUI_DebugNoEnterEdit"), &DontGoToEdit);
     ImGui::Checkbox(locc("GUI_DebugCrazyRendering"), &DontDrawBg);
+    ImGui::Checkbox(u8"链接调试模式", &LinkDebugMode);
 
     if (ImGui::Button(locc("GUI_DebugClipboard2Json")))
     {
@@ -111,12 +112,18 @@ void IBR_Debug::RenderUI()
         _itoa(Result, Res, 16);
         LastQueryResult = u8"类型池：串->ID " + PoolQueryBuf + "->" + Res;
     }
+    ImGui::SameLine();
     if (ImGui::SmallButton(u8"类型池：ID->串"))
     {
         auto Result = PoolStr(strtol(PoolQueryBuf.c_str(), nullptr, 16));
         LastQueryResult = u8"类型池：ID->串 " + PoolQueryBuf + "->" + Result;
     }
     ImGui::TextWrappedEx(LastQueryResult.c_str());
+
+    if (ImGui::SmallButton(u8"刷新链接缓冲区"))
+    {
+        IBR_Inst_Project.TriggerRefreshLink();
+    }
 
 
     auto& mardp = IBR_WorkSpace::MassAfter_RightDownPos;

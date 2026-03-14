@@ -425,7 +425,6 @@ void IBB_IniLine_Data_String::RenderUI(IBB_IniLine_Default* Default, const LinkN
     auto Result = RenderIICInputText(pText, Status, Value, LinkNode,
         [&](const std::string& NewValue, bool Active) {
             SetValue(NewValue);
-            TakeByLinkLimit(Value, LinkNode.LinkLimit);
             return IBB_UpdateResult{ true, Active, 0 };
     });
 
@@ -535,7 +534,10 @@ void IBB_IniLine_Data_IIF::RenderUI(IBB_IniLine_Default* Default, const LinkNode
     Value->SetInWorkSpace(IsWorkspace);
     auto Result = Value->RenderUI(LinkNode);
     if (Result.Changed)
+    {
+        Value->GetFormattedString();
         LinkNodeContext::CurSub->UpdateAll();
+    }
 }
 
 bool IBB_IniLine_Data_IIF::FirstIsLink() const
