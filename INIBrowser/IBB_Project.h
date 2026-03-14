@@ -53,6 +53,7 @@ struct IBB_Project
     IBB_Section* GetSec(IBB_Project_Index& Index) const;
     IBB_Project_Index GetSecIndex(const std::string& Name, const std::string& PriorIni) const;
     IBB_SectionID GetSecID(const std::string& Name, const std::string& PriorIni) const;
+    std::pair<IBB_SectionID, StrPoolID> GetSecAndLineID(const std::string& KeyName, const std::string& PriorIni) const;
 
     bool CreateIni(const std::string& Name);
     bool CreateRegisterList(const std::string& Name, const std::string& IniName);

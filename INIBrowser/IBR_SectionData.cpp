@@ -348,6 +348,7 @@ bool IBR_SectionData::IsComposedAllFold() const
         else return false;
     });
 }
+
 void IBR_SectionData::FoldComposed()
 {
     std::ranges::for_each(IncludingModules, [this](auto id) {
@@ -355,6 +356,7 @@ void IBR_SectionData::FoldComposed()
         if (pData) pData->CollapsedInComposed = true;
     });
 }
+
 void IBR_SectionData::UnfoldComposed()
 {
     std::ranges::for_each(IncludingModules, [this](auto id) {

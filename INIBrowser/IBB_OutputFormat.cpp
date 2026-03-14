@@ -164,7 +164,7 @@ namespace KVFormatterFactory
                 if(!oExportLines)return Default();
                 IBB_ValueContainer TmpCont;
                 bool HasError;
-                auto ExportLines = InputFormComponentFactory::CreateLineFormatVector(TmpCont, oExportLines, HasError);
+                auto ExportLines = InputTypeFactory::CreateLineFormatVector(TmpCont, oExportLines, HasError);
                 if(HasError)return Default();
                 return Recompose(SaveInput, SaveFormat, ExportLines, std::move(TmpCont));
             }

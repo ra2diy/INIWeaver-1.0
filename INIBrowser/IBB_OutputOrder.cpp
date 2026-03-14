@@ -94,7 +94,7 @@ OrderCheckResult TopoSortByInherit(const IBB_Project& Proj)
             std::vector<const IBB_Section*> Ret;
             if (!Sec->Inherit.empty())
             {
-                auto pSec = Proj.GetSecIndex(Sec->Inherit, Sec->Root->Name).GetSec(Proj);
+                auto pSec = Proj.GetSecAndLineID(Sec->Inherit, Sec->Root->Name).first.GetSec(Proj);
                 if (pSec)Ret.push_back(pSec);
             }
             return Ret;

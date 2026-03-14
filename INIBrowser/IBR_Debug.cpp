@@ -103,6 +103,22 @@ void IBR_Debug::RenderUI()
         }
     }
 
+    InputTextStdString(u8"字符串池检索", PoolQueryBuf);
+    if (ImGui::SmallButton(u8"类型池：串->ID"))
+    {
+        auto Result = NewPoolStr(PoolQueryBuf);
+        char Res[32]{};
+        _itoa(Result, Res, 16);
+        LastQueryResult = u8"类型池：串->ID " + PoolQueryBuf + "->" + Res;
+    }
+    if (ImGui::SmallButton(u8"类型池：ID->串"))
+    {
+        auto Result = PoolStr(strtol(PoolQueryBuf.c_str(), nullptr, 16));
+        LastQueryResult = u8"类型池：ID->串 " + PoolQueryBuf + "->" + Result;
+    }
+    ImGui::TextWrappedEx(LastQueryResult.c_str());
+
+
     auto& mardp = IBR_WorkSpace::MassAfter_RightDownPos;
     auto msp = ImGui::GetMousePos();
 

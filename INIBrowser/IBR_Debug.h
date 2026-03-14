@@ -13,6 +13,7 @@ struct IBR_Debug
     bool DontGoToEdit{ false };
     bool DontDrawBg{ false };
     std::vector<StdMessage>DebugVec, DebugVecOnce;
+    std::string PoolQueryBuf, LastQueryResult;
     void AddMsgCycle(const StdMessage& Msg);
     void ClearMsgCycle();
     void AddMsgOnce(const StdMessage& Msg);

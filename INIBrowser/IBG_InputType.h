@@ -4,6 +4,7 @@
 #include "IBB_OutputFormat.h"
 #include "IBR_LinkNode.h"
 #include <variant>
+#include "IBB_PropStringPool.h"
 
 struct IBB_InputFormat
 {
@@ -122,7 +123,7 @@ struct IBB_InputValue
 
 
 
-struct InputFormComponentFactory
+struct InputTypeFactory
 {
     static IICPtr CreateInputComponent_Special(IBB_ValueContainer& Cont, const JsonObject& Obj);
     static IICPtr CreateInputComponent(IBB_ValueContainer& Cont, const JsonObject& Obj);
@@ -134,6 +135,8 @@ struct InputFormComponentFactory
     static IICVPtr CreateInputComponentVector(IBB_ValueContainer& Cont, const JsonObject& Obj, bool& HasError);
     static IFCVPtr CreateFormatComponentVector(IBB_ValueContainer& Cont, const JsonObject& Obj, bool& HasError);
     static ILFVPtr CreateLineFormatVector(IBB_ValueContainer& Cont, const JsonObject& Obj, bool& HasError);
+
+    static IASOpt CreateAcceptorSetting(IBB_ValueContainer& Cont, const JsonObject& Obj, bool& HasError);
 };
 
 struct IBB_ValueContainer
@@ -184,6 +187,11 @@ public:
 };
 
 
+struct IIT_AcceptorSetting
+{
+    StrPoolID AcceptRegType;
+    IFCVPtr AcceptFormats;
+};
 
 struct IBG_InputType
 {
@@ -194,6 +202,7 @@ struct IBG_InputType
         IIF
     }Type { IIF };
 
+    IASOpt AcceptorSetting;
     IIFPtr Form;
     KVFormatter_t KVFmt;
     bool Load(const JsonObject& Obj);

@@ -1062,19 +1062,47 @@ IBB_UpdateResult IIC_InputText::RenderUI(IBB_ValueContainer& Cont, IICStatus& St
     return RenderIICInputText(this, Status, CurrentValue, NodeSetting, mf);
 }
 
+bool ProcessOnExport(std::string& V)
+{
+    bool Changed = false;
+    if (ExportContext::OnExport)
+    {
+        auto&& [SecID, KeyID] = IBF_Inst_Project.Project.GetSecAndLineID(V, "");
+        if (auto pSec = SecID.GetSec(IBF_Inst_Project.Project); pSec)
+        {
+            if (pSec->SingleVal)
+            {
+                auto pLine = pSec->GetLineFromSubSecs(SingleValID());
+                if (pLine)
+                {
+                    V = pLine->Data->GetStringForExport();
+                    Changed = true;
+                }
+            }
+            else if (auto pLine = pSec->GetLineFromSubSecs(KeyID); pLine)
+            {
+                if (auto& Acc = pLine->Default->GetInputType().AcceptorSetting; Acc)
+                {
+                    auto iif = pLine->GetNewIIF();
+                    iif->FormatComponents = Acc->AcceptFormats;
+                    V = iif->RegenFormattedString();
+                }
+                else
+                {
+                    V = pLine->Data->GetStringForExport();
+                }
+                Changed = true;
+            }
+        }
+    }
+    return Changed;
+}
+
 std::string IIC_InputText::FormatValue(IBB_ValueContainer& Cont, IBB_InputValue& Val, const IBB_InputFormat& Format)
 {
     auto V = Val.StateValPtr->Format(Format);
-    if (ExportContext::OnExport)
-    {
-        auto pSec = IBF_Inst_Project.Project.GetSecIndex(V, "").GetSec(IBF_Inst_Project.Project);
-        if (pSec && pSec->SingleVal)
-        {
-            auto pLine = pSec->GetLineFromSubSecs(SingleValID());
-            if (pLine)V = pLine->Data->GetStringForExport();
-        }
+    if (ProcessOnExport(V))
         Val.NeedsUpdate(Cont, *this);
-    }
     return V;
 }
 
@@ -1471,19 +1499,12 @@ IBB_UpdateResult IIC_InputInt::RenderUI(IBB_ValueContainer& Cont, IICStatus& Sta
 }
 
 
+
 std::string IIC_InputInt::FormatValue(IBB_ValueContainer& Cont, IBB_InputValue& Val, const IBB_InputFormat& Format)
 {
     auto V = Val.StateValPtr->Format(Format);
-    if (ExportContext::OnExport)
-    {
-        auto pSec = IBF_Inst_Project.Project.GetSecIndex(V, "").GetSec(IBF_Inst_Project.Project);
-        if (pSec && pSec->SingleVal)
-        {
-            auto pLine = pSec->GetLineFromSubSecs(SingleValID());
-            if (pLine)V = pLine->Data->GetStringForExport();
-        }
+    if(ProcessOnExport(V))
         Val.NeedsUpdate(Cont, *this);
-    }
     return V;
 }
 

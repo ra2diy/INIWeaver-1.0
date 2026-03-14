@@ -4,6 +4,7 @@
 #include "IBB_Components.h"
 #include "IBB_Index.h"
 #include "IBB_PropStringPool.h"
+#include "IBG_InputType_Defines.h"
 
 #ifndef _TEXT_UTF8
 #define _TEXT_UTF8
@@ -79,6 +80,7 @@ struct IBB_IniLine_Data_Base
     virtual void Replace(size_t CompIdx, const std::string& OldName, const std::string& NewName) = 0;
 
     virtual bool FirstIsLink() const = 0;
+    virtual IIFPtr GetNewIIF(IBB_IniLine_Default* Default) const = 0;
     virtual std::string GetString() const = 0;
     virtual std::string GetStringForExport() const = 0;
 
@@ -107,6 +109,7 @@ struct IBB_IniLine
     void RenderUI(const LinkNodeSetting& LinkNode, bool IsWorkspace);
     void RenderUI(bool IsWorkspace);
     const void* GetComponentID();
+    IIFPtr GetNewIIF() const;
 
     IBB_IniLine() {}
     IBB_IniLine(const std::string& Value, IBB_IniLine_Default* Def) { Generate(Value, Def); }
@@ -118,8 +121,10 @@ struct IBB_IniLine
 
 struct IBB_NewLink
 {
-    IBB_SectionID From, To;
+    IBB_SectionID From;
+    IBB_SectionID To;
     StrPoolID FromKey;
+    StrPoolID ToKey;
     ImU32 DefaultColor;
     uint64_t SessionID;
 

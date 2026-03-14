@@ -18,6 +18,7 @@ struct IBB_IniLine_Data_String final : public IBB_IniLine_Data_Base
     bool FirstIsLink() const;
     std::string GetString() const { return Value; }
     std::string GetStringForExport() const;
+    IIFPtr GetNewIIF(IBB_IniLine_Default* Default) const;
 
     virtual ~IBB_IniLine_Data_String() {}
 };
@@ -39,6 +40,7 @@ struct IBB_IniLine_Data_Bool final : public IBB_IniLine_Data_Base
     bool FirstIsLink() const;
     std::string GetString() const;
     std::string GetStringForExport() const;
+    IIFPtr GetNewIIF(IBB_IniLine_Default* Default) const;
 
     virtual ~IBB_IniLine_Data_Bool() {}
 };
@@ -57,6 +59,7 @@ struct IBB_IniLine_Data_IIF final : public IBB_IniLine_Data_Base
     bool FirstIsLink() const;
     std::string GetString() const;
     std::string GetStringForExport() const;
+    IIFPtr GetNewIIF(IBB_IniLine_Default* Default) const;
 
     virtual ~IBB_IniLine_Data_IIF() {}
 };

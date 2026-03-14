@@ -43,7 +43,9 @@ void MergeList(std::vector<std::string>& Value, const std::string& Str)
 
 std::string IBB_NewLink::GetText() const
 {
-    return "FROM " + From.operator IBB_Section_Desc().GetText() + "." + PoolStr(FromKey) + " TO " + To.operator IBB_Section_Desc().GetText();
+    return
+        "FROM " + From.operator IBB_Section_Desc().GetText() + "." + PoolStr(FromKey) +
+        " TO " + To.operator IBB_Section_Desc().GetText() + (ToKey == EmptyPoolStr ? "" : "." + PoolStr(ToKey));
 }
 
 bool IBB_NewLink::Empty() const
@@ -283,7 +285,7 @@ bool IBB_SubSec::UpdateAll()
                     for (auto&& str : spc)
                     {
                         auto& IniType = Line.Default->GetIniType();
-                        auto toidx = IBF_Inst_Project.Project.GetSecID(str, IniType);
+                        auto&& [toidx, ToKey] = IBF_Inst_Project.Project.GetSecAndLineID(str, IniType);
 
                         if (toidx.Empty())continue;//目标不存在，跳过
 
@@ -304,6 +306,7 @@ bool IBB_SubSec::UpdateAll()
                             RootID,
                             toidx,
                             KeyName,
+                            ToKey,
                             Col,
                             seid
                         );
@@ -320,7 +323,7 @@ bool IBB_SubSec::UpdateAll()
             for (auto&& str : spc)
             {
                 auto& IniType = Line.Default->GetIniType();
-                auto toidx = IBF_Inst_Project.Project.GetSecID(str, IniType);
+                auto&& [toidx, ToKey] = IBF_Inst_Project.Project.GetSecAndLineID(str, IniType);
                 if (toidx.Empty())continue;//目标不存在，跳过
                 if (!toidx.GetSec(IBF_Inst_Project.Project)) continue;//目标不存在，跳过
                 ClaimLink(LineIdx, 0, NewLT.size());
@@ -336,6 +339,7 @@ bool IBB_SubSec::UpdateAll()
                     RootID,
                     toidx,
                     KeyName,
+                    ToKey,
                     Col,
                     seid
                 );

@@ -377,6 +377,12 @@ std::string IBB_IniLine_Data_String::GetStringForExport() const
 {
     return GetExportString(GetString());
 }
+IIFPtr IBB_IniLine_Data_String::GetNewIIF(IBB_IniLine_Default* Default) const
+{
+    auto piif = Default->GetInputType().Form->Duplicate();
+    piif->ParseFromString(GetString());
+    return piif;
+}
 void IBB_IniLine_Data_String::RenderUI(IBB_IniLine_Default* Default, const LinkNodeSetting& LinkNode, bool IsWorkspace)
 {
     auto& Form = Default->GetInputType().Form;
@@ -469,6 +475,12 @@ std::string IBB_IniLine_Data_Bool::GetStringForExport() const
 {
     return GetString();
 }
+IIFPtr IBB_IniLine_Data_Bool::GetNewIIF(IBB_IniLine_Default* Default) const
+{
+    auto piif = Default->GetInputType().Form->Duplicate();
+    piif->ParseFromString(GetString());
+    return piif;
+}
 void IBB_IniLine_Data_Bool::Replace(size_t, const std::string&, const std::string&)
 {
     //DO NOTHING
@@ -517,6 +529,10 @@ std::string IBB_IniLine_Data_IIF::GetString() const
 std::string IBB_IniLine_Data_IIF::GetStringForExport() const
 {
     return GetExportString(GetString());
+}
+IIFPtr IBB_IniLine_Data_IIF::GetNewIIF(IBB_IniLine_Default* Default) const
+{
+    return Value->Duplicate();
 }
 void IBB_IniLine_Data_IIF::Replace(size_t CompIdx, const std::string& OldName, const std::string& NewName)
 {
@@ -681,4 +697,8 @@ void IBB_IniLine::RenderUI(bool IsWorkspace)
 const void* IBB_IniLine::GetComponentID()
 {
     return Data.get();
+}
+IIFPtr IBB_IniLine::GetNewIIF() const
+{
+    return Data ? Data->GetNewIIF(Default) : nullptr;
 }
