@@ -190,7 +190,7 @@ public:
 struct IIT_AcceptorSetting
 {
     StrPoolID AcceptRegType;
-    IFCVPtr AcceptFormats;
+    IFCVPtr AcceptFormats;//！特殊的是，这个是可空的！
 };
 
 struct IBG_InputType

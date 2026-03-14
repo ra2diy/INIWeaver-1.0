@@ -30,15 +30,85 @@ bool InputTextStdString(const char* label, std::string& str,
 
 int HintStayTimeMillis = 3000;
 
+namespace ImGui
+{
+    ImVec2 GetLineEndPos();
+    ImVec2 GetLineBeginPos();
+    bool IsWindowClicked(ImGuiMouseButton Button);
+    void Dummy(const ImVec2& size, bool AffectsLayout);
+}
 
 void SidebarLine::RenderUI(const char* Line, const char* _Hint, IBB_IniLine& Back)
 {
     Edit.RenderUI(Line, _Hint, Back, false);
 }
 
+bool Acceptor_CheckLinkType(StrPoolID SourceReg, StrPoolID TargetReg, StrPoolID LinkType);
+void Acceptor_RefusePreview(StrPoolID SourceReg, StrPoolID TargetReg, StrPoolID LinkType);
+
 void WorkSpaceLine::RenderUI(const char* Line, const char* Hint, IBB_IniLine& Back)
 {
+    auto Cursor = ImGui::GetCursorScreenPos();
+    auto Y1 = ImGui::GetCursorPos().y;
     Edit.RenderUI(Line, Hint, Back, true);
+    auto LH = ImGui::GetTextLineHeight();
+    AcceptCenter = { Cursor.x - LH * 0.7f, Cursor.y + LH * 0.5f };
+    if (auto& acc = Back.Default->GetInputType().AcceptorSetting; acc || AcceptCount > 0)
+    {
+        auto Y2 = ImGui::GetCursorPos().y;
+        auto Cursor2 = ImGui::GetCursorPos();
+        auto KeyName = Back.Default->Name;
+        auto tgback = LinkNodeContext::CurSub->Root;
+        auto tgreg = acc ? acc->AcceptRegType : tgback->Register;
+        ImVec4 Col = IBB_DefaultRegType::GetRegType(tgreg).FrameColor;
+        ImGui::SetCursorPos({ 0.0f, Y1 });
+        ImGui::Dummy({ ImGui::GetWindowWidth(), Y2 - Y1 }, true);
+        //IBR_TopMost::CommitRect(Cursor, { Cursor.x + ImGui::GetWindowWidth(), Cursor.y + Y2 - Y1 }, IBR_Color::CheckMarkColor);
+        if(!ImGui::GetTopMostPopupModal())
+            IBR_TopMost::CommitDrawOpr({ Cursor.x - LH * 1.2f, Cursor.y }, [=]() {
+                    ImGui::PushID(KeyName);
+                    ImGui::PushStyleColor(ImGuiCol_CheckMark, Col);
+                    ImGui::RadioButton("", true, ImGuiRadioButtonFlags_RoundedSquare);
+                    ImGui::PopStyleColor();
+                    ImGui::PopID();
+                });
+
+        if (ImGui::BeginDragDropTarget())
+        {
+            auto payload = ImGui::AcceptDragDropPayload("IBR_LineDrag", ImGuiDragDropFlags_AcceptBeforeDelivery);
+            if (payload && (payload->IsPreview() || payload->IsDelivery()))
+            {
+                const auto& lin = **(LineDragData**)(payload->Data);
+                auto sec = IBR_Inst_Project.GetSection(lin.Desc);
+                auto back = sec.GetBack();
+                auto& rsd = *IBR_WorkSpace::CurOnRender;
+                if (back && tgback)
+                {
+                    bool Check = Acceptor_CheckLinkType(back->Register, tgreg, lin.TypeAlt);
+                    if (Check)
+                    {
+                        if (payload->IsPreview())
+                            IBR_Inst_Project.DragConditionText =
+                                rsd.Desc.Ini + " -> " + rsd.DisplayName + " : " + PoolCStr(KeyName);
+                        if (payload->IsDelivery())
+                        {
+                            IBG_Undo.SomethingShouldBeHere();
+                            lin.pSession->ValueToMerge = rsd.Desc.Sec + "$$" + PoolCStr(KeyName);
+                            lin.pSession->NotifyValueToMerge = true;
+                        }
+                    }
+                    else if (payload->IsPreview())
+                        Acceptor_RefusePreview(back->Register, tgreg, lin.TypeAlt);
+                }
+                else if (payload->IsPreview())
+                    IBR_Inst_Project.DragConditionText.clear();
+            }
+            ImGui::EndDragDropTarget();
+        }
+
+        ImGui::SetCursorPos(Cursor2);
+    }
+    
 }
 
 void IBR_IniLine::RenderUI(const char* Line, const char* Hint, IBB_IniLine& Back, bool IsWorkSpace)
@@ -340,6 +410,7 @@ namespace IBR_EditFrame
         IBG_Undo.SomethingShouldBeHere();
 
         pbk->SetText(EditBuf);
+        rsd->ActiveLines.clear();
         ResetEdit(pbk);
 
         NewLineKey.clear();

@@ -108,6 +108,7 @@ namespace IBR_LinkNode
     void PushLinkForDraw(
         ImVec2 Center,
         IBB_SectionID Dest,
+        StrPoolID DestKey,
         uint64_t SessionID,
         ImU32 LineCol,
         bool FromImport,

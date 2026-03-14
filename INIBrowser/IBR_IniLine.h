@@ -25,5 +25,8 @@ struct SidebarLine
 struct WorkSpaceLine
 {
     static IBR_IniLine Edit;
-    static void RenderUI(const char* Line, const char* Hint, IBB_IniLine& Back);
+    ImVec2 AcceptCenter{ 0.0f, 0.0f };
+    int AcceptCount{ 0 };
+    bool Collapsed{ true };
+    void RenderUI(const char* Line, const char* Hint, IBB_IniLine& Back);
 };

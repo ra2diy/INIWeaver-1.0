@@ -85,6 +85,8 @@ struct IBR_SectionData
     std::vector<uint64_t> IncludingModules;
     IBB_Section_Desc IncludedByModule_TmpDesc;
     std::vector<IBB_Section_Desc> IncludingModules_TmpDesc;
+    std::unordered_map<StrPoolID, WorkSpaceLine> ActiveLines;
+
     bool IsVirtualBlock() const;
 
     ~IBR_SectionData();
@@ -199,6 +201,7 @@ struct IBR_Project
     struct _Plink
     {
         IBB_SectionID Dest;
+        StrPoolID DestKey;
         uint64_t SourceID;
         ModuleID_t SrcModuleID;
         ImU32 Color;
@@ -466,6 +469,7 @@ namespace IBR_TopMost
     void CommitRectFilled(const ImVec2& p_min, const ImVec2& p_max, ImU32 col, float rounding = 0.0f, ImDrawFlags flags = 0, int Priority = 0);
     void CommitPopClipRect(int Priority = 0);
     void CommitPayload(const RenderPayload& Payload, int Priority = 0);
+    void CommitDrawOpr(const ImVec2& pos, const StdMessage& Msg);
     void RenderUI();
 
 }

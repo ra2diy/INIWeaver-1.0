@@ -499,11 +499,7 @@ IASOpt InputTypeFactory::CreateAcceptorSetting(IBB_ValueContainer& Cont, const J
     
     auto oFormat = Obj.GetObjectItem("ValueFormat");
     if(oFormat)Setting.AcceptFormats = InputTypeFactory::CreateFormatComponentVector(Cont, oFormat, HasError);
-    else
-    {
-        Setting.AcceptFormats = std::make_shared<std::vector<IFCPtr>>();
-        HasError = true;
-    }
+    else Setting.AcceptFormats = nullptr;
 
     return Setting;
 }

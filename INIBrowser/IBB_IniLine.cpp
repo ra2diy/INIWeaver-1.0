@@ -71,11 +71,29 @@ std::string GetExportString(const std::string& StrValue)
 }
 
 const std::vector<std::string>& SplitParamCached(const std::string& Text);
+
+std::string ReplaceKey(const std::string& Value, const std::string& OldName, const std::string& NewName)
+{
+    //OldName -> NewName
+    //OldName$$KeyName -> NewName$$KeyName
+    auto pos = Value.find("$$");
+    if (pos == Value.npos)
+    {
+        return (Value == OldName) ? NewName : Value;
+    }
+    else
+    {
+        auto KeyName = Value.substr(pos);
+        auto MainPart = Value.substr(0, pos);
+        if (MainPart == OldName) MainPart = NewName;
+        return MainPart + KeyName;
+    }
+}
 std::string ReplaceList(const std::string& Value, const std::string& OldName, const std::string& NewName)
 {
     return SplitParamCached(Value) |
         std::views::filter([&](auto&& s) {return !s.empty(); }) |
-        std::views::transform([&](auto& s) { return (s == OldName) ? NewName : s; }) |
+        std::views::transform([&](auto& s) { return ReplaceKey(s, OldName, NewName); }) |
         std::views::filter([&](auto&& s) {return !s.empty(); }) |
         std::views::join_with(',') |
         std::ranges::to<std::string>();
@@ -530,7 +548,7 @@ std::string IBB_IniLine_Data_IIF::GetStringForExport() const
 {
     return GetExportString(GetString());
 }
-IIFPtr IBB_IniLine_Data_IIF::GetNewIIF(IBB_IniLine_Default* Default) const
+IIFPtr IBB_IniLine_Data_IIF::GetNewIIF(IBB_IniLine_Default*) const
 {
     return Value->Duplicate();
 }

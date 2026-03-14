@@ -1469,6 +1469,14 @@ namespace IBR_WorkSpace
                     auto& Sess = IBR_NodeSession::GetSessionValue(Link.SourceID);
                     ImVec2 pa = Sess.LastCenter;
                     ImVec2 pb = RSD->ReWindowUL + RSD->ReOffset;
+                    if (Link.DestKey != EmptyPoolStr)
+                    {
+                        auto it = RSD->ActiveLines.find(Link.DestKey);
+                        if (it != RSD->ActiveLines.end())
+                        {
+                            if(!it->second.Collapsed)pb = it->second.AcceptCenter;
+                        }
+                    }
                     float LineWidth = FontHeight / 5.0f;
                     ImVec2 Mid = (pa + pb) / 2.0F;
                     bool Straight = (pb.x - pa.x >= FontHeight * 5.0F);

@@ -1032,6 +1032,7 @@ namespace IBR_TopMost
 {
     const char* LayerName = "##IBR_TopMost_Popup";
     std::map<int, std::vector<RenderPayload>> Payloads;
+    std::vector<std::pair<ImVec2, StdMessage>> DrawOprPayloads;
 
     void CommitText(const ImVec2& pos, ImU32 col, const char* text, int Priority)
     {
@@ -1072,10 +1073,14 @@ namespace IBR_TopMost
     {
         Payloads[Priority].push_back(Payload);
     }
+    void CommitDrawOpr(const ImVec2& pos, const StdMessage& Msg)
+    {
+        DrawOprPayloads.push_back({ pos, Msg });
+    }
 
     void RenderUI()
     {
-        if (Payloads.empty())return;
+        if (Payloads.empty() && DrawOprPayloads.empty())return;
 
         ImGui::SetNextWindowBgAlpha(0.0f);
         ImGui::SetNextWindowPos(IBR_RealCenter::WorkSpaceUL);
@@ -1089,18 +1094,30 @@ namespace IBR_TopMost
             ImGuiWindowFlags_NoScrollWithMouse |
             ImGuiWindowFlags_NoMouseInputs
         );
+        ImGui::SetWindowFontScale(IBR_FullView::Ratio);
         auto Window = ImGui::GetCurrentWindow();
 
         //ImGui::Text("Hello World");
         //ImGui::Text("This is a message!");
+
+        for (auto& [Pos, Msg] : DrawOprPayloads)
+        {
+            ImGui::SetCursorScreenPos(Pos);
+            ImGui::BeginGroup();
+            Msg();
+            ImGui::EndGroup();
+        }
 
         ImDrawList* DList = ImGui::GetWindowDrawList();//ImGui::GetForegroundDrawList();
         for (auto& [Pri, PayloadList] : Payloads)
             for(auto& Payload : PayloadList)
                 Payload(DList);
 
+        
+
         ImGui::End();
         Payloads.clear();
+        DrawOprPayloads.clear();
 
         ImGui::GetCurrentContext()->ExtraTopMostWindow2 = Window;
     }

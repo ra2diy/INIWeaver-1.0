@@ -203,19 +203,33 @@ void IBB_SubSec::UpdateNewLinkTo(std::vector<IBB_NewLink>&& NewLT)
 {
     auto& Proj = *(Root->Root->Root);
     for (auto& L : NewLinkTo)
+    {
         if (L.FromKey == ImportKeyID())
         {
             auto pf = L.To.GetSec(Proj);
             if (!pf)continue;
             pf->Dynamic.ImportCount--;
         }
+        if (L.ToKey != EmptyPoolStr)
+        {
+            auto pRSD = IBR_Inst_Project.GetSection(L.To).GetSectionData();
+            if (pRSD)pRSD->ActiveLines[L.ToKey].AcceptCount--;
+        }
+    }
     for (auto& L : NewLT)
+    {
         if (L.FromKey == ImportKeyID())
         {
             auto pf = L.To.GetSec(Proj);
             if (!pf)continue;
             pf->Dynamic.ImportCount++;
         }
+        if (L.ToKey != EmptyPoolStr)
+        {
+            auto pRSD = IBR_Inst_Project.GetSection(L.To).GetSectionData();
+            if (pRSD)pRSD->ActiveLines[L.ToKey].AcceptCount++;
+        }
+    }
     NewLinkTo = std::move(NewLT);
 }
 
@@ -359,6 +373,7 @@ bool IBB_SubSec::UpdateAll()
     if (LimitFix)Ret &= UpdateAll();
 
     IBR_Inst_Project.TriggerRefreshLink();
+    IBR_HintManager::SetHint("REFRESH", HintStayTimeMillis);
 
     return Ret;
 }

@@ -116,7 +116,7 @@ std::pair<IBB_SectionID, StrPoolID> IBB_Project::GetSecAndLineID(const std::stri
     {
         auto SecName = KeyName.substr(0, pos);
         auto KeyIDStr = KeyName.substr(pos + 2);
-        StrPoolID KeyID = strtol(KeyIDStr.c_str(), nullptr, 16);
+        StrPoolID KeyID = NewPoolStr(KeyIDStr);
         return { GetSecID(SecName, PriorIni), KeyID };
     }
 }

@@ -401,22 +401,53 @@ bool IBR_SectionData::RenderUI_Line(const std::string& OnShow, StrPoolID Name)
 
     auto DescLong = PoolDesc(line->Default->DescLong);
 
+    auto& wline = ActiveLines[Name];
+
     ExportContext::Key = Name;
     if (Name == InheritKeyID())
     {
         auto DescShort = InheritStr();
-        WorkSpaceLine::RenderUI(DescShort.c_str(), DescLong, *line);
+        wline.RenderUI(DescShort.c_str(), DescLong, *line);
     }
     else if (!IBR_WorkSpace::ShowRegName)
     {
         if (OnShow == EmptyOnShowDesc)
-            WorkSpaceLine::RenderUI(PoolDesc(line->Default->DescShort), DescLong, *line);
-        else WorkSpaceLine::RenderUI(OnShow.c_str(), DescLong, *line);
+            wline.RenderUI(PoolDesc(line->Default->DescShort), DescLong, *line);
+        else wline.RenderUI(OnShow.c_str(), DescLong, *line);
     }
-    else WorkSpaceLine::RenderUI(PoolCStr(Name), DescLong, *line);
+    else wline.RenderUI(PoolCStr(Name), DescLong, *line);
     ExportContext::Key = EmptyPoolStr;
 
     return true;
+}
+
+bool Acceptor_CheckLinkType(StrPoolID SourceReg, StrPoolID TargetReg, StrPoolID LinkType)
+{
+    bool Check = true;
+    if (SourceReg != EmptyPoolStr)
+    {
+        auto& typealt = LinkType;
+        if (typealt != EmptyPoolStr)
+        {
+            if (typealt == MyTypeID())Check = IBB_DefaultRegType::MatchType(SourceReg, TargetReg);
+            else if (typealt == AnyTypeID())Check = true;
+            else Check = IBB_DefaultRegType::MatchType(typealt, TargetReg);
+
+        }
+    }
+    return Check;
+}
+void Acceptor_RefusePreview(StrPoolID SourceReg, StrPoolID TargetReg, StrPoolID LinkType)
+{
+    IBR_Inst_Project.DragConditionText = "HOLY_SHIT\nWHAT_HAD_JUST_HAPPENED\nONE_MINUTE_AGO";
+    auto& alt = LinkType;
+    std::wstring W1;
+    if (alt == MyTypeID())W1 = UTF8toUnicode(PoolStr(SourceReg));
+    else if (alt == AnyTypeID())W1 = UTF8toUnicode(PoolStr(SourceReg));
+    else W1 = UTF8toUnicode(PoolStr(alt));
+    auto W2 = UTF8toUnicode(PoolStr(TargetReg));
+    IBR_Inst_Project.DragConditionTextAlt = UnicodetoUTF8(std::vformat(locw("GUI_Preview_WrongType"),
+        std::make_wformat_args(W1, W2)));
 }
 
 void IBR_SectionData::RenderUI_Acceptor(float LastFinalY)
@@ -481,18 +512,7 @@ void IBR_SectionData::RenderUI_Acceptor(float LastFinalY)
 
                 if (back && tgback)
                 {
-                    bool Check = true;
-                    if (back->Register != EmptyPoolStr)
-                    {
-                        auto& typealt = lin.TypeAlt;
-                        if (typealt != EmptyPoolStr)
-                        {
-                            if (typealt == MyTypeID())Check = IBB_DefaultRegType::MatchType(back->Register, tgback->Register);
-                            else if (typealt == AnyTypeID())Check = true;
-                            else Check = IBB_DefaultRegType::MatchType(typealt, tgback->Register);
-
-                        }
-                    }
+                    bool Check = Acceptor_CheckLinkType(back->Register, tgback->Register, lin.TypeAlt);
                     if (Check)
                     {
                         if (payload->IsPreview())
@@ -505,17 +525,7 @@ void IBR_SectionData::RenderUI_Acceptor(float LastFinalY)
                         }
                     }
                     else if (payload->IsPreview())
-                    {
-                        IBR_Inst_Project.DragConditionText = "HOLY_SHIT\nWHAT_HAD_JUST_HAPPENED\nONE_MINUTE_AGO";
-                        auto& alt = lin.TypeAlt;
-                        std::wstring W1;
-                        if (alt == MyTypeID())W1 = UTF8toUnicode(PoolStr(back->Register));
-                        else if (alt == AnyTypeID())W1 = UTF8toUnicode(PoolStr(back->Register));
-                        else W1 = UTF8toUnicode(PoolStr(alt));
-                        auto W2 = UTF8toUnicode(PoolStr(tgback->Register));
-                        IBR_Inst_Project.DragConditionTextAlt = UnicodetoUTF8(std::vformat(locw("GUI_Preview_WrongType"),
-                            std::make_wformat_args(W1, W2)));
-                    }
+                        Acceptor_RefusePreview(back->Register, tgback->Register, lin.TypeAlt);
 
                 }
                 else if (payload->IsPreview())
@@ -771,6 +781,9 @@ void IBR_SectionData::RenderUI_TitleBar(IBR_Section Rsec, IBB_Section* Bsec, boo
 void IBR_SectionData::RenderUI_Error()
 {
     ImGui::TextColored(IBR_Color::ErrorTextColor, locc("GUI_MissingSectionLink"));
+    IBRF_CoreBump.SendToR({ [=]() {
+        IBR_Inst_Project.CreateSection(Desc);
+    } });
 }
 
 void IBR_SectionData::RenderUI_Comment(IBB_Section* Bsec)
@@ -796,6 +809,8 @@ void IBR_SectionData::RenderUI_Comment(IBB_Section* Bsec)
 void IBR_SectionData::RenderUI_Collapsed(IBB_Section* Bsec, ImVec2 HeadLineRN, IBR_Section Rsec)
 {
     IM_UNUSED(Rsec);
+    for (auto& [k, v] : ActiveLines)
+        v.Collapsed = true;
     for (auto i : Bsec->SubSecOrder)
     {
         const auto& sub = Bsec->SubSecs[i];
@@ -805,7 +820,7 @@ void IBR_SectionData::RenderUI_Collapsed(IBB_Section* Bsec, ImVec2 HeadLineRN, I
             {
                 bool FromImport = (lt.FromKey == ImportKeyID());
                 bool IsLinkingToSelf = (lt.From == lt.To);
-                IBR_LinkNode::PushLinkForDraw(HeadLineRN, lt.To, lt.SessionID, lt.DefaultColor, FromImport, IsLinkingToSelf, true);
+                IBR_LinkNode::PushLinkForDraw(HeadLineRN, lt.To, lt.ToKey, lt.SessionID, lt.DefaultColor, FromImport, IsLinkingToSelf, true);
             }
             else
             {
@@ -916,7 +931,9 @@ void IBR_SectionData::RenderUI_Lines(IBB_Section* Bsec)
             for (const auto& k : Bsec->LineOrder)
             {
                 if (!sub.CanOwnKey(k))continue;
-                if (!Bsec->IsOnShow(k))continue;
+                auto coll = !Bsec->IsOnShow(k);
+                ActiveLines[k].Collapsed = coll;
+                if (coll)continue;
                 RenderUI_Line(Bsec->GetOnShow(k), k);
             }
         }
@@ -968,10 +985,10 @@ namespace IBR_LinkNode
         return ImGui::GetStyleColorVec4(ImGuiCol_CheckMark);
     }
 
-    void PushLinkForDraw(ImVec2 Center, IBB_SectionID Dest, uint64_t SessionID, ImU32 LineCol, bool FromImport, bool SelfLink, bool Collapsed, bool SrcDragging)
+    void PushLinkForDraw(ImVec2 Center, IBB_SectionID Dest, StrPoolID DestKey, uint64_t SessionID, ImU32 LineCol, bool FromImport, bool SelfLink, bool Collapsed, bool SrcDragging)
     {
         IBR_NodeSession::SetSessionStatus(SessionID, Center, Collapsed);
-        IBR_Inst_Project.LinkList.push_back({ Dest, SessionID, IBR_WorkSpace::CurOnRender_ID, LineCol, FromImport, SelfLink, SrcDragging });
+        IBR_Inst_Project.LinkList.push_back({ Dest, DestKey, SessionID, IBR_WorkSpace::CurOnRender_ID, LineCol, FromImport, SelfLink, SrcDragging });
     }
 }
 

@@ -264,6 +264,7 @@ namespace IBR_LinkNode
             PushLinkForDraw(
                 Center,
                 L.To,
+                L.ToKey,
                 L.SessionID,
                 L.DefaultColor,
                 L.FromKey == ImportKeyID(),
@@ -534,6 +535,7 @@ namespace IBR_LinkNode
                     PushLinkForDraw(
                         Center,
                         link.To,
+                        link.ToKey,
                         link.SessionID,
                         link.DefaultColor,
                         (link.FromKey == ImportKeyID()),
@@ -568,6 +570,7 @@ namespace IBR_LinkNode
                 PushLinkForDraw(
                     Center,
                     link.To,
+                    link.ToKey,
                     link.SessionID,
                     link.DefaultColor,
                     link.To == link.From,

@@ -1081,7 +1081,7 @@ bool ProcessOnExport(std::string& V)
             }
             else if (auto pLine = pSec->GetLineFromSubSecs(KeyID); pLine)
             {
-                if (auto& Acc = pLine->Default->GetInputType().AcceptorSetting; Acc)
+                if (auto& Acc = pLine->Default->GetInputType().AcceptorSetting; Acc && Acc->AcceptFormats)
                 {
                     auto iif = pLine->GetNewIIF();
                     iif->FormatComponents = Acc->AcceptFormats;
