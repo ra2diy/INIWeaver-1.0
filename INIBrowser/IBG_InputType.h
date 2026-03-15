@@ -13,7 +13,8 @@ struct IBB_InputFormat
         UseFormat,
         ToString,
         PrintF,
-        StdFormat
+        StdFormat,
+        FixedLen,
     }Type;
 
     std::string String;

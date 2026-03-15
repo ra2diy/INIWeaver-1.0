@@ -52,6 +52,7 @@ namespace IBR_NodeSession
         std::vector<SessionLinkList> LinkList;
         ImVec2 LastCenter;
         bool Collapsed;
+        float LastCenterRatio;
 
         void Renew()
         {

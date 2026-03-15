@@ -560,6 +560,18 @@ namespace IBR_PopupManager
         CurrentPopupExtraMove = false;
     }
 
+    void ClearRightClickMenu()
+    {
+        HasRightClickMenu = false;
+        RightClickMenu = Popup{};
+    }
+    void SetRightClickMenu(Popup&& sc, ImVec2 Pos)
+    {
+        RightClickMenuPos = Pos;
+        FirstRightClick = HasRightClickMenu = true;
+        RightClickMenu = std::move(sc);
+    }
+
     void RenderUI()
     {
         if(IsHotKeyPressed(Cancel))
@@ -611,7 +623,7 @@ namespace IBR_PopupManager
         {
             if (!FirstRightClick && !ImGui::IsPopupOpen(RightClickMenu.Title.c_str()))
             {
-                HasRightClickMenu = false;
+                ClearRightClickMenu();
             }
             else
             {

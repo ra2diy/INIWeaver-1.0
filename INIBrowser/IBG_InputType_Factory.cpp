@@ -374,6 +374,7 @@ IFCPtr InputTypeFactory::CreateFormatComponent(IBB_ValueContainer& Cont, const J
     auto oPrintF = Obj.GetObjectItem("PrintF");
     auto oStdFormat = Obj.GetObjectItem("StdFormat");
     auto oValueIDToString = Obj.GetObjectItem("ValueIDToString");
+    auto oRandStr = Obj.GetObjectItem("RandomString");
 
     if (oKey && oFallback && oKey.IsTypeString() && oFallback.IsTypeString())
     {
@@ -390,6 +391,11 @@ IFCPtr InputTypeFactory::CreateFormatComponent(IBB_ValueContainer& Cont, const J
     else if (oValueIDToString && oValueIDToString.IsTypeNumber())
     {
         return std::make_unique<IFC_ToString>(oValueIDToString.GetInt());
+    }
+    else if (oRandStr && oRandStr.IsTypeNumber())
+    {
+        auto ID = oValueID ? oValueID.GetInt() : -1;
+        return std::make_unique<IFC_Export_RandStr>(oRandStr.GetInt(), ID);
     }
     else
         return nullptr;

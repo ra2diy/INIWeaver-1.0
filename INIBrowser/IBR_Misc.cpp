@@ -40,7 +40,9 @@ namespace ImGui
 
 void SidebarLine::RenderUI(const char* Line, const char* _Hint, IBB_IniLine& Back)
 {
-    Edit.RenderUI(Line, _Hint, Back, false);
+    bool RightClick = false;
+    Edit.RenderUI(Line, _Hint, Back, false, &RightClick, false);
+    if (RightClick)InputOnShow = !InputOnShow;
 }
 
 bool Acceptor_CheckLinkType(StrPoolID SourceReg, StrPoolID TargetReg, StrPoolID LinkType);
@@ -50,12 +52,49 @@ void WorkSpaceLine::RenderUI(const char* Line, const char* Hint, IBB_IniLine& Ba
 {
     auto Cursor = ImGui::GetCursorScreenPos();
     auto Y1 = ImGui::GetCursorPos().y;
-    Edit.RenderUI(Line, Hint, Back, true);
     auto LH = ImGui::GetTextLineHeight();
-    AcceptCenter = { Cursor.x - LH * 0.7f, Cursor.y + LH * 0.5f };
-    if (auto& acc = Back.Default->GetInputType().AcceptorSetting; acc || AcceptCount > 0)
+    bool RightClicked{ false };
+
+    //Input OnShow Logic
+    if (InputOnShow)
     {
-        auto Y2 = ImGui::GetCursorPos().y;
+        auto tgback = LinkNodeContext::CurSub->Root;
+        auto KeyName = Back.Default->Name;
+        auto& OnShow = tgback->OnShow[KeyName];
+        auto EditOnShow = OnShow;
+        auto OldEdit = EditOnShow;
+        if (OnShow == EmptyOnShowDesc)EditOnShow = "";
+        if (InputTextStdString(locc("GUI_EditDesc"), EditOnShow, ImGuiInputTextFlags_EnterReturnsTrue))
+            InputOnShow = false;
+        if(EditOnShow != OldEdit)
+        {
+            if (EditOnShow.empty())OnShow = EmptyOnShowDesc;
+            else OnShow = EditOnShow;
+            if (IBR_EditFrame::CurSection.ID == IBR_WorkSpace::CurOnRender_ID)
+                IBR_EditFrame::EditLines[KeyName].OnShowBuf = EditOnShow;
+        }
+    }
+
+    Edit.RenderUI(Line, Hint, Back, true, &RightClicked, SwitchInput);
+    SwitchInput = false;
+
+    //Highlight Logic
+    AcceptCenter = { Cursor.x - LH * 0.7f, Cursor.y + LH * 0.5f };
+    auto Y2 = ImGui::GetCursorPos().y;
+    if (Highlight)
+    {
+        ImGui::GetWindowDrawList()->AddRect(
+            { ImGui::GetWindowPos().x, Cursor.y },
+            {Cursor.x + ImGui::GetWindowWidth(), Cursor.y + Y2 - Y1},
+            IBR_Color::FocusWindowColor,
+            0.0F,
+            0, 2.0F
+            );
+    }
+
+    //Acceptor Logic
+    if (auto& acc = Back.Default->GetInputType().AcceptorSetting; acc || AcceptCount > 0 || SpecialAccept)
+    {
         auto Cursor2 = ImGui::GetCursorPos();
         auto KeyName = Back.Default->Name;
         auto tgback = LinkNodeContext::CurSub->Root;
@@ -63,7 +102,6 @@ void WorkSpaceLine::RenderUI(const char* Line, const char* Hint, IBB_IniLine& Ba
         ImVec4 Col = IBB_DefaultRegType::GetRegType(tgreg).FrameColor;
         ImGui::SetCursorPos({ 0.0f, Y1 });
         ImGui::Dummy({ ImGui::GetWindowWidth(), Y2 - Y1 }, true);
-        //IBR_TopMost::CommitRect(Cursor, { Cursor.x + ImGui::GetWindowWidth(), Cursor.y + Y2 - Y1 }, IBR_Color::CheckMarkColor);
         if(!ImGui::GetTopMostPopupModal())
             IBR_TopMost::CommitDrawOpr({ Cursor.x - LH * 1.2f, Cursor.y }, [=]() {
                     ImGui::PushID(KeyName);
@@ -108,12 +146,93 @@ void WorkSpaceLine::RenderUI(const char* Line, const char* Hint, IBB_IniLine& Ba
 
         ImGui::SetCursorPos(Cursor2);
     }
-    
+
+    //Right Click Logic
+    if (RightClicked)
+    {
+        Highlight = true;
+        auto tgback = LinkNodeContext::CurSub->Root;
+        auto SecID = tgback->GetThisID();
+        auto Key = Back.Default->Name;
+        auto Accept = SpecialAccept;
+        auto NormalAccept = AcceptCount > 0;
+        const auto Act = [SecID, Key, Accept, NormalAccept]() {
+            auto pd = IBR_Inst_Project.GetSection(SecID).GetSectionData();
+            if (pd)pd->ActiveLines[Key].Highlight = false;
+        };
+
+        struct _
+        {
+            const decltype(Act) GoAct;
+            mutable bool Go{ false };
+            ~_() { if (Go)GoAct();
+            }
+        }__{ Act, false };
+
+        IBR_PopupManager::SetRightClickMenu(std::move(
+            IBR_PopupManager::Popup{}.Create(RandStr(8))
+            .PushMsgBack([SecID, Key, Accept, NormalAccept, __]() {
+                __.Go = true;
+                const auto CurLine = [&]() -> WorkSpaceLine* {
+                    auto pd = IBR_Inst_Project.GetSection(SecID).GetSectionData();
+                    if (!pd)return nullptr;
+                    return &pd->ActiveLines[Key];
+                };
+                if (ImGui::SmallButtonAlignLeft(locc("GUI_SwitchIICStatus"), ImVec2{FontHeight * 9.0f, ImGui::GetTextLineHeight()}))
+                {
+                    auto CC = CurLine();
+                    if (CC)CC->SwitchInput = true;
+                    return IBR_PopupManager::ClearRightClickMenu();
+                }
+                if (Accept)
+                {
+                    if (ImGui::SmallButtonAlignLeft(locc("GUI_SpecialAcceptOff"), ImVec2{ FontHeight * 9.0f, ImGui::GetTextLineHeight() }))
+                    {
+                        auto CC = CurLine();
+                        if (CC)CC->SpecialAccept = false;
+                        return IBR_PopupManager::ClearRightClickMenu();
+                    }
+                }
+                else
+                {
+                    if (ImGui::SmallButtonAlignLeft(locc("GUI_SpecialAcceptOn"), ImVec2{ FontHeight * 9.0f, ImGui::GetTextLineHeight() }))
+                    {
+                        auto CC = CurLine();
+                        if (CC)CC->SpecialAccept = true;
+                        return IBR_PopupManager::ClearRightClickMenu();
+                    }
+                }
+                if (ImGui::SmallButtonAlignLeft(locc("GUI_RemoveLine"), ImVec2{FontHeight * 9.0f, ImGui::GetTextLineHeight()}))
+                {
+                    IBRF_CoreBump.SendToR({ [SecID, Key]() {
+                        auto pbk = SecID.GetSec(IBF_Inst_Project.Project);
+                        IBG_Undo.SomethingShouldBeHere();
+                        pbk->RemoveLine(Key);
+                        IBR_EditFrame::EditLines.erase(Key);
+                    } });
+                    return IBR_PopupManager::ClearRightClickMenu();
+                }
+                if (ImGui::SmallButtonAlignLeft(locc("GUI_EditDesc"), ImVec2{ FontHeight * 9.0f, ImGui::GetTextLineHeight() }))
+                {
+                    auto CC = CurLine();
+                    if (CC)CC->InputOnShow = !CC->InputOnShow;
+                    return IBR_PopupManager::ClearRightClickMenu();
+                }
+            })
+        ), ImGui::GetMousePos());
+    }
 }
 
-void IBR_IniLine::RenderUI(const char* Line, const char* Hint, IBB_IniLine& Back, bool IsWorkSpace)
+void IBR_IniLine::RenderUI(
+    const char* Line,
+    const char* Hint,
+    IBB_IniLine& Back,
+    bool IsWorkSpace,
+    bool* RightClicked,
+    bool ExternalSwitchInput
+)
 {
-    LinkNodeContext::CurLineChangeCompStatus = false;
+    LinkNodeContext::CurLineChangeCompStatus = ExternalSwitchInput;
 
     if (IBR_Inst_Debug.LinkDebugMode)
     {
@@ -133,18 +252,22 @@ void IBR_IniLine::RenderUI(const char* Line, const char* Hint, IBB_IniLine& Back
 
     if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
         LinkNodeContext::CurLineChangeCompStatus = true;
-    //ImGui::TextEx(Line, nullptr, ImGuiTextFlags_NoWidthForLargeClippedText);
     if (ImGui::IsItemHovered())
     {
         IBR_ToolTip(Hint);
     }
+    if (ImGui::IsItemClicked(ImGuiMouseButton_Right))
+        if (RightClicked)*RightClicked = true;
 
     ImGui::SameLine();
     ImGui::BeginGroup();
     ImGui::PushID(Back.GetComponentID());
     Back.RenderUI(IsWorkSpace);
     ImGui::PopID();
+    auto CursorY = ImGui::GetCursorPosY();
     ImGui::EndGroup();
+    //防止组内额外的空行传到组外
+    ImGui::SetCursorPosY(CursorY);
 }
 
 
@@ -591,15 +714,29 @@ namespace IBR_EditFrame
         if (V.InputOnShow)
         {
             ImGui::PushID(K);
+            ImGui::BeginGroup();
             bool Show = pbk->IsOnShow(K);
             if (V.OnShowBuf == EmptyOnShowDesc)V.OnShowBuf = "";
-            auto Changed = InputTextStdString("", V.OnShowBuf);
-            if (Changed)
+            auto OldBuf = V.OnShowBuf;
+            if(InputTextStdString(locc("GUI_EditDesc"), V.OnShowBuf, ImGuiInputTextFlags_EnterReturnsTrue))
+                V.InputOnShow = false;
+            if (OldBuf != V.OnShowBuf)
             {
                 IBG_Undo.SomethingShouldBeHere();
                 if (Show && V.OnShowBuf.empty())pbk->OnShow[K] = EmptyOnShowDesc;
                 else pbk->OnShow[K] = V.OnShowBuf;
             }
+
+            if (ImGui::SmallButton(locc("GUI_RemoveLine")))
+            {
+                IBRF_CoreBump.SendToR({ [pbk, K]() {
+                    IBG_Undo.SomethingShouldBeHere();
+                    pbk->RemoveLine(K);
+                    EditLines.erase(K);
+                } });
+            }
+
+            ImGui::EndGroup();
             ImGui::PopID();
         }
     }

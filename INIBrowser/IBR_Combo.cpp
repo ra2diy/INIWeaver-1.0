@@ -3,6 +3,7 @@
 #include "Global.h"
 #include "IBR_Components.h"
 #include "IBB_PropStringPool.h"
+#include <ranges>
 
 namespace ImGui
 {
@@ -113,10 +114,28 @@ bool contains_ignore_case(const std::string& a, const std::string& b) {
     return it != b.end();
 }
 
+bool contains_b_cap_ignore_case(const std::string& a, const std::string& b) {
+    auto rg = b |
+        std::views::filter([](unsigned char c) { return std::isupper(c); });
+    auto it = std::search(
+        rg.begin(), rg.end(),
+        a.begin(), a.end(),
+        [](unsigned char c1, unsigned char c2) {
+            return std::tolower(c1) == std::tolower(c2);
+        }
+    );
+    return it != rg.end();
+}
+
 inline bool Matches(std::string& str, const std::string& Name, const IBB_IniLine_Default& opt)
 {
     //不分大小写，Name或者DescShort包含str就算匹配
-    return contains_ignore_case(str, Name) || contains_ignore_case(str, PoolDesc(opt.DescShort));
+    auto pd = PoolDesc(opt.DescShort);
+    return
+        contains_ignore_case(str, Name) ||
+        contains_ignore_case(str, pd) ||
+        contains_b_cap_ignore_case(str, Name) ||
+        contains_b_cap_ignore_case(str, pd);
 }
 
 void EditStringWithOptions(

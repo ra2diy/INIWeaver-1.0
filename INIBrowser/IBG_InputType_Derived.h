@@ -67,6 +67,14 @@ struct IFC_Export_UseKey final : public IBB_FormatComponent
     const IBB_ValueFormat& GetFormat();
 };
 
+struct IFC_Export_RandStr final : public IBB_FormatComponent
+{
+    IBB_ValueFormat Format;
+    int Length;
+    IFC_Export_RandStr(int length, int toid);
+
+    const IBB_ValueFormat& GetFormat();
+};
 
 struct IIS_String final : public IBB_InputState
 {

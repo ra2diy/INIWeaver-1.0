@@ -6,7 +6,14 @@
 
 struct IBR_IniLine
 {
-    static void RenderUI(const char* Line, const char* Hint, IBB_IniLine& Back, bool IsWorkSpace);
+    static void RenderUI(
+        const char* Line,
+        const char* Hint,
+        IBB_IniLine& Back,
+        bool IsWorkSpace,
+        bool* RightClicked,
+        bool ExternalSwitchInput
+    );
 };
 
 struct SidebarLine
@@ -28,5 +35,9 @@ struct WorkSpaceLine
     ImVec2 AcceptCenter{ 0.0f, 0.0f };
     int AcceptCount{ 0 };
     bool Collapsed{ true };
+    bool SpecialAccept{ false };
+    bool Highlight{ false };
+    bool SwitchInput{ false };
+    bool InputOnShow{ false };
     void RenderUI(const char* Line, const char* Hint, IBB_IniLine& Back);
 };

@@ -743,7 +743,6 @@ namespace IBR_ProjectManager
         OutputComplete = false;
         for (auto& I : IBF_Inst_Project.Project.Inis)
         {
-            if (I.Name == Internal_IniName)continue; //不导出这个
             auto& U = IBF_Inst_Project.Project.LastOutputIniName[I.Name];
             if (U.empty())TgPath.push_back(WP + L"\\" + IBF_Inst_Project.Project.ProjName + L"_" + UTF8toUnicode(I.Name) + L".ini");
             else TgPath.push_back(WP + L"\\" + U);

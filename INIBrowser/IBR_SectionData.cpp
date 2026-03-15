@@ -563,7 +563,7 @@ void IBR_SectionData::RenderUI_TitleBar(IBR_Section Rsec, IBB_Section* Bsec, boo
                         if (ImGui::SmallButtonAlignLeft(locc("GUI_NoIgnore"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
                         {
                             Ignore = false;
-                            IBR_PopupManager::ClearRightClickMenu();
+                            return IBR_PopupManager::ClearRightClickMenu();
                         }
                     }
                     else
@@ -571,13 +571,13 @@ void IBR_SectionData::RenderUI_TitleBar(IBR_Section Rsec, IBB_Section* Bsec, boo
                         if (ImGui::SmallButtonAlignLeft(locc("GUI_Ignore"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
                         {
                             Ignore = true;
-                            IBR_PopupManager::ClearRightClickMenu();
+                            return IBR_PopupManager::ClearRightClickMenu();
                         }
                     }
                     if (ImGui::SmallButtonAlignLeft(locc("GUI_Rename"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
                     {
                         RenameDisplay();
-                        IBR_PopupManager::ClearRightClickMenu();
+                        return IBR_PopupManager::ClearRightClickMenu();
                     }
                     //DO NOT CHANGE THE REGISTER NAME OF COMMENT BLOCK
                     //OK BUT UNNECESSARY
@@ -585,17 +585,17 @@ void IBR_SectionData::RenderUI_TitleBar(IBR_Section Rsec, IBB_Section* Bsec, boo
                     if (ImGui::SmallButtonAlignLeft(locc("GUI_RegRename"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
                     {
                         RenameRegister();
-                        IBR_PopupManager::ClearRightClickMenu();
+                        return IBR_PopupManager::ClearRightClickMenu();
                     }
                     */
                     if (ImGui::SmallButtonAlignLeft(locc("GUI_Copy"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
                     {
                         CopyToClipBoard();
-                        IBR_PopupManager::ClearRightClickMenu();
+                        return IBR_PopupManager::ClearRightClickMenu();
                     }
                     if (ImGui::SmallButtonAlignLeft(locc("GUI_Delete"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
                         IBRF_CoreBump.SendToR({ [this]()
-                        {IBR_PopupManager::ClearRightClickMenu(); IBR_Inst_Project.DeleteSection(Desc); },nullptr });
+                        {IBR_Inst_Project.DeleteSection(Desc); return IBR_PopupManager::ClearRightClickMenu(); },nullptr });
 
                     })
             ), ImGui::GetMousePos());
@@ -606,7 +606,7 @@ void IBR_SectionData::RenderUI_TitleBar(IBR_Section Rsec, IBB_Section* Bsec, boo
                     if (ImGui::SmallButtonAlignLeft(locc("GUI_NoIgnore"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
                     {
                         Ignore = false;
-                        IBR_PopupManager::ClearRightClickMenu();
+                        return IBR_PopupManager::ClearRightClickMenu();
                     }
                 }
                 else
@@ -614,7 +614,7 @@ void IBR_SectionData::RenderUI_TitleBar(IBR_Section Rsec, IBB_Section* Bsec, boo
                     if (ImGui::SmallButtonAlignLeft(locc("GUI_Ignore"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
                     {
                         Ignore = true;
-                        IBR_PopupManager::ClearRightClickMenu();
+                        return IBR_PopupManager::ClearRightClickMenu();
                     }
                 }
                 if (Frozen)
@@ -622,7 +622,7 @@ void IBR_SectionData::RenderUI_TitleBar(IBR_Section Rsec, IBB_Section* Bsec, boo
                     if (ImGui::SmallButtonAlignLeft(locc("GUI_UnfreezeSec"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
                     {
                         Frozen = false;
-                        IBR_PopupManager::ClearRightClickMenu();
+                        return IBR_PopupManager::ClearRightClickMenu();
                     }
                 }
                 else
@@ -630,7 +630,7 @@ void IBR_SectionData::RenderUI_TitleBar(IBR_Section Rsec, IBB_Section* Bsec, boo
                     if (ImGui::SmallButtonAlignLeft(locc("GUI_FreezeSec"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
                     {
                         Frozen = true;
-                        IBR_PopupManager::ClearRightClickMenu();
+                        return IBR_PopupManager::ClearRightClickMenu();
                     }
                 }
                 if (Hidden)
@@ -638,7 +638,7 @@ void IBR_SectionData::RenderUI_TitleBar(IBR_Section Rsec, IBB_Section* Bsec, boo
                     if (ImGui::SmallButtonAlignLeft(locc("GUI_ShowSec"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
                     {
                         Hidden = false;
-                        IBR_PopupManager::ClearRightClickMenu();
+                        return IBR_PopupManager::ClearRightClickMenu();
                     }
                 }
                 else
@@ -646,7 +646,7 @@ void IBR_SectionData::RenderUI_TitleBar(IBR_Section Rsec, IBB_Section* Bsec, boo
                     if (ImGui::SmallButtonAlignLeft(locc("GUI_HideSec"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
                     {
                         Hidden = true;
-                        IBR_PopupManager::ClearRightClickMenu();
+                        return IBR_PopupManager::ClearRightClickMenu();
                     }
                 }
                 if (IsVirtualBlock())
@@ -656,7 +656,7 @@ void IBR_SectionData::RenderUI_TitleBar(IBR_Section Rsec, IBB_Section* Bsec, boo
                         if (ImGui::SmallButtonAlignLeft(locc("GUI_UnfoldComposed"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
                         {
                             UnfoldComposed();
-                            IBR_PopupManager::ClearRightClickMenu();
+                            return IBR_PopupManager::ClearRightClickMenu();
                         }
                     }
                     else
@@ -664,7 +664,7 @@ void IBR_SectionData::RenderUI_TitleBar(IBR_Section Rsec, IBB_Section* Bsec, boo
                         if (ImGui::SmallButtonAlignLeft(locc("GUI_FoldComposed"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
                         {
                             FoldComposed();
-                            IBR_PopupManager::ClearRightClickMenu();
+                            return IBR_PopupManager::ClearRightClickMenu();
                         }
                     }
                 }
@@ -672,34 +672,34 @@ void IBR_SectionData::RenderUI_TitleBar(IBR_Section Rsec, IBB_Section* Bsec, boo
                 if (ImGui::SmallButtonAlignLeft(locc("GUI_Rename"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
                 {
                     RenameDisplay();
-                    IBR_PopupManager::ClearRightClickMenu();
+                    return IBR_PopupManager::ClearRightClickMenu();
                 }
                 if (ImGui::SmallButtonAlignLeft(locc("GUI_RegRename"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
                 {
                     RenameRegister();
-                    IBR_PopupManager::ClearRightClickMenu();
+                    return IBR_PopupManager::ClearRightClickMenu();
                 }
                 if (ImGui::SmallButtonAlignLeft(locc("GUI_Copy"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
                 {
                     CopyToClipBoard();
-                    IBR_PopupManager::ClearRightClickMenu();
+                    return IBR_PopupManager::ClearRightClickMenu();
                 }
                 if (Decomposable())
                 {
                     if (ImGui::SmallButtonAlignLeft(locc("GUI_Decompose"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
                     {
                         Decompose();
-                        IBR_PopupManager::ClearRightClickMenu();
+                        return IBR_PopupManager::ClearRightClickMenu();
                     }
                 }
                 if (ImGui::SmallButtonAlignLeft(locc("GUI_EditText"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
                 {
                     IBR_EditFrame::ActivateAndEdit(IBR_Inst_Project.IBR_Rev_SectionMap[Desc], true);
-                    IBR_PopupManager::ClearRightClickMenu();
+                    return IBR_PopupManager::ClearRightClickMenu();
                 }
                 if (ImGui::SmallButtonAlignLeft(locc("GUI_Delete"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
                     IBRF_CoreBump.SendToR({ [this]()
-                    {IBR_PopupManager::ClearRightClickMenu(); IBR_Inst_Project.DeleteSection(Desc); },nullptr });
+                    { IBR_Inst_Project.DeleteSection(Desc); return IBR_PopupManager::ClearRightClickMenu();},nullptr });
 
                 })
         ), ImGui::GetMousePos());
@@ -729,7 +729,9 @@ void IBR_SectionData::RenderUI_TitleBar(IBR_Section Rsec, IBB_Section* Bsec, boo
         }
         auto CPos = ImGui::GetCursorPos();
         auto wpp = ImGui::GetWindowPos();
-        ImGui::RadioButton(("##MODULE" + ModuleStrID).c_str(), true, GlobalNodeStyle);
+        ImGui::PushID(114514);
+        ImGui::RadioButton("", true, GlobalNodeStyle);
+        ImGui::PopID();
         if (Ignore)ImGui::PopStyleColor();
         if (ImGui::BeginDragDropSource())
         {
@@ -883,7 +885,6 @@ void IBR_SectionData::RenderUI_Virtual()
             if (IBR_WorkSpace::CurOnRender_Clicked && rc.Contains(ImGui::GetMousePos()))
             {
                 IBR_EditFrame::ActivateAndEdit(id, false);
-                IBR_HintManager::SetHint(Data->DisplayName, HintStayTimeMillis);
             }
             return f + Data->FinalY;
         }

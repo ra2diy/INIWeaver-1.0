@@ -33,6 +33,13 @@ bool InputTextStdString(const char* label, std::string& str,
     return Changed;
 }
 
+void AdjustCursor()
+{
+    ImGui::NewLine();
+    ImGui::SameLine();
+    ImGui::SetCursorPosX(ImGui::GetCursorPosX() - ImGui::GetStyle().ItemSpacing.x);
+}
+
 
 
 namespace ImGui
@@ -113,7 +120,6 @@ IBG_InputFormUIResult IBG_InputForm::RenderUI(const LinkNodeSetting& Default)
 
     for (auto&& [CompIdx, IC, CSOrig] : std::views::zip(std::views::iota(0u), *InputComponents, ComponentStatus))
     {
-        OutputDebugStringA(std::to_string(IC.get()).c_str());
         LinkNodeContext::CompIndex = CompIdx;
         //存在不可缓存的状态
         if (!IC->CanProvideState(ValueContainer))
@@ -185,6 +191,7 @@ const std::string& IBG_InputForm::GetFormattedString()
             switch (VF.Format.Type)
             {
             case IBB_InputFormat::UseFormat:
+            case IBB_InputFormat::FixedLen:
                 FormattedString += VF.Format.String;
                 break;
             case IBB_InputFormat::ToString:
@@ -296,6 +303,34 @@ void IBG_InputForm::ParseFromString(const std::string& Str)
                 remainingStr = remainingStr.substr(pos + VF.Format.String.length());
                 pendingText.clear();
             }
+        }
+        else if (VF.Format.Type == IBB_InputFormat::FixedLen)
+        {
+            if (remainingStr.size() <= VF.Format.String.size())
+            {
+                pendingText = remainingStr;
+                remainingStr = "";
+            }
+            else
+            {
+                pendingText = remainingStr.substr(0, VF.Format.String.size());
+                remainingStr = remainingStr.substr(VF.Format.String.size());
+            }
+
+            if (VF.ValueID != -1)
+            {
+                auto& V = GetValue(VF.ValueID);
+                V.StateValPtr->Parse(VF.Format, pendingText);
+                V.Value = pendingText;
+            }
+
+            if (!pendingDynamicComponents.empty())
+            {
+                processPendingDynamicComponents();
+                CleanupDynamicComponents();
+            }
+
+            pendingText.clear();
         }
         else {
             // 动态值组件（ToString, PrintF, StdFormat）
@@ -409,7 +444,7 @@ const IBB_ValueFormat& IFC_Error::GetFormat() {
 
 // ========== IFC_Export_UseKey =========
 IFC_Export_UseKey::IFC_Export_UseKey()
-    : Format(IBB_InputFormat::ToString, "") {
+    : Format(IBB_InputFormat::UseFormat, "") {
 }
 
 const IBB_ValueFormat& IFC_Export_UseKey::GetFormat() {
@@ -417,6 +452,15 @@ const IBB_ValueFormat& IFC_Export_UseKey::GetFormat() {
     return Format;
 }
 
+// ========== IFC_Export_RandStr =========
+IFC_Export_RandStr::IFC_Export_RandStr(int length, int toid)
+    : Format(IBB_InputFormat::FixedLen, "", toid), Length(length) {
+}
+
+const IBB_ValueFormat& IFC_Export_RandStr::GetFormat() {
+    Format.Format.String = RandStr(Length);
+    return Format;
+}
 
 // ========== IIC_Formatter ==========
 std::string IIC_Formatter(const std::string& Value, const IBB_InputFormat& Format)
@@ -443,6 +487,10 @@ std::string IIC_Formatter(const std::string& Value, const IBB_InputFormat& Forma
         {
             return Value + "(FORMAT STRING ERROR)";
         }
+    }
+    case IBB_InputFormat::FixedLen:
+    {
+        return Format.String;
     }
     }
 
@@ -474,6 +522,10 @@ std::string IIC_Formatter(bool Value, const IBB_InputFormat& Format, StrBoolType
             return Value + "(FORMAT BOOL ERROR)";
         }
     }
+    case IBB_InputFormat::FixedLen:
+    {
+        return Format.String;
+    }
     }
 
     std::unreachable();
@@ -504,6 +556,10 @@ std::string IIC_Formatter(int Value, const IBB_InputFormat& Format)
             return Value + "(FORMAT INT ERROR)";
         }
     }
+    case IBB_InputFormat::FixedLen:
+    {
+        return Format.String;
+    }
     }
 
     std::unreachable();
@@ -532,6 +588,14 @@ void IIC_Parser_String(const std::string& StrValue, const IBB_InputFormat& Forma
         if (res) OutValue = res->value();
         else OutValue = StrValue;
         break;
+    }
+    case IBB_InputFormat::FixedLen:
+    {
+        auto Len = Format.String.size();
+        if (StrValue.size() >= Len)
+            OutValue = StrValue.substr(0, Len);
+        else
+            OutValue = StrValue;
     }
     }
 }
@@ -612,6 +676,11 @@ void IIC_Parser_Bool(const std::string& StrValue, const IBB_InputFormat& Format,
         //else OutValue = IsTrueString(StrValue);
         break;
     }
+    case IBB_InputFormat::FixedLen:
+    {
+        OutValue = IsTrueString(Format.String);
+        break;
+    }
     }
 
 }
@@ -638,6 +707,16 @@ void IIC_Parser_Int(const std::string& StrValue, const IBB_InputFormat& Format, 
             if (res) OutValue = res->value();
             else OutValue = std::stoi(StrValue);
             break;
+        }
+        case IBB_InputFormat::FixedLen:
+        {
+            auto Len = Format.String.size();
+            std::string S;
+            if (StrValue.size() >= Len)
+                S = StrValue.substr(0, Len);
+            else
+                S = StrValue;
+            OutValue = std::stoi(S);
         }
         }
 
@@ -692,6 +771,22 @@ std::string IIC_Accepter_String(const IBB_InputFormat& Format, std::string& Valu
             return OutValue;
         }
         break;
+    }
+    case IBB_InputFormat::FixedLen:
+    {
+        auto Len = Format.String.size();
+        if (Value.size() >= Len)
+        {
+            OutValue = Value.substr(0, Len);
+            Value = Value.substr(Len);
+            return OutValue;
+        }
+        else
+        {
+            OutValue = Value;
+            Value.clear();
+            return OutValue;
+        }
     }
     }
 
@@ -786,6 +881,25 @@ std::string IIC_Accepter_Bool(const IBB_InputFormat& Format, std::string& Value,
         }
         break;
     }
+    case IBB_InputFormat::FixedLen:
+    {
+        auto Len = Format.String.size();
+        std::string S;
+        if (Value.size() >= Len)
+        {
+            S = Value.substr(0, Len);
+            Value = Value.substr(Len);
+            OutValue = IsTrueString(S);
+            return S;
+        }
+        else
+        {
+            S = Value;
+            Value.clear();
+            OutValue = IsTrueString(S);
+            return S;
+        }
+    }
     }
 
     std::unreachable();
@@ -842,6 +956,25 @@ std::string IIC_Accepter_Int(const IBB_InputFormat& Format, std::string& Value, 
                 return Ret;
             }
             break;
+        }
+        case IBB_InputFormat::FixedLen:
+        {
+            auto Len = Format.String.size();
+            std::string S;
+            if (Value.size() >= Len)
+            {
+                S = Value.substr(0, Len);
+                Value = Value.substr(Len);
+                OutValue = std::stoi(S);
+                return S;
+            }
+            else
+            {
+                S = Value;
+                Value.clear();
+                OutValue = std::stoi(S);
+                return S;
+            }
         }
         }
 
@@ -1039,12 +1172,17 @@ IBB_UpdateResult RenderIICInputText(
     {
         auto Size = ImGui::CalcTextSize(pIn->Hint.Short.c_str(), NULL, true);
         auto W = ImGui::GetWindowContentRegionWidth() - ImGui::GetCursorPosX() - Size.x;
-        ImGui::SetNextItemWidth(std::max(W, FontHeight * 12.0f - Size.x));
+        ImGui::SetNextItemWidth(W);
+        auto w = ImGui::GetCurrentWindow();
+        auto mx = w->DC.CursorMaxPos;
         auto Changed = InputTextStdString(pIn->Hint.Short.c_str(), InitialValue);
+        w->DC.CursorMaxPos = mx;
         if (ImGui::IsItemHovered())IBR_ToolTip(pIn->Hint.Long);
 
 
         auto Active = ImGui::IsItemActive();
+        AdjustCursor();
+        
         if (Changed)return ModifyFunc(InitialValue, Active);
         else return { false, Active, -1 };
 
@@ -1277,8 +1415,8 @@ IBB_UpdateResult IIC_EnumCombo::RenderUI(IBB_ValueContainer& Cont, IICStatus&) {
         IBR_ToolTip(Hint.Long);
     }
 
-    ImGui::SameLine();
-    ImGui::NewLine();
+    AdjustCursor();
+    
     
 
     if (Changed)
@@ -1489,8 +1627,11 @@ IBB_UpdateResult IIC_InputInt::RenderUI(IBB_ValueContainer& Cont, IICStatus& Sta
 
         auto Size = ImGui::CalcTextSize(Hint.Short.c_str(), NULL, true);
         auto W = ImGui::GetWindowContentRegionWidth() - ImGui::GetCursorPosX() - Size.x;
-        ImGui::SetNextItemWidth(std::max(W, FontHeight * 12.0f - Size.x));
+        ImGui::SetNextItemWidth(W);
+        auto w = ImGui::GetCurrentWindow();
+        auto mx = w->DC.CursorMaxPos;
         auto Changed = InputTextStdString(Hint.Short.c_str(), CurrentValue);
+        w->DC.CursorMaxPos = mx;
         if (ImGui::IsItemHovered())IBR_ToolTip(Hint.Long);
         if (Changed)
         {
@@ -1504,6 +1645,8 @@ IBB_UpdateResult IIC_InputInt::RenderUI(IBB_ValueContainer& Cont, IICStatus& Sta
         }
 
         auto Active = ImGui::IsItemActive();
+        AdjustCursor();
+        
         if (Changed)return mf(CurrentValue, Active);
         else return { false, Active, -1 };
 

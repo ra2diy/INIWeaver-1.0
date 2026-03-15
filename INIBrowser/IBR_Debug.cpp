@@ -89,7 +89,7 @@ void IBR_Debug::RenderUI()
     ImGui::Checkbox(locc("GUI_DebugShowDecisionBox"), &ShowWorkspaceWindowFrame);
     ImGui::Checkbox(locc("GUI_DebugNoEnterEdit"), &DontGoToEdit);
     ImGui::Checkbox(locc("GUI_DebugCrazyRendering"), &DontDrawBg);
-    ImGui::Checkbox(u8"链接调试模式", &LinkDebugMode);
+    ImGui::Checkbox(locc("GUI_DebugLinkInspect"), &LinkDebugMode);
 
     if (ImGui::Button(locc("GUI_DebugClipboard2Json")))
     {
@@ -104,23 +104,23 @@ void IBR_Debug::RenderUI()
         }
     }
 
-    InputTextStdString(u8"字符串池检索", PoolQueryBuf);
-    if (ImGui::SmallButton(u8"类型池：串->ID"))
+    InputTextStdString(locc("GUI_DebugStringPoolQuery"), PoolQueryBuf);
+    if (ImGui::SmallButton(locc("GUI_DebugStringToID")))
     {
         auto Result = NewPoolStr(PoolQueryBuf);
         char Res[32]{};
         _itoa(Result, Res, 16);
-        LastQueryResult = u8"类型池：串->ID " + PoolQueryBuf + "->" + Res;
+        LastQueryResult = loc("GUI_DebugStringToID") + " : " + PoolQueryBuf + " -> " + Res;
     }
     ImGui::SameLine();
-    if (ImGui::SmallButton(u8"类型池：ID->串"))
+    if (ImGui::SmallButton(locc("GUI_DebugIDToString")))
     {
         auto Result = PoolStr(strtol(PoolQueryBuf.c_str(), nullptr, 16));
-        LastQueryResult = u8"类型池：ID->串 " + PoolQueryBuf + "->" + Result;
+        LastQueryResult = loc("GUI_DebugIDToString") + " : " + PoolQueryBuf + " -> " + Result;
     }
     ImGui::TextWrappedEx(LastQueryResult.c_str());
 
-    if (ImGui::SmallButton(u8"刷新链接缓冲区"))
+    if (ImGui::SmallButton(locc("GUI_DebugTriggerRefreshLink")))
     {
         IBR_Inst_Project.TriggerRefreshLink();
     }
@@ -158,14 +158,14 @@ void IBR_Debug::RenderUI()
         ImGui::TreePop();
     }
 
-    if (ImGui::TreeNode(u8"实时更新的消息"))
+    if (ImGui::TreeNode(locc("GUI_DebugRealTimeInfo")))
     {
         for (auto x : DebugVec)x();
         ImGui::TreePop();
     }
 
-    if (ImGui::Button(u8"清空单次消息"))DebugVecOnce.clear();
-    if (ImGui::TreeNode(u8"单次消息"))
+    if (ImGui::Button(locc("GUI_DebugClearOnceInfo")))DebugVecOnce.clear();
+    if (ImGui::TreeNode(locc("GUI_DebugOnceInfo")))
     {
         for (auto x : DebugVecOnce)x();
         ImGui::TreePop();

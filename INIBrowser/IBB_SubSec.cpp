@@ -362,7 +362,6 @@ bool IBB_SubSec::UpdateAll()
                     Col,
                     seid
                 );
-                IBR_HintManager::SetHint(pd->Value, HintStayTimeMillis);
             }
         }
     }

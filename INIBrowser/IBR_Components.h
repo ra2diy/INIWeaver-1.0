@@ -74,8 +74,8 @@ namespace IBR_PopupManager
     void SetCurrentPopup(Popup&& sc);
     void UpdatePopupPosForResize();
     inline void ClearCurrentPopup() { HasPopup = false; }
-    inline void ClearRightClickMenu() { HasRightClickMenu = false; }
-    inline void SetRightClickMenu(Popup&& sc, ImVec2 Pos) { RightClickMenuPos = Pos; FirstRightClick = HasRightClickMenu = true; RightClickMenu = std::move(sc); }
+    void ClearRightClickMenu();
+    void SetRightClickMenu(Popup&& sc, ImVec2 Pos);
     Popup SingleText(const _TEXT_UTF8 std::string& StrId, const _TEXT_UTF8 std::string& Text, bool Modal);
     Popup MessageModal(const _TEXT_UTF8 std::string& Title, const _TEXT_UTF8 std::string& Text, ImVec2 Size, bool CanClose, bool UseDefaultOK, StdMessage Close = []() {});
     void RenderUI();

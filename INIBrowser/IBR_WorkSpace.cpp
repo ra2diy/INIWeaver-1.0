@@ -78,7 +78,7 @@ namespace SearchModuleAlt
         {
             ImGui::SameLine();
             ImGui::SetCursorPosX(FontHeight * 8.0f);
-            ImGui::SmallButton((u8"属性##" + pModule->Name).c_str());
+            ImGui::SmallButton((loc("GUI_ModulePropertiesOld") + "##" + pModule->Name).c_str());
             if (ImGui::IsMouseDown(ImGuiMouseButton_Left) && ImGui::IsItemHovered())
             {
                 IBR_PopupManager::SetCurrentPopup(std::move(IBR_PopupManager::Popup{}.CreateModal(pModule->DescShort, true).SetFlag(ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize).PushMsgBack([pModule]()
@@ -86,24 +86,24 @@ namespace SearchModuleAlt
                         ImGui::SetWindowSize({ RFontHeight * 20.0f,RFontHeight * 15.0f });
                         ImGui::Text(pModule->DescLong.c_str());
                         ImGui::NewLine();
-                        if (!pModule->ParamDescLong.empty() || !pModule->ParamDescShort.empty())ImGui::Text(u8"参数：%s", pModule->ParamDescShort.c_str());
+                        if (!pModule->ParamDescLong.empty() || !pModule->ParamDescShort.empty())ImGui::Text(locc("GUI_ModuleParameter"), pModule->ParamDescShort.c_str());
                         if (!pModule->ParamDescLong.empty())ImGui::Text(pModule->ParamDescLong.c_str());
 
-                        ImGui::Text(u8"文件路径：%s", UnicodetoUTF8(pModule->Path).c_str());
-                        if (ImGui::SmallButton(u8"复制路径"))
+                        ImGui::Text(locc("GUI_ModulePathAt"), UnicodetoUTF8(pModule->Path).c_str());
+                        if (ImGui::SmallButton(locc("GUI_DebugCopyPath")))
                         {
                             ImGui::SetClipboardText(UnicodetoUTF8(pModule->Path).c_str());
-                            IBR_HintManager::SetHint(u8"路径复制成功", HintStayTimeMillis);
+                            IBR_HintManager::SetHint(locc("GUI_DebugCopyPathSuccess"), HintStayTimeMillis);
                         }
-                        if (ImGui::SmallButton(u8"复制JSON"))
+                        if (ImGui::SmallButton(locc("GUI_DebugCopyJson")))
                         {
                             ImGui::SetClipboardText(pModule->ToJson().GetObj().PrintData().c_str());
-                            IBR_HintManager::SetHint(u8"模块Json复制成功", HintStayTimeMillis);
+                            IBR_HintManager::SetHint(locc("GUI_DebugCopyJsonSuccess"), HintStayTimeMillis);
                         }
                     })));
             }
             ImGui::SameLine();
-            ImGui::SmallButton((u8"添加##" + pModule->Name).c_str());
+            ImGui::SmallButton((loc("GUI_AddModuleOld") + "##" + pModule->Name).c_str());
             if (ImGui::IsMouseDown(ImGuiMouseButton_Left) && ImGui::IsItemHovered())
             {
                 pModule->FullyLoad();
@@ -640,34 +640,34 @@ namespace IBR_WorkSpace
                     if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
                     {
                         SelectAll();
-                        IBR_PopupManager::ClearRightClickMenu();
+                        return IBR_PopupManager::ClearRightClickMenu();
                     }
                 }
                 RightClickTextHelper(locc("GUI_Paste"));
                 if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
                 {
                     Paste();
-                    IBR_PopupManager::ClearRightClickMenu();
+                    return IBR_PopupManager::ClearRightClickMenu();
                 }
                 RightClickTextHelper(locc("GUI_RefreshAllRegName"));
                 if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
                 {
                     IBR_Inst_Project.RenameAll();
-                    IBR_PopupManager::ClearRightClickMenu();
+                    return IBR_PopupManager::ClearRightClickMenu();
                 }
                 ImGui::Text(locc("GUI_CreateCommentBlock"));
                 if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
                 {
                     auto EqMouse = RePosToEqPos(ImGui::GetMousePos());
                     IBRF_CoreBump.SendToR({ [=]() {IBR_Inst_Project.CreateCommentBlock(EqMouse); } });
-                    IBR_PopupManager::ClearRightClickMenu();
+                    return IBR_PopupManager::ClearRightClickMenu();
                 }
                 ImGui::Text(locc("GUI_CreateSingleValBlock"));
                 if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
                 {
                     auto EqMouse = RePosToEqPos(ImGui::GetMousePos());
                     IBRF_CoreBump.SendToR({ [=]() {IBR_Inst_Project.CreateSingleValBlock(EqMouse); } });
-                    IBR_PopupManager::ClearRightClickMenu();
+                    return IBR_PopupManager::ClearRightClickMenu();
                 }
                 ImGui::PopStyleColor();
                 RenderRightClickTable();
@@ -1175,12 +1175,12 @@ namespace IBR_WorkSpace
                                     if (ImGui::SmallButtonAlignLeft(locc("GUI_Rename"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
                                     {
                                         sd->RenameDisplay();
-                                        IBR_PopupManager::ClearRightClickMenu();
+                                        return IBR_PopupManager::ClearRightClickMenu();
                                     }
                                     if (ImGui::SmallButtonAlignLeft(locc("GUI_RegRename"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
                                     {
                                         sd->RenameRegister();
-                                        IBR_PopupManager::ClearRightClickMenu();
+                                        return IBR_PopupManager::ClearRightClickMenu();
                                     }
                                 }
                                 */
@@ -1188,26 +1188,26 @@ namespace IBR_WorkSpace
                             if (ImGui::SmallButtonAlignLeft(locc("GUI_Copy"), ImVec2{FontHeight * 7.0f, ImGui::GetTextLineHeight()}))
                             {
                                 CopySelected();
-                                IBR_PopupManager::ClearRightClickMenu();
+                                return IBR_PopupManager::ClearRightClickMenu();
                             }
                             if (ImGui::SmallButtonAlignLeft(locc("GUI_Cut"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
                             {
                                 CutSelected();
-                                IBR_PopupManager::ClearRightClickMenu();
+                                return IBR_PopupManager::ClearRightClickMenu();
                             }
                             if (ImGui::SmallButtonAlignLeft(locc("GUI_Paste"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
                             {
                                 IsMassAfter = false;
                                 IsBgDragging = false;
                                 Paste();
-                                IBR_PopupManager::ClearRightClickMenu();
+                                return IBR_PopupManager::ClearRightClickMenu();
                             }
                             if (SelectedAllIgnored())
                             {
                                 if (ImGui::SmallButtonAlignLeft(locc("GUI_IgnoreNone"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
                                 {
                                     NoIgnoreSelected();
-                                    IBR_PopupManager::ClearRightClickMenu();
+                                    return IBR_PopupManager::ClearRightClickMenu();
                                 }
                             }
                             else
@@ -1215,7 +1215,7 @@ namespace IBR_WorkSpace
                                 if (ImGui::SmallButtonAlignLeft(locc("GUI_IgnoreAll"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
                                 {
                                     IgnoreSelected();
-                                    IBR_PopupManager::ClearRightClickMenu();
+                                    return IBR_PopupManager::ClearRightClickMenu();
                                 }
                             }
                             if (SelectedAllFrozen())
@@ -1223,7 +1223,7 @@ namespace IBR_WorkSpace
                                 if (ImGui::SmallButtonAlignLeft(locc("GUI_UnfreezeAll"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
                                 {
                                     UnfreezeSelected();
-                                    IBR_PopupManager::ClearRightClickMenu();
+                                    return IBR_PopupManager::ClearRightClickMenu();
                                 }
                             }
                             else
@@ -1231,7 +1231,7 @@ namespace IBR_WorkSpace
                                 if (ImGui::SmallButtonAlignLeft(locc("GUI_FreezeAll"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
                                 {
                                     FreezeSelected();
-                                    IBR_PopupManager::ClearRightClickMenu();
+                                    return IBR_PopupManager::ClearRightClickMenu();
                                 }
                             }
                             if (SelectedAllHidden())
@@ -1239,7 +1239,7 @@ namespace IBR_WorkSpace
                                 if (ImGui::SmallButtonAlignLeft(locc("GUI_ShowAll"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
                                 {
                                     ShowSelected();
-                                    IBR_PopupManager::ClearRightClickMenu();
+                                    return IBR_PopupManager::ClearRightClickMenu();
                                 }
                             }
                             else
@@ -1247,26 +1247,26 @@ namespace IBR_WorkSpace
                                 if (ImGui::SmallButtonAlignLeft(locc("GUI_HideAll"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
                                 {
                                     HideSelected();
-                                    IBR_PopupManager::ClearRightClickMenu();
+                                    return IBR_PopupManager::ClearRightClickMenu();
                                 }
                             }
 
                             if (ImGui::SmallButtonAlignLeft(locc("GUI_Compose"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
                             {
                                 ComposeSelected();
-                                IBR_PopupManager::ClearRightClickMenu();
+                                return IBR_PopupManager::ClearRightClickMenu();
                             }
 
                             if (ImGui::SmallButtonAlignLeft(locc("GUI_ExportModule"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
                             {
                                 OutputSelected();
-                                IBR_PopupManager::ClearRightClickMenu();
+                                return IBR_PopupManager::ClearRightClickMenu();
                             }
 
                             if (ImGui::SmallButtonAlignLeft(locc("GUI_CreateCopy"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
                             {
                                 DuplicateSelected();
-                                IBR_PopupManager::ClearRightClickMenu();
+                                return IBR_PopupManager::ClearRightClickMenu();
                             }
 
                             if (ImGui::SmallButtonAlignLeft(locc("GUI_Delete"), ImVec2{ FontHeight * 7.0f, ImGui::GetTextLineHeight() }))
@@ -1274,7 +1274,7 @@ namespace IBR_WorkSpace
                                 IsMassAfter = false;
                                 IsBgDragging = false;
                                 DeleteSelected();
-                                IBR_PopupManager::ClearRightClickMenu();
+                                return IBR_PopupManager::ClearRightClickMenu();
                             }
 
 
@@ -1408,6 +1408,20 @@ namespace IBR_WorkSpace
     ImVec4 TempWbg;
     struct PosHelper { ImVec2 eq, re; };
     ImGuiWindow* LastFocused{ nullptr };
+    ImGuiStyle TempStyle;
+    void BackupStyleSize(ImGuiStyle& Style)
+    {
+        //Dont move Colors in the end
+        //Copy the last
+        memcpy(&TempStyle, &Style, sizeof(ImGuiStyle) - sizeof(ImGuiStyle::Colors));
+    }
+
+    void RestoreStyleSize(ImGuiStyle& Style)
+    {
+        //Dont move Colors in the end
+        //Copy the last
+        memcpy(&Style, &TempStyle, sizeof(ImGuiStyle) - sizeof(ImGuiStyle::Colors));
+    }
 
     void RenderUI_Links()
     {
@@ -1582,6 +1596,9 @@ namespace IBR_WorkSpace
         }
     }
 
+    
+
+
     void RenderUI()
     {
         IBB_Section_Desc _RenderUI_OnRender;
@@ -1603,6 +1620,10 @@ namespace IBR_WorkSpace
         } });
 
         bool HasFocusedModule{ false };
+
+        auto& Style = ImGui::GetStyle();
+        BackupStyleSize(Style);
+        Style.ScaleAllSizes(IBR_FullView::Ratio);
 
         for (auto& sp : IBR_Inst_Project.IBR_SectionMap)
         {
@@ -1690,148 +1711,146 @@ namespace IBR_WorkSpace
 
                 CurOnRender_Clicked = ImGui::IsWindowClicked(ImGuiMouseButton_Left) && !sd.IsComment && !IBR_PopupManager::HasPopup;
 
-                auto PCopy = ImGui::GetWindowPos();
-                auto SCopy = ImGui::GetWindowSize();
-                sd.Hovered = ImGui::IsWindowHovered();
+                //Adjust Before
+                {
+                    auto PCopy = ImGui::GetWindowPos();
+                    auto SCopy = ImGui::GetWindowSize();
+                    sd.Hovered = ImGui::IsWindowHovered();
 
-                if (UpdatePrevResult & _UpdatePrev_EqCenter)
-                {
-                    ImGui::SetWindowPos(TA);
-                    //RePos
-                }
-                else if (sd.Dragging)
-                {
-                    ImGui::SetWindowPos(TA);
-                    //RePos
-                }
-                else if (UpdatePrevResult & _UpdatePrev_Ratio)
-                {
-                    ImGui::SetWindowSize(sd.EqSize * IBR_FullView::Ratio);
-                    ImGui::SetWindowPos(TA);
-                    //ReSize|RePos
-                }
-                else if (abs(IBR_WorkSpace::ReCenterPrev - IBR_RealCenter::Center).max() >= 1.0)
-                {
-                    ImGui::SetWindowPos(TA);
-                    //RePos
-                }
-                else if (abs(PCopy - TA).max() >= 1.0)
-                {
-                    ImVec2 NP = sd.EqPos + (PCopy - TA) / IBR_FullView::Ratio;
-                    PosHelper un = { sd.EqPos,TA }, re = { NP,PCopy };
-                    sd.EqPos = NP;
+                    if (UpdatePrevResult & _UpdatePrev_EqCenter)
+                    {
+                        ImGui::SetWindowPos(TA);
+                        //RePos
+                    }
+                    else if (sd.Dragging)
+                    {
+                        ImGui::SetWindowPos(TA);
+                        //RePos
+                    }
+                    else if (UpdatePrevResult & _UpdatePrev_Ratio)
+                    {
+                        ImGui::SetWindowSize(sd.EqSize * IBR_FullView::Ratio);
+                        ImGui::SetWindowPos(TA);
+                        //ReSize|RePos
+                    }
+                    else if (abs(IBR_WorkSpace::ReCenterPrev - IBR_RealCenter::Center).max() >= 1.0)
+                    {
+                        ImGui::SetWindowPos(TA);
+                        //RePos
+                    }
+                    else if (abs(PCopy - TA).max() >= 1.0)
+                    {
+                        ImVec2 NP = sd.EqPos + (PCopy - TA) / IBR_FullView::Ratio;
+                        PosHelper un = { sd.EqPos,TA }, re = { NP,PCopy };
+                        sd.EqPos = NP;
 
-                    IBG_Undo.Release();
-                    auto top = IBG_Undo.Top();
-                    auto sn = sd.Desc.Ini + "[" + sd.Desc.Sec + "].EqPos";
-                    if (top != nullptr && top->Id == sn)//MERGE
-                    {
-                        un = std::any_cast<std::pair<PosHelper, PosHelper>>(top->Extra()).first;
-                        top->UndoAction = [=]() {IBRF_CoreBump.SendToR({ [=]() {
-                            if (_RenderUI_OnRender == CurOnRender->Desc) { CurOnRender->EqPos = un.eq; ImGui::SetNextWindowPos(un.re); }},
-                            &ExtSetPos }); };
-                        top->RedoAction = [=]() {IBRF_CoreBump.SendToR({ [=]() {
-                            if (_RenderUI_OnRender == CurOnRender->Desc) { CurOnRender->EqPos = re.eq; ImGui::SetNextWindowPos(re.re); }},
-                            &ExtSetPos }); };
-                        top->Extra = [=]()->std::any {return std::any{ std::make_pair(un,re) }; };
+                        IBG_Undo.Release();
+                        auto top = IBG_Undo.Top();
+                        auto sn = sd.Desc.Ini + "[" + sd.Desc.Sec + "].EqPos";
+                        if (top != nullptr && top->Id == sn)//MERGE
+                        {
+                            un = std::any_cast<std::pair<PosHelper, PosHelper>>(top->Extra()).first;
+                            top->UndoAction = [=]() {IBRF_CoreBump.SendToR({ [=]() {
+                                if (_RenderUI_OnRender == CurOnRender->Desc) { CurOnRender->EqPos = un.eq; ImGui::SetNextWindowPos(un.re); }},
+                                &ExtSetPos }); };
+                            top->RedoAction = [=]() {IBRF_CoreBump.SendToR({ [=]() {
+                                if (_RenderUI_OnRender == CurOnRender->Desc) { CurOnRender->EqPos = re.eq; ImGui::SetNextWindowPos(re.re); }},
+                                &ExtSetPos }); };
+                            top->Extra = [=]()->std::any {return std::any{ std::make_pair(un,re) }; };
+                        }
+                        else
+                        {
+                            IBG_UndoStack::_Item it;
+                            it.Id = sn;
+                            it.UndoAction = [=]() {IBRF_CoreBump.SendToR({ [=]() {
+                                if (_RenderUI_OnRender == CurOnRender->Desc) { CurOnRender->EqPos = un.eq; ImGui::SetNextWindowPos(un.re); }},
+                                &ExtSetPos }); };
+                            it.RedoAction = [=]() {IBRF_CoreBump.SendToR({ [=]() {
+                                if (_RenderUI_OnRender == CurOnRender->Desc) { CurOnRender->EqPos = re.eq; ImGui::SetNextWindowPos(re.re); }},
+                                &ExtSetPos }); };
+                            it.Extra = [=]()->std::any {return std::any{ std::make_pair(un,re) }; };
+                            IBG_Undo.Push(it);
+                        }
+                        //EqPos
                     }
-                    else
+                    else if (abs(SCopy - sd.EqSize * IBR_FullView::Ratio).max() >= 1.0)
                     {
-                        IBG_UndoStack::_Item it;
-                        it.Id = sn;
-                        it.UndoAction = [=]() {IBRF_CoreBump.SendToR({ [=]() {
-                            if (_RenderUI_OnRender == CurOnRender->Desc) { CurOnRender->EqPos = un.eq; ImGui::SetNextWindowPos(un.re); }},
-                            &ExtSetPos }); };
-                        it.RedoAction = [=]() {IBRF_CoreBump.SendToR({ [=]() {
-                            if (_RenderUI_OnRender == CurOnRender->Desc) { CurOnRender->EqPos = re.eq; ImGui::SetNextWindowPos(re.re); }},
-                            &ExtSetPos }); };
-                        it.Extra = [=]()->std::any {return std::any{ std::make_pair(un,re) }; };
-                        IBG_Undo.Push(it);
-                    }
-                    //EqPos
-                }
-                else if (abs(SCopy - sd.EqSize * IBR_FullView::Ratio).max() >= 1.0)
-                {
-                    ImVec2 NP = SCopy / IBR_FullView::Ratio;
-                    PosHelper un = { sd.EqSize,sd.EqSize * IBR_FullView::Ratio }, re = { NP,SCopy };
-                    sd.EqSize = NP;
+                        ImVec2 NP = SCopy / IBR_FullView::Ratio;
+                        PosHelper un = { sd.EqSize,sd.EqSize * IBR_FullView::Ratio }, re = { NP,SCopy };
+                        sd.EqSize = NP;
 
-                    IBG_Undo.Release();
-                    auto top = IBG_Undo.Top();
-                    auto sn = sd.Desc.Ini + "[" + sd.Desc.Sec + "].EqSize";
-                    if (top != nullptr && top->Id == sn)//MERGE
-                    {
-                        un = std::any_cast<std::pair<PosHelper, PosHelper>>(top->Extra()).first;
-                        top->UndoAction = [=]() {IBRF_CoreBump.SendToR({ [=]() {
-                            if (_RenderUI_OnRender == CurOnRender->Desc) { CurOnRender->EqSize = un.eq; ImGui::SetNextWindowSize(un.re); }},
-                            &ExtSetPos }); };
-                        top->RedoAction = [=]() {IBRF_CoreBump.SendToR({ [=]() {
-                            if (_RenderUI_OnRender == CurOnRender->Desc) { CurOnRender->EqSize = re.eq; ImGui::SetNextWindowSize(re.re); }},
-                            &ExtSetPos }); };
-                        top->Extra = [=]()->std::any {return std::any{ std::make_pair(un,re) }; };
+                        IBG_Undo.Release();
+                        auto top = IBG_Undo.Top();
+                        auto sn = sd.Desc.Ini + "[" + sd.Desc.Sec + "].EqSize";
+                        if (top != nullptr && top->Id == sn)//MERGE
+                        {
+                            un = std::any_cast<std::pair<PosHelper, PosHelper>>(top->Extra()).first;
+                            top->UndoAction = [=]() {IBRF_CoreBump.SendToR({ [=]() {
+                                if (_RenderUI_OnRender == CurOnRender->Desc) { CurOnRender->EqSize = un.eq; ImGui::SetNextWindowSize(un.re); }},
+                                &ExtSetPos }); };
+                            top->RedoAction = [=]() {IBRF_CoreBump.SendToR({ [=]() {
+                                if (_RenderUI_OnRender == CurOnRender->Desc) { CurOnRender->EqSize = re.eq; ImGui::SetNextWindowSize(re.re); }},
+                                &ExtSetPos }); };
+                            top->Extra = [=]()->std::any {return std::any{ std::make_pair(un,re) }; };
+                        }
+                        else
+                        {
+                            IBG_UndoStack::_Item it;
+                            it.Id = sn;
+                            it.UndoAction = [=]() {IBRF_CoreBump.SendToR({ [=]() {
+                                if (_RenderUI_OnRender == CurOnRender->Desc) { CurOnRender->EqSize = un.eq; ImGui::SetNextWindowSize(un.re); }},
+                                &ExtSetPos }); };
+                            it.RedoAction = [=]() {IBRF_CoreBump.SendToR({ [=]() {
+                                if (_RenderUI_OnRender == CurOnRender->Desc) { CurOnRender->EqSize = re.eq; ImGui::SetNextWindowSize(re.re); }},
+                                &ExtSetPos }); };
+                            it.Extra = [=]()->std::any {return std::any{ std::make_pair(un,re) }; };
+                            IBG_Undo.Push(it);
+                        }
+                        //EqSize
                     }
-                    else
                     {
-                        IBG_UndoStack::_Item it;
-                        it.Id = sn;
-                        it.UndoAction = [=]() {IBRF_CoreBump.SendToR({ [=]() {
-                            if (_RenderUI_OnRender == CurOnRender->Desc) { CurOnRender->EqSize = un.eq; ImGui::SetNextWindowSize(un.re); }},
-                            &ExtSetPos }); };
-                        it.RedoAction = [=]() {IBRF_CoreBump.SendToR({ [=]() {
-                            if (_RenderUI_OnRender == CurOnRender->Desc) { CurOnRender->EqSize = re.eq; ImGui::SetNextWindowSize(re.re); }},
-                            &ExtSetPos }); };
-                        it.Extra = [=]()->std::any {return std::any{ std::make_pair(un,re) }; };
-                        IBG_Undo.Push(it);
+                        auto sz = ImGui::GetWindowSize();
+                        if (sd.FinalY < 1.0F)sd.FinalY = FontHeight * 8.0F;
+                        if (sd.WidthFix > FontHeight * 17.0f)ImGui::SetWindowSize({ sd.WidthFix, sd.FinalY + FontHeight * 2.0F });
+                        else ImGui::Dummy({ FontHeight * 17.0f, 0.0F });
                     }
-                    //EqSize
-                }
-                {
-                    auto sz = ImGui::GetWindowSize();
-                    if (sd.FinalY < 1.0F)sd.FinalY = FontHeight * 8.0F;
-                    if (sd.WidthFix > FontHeight * 15.0f)ImGui::SetWindowSize({ sd.WidthFix, sd.FinalY + FontHeight * 2.0F });
-                    else ImGui::Dummy({ FontHeight * 15.0f, 0.0F });
                 }
 
                 sd.RenderUI();
 
-                if (ImGui::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows))
+                //Adjust After
                 {
-                    MouseOverSection = IBR_Inst_Project.GetSectionFromID(sp.first);
-                    MouseOverSecData = &sd;
-                }
-                if (sd.First)sd.First = false;
-                if (sd.Frozen && !sd.Hidden)
-                {
-                    auto FL = ImGui::GetWindowDrawList();
-                    FL->AddRectFilled(ImGui::GetWindowPos(), ImGui::GetWindowPos() + ImGui::GetWindowSize(), IBR_Color::FrozenMaskColor, 5.0F);
-                }
-                if (!ImGui::GetCurrentContext()->OpenPopupStack.Size)
-                {
-                    if (sp.first == IBR_EditFrame::CurSection.ID)
+                    if (ImGui::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows))
                     {
-                        IBR_TopMost::CommitPushClipRect(IBR_RealCenter::WorkSpaceUL, IBR_RealCenter::WorkSpaceDR, true);
-                        IBR_TopMost::CommitRect(ImGui::GetWindowPos(), ImGui::GetWindowPos() + ImGui::GetWindowSize(), IBR_Color::FocusWindowColor, 5.0F, 0, 5.0F);
-                        IBR_TopMost::CommitPopClipRect();
+                        MouseOverSection = IBR_Inst_Project.GetSectionFromID(sp.first);
+                        MouseOverSecData = &sd;
                     }
-                }
-                if (sp.first == IBR_EditFrame::CurSection.ID && !IsMassSelecting && !IsMassAfter && LastCont)
-                {
-                    HasFocusedModule = true;
-                    if (!LastInputStdStringActive && IsHotKeyPressed(Delete))
-                        IBRF_CoreBump.SendToR({ [desc = sd.Desc]() { IBG_Undo.SomethingShouldBeHere(); IBR_Inst_Project.DeleteSection(desc); } });
-                    else if (IsHotKeyPressed(RenameModule))
+                    if (sd.First)sd.First = false;
+                    if (sd.Frozen && !sd.Hidden)
                     {
-                        sd.RenameDisplay();
-                        //IBR_PopupManager::ClearRightClickMenu();
+                        auto FL = ImGui::GetWindowDrawList();
+                        FL->AddRectFilled(ImGui::GetWindowPos(), ImGui::GetWindowPos() + ImGui::GetWindowSize(), IBR_Color::FrozenMaskColor, 5.0F);
                     }
-                    else if (IsHotKeyPressed(RenameRegister))
+                    if (!ImGui::GetCurrentContext()->OpenPopupStack.Size)
                     {
-                        sd.RenameRegister();
-                        //IBR_PopupManager::ClearRightClickMenu();
+                        if (sp.first == IBR_EditFrame::CurSection.ID)
+                        {
+                            IBR_TopMost::CommitPushClipRect(IBR_RealCenter::WorkSpaceUL, IBR_RealCenter::WorkSpaceDR, true);
+                            IBR_TopMost::CommitRect(ImGui::GetWindowPos(), ImGui::GetWindowPos() + ImGui::GetWindowSize(), IBR_Color::FocusWindowColor, 5.0F, 0, 5.0F);
+                            IBR_TopMost::CommitPopClipRect();
+                        }
                     }
-                    else if (!LastInputStdStringActive && IsHotKeyPressed(Copy))sd.CopyToClipBoard();
-                    else if (IsHotKeyPressed(Duplicate))sd.Duplicate();
-                    else if (!LastInputStdStringActive && IsHotKeyPressed(Cut))sd.CutToClipBoard();
+                    if (sp.first == IBR_EditFrame::CurSection.ID && !IsMassSelecting && !IsMassAfter && LastCont)
+                    {
+                        HasFocusedModule = true;
+                        if (!LastInputStdStringActive && IsHotKeyPressed(Delete))
+                            IBRF_CoreBump.SendToR({ [desc = sd.Desc]() { IBG_Undo.SomethingShouldBeHere(); IBR_Inst_Project.DeleteSection(desc); } });
+                        else if (IsHotKeyPressed(RenameModule))sd.RenameDisplay();
+                        else if (IsHotKeyPressed(RenameRegister))sd.RenameRegister();
+                        else if (!LastInputStdStringActive && IsHotKeyPressed(Copy))sd.CopyToClipBoard();
+                        else if (IsHotKeyPressed(Duplicate))sd.Duplicate();
+                        else if (!LastInputStdStringActive && IsHotKeyPressed(Cut))sd.CutToClipBoard();
+                    }
                 }
 
                 ImGui::PopClipRect();
@@ -1845,6 +1864,8 @@ namespace IBR_WorkSpace
 
             if (!sd.IsOpen)IBRF_CoreBump.SendToR({ [D = sd.Desc]() {IBR_Inst_Project.DeleteSection(D); },nullptr });
         }
+
+        RestoreStyleSize(Style);
 
         CurOnRender = nullptr;
         CurOnRender_ID = UINT64_MAX;

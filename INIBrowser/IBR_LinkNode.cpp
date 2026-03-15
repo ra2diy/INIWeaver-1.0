@@ -356,14 +356,23 @@ namespace IBR_LinkNode
         auto DC = IsImport ? ImportCenter() : DefaultCenter();
         auto Center = IsImport ? ImportCenterInWindow() : DefaultCenterInWindow();
         auto Style = IsInherit ? ImGuiRadioButtonFlags_RoundedSquare : GlobalNodeStyle;
+        if (Session.LastCenterRatio < 10.0f)Session.LastCenterRatio = 10.0f;
+        auto CenterRatio = Center.x / FontHeight;
+        if (CenterRatio > Session.LastCenterRatio + 1.0f)CenterRatio = Session.LastCenterRatio + 1.0f;
+        auto Oldx = Center.x;
+        Center.x = CenterRatio * FontHeight;
+        DC.x = DC.x + (Center.x - Oldx);
         ImGui::SetCursorPosX(Center.x - FontHeight * 0.5f);
+        Session.LastCenterRatio = CenterRatio;
 
         ImGui::PushID(LineIdx << 16 | CompIdx);
 
         auto w = ImGui::GetCurrentWindow();
         auto mx = w->DC.CursorMaxPos;
+        auto mxi = w->DC.IdealMaxPos;
         bool Clicked = ImGui::RadioButton("", true, Style);
         w->DC.CursorMaxPos = mx;
+        w->DC.IdealMaxPos = mxi;
         bool RightClicked = ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right);
         bool Hovered = ImGui::IsItemHovered();
         bool ShowReg = IBR_WorkSpace::ShowRegName;
@@ -388,7 +397,7 @@ namespace IBR_LinkNode
                         {
                             Session.NewValue = "";
                             Session.NotifyNewValue = true;
-                            IBR_PopupManager::ClearRightClickMenu();
+                            return IBR_PopupManager::ClearRightClickMenu();
                         }
                         })), ImGui::GetMousePos());
             }
@@ -431,7 +440,7 @@ namespace IBR_LinkNode
                         {
                             Session.NewValue = "";
                             Session.NotifyNewValue = true;
-                            IBR_PopupManager::ClearRightClickMenu();
+                            return IBR_PopupManager::ClearRightClickMenu();
                         }
                     })), ImGui::GetMousePos());
             }
@@ -530,7 +539,6 @@ namespace IBR_LinkNode
         }
 
         ImGui::PopID();
-
         ImGui::PopStyleColor();
 
         return UR;

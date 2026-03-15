@@ -642,6 +642,18 @@ IBB_SubSec& IBB_Section::GetSubSecByLine(const std::string& Key)
     return GetSubSecByDef(ptr);
 }
 
+bool IBB_Section::RemoveLine(StrPoolID Key)
+{
+    auto [pLine, pSub] = GetLineFromSubSecsEx2(Key);
+    if (!pLine || !pSub)return false;
+    OnShow.erase(Key);
+    LineOrder.erase(std::remove(LineOrder.begin(), LineOrder.end(), Key), LineOrder.end());
+    auto& LB = pSub->Lines_ByName;
+    LB.erase(std::remove(LB.begin(), LB.end(), Key), LB.end());
+    pSub->Lines.erase(Key);
+    return UpdateAll();
+}
+
 bool IBB_Section::MergeLine(StrPoolID Key, const std::string& Value, IBB_IniMergeMode Mode, bool NoUpdate)
 {
     switch (Mode)

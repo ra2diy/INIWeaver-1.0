@@ -197,6 +197,7 @@ struct IBB_Section
     //增删改时相应修改移动构造函数
 
     // MergeType is unused to a LinkGroup
+    bool RemoveLine(StrPoolID Key);
     bool MergeLine(StrPoolID Key, const std::string& Value, IBB_IniMergeMode Mode, bool NoUpdate = false);
     bool GenerateLines(const IBB_VariableList& Lines, const std::vector<std::string>& Order = {}, bool InitOnShow = true);
     void OrderKey(StrPoolID Key, size_t NewOrder);
