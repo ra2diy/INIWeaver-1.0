@@ -5,6 +5,7 @@
 #include "IBB_Index.h"
 #include "IBB_PropStringPool.h"
 #include "IBG_InputType_Defines.h"
+#include <variant>
 
 #ifndef _TEXT_UTF8
 #define _TEXT_UTF8
@@ -20,6 +21,7 @@ struct IBB_RegType;
 struct IBG_InputType;
 enum class ValidateResult;
 using LineData = std::shared_ptr<IBB_IniLine_Data_Base>;
+using LineDV = std::variant<LineData, std::vector<LineData>>;
 struct IBB_SubSec_Default;
 
 enum class IBB_IniMergeMode
@@ -52,7 +54,10 @@ struct IBB_IniLine_Default
     LinkNodeSetting GetNodeSetting() const;
     int GetLinkLimit() const;
     const IBG_InputType* GetInputTypeByValue(const std::string& Value) const;
+    bool IsMultiple() const;
 };
+
+const inline size_t Index_AlwaysNew = static_cast<size_t>(-1);
 
 struct IBB_SubSec_Default
 {
@@ -86,12 +91,15 @@ struct IBB_IniLine_Data_Base
 
     IBB_IniLine_Data_Base() {}
     virtual ~IBB_IniLine_Data_Base() {}
+
+    template<typename T> T* GetData() { return dynamic_cast<T*>(this); }
+    template<typename T> const T* GetData() const { return dynamic_cast<const T*>(this); }
 };
 
 struct IBB_IniLine
 {
     IBB_IniLine_Default* Default{ nullptr };
-    LineData Data;
+    LineDV Data;
 
     //暂时不需要Validate
     //ValidateResult ValidateValue() const;
@@ -99,12 +107,44 @@ struct IBB_IniLine
     //ValidateResult ValidateAndMerge(const std::string& Another, IBB_IniMergeMode Mode);
     //ValidateResult ValidateAndMerge(const IBB_IniLine& Another, IBB_IniMergeMode Mode);
 
-    void MakeKVForExport(IBB_VariableList&, IBB_Section* AtSec, std::vector<std::string>* TmpLineOrder = nullptr) const;
+    static LineData& Null() { static LineData LD; LD.reset(); return LD; }
+    bool IsMultiple() const { return Default->IsMultiple(); }
+    LineData& Single() { return std::get<LineData>(Data); }
+    const LineData& Single() const { return std::get<LineData>(Data); }
+    std::vector<LineData>& Multis() { return std::get<std::vector<LineData>>(Data); }
+    LineData& Multiple(size_t Index) { auto& V = Multis(); if (Index < V.size())return V.at(Index); else return Null(); }
+    const LineData& Multiple(size_t Index) const { auto& V = Multis(); if (Index < V.size())return V.at(Index); else return Null(); }
+    LineData& Indexed(size_t Index) { return IsMultiple() ? Multiple(Index) : Single(); }
+    const LineData& Indexed(size_t Index) const { return IsMultiple() ? Multiple(Index) : Single(); }
+    const std::vector<LineData>& Multis() const { return std::get<std::vector<LineData>>(Data); }
+    template<typename T> T* GetData(size_t Index) const
+    {
+        return dynamic_cast<T*>(Indexed(Index).get());
+    }
+    template<typename _Act> void ForEach(const _Act& Action)
+    {
+        if (IsMultiple())for (auto& D : Multis())Action(D);
+        else Action(Single());
+    }
+    template<typename _Act> void ForEach(const _Act& Action) const
+    {
+        if (IsMultiple())for (auto& D : Multis())Action(D);
+        else Action(Single());
+    }
+    template<typename _Act> void ForEachWithIdx(const _Act& Action)
+    {
+        if (IsMultiple())for (auto&& [D, I] : std::views::zip(Multis(), std::views::iota(0)))Action(D, I);
+        else Action(Single(), 0);
+    }
+    template<typename _Act> void ForEachWithIdx(const _Act& Action) const
+    {
+        if (IsMultiple())for (auto&& [D, I] : std::views::zip(Multis(), std::views::iota(0)))Action(D, I);
+        else Action(Single(), 0);
+    }
 
-    template<typename T> T* GetData() const { return dynamic_cast<T*>(Data.get()); }
-
-    bool Merge(const std::string& Another, IBB_IniMergeMode Mode);
-    bool Generate(const std::string& Value, IBB_IniLine_Default* Def = nullptr);//don't change Default if Def == nullptr
+    void MakeKVForExport(IBB_VariableMultiList&, IBB_Section* AtSec, std::vector<std::string>* TmpLineOrder = nullptr) const;
+    
+    bool Merge(size_t Index, const std::string& Another, IBB_IniMergeMode Mode);
 
     void RenderUI(const LinkNodeSetting& LinkNode, bool IsWorkspace);
     void RenderUI(bool IsWorkspace);
@@ -112,7 +152,7 @@ struct IBB_IniLine
     IIFPtr GetNewIIF() const;
 
     IBB_IniLine() {}
-    IBB_IniLine(const std::string& Value, IBB_IniLine_Default* Def) { Generate(Value, Def); }
+    IBB_IniLine(const std::string& Value, IBB_IniLine_Default* Def);
     IBB_IniLine(const IBB_IniLine& F) { Default = F.Default; Data = F.Data; }
     IBB_IniLine(IBB_IniLine&& F) noexcept;
 
@@ -125,6 +165,7 @@ struct IBB_NewLink
     IBB_SectionID To;
     StrPoolID FromKey;
     StrPoolID ToKey;
+    size_t LineMult;
     ImU32 DefaultColor;
     uint64_t SessionID;
 
@@ -132,6 +173,8 @@ struct IBB_NewLink
     bool Empty() const;//From和To都不能为空，有一个是"":""就返回true
     std::string TargetValue() const;
 };
+
+std::string TargetValueStr(const std::string& ToSec, StrPoolID ToKey, size_t LineMult);
 
 struct IBB_SubSec
 {
@@ -141,7 +184,7 @@ struct IBB_SubSec
     std::vector<StrPoolID> Lines_ByName;//KeyName
     std::unordered_map<StrPoolID, IBB_IniLine> Lines;//<KeyName,LineData>
     std::vector<IBB_NewLink> NewLinkTo;
-    std::multimap<uint64_t, size_t> LinkSrc;
+    std::multimap<LinkSrcIdx, size_t> LinkSrc;
     //Key复制了2遍：Lines_ByName / Lines.find(x)->first
 
     IBB_SubSec() {}
@@ -150,17 +193,16 @@ struct IBB_SubSec
     IBB_SubSec(IBB_SubSec&& A) noexcept;
 
     std::vector<StrPoolID> GetKeys(bool PrintExtraData) const;//RARELY USED
-    IBB_VariableList GetLineList(bool PrintExtraData, bool FromExport, std::vector<std::string>* TmpLineOrder = nullptr) const;
-    std::pair< std::multimap<uint64_t, size_t>::const_iterator, std::multimap<uint64_t, size_t>::const_iterator>
-        GetLink(size_t LineIdx, size_t ComponentIdx) const;
-    void ClaimLink(size_t LineIdx, size_t ComponentIdx, size_t LinkIdx);
+    IBB_VariableMultiList GetLineList(bool PrintExtraData, bool FromExport, std::vector<std::string>* TmpLineOrder = nullptr) const;
+    std::pair<LinkSrcCIter, LinkSrcCIter> GetLink(size_t LineIdx, size_t LineMult, size_t ComponentIdx) const;
+    void ClaimLink(size_t LineIdx, size_t LineMult, size_t ComponentIdx, size_t LinkIdx);
     bool RenameInLinkTo(size_t LinkIdx, const std::string& OldName, const std::string& NewName);
     bool CanOwnKey(StrPoolID Key) const;
 
     bool UpdateAll();
     void UpdateNewLinkTo(std::vector<IBB_NewLink>&& NewLT);
 
-    bool MergeLine(StrPoolID Key, const std::string& Value, bool InitOnShow, IBB_IniMergeMode Mode, bool NoUpdate = false);
+    bool MergeLine(StrPoolID Key, size_t Index, const std::string& Value, IBB_IniMergeMode Mode, bool NoUpdate = false);
     bool ChangeRoot(IBB_Section* NewRoot);
     IBB_SubSec& ChangeRootAndBack(IBB_Section* NewRoot) { ChangeRoot(NewRoot); return *this; }
 };
@@ -198,8 +240,7 @@ struct IBB_Section
 
     // MergeType is unused to a LinkGroup
     bool RemoveLine(StrPoolID Key);
-    bool MergeLine(StrPoolID Key, const std::string& Value, IBB_IniMergeMode Mode, bool NoUpdate = false);
-    bool GenerateLines(const IBB_VariableList& Lines, const std::vector<std::string>& Order = {}, bool InitOnShow = true);
+    bool MergeLine(StrPoolID Key, size_t Index, const std::string& Value, IBB_IniMergeMode Mode, bool NoUpdate = false);
     void OrderKey(StrPoolID Key, size_t NewOrder);
     void CheckSubsecOrder();
 
@@ -233,7 +274,7 @@ struct IBB_Section
     IBB_SectionID GetThisID() const;
     std::vector<StrPoolID> GetKeys(bool PrintExtraData) const;
     std::vector<std::string> GetLineOrderString() const;
-    IBB_VariableList GetLineList(bool PrintExtraData, bool FromExport, std::vector<std::string>* TmpLineOrder = nullptr) const;//RARELY USED
+    IBB_VariableMultiList GetLineList(bool PrintExtraData, bool FromExport, std::vector<std::string>* TmpLineOrder = nullptr) const;//RARELY USED
     std::string GetText(bool PrintExtraData, bool FromExport = false, bool ForEdit = false) const;
     std::string GetTextForEdit() const;
     std::vector<size_t> GetRegisteredPosition() const;//Project的RegList序号

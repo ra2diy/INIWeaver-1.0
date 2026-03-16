@@ -41,10 +41,16 @@ void MergeList(std::vector<std::string>& Value, const std::string& Str)
     //Value.erase(std::remove_if(Value.begin(), Value.end(), [&](const std::string& s)->bool {return !SS.insert(s).second; }), Value.end());
 }
 
+std::string TargetValueStr(const std::string& ToSec, StrPoolID ToKey, size_t LineMult)
+{
+    if (ToKey == EmptyPoolStr) return ToSec;
+    else if (LineMult == 0) return ToSec + "$$" + PoolStr(ToKey);
+    else return ToSec + "$$" + PoolStr(ToKey) + "@@" + std::to_string(LineMult);
+}
+
 std::string IBB_NewLink::TargetValue() const
 {
-    if (ToKey == EmptyPoolStr) return To.Section();
-    else return To.Section() + "$$" + PoolStr(ToKey);
+    return TargetValueStr(To.Section(), ToKey, LineMult);
 }
 
 std::string IBB_NewLink::GetText() const
@@ -63,7 +69,7 @@ IBB_SubSec::IBB_SubSec(IBB_SubSec&& A) noexcept :
     Root(A.Root), Default(A.Default), Lines_ByName(std::move(A.Lines_ByName)), Lines(std::move(A.Lines)), NewLinkTo(std::move(A.NewLinkTo))
 {}
 
-bool IBB_SubSec::MergeLine(StrPoolID Key, const std::string& Value, bool InitOnShow, IBB_IniMergeMode Mode, bool NoUpdate)
+bool IBB_SubSec::MergeLine(StrPoolID Key, size_t Index, const std::string& Value, IBB_IniMergeMode Mode, bool NoUpdate)
 {
     /*sprintf_s(LogBufB, __FUNCTION__ ":  %s=%s Mode=%d InitOnShow=%s NoUpdate=%s",
         Line.first.c_str(), Line.second.c_str(), Mode, IBD_BoolStr(InitOnShow), IBD_BoolStr(NoUpdate));
@@ -78,16 +84,10 @@ bool IBB_SubSec::MergeLine(StrPoolID Key, const std::string& Value, bool InitOnS
         Lines_ByName.push_back(Key);
 
         auto rp = Lines.insert({ Key, IBB_IniLine(Value, Def) });
-        if (InitOnShow && Root->OnShow[Key].empty())
-        {
-            auto Str = PoolStr(Def->LinkNode.LinkType);
-            if (!Str.empty() && Str != "bool")
-                Root->OnShow[Key] = EmptyOnShowDesc;
-        }
     }
     else
     {
-        Ret = it->second.Merge(Value, Mode);
+        Ret = it->second.Merge(Index, Value, Mode);
     }
 
     if (NoUpdate) return Ret;
@@ -122,10 +122,10 @@ std::vector<StrPoolID> IBB_SubSec::GetKeys(bool PrintExtraData) const
     }
     return Ret;
 }
-IBB_VariableList IBB_SubSec::GetLineList(bool PrintExtraData, bool FromExport, std::vector<std::string>* TmpLineOrder) const
+IBB_VariableMultiList IBB_SubSec::GetLineList(bool PrintExtraData, bool FromExport, std::vector<std::string>* TmpLineOrder) const
 {
-    IBB_VariableList Ret;
-    if (PrintExtraData)Ret.Value["_DEFAULT_NAME"] = (Default == nullptr ? std::string{ "MISSING SubSec Default" } : Default->Name);
+    IBB_VariableMultiList Ret;
+    if (PrintExtraData)Ret.Push("_DEFAULT_NAME", Default == nullptr ? std::string{ "MISSING SubSec Default" } : Default->Name);
     for (const auto& sn : Lines_ByName)
     {
         auto It = Lines.find(sn);
@@ -145,31 +145,26 @@ IBB_VariableList IBB_SubSec::GetLineList(bool PrintExtraData, bool FromExport, s
         else
         {
             if (sn == InheritKeyID())continue;
-            Ret.Value[PoolStr(sn)] = L.Data->GetString();
+            L.ForEach([&](const LineData& L) { Ret.Push(PoolStr(sn), L->GetString()); });
         }
     }
     if (PrintExtraData)for (const auto& L : NewLinkTo)
     {
         auto pf = L.From.GetSec(*(Root->Root->Root)), pt = L.To.GetSec(*(Root->Root->Root));
         if (pf != nullptr && pt != nullptr)
-            Ret.Value["_LINK_FROM_" + pf->Name] = "_LINK_TO_" + pt->Name;
+            Ret.Push("_LINK_FROM_" + pf->Name, "_LINK_TO_" + pt->Name);
     }
     return Ret;
 }
 
-std::pair< std::multimap<uint64_t, size_t>::const_iterator, std::multimap<uint64_t, size_t>::const_iterator>
-IBB_SubSec::GetLink(size_t LineIdx, size_t ComponentIdx) const
+std::pair<LinkSrcCIter, LinkSrcCIter> IBB_SubSec::GetLink(size_t LineIdx, size_t LineMult, size_t ComponentIdx) const
 {
-    uint64_t l = LineIdx;
-    uint64_t c = ComponentIdx;
-    uint64_t i = (l << 32) | c;
+    LinkSrcIdx i{ LineIdx, LineMult, ComponentIdx };
     return LinkSrc.equal_range(i);
 }
-void IBB_SubSec::ClaimLink(size_t LineIdx, size_t ComponentIdx, size_t LinkIdx)
+void IBB_SubSec::ClaimLink(size_t LineIdx, size_t LineMult, size_t ComponentIdx, size_t LinkIdx)
 {
-    uint64_t l = LineIdx;
-    uint64_t c = ComponentIdx;
-    uint64_t i = (l << 32) | c;
+    LinkSrcIdx i{ LineIdx, LineMult, ComponentIdx };
     LinkSrc.insert({ i, LinkIdx });
 }
 
@@ -191,13 +186,11 @@ bool IBB_SubSec::RenameInLinkTo(size_t LinkIdx, const std::string& OldName, cons
     {
         if (lidx == LinkIdx)
         {
-            uint64_t l = lc >> 32;
-            uint64_t c = lc & 0xFFFFFFFF;
-            size_t LineIdx = (size_t)l;
-            size_t CompIdx = (size_t)c;
+            size_t LineIdx = GetLineIdx(lc);
+            size_t CompIdx = GetComponentIdx(lc);
             auto& Key = Lines_ByName[LineIdx];
             auto& line = Lines.find(Key)->second;
-            line.Data->Replace(CompIdx, OldName, NewName);
+            line.ForEach([&](LineData& L) { L->Replace(CompIdx, OldName, NewName); });
         }
     }
     return Ret;
@@ -250,126 +243,135 @@ bool IBB_SubSec::UpdateAll()
 
     for (auto&& [LineIdx, L] : std::views::zip(std::views::iota(0u), Lines_ByName))
     {
-        auto& Line = Lines[L];
-        if (!Line.Default)continue;
+        auto& _Line = Lines[L];
+        if (!_Line.Default)continue;
         auto& KeyName = L;
 
-        if (auto pd = Line.GetData<IBB_IniLine_Data_IIF>(); pd)
-        {
-            auto& iif = pd->Value;
-
-            auto ldd = Line.Default && IBB_DefaultRegType::HasRegType(Line.Default->LinkNode.LinkType);
-            std::set<std::pair<int, int>> SelectValues;
-
-            int i = -1;
-            for (auto& iic : *iif->InputComponents)
+        _Line.ForEachWithIdx([&](LineData& Line, int LineMult) {
+            if (auto pd = Line->GetData<IBB_IniLine_Data_IIF>(); pd)
             {
-                i++;
-                if (!iic->SupportLinks())continue;
-                auto id = iic->GetCurrentTargetValueID();
-                if (ldd)
-                    SelectValues.insert({ id, i });
-                else if (iic->UseCustomSetting)//确实是常驻的Node
-                    SelectValues.insert({ id, i });
-                else if (iic->InitialStatus.InputMethod == IICStatus::Link)
-                    SelectValues.insert({ id, i });
-                else if (iif->GetComponentStatus()[i].InputMethod == IICStatus::Link)
-                    SelectValues.insert({ id, i });
-            }
+                auto& iif = pd->Value;
 
-            auto& val = iif->GetValues();
-            auto DefaultLinkLimit = Line.Default->GetLinkLimit();
+                auto ldd = _Line.Default && IBB_DefaultRegType::HasRegType(_Line.Default->LinkNode.LinkType);
+                std::set<std::pair<int, int>> SelectValues;
 
-            for (auto&& [id, cidx] : SelectValues)
-            {
-                if (!val.Values.contains(id))continue;
-                auto& V = val.Values[id];
-
-                auto& piic = iif->InputComponents->at(cidx);
-                auto LinkLimit = piic->UseCustomSetting ? piic->NodeSetting.LinkLimit : DefaultLinkLimit;
-                auto& spc = SplitParamCached(V.Value);
-                if (LinkLimit != -1 && LinkLimit != 0 && (int)spc.size() > LinkLimit)
+                int i = -1;
+                for (auto& iic : *iif->InputComponents)
                 {
-                    LimitFix = true;
-                    std::string NewStr;
-                    if (LinkLimit == 1)NewStr = spc.back();
-                    else NewStr = spc |
-                        std::views::take(LinkLimit) |
-                        std::views::join_with(',') |
-                        std::ranges::to<std::string>();
-                    V.Value = NewStr;
-                    V.Dirty = false;
-                    Line.Data->SetValue(iif->RegenFormattedString());
+                    i++;
+                    if (!iic->SupportLinks())continue;
+                    auto id = iic->GetCurrentTargetValueID();
+                    if (ldd)
+                        SelectValues.insert({ id, i });
+                    else if (iic->UseCustomSetting)//确实是常驻的Node
+                        SelectValues.insert({ id, i });
+                    else if (iic->InitialStatus.InputMethod == IICStatus::Link)
+                        SelectValues.insert({ id, i });
+                    else if (iif->GetComponentStatus()[i].InputMethod == IICStatus::Link)
+                        SelectValues.insert({ id, i });
                 }
-                else if (!LimitFix)
-                    for (auto&& str : spc)
+
+                auto& val = iif->GetValues();
+                auto DefaultLinkLimit = _Line.Default->GetLinkLimit();
+
+                for (auto&& [id, cidx] : SelectValues)
+                {
+                    if (!val.Values.contains(id))continue;
+                    auto& V = val.Values[id];
+
+                    auto& piic = iif->InputComponents->at(cidx);
+                    auto LinkLimit = piic->UseCustomSetting ? piic->NodeSetting.LinkLimit : DefaultLinkLimit;
+                    auto& spc = SplitParamCached(V.Value);
+                    if (LinkLimit != -1 && LinkLimit != 0 && (int)spc.size() > LinkLimit)
                     {
-                        auto& IniType = Line.Default->GetIniType();
-                        auto&& [toidx, ToKey] = IBF_Inst_Project.Project.GetSecAndLineID(str, IniType);
-
-                        if (toidx.Empty())continue;//目标不存在，跳过
-
-                        //sprintf_s(LogBufB, "New Link <%s->%u:%u> to %s, ", Root->Name.c_str(), LineIdx, cidx, toidx.operator IBB_Section_Desc().GetText().c_str());
-                        //GlobalLogB.AddLog(LogBufB, false);
-                        ClaimLink(LineIdx, cidx, NewLT.size());
-
-                        ImU32 Col = piic->UseCustomSetting ? piic->NodeSetting.LinkCol :
-                            (Line.Default ? Line.Default->LinkNode.LinkCol : (ImU32)IBB_DefaultRegType::GetDefaultNodeColor());
-                        auto RootID = Root->GetThisID();
-                        auto seid = IBR_NodeSession::GetSessionIdx(
-                            RootID,
-                            Default->Name,
-                            LineIdx,
-                            cidx
-                        );
-                        NewLT.emplace_back(
-                            RootID,
-                            toidx,
-                            KeyName,
-                            ToKey,
-                            Col,
-                            seid
-                        );
+                        LimitFix = true;
+                        std::string NewStr;
+                        if (LinkLimit == 1)NewStr = spc.back();
+                        else NewStr = spc |
+                            std::views::take(LinkLimit) |
+                            std::views::join_with(',') |
+                            std::ranges::to<std::string>();
+                        V.Value = NewStr;
+                        V.Dirty = false;
+                        Line->SetValue(iif->RegenFormattedString());
                     }
+                    else if (!LimitFix)
+                        for (auto&& str : spc)
+                        {
+                            auto& IniType = _Line.Default->GetIniType();
+                            auto&& [toidx, ToKey, TargetLineMult] = IBF_Inst_Project.Project.GetSecAndLineID(str, IniType);
+
+                            if (toidx.Empty())continue;//目标不存在，跳过
+
+                            //sprintf_s(LogBufB, "New Link <%s->%u:%u> to %s, ", Root->Name.c_str(), LineIdx, cidx, toidx.operator IBB_Section_Desc().GetText().c_str());
+                            //GlobalLogB.AddLog(LogBufB, false);
+                            ClaimLink(LineIdx, TargetLineMult, cidx, NewLT.size());
+
+                            ImU32 Col = piic->UseCustomSetting ? piic->NodeSetting.LinkCol :
+                                (_Line.Default ? _Line.Default->LinkNode.LinkCol : (ImU32)IBB_DefaultRegType::GetDefaultNodeColor());
+                            auto RootID = Root->GetThisID();
+                            auto seid = IBR_NodeSession::GetSessionIdx(
+                                RootID,
+                                Default->Name,
+                                LineIdx,
+                                TargetLineMult,
+                                cidx
+                            );
+                            NewLT.emplace_back(
+                                RootID,
+                                toidx,
+                                KeyName,
+                                ToKey,
+                                LineMult,
+                                Col,
+                                seid
+                            );
+                        }
 
 
 
-                //GlobalLogB.AddLog("");
+                    //GlobalLogB.AddLog("");
+                }
             }
-        }
-        if (auto pd = Line.GetData<IBB_IniLine_Data_String>(); pd)
-        {
-            auto& spc = SplitParamCached(pd->Value);
-            for (auto&& str : spc)
+            if (auto pd = Line->GetData<IBB_IniLine_Data_String>(); pd)
             {
-                auto& IniType = Line.Default->GetIniType();
-                auto&& [toidx, ToKey] = IBF_Inst_Project.Project.GetSecAndLineID(str, IniType);
-                if (toidx.Empty())continue;//目标不存在，跳过
-                ClaimLink(LineIdx, 0, NewLT.size());
-                ImU32 Col = (Line.Default ? Line.Default->LinkNode.LinkCol : (ImU32)IBB_DefaultRegType::GetDefaultNodeColor());
-                auto RootID = Root->GetThisID();
-                auto seid = IBR_NodeSession::GetSessionIdx(
-                    RootID,
-                    Default->Name,
-                    LineIdx,
-                    0
-                );
-                NewLT.emplace_back(
-                    RootID,
-                    toidx,
-                    KeyName,
-                    ToKey,
-                    Col,
-                    seid
-                );
+                auto& spc = SplitParamCached(pd->Value);
+                for (auto&& str : spc)
+                {
+                    auto& IniType = _Line.Default->GetIniType();
+                    auto&& [toidx, ToKey, TargetLineMult] = IBF_Inst_Project.Project.GetSecAndLineID(str, IniType);
+                    if (toidx.Empty())continue;//目标不存在，跳过
+                    ClaimLink(LineIdx, TargetLineMult, 0, NewLT.size());
+                    ImU32 Col = (_Line.Default ? _Line.Default->LinkNode.LinkCol : (ImU32)IBB_DefaultRegType::GetDefaultNodeColor());
+                    auto RootID = Root->GetThisID();
+                    auto seid = IBR_NodeSession::GetSessionIdx(
+                        RootID,
+                        Default->Name,
+                        LineIdx,
+                        TargetLineMult,
+                        0
+                    );
+                    NewLT.emplace_back(
+                        RootID,
+                        toidx,
+                        KeyName,
+                        ToKey,
+                        TargetLineMult,
+                        Col,
+                        seid
+                    );
+                }
             }
-        }
+
+            });
+
+        
     }
 
     if (Default->Type == IBB_SubSec_Default::Inherit)
     {
         auto it = Lines.find(InheritKeyID());
-        if (it != Lines.end())Root->Inherit = it->second.Data->GetString(); 
+        if (it != Lines.end())Root->Inherit = it->second.Indexed(0)->GetString();
     }
 
     UpdateNewLinkTo(std::move(NewLT));

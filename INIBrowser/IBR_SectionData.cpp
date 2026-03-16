@@ -387,7 +387,7 @@ bool IBR_SectionData::RenderUI_Line(const std::string& OnShow, StrPoolID Name)
     LinkNodeContext::LineIndex = idx;
 
     const auto ShowInherit = [&]() {
-        return line->Data->FirstIsLink();
+        return line->Indexed(0)->FirstIsLink();
     };
 
     const auto InheritStr = [&]() {
@@ -480,7 +480,7 @@ void IBR_SectionData::RenderUI_Acceptor(float LastFinalY)
                         if (payload->IsDelivery())
                         {
                             IBG_Undo.SomethingShouldBeHere();
-                            back->MergeLine(DLK, desc.Sec, IBB_IniMergeMode::Merge);
+                            back->MergeLine(DLK, Index_AlwaysNew, desc.Sec, IBB_IniMergeMode::Merge);
                             back->SetOnShow(DLK);
                         }
                     }
@@ -819,7 +819,7 @@ void IBR_SectionData::RenderUI_Collapsed(IBB_Section* Bsec, ImVec2 HeadLineRN, I
             {
                 bool FromImport = (lt.FromKey == ImportKeyID());
                 bool IsLinkingToSelf = (lt.From == lt.To);
-                IBR_LinkNode::PushLinkForDraw(HeadLineRN, lt.To, lt.ToKey, lt.SessionID, lt.DefaultColor, FromImport, IsLinkingToSelf, true);
+                IBR_LinkNode::PushLinkForDraw(HeadLineRN, lt.To, lt.ToKey, lt.LineMult, lt.SessionID, lt.DefaultColor, FromImport, IsLinkingToSelf, true);
             }
             else
             {
@@ -983,10 +983,10 @@ namespace IBR_LinkNode
         return ImGui::GetStyleColorVec4(ImGuiCol_CheckMark);
     }
 
-    void PushLinkForDraw(ImVec2 Center, IBB_SectionID Dest, StrPoolID DestKey, uint64_t SessionID, ImU32 LineCol, bool FromImport, bool SelfLink, bool Collapsed, bool SrcDragging)
+    void PushLinkForDraw(ImVec2 Center, IBB_SectionID Dest, StrPoolID DestKey, size_t LineMult , uint64_t SessionID, ImU32 LineCol, bool FromImport, bool SelfLink, bool Collapsed, bool SrcDragging)
     {
         IBR_NodeSession::SetSessionStatus(SessionID, Center, Collapsed);
-        IBR_Inst_Project.LinkList.push_back({ Dest, DestKey, SessionID, IBR_WorkSpace::CurOnRender_ID, LineCol, FromImport, SelfLink, SrcDragging });
+        IBR_Inst_Project.LinkList.push_back({ Dest, DestKey, LineMult, SessionID, IBR_WorkSpace::CurOnRender_ID, LineCol, FromImport, SelfLink, SrcDragging });
     }
 }
 

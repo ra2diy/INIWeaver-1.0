@@ -7,7 +7,6 @@
 namespace ExportContext
 {
     extern StrPoolID Key;
-    extern size_t SameKeyIdx;//用于当Key重复时区分不同的Key
     extern std::set<IBB_Section_Desc> MergedDescs;//被Import而合并的Section列表
     extern bool OnExport;
 }
@@ -39,7 +38,7 @@ std::string DecodeListForExport(const std::string& Val)
     if (pSec && pSec->SingleVal)
     {
         auto pLine = pSec->GetLineFromSubSecs(SingleValID());
-        if (pLine)return pLine->Data->GetStringForExport();
+        if (pLine)return pLine->Indexed(0)->GetStringForExport();
         else return Val;
     }
     else
@@ -429,7 +428,13 @@ void IBB_IniLine_Data_String::RenderUI(IBB_IniLine_Default* Default, const LinkN
     });
 
     LinkNodeContext::CompIndex = UINT_MAX;
-    IBR_LinkNode::UpdateLink(*LinkNodeContext::CurSub, LinkNodeContext::LineIndex, 0, nullptr);
+    IBR_LinkNode::UpdateLink(
+        *LinkNodeContext::CurSub,
+        LinkNodeContext::LineIndex,
+        LinkNodeContext::LineMult,
+        0,
+        nullptr
+    );
 
     if (Result.Updated)
         LinkNodeContext::CurSub->UpdateAll();
@@ -607,6 +612,11 @@ int IBB_IniLine_Default::GetLinkLimit() const
     return LinkNode.LinkLimit;
 }
 
+bool IBB_IniLine_Default::IsMultiple() const
+{
+    return Input->Multiple;
+}
+
 LinkNodeSetting IBB_IniLine_Default::GetNodeSetting() const
 {
     return LinkNode;
@@ -616,7 +626,7 @@ LinkNodeSetting IBB_IniLine_Default::GetNodeSetting() const
 // ------------------------- IBB_IniLine -------------------------
 // ---------------------------------------------------------------
 
-bool IBB_IniLine::Merge(const std::string& Another, IBB_IniMergeMode Mode)
+bool MergeSingleData(LineData& Data, IBB_IniLine_Default* Default, const std::string& Another, IBB_IniMergeMode Mode)
 {
     if (Default == nullptr)return false;
     if (!Data)
@@ -661,41 +671,80 @@ bool IBB_IniLine::Merge(const std::string& Another, IBB_IniMergeMode Mode)
     }
     return true;
 }
-bool IBB_IniLine::Generate(const std::string& Value, IBB_IniLine_Default* Def)
+
+LineData CreateWithValue(const std::string& Value, IBB_IniLine_Default* Def)
 {
-    if (Def != nullptr)Default = Def;
-    if (Default == nullptr)return false;
-    Data = Default->Create();
-    if (!Data)
+    auto SData = Def->Create();
+    if (!SData)
     {
         if (EnableLog)
         {
             GlobalLogB.AddLog_CurTime(false);
-            auto K = UTF8toUnicode(PoolStr(Default->Name));
+            auto K = UTF8toUnicode(PoolStr(Def->Name));
             auto LT = L"";
             GlobalLogB.AddLog(std::vformat(L"IBB_IniLine::Generate ： " + locw("Error_DataTypeNotExist"),
                 std::make_wformat_args(K, LT)).c_str());
         }
-        return false;
+        return nullptr;
     }
-    bool Ret = Data->SetValue(Value);
-    return Ret;
+    SData->SetValue(Value);
+    return SData;
 }
 
-void IBB_IniLine::MakeKVForExport(IBB_VariableList& vl, IBB_Section* AtSec, std::vector<std::string>* TmpLineOrder) const
+bool IBB_IniLine::Merge(size_t Index, const std::string& Another, IBB_IniMergeMode Mode)
+{
+    if (Index == Index_AlwaysNew && IsMultiple())
+    {
+        auto& M = Multis();
+        auto&& Val = CreateWithValue(Another, Default);
+        if (!Val)return false;
+        M.push_back(std::move(Val));
+        return true;
+    }
+    else
+    {
+        return MergeSingleData(Indexed(Index), Default, Another, Mode);
+    }
+}
+
+IBB_IniLine::IBB_IniLine(const std::string& Value, IBB_IniLine_Default* Def)
+{
+    if (Def != nullptr)Default = Def;
+    if (Default == nullptr)return;
+
+    auto SData = CreateWithValue(Value, Def);
+    if (!SData)return;
+
+    if (IsMultiple())
+    {
+        auto LD = std::vector<LineData>{};
+        LD.push_back(SData);
+        Data = std::move(LD);
+    }
+    else
+    {
+        Data = SData;
+    }
+}
+
+void IBB_IniLine::MakeKVForExport(IBB_VariableMultiList& vl, IBB_Section* AtSec, std::vector<std::string>* TmpLineOrder) const
 {
     auto& input = Default->GetInputType();
     auto key = PoolStr(Default->Name);
 
-    auto IIF = Default->GetInputType().Form->Duplicate();
-    auto Str = Data->GetString();
-    IIF->ParseFromString(Str);
-    ExportContext::OnExport = true;
-    Data->SetValue(IIF->RegenFormattedString());
-    ExportContext::OnExport = false;
-    auto value = Data->GetStringForExport();
-    Data->SetValue(Str);
-    input.KVFmt(vl, key, value, TmpLineOrder, AtSec);
+    const auto ExportKV = [&](const LineData& Data) {
+        auto IIF = Default->GetInputType().Form->Duplicate();
+        auto Str = Data->GetString();
+        IIF->ParseFromString(Str);
+        ExportContext::OnExport = true;
+        Data->SetValue(IIF->RegenFormattedString());
+        ExportContext::OnExport = false;
+        auto value = Data->GetStringForExport();
+        Data->SetValue(Str);
+        input.KVFmt(vl, key, value, TmpLineOrder, AtSec);
+    };
+
+    ForEach(ExportKV);
 }
 
 IBB_IniLine::IBB_IniLine(IBB_IniLine&& F) noexcept
@@ -711,7 +760,11 @@ void IBB_IniLine::RenderUI(const LinkNodeSetting& LinkNode, bool IsWorkspace)
         ImGui::TextColored(IBR_Color::IllegalLineColor, "%s", locc("GUI_MissingLineDefault"));
         return;
     }
-    Data->RenderUI(Default, LinkNode, IsWorkspace);
+    ForEachWithIdx([&](LineData& Data, int Idx) {
+        LinkNodeContext::LineMult = (size_t)Idx;
+        Data->RenderUI(Default, LinkNode, IsWorkspace);
+        LinkNodeContext::AcceptEdge.push_back(ImGui::GetCursorPos());
+    });
 }
 void IBB_IniLine::RenderUI(bool IsWorkspace)
 {
@@ -720,9 +773,10 @@ void IBB_IniLine::RenderUI(bool IsWorkspace)
 }
 const void* IBB_IniLine::GetComponentID()
 {
-    return Data.get();
+    return Indexed(0).get();
 }
 IIFPtr IBB_IniLine::GetNewIIF() const
 {
-    return Data ? Data->GetNewIIF(Default) : nullptr;
+    auto& LD = Indexed(0);
+    return LD ? LD->GetNewIIF(Default) : Default->GetInputType().Form->Duplicate();
 }

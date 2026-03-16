@@ -15,6 +15,38 @@ bool operator<(const IBB_Section_Desc& A, const IBB_Section_Desc& B)
     return (A.Sec < B.Sec);
 }
 
+void IBB_VariableMultiList::Push(const std::string& Name, const std::string& Val)
+{
+    auto& V = Value[Name];
+    if (std::find(V.begin(), V.end(), Val) == V.end())
+        V.push_back(Val);
+}
+void IBB_VariableMultiList::Merge(const IBB_VariableList& Another, bool MergeUpValue)
+{
+    for (const auto& p : Another.Value)
+        Value[p.first].push_back(p.second);
+    if (MergeUpValue && Another.UpValue != nullptr)
+        Merge(*Another.UpValue, true);
+}
+void IBB_VariableMultiList::Merge(const IBB_VariableMultiList& Another)
+{
+    for (const auto& p : Another.Value)
+        for (const auto& v : p.second)
+            Push(p.first, v);
+}
+bool IBB_VariableMultiList::HasValue(const std::string& Name) const
+{
+    return Value.contains(Name) && !Value.at(Name).empty();
+}
+std::vector<std::string>& IBB_VariableMultiList::GetVars(const std::string& Name)
+{
+    return Value[Name];
+}
+const std::vector<std::string>& IBB_VariableMultiList::GetVars(const std::string& Name) const
+{
+    return Value.at(Name);
+}
+
 void IBB_VariableList::FillKeys(const std::vector<std::string>& List, const std::string& Val)
 {
     for (const auto& s : List)Value[s] = Val;
@@ -25,6 +57,14 @@ void IBB_VariableList::Merge(const IBB_VariableList& Another, bool MergeUpValue)
         Value[p.first] = p.second;
     if (MergeUpValue && UpValue != nullptr && Another.UpValue != nullptr && UpValue != Another.UpValue)
         UpValue->Merge(*Another.UpValue, true);
+}
+void IBB_VariableList::Merge(const IBB_VariableMultiList& Another)
+{
+    for (const auto& p : Another.Value)
+    {
+        if(!p.second.empty())
+            Value[p.first] = p.second.back();
+    }
 }
 const std::string& IBB_VariableList::GetVariable(const std::string& Name) const
 {

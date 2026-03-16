@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "external_file.h"
 #include "external_log.h"
@@ -28,6 +28,7 @@
 #include <chrono>
 #include <atomic>
 #include <mutex>
+#include <ranges>
 
 #define NOMINMAX
 

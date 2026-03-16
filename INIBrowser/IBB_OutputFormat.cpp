@@ -17,11 +17,11 @@ namespace KVFormatter
 
     KVFormatter_t Default()
     {
-        return [](IBB_VariableList& Dest, const std::string& Key, const std::string& Value, std::vector<std::string>* TmpLineOrder, IBB_Section* AtSec)
+        return [](IBB_VariableMultiList& Dest, const std::string& Key, const std::string& Value, std::vector<std::string>* TmpLineOrder, IBB_Section* AtSec)
             {
                 IM_UNUSED(TmpLineOrder);
                 IM_UNUSED(AtSec);
-                Dest.Value[Key] = Value;
+                Dest.Push(Key, Value);
             };
     }
 
@@ -48,7 +48,7 @@ namespace KVFormatter
 
     KVFormatter_t SplitValue(const std::string& delim)
     {
-        return [=](IBB_VariableList& Dest, const std::string& Key, const std::string& Value, std::vector<std::string>* TmpLineOrder, IBB_Section* AtSec)
+        return [=](IBB_VariableMultiList& Dest, const std::string& Key, const std::string& Value, std::vector<std::string>* TmpLineOrder, IBB_Section* AtSec)
             {
                 IM_UNUSED(Key);
                 IM_UNUSED(AtSec);
@@ -58,9 +58,10 @@ namespace KVFormatter
                 std::string K{ *Iter };
                 ++Iter;
                 if (Iter == List.end())return;
-                Dest.Value[K] =
+                Dest.Push(
+                    K,
                     std::ranges::subrange(Iter, List.end()) |
-                    ConcatSVs(delim);
+                    ConcatSVs(delim));
                 AddUniqueTmpLine(TmpLineOrder, K);
             };
     }
@@ -69,7 +70,7 @@ namespace KVFormatter
     {
         bool IsMyType = (INIType == "_MyType");
         bool IsLinkType = (INIType == "_LinkType");
-        return [=](IBB_VariableList& Dest, const std::string& Key, const std::string& Value, std::vector<std::string>* TmpLineOrder, IBB_Section* AtSec)
+        return [=](IBB_VariableMultiList& Dest, const std::string& Key, const std::string& Value, std::vector<std::string>* TmpLineOrder, IBB_Section* AtSec)
             {
                 IM_UNUSED(Key);
                 if (Value.empty())return;
@@ -90,14 +91,14 @@ namespace KVFormatter
                     if (!pSec)continue;
                     if (MergeTargetOnExport)ExportContext::MergedDescs.insert(idx);
                     auto Lines = pSec->GetLineList(false, true, TmpLineOrder);
-                    Dest.Merge(Lines, true);
+                    Dest.Merge(Lines);
                 }
             };
     }
 
     KVFormatter_t Recompose(IICVPtr SaveInput, IFCVPtr SaveFormat, ILFVPtr ExportLines, IBB_ValueContainer&& Values)
     {
-        return[=, Vals = std::move(Values)](IBB_VariableList& Dest, const std::string& Key, const std::string& Value, std::vector<std::string>* TmpLineOrder, IBB_Section* AtSec)
+        return[=, Vals = std::move(Values)](IBB_VariableMultiList& Dest, const std::string& Key, const std::string& Value, std::vector<std::string>* TmpLineOrder, IBB_Section* AtSec)
             {
                 IM_UNUSED(AtSec);
 
@@ -120,7 +121,7 @@ namespace KVFormatter
                     auto K = Form.RegenFormattedString();
                     Form.FormatComponents = ExportValue;
                     auto V = Form.RegenFormattedString();
-                    Dest.Value[K] = V;
+                    Dest.Push(K, V);
                     AddUniqueTmpLine(TmpLineOrder, K);
                 }
                 //Reset Context

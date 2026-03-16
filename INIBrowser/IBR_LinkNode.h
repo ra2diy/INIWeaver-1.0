@@ -34,7 +34,7 @@ namespace IBR_NodeSession
     struct SessionKey
     {
         std::string Ini, Sec, Sub;
-        size_t Line, Comp;
+        size_t Line, Mult, Comp;
     };
 
     struct SessionLinkList
@@ -74,8 +74,8 @@ namespace IBR_NodeSession
         ImVec2 Center;
     };
 
-    uint64_t GetSessionIdx(const std::string& Ini, const std::string& Sec, const std::string& Sub, size_t Line, size_t Comp);
-    uint64_t GetSessionIdx(IBB_SectionID SecID, const std::string& Sub, size_t Line, size_t Comp);
+    uint64_t GetSessionIdx(const std::string& Ini, const std::string& Sec, const std::string& Sub, size_t Line, size_t Mult, size_t Comp);
+    uint64_t GetSessionIdx(IBB_SectionID SecID, const std::string& Sub, size_t Line, size_t Mult, size_t Comp);
     SessionValue& GetSessionValue(uint64_t SessionID);
     void SetSessionStatus(uint64_t SessionID, ImVec2 Center, bool Collapsed);
 }
@@ -90,6 +90,7 @@ namespace IBR_LinkNode
         IBR_SectionData& Data,
         IBB_SubSec& FromSub,
         size_t LineIdx,
+        size_t LineMult,
         size_t CompIdx,
         const std::string& Hint,
         const std::string& DescLong,
@@ -110,6 +111,7 @@ namespace IBR_LinkNode
         ImVec2 Center,
         IBB_SectionID Dest,
         StrPoolID DestKey,
+        size_t LineMult,
         uint64_t SessionID,
         ImU32 LineCol,
         bool FromImport,
@@ -121,13 +123,14 @@ namespace IBR_LinkNode
     void UpdateLink(
         IBB_SubSec& FromSub,
         size_t LineIdx,
+        size_t LineMult,
         size_t CompIdx,
-        std::unordered_set<uint64_t>* Pushed = nullptr
+        std::unordered_set<LinkSrcIdx>* Pushed = nullptr
     );
 
     void PushRestLinkForDraw(
         IBB_SubSec& FromSub,
-        const std::unordered_set<uint64_t>& Pushed,
+        const std::unordered_set<LinkSrcIdx>& Pushed,
         size_t LineIdx,
         ImVec2 Center,
         bool SrcDragging = false
@@ -152,6 +155,7 @@ namespace LinkNodeContext
     extern IBB_SubSec* CurSub;
     extern size_t LineIndex;
     extern size_t CompIndex;
+    extern size_t LineMult;
     extern ImVec2 CollapsedCenter;
     extern bool CurLineChangeCompStatus;
     extern LineDragData CurDragData;
@@ -159,4 +163,5 @@ namespace LinkNodeContext
     extern ImVec2 CurDragStartEqCenter;
     extern ImU32 CurDragCol;
     extern bool HasDragNow;
+    extern std::vector<ImVec2> AcceptEdge;
 }

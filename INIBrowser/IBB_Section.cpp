@@ -76,29 +76,13 @@ bool IBB_Section::Generate(const ModuleClipData& Clip)
             Register = NewPoolStr(Clip.Register);
             Inherit = Clip.Inherit;
             IBB_DefaultRegType::GenerateDLK(Clip.DefaultLinkKey, Register, DefaultLinkKey, DefaultLinkKey_UpValue);
-            IBB_VariableList VL;
             std::vector<std::string> Order;
 
             SingleVal = IsTrueString(VarList.GetVariable("SingleVal"));
             VarList.Value.erase("SingleVal");
-            if (SingleVal)
-            {
-                VL.Value[SingleValName];
-                OnShow[SingleValID()] = EmptyOnShowDesc;
-            }
 
-            VL.Value[InheritKeyName] = Inherit;
-            OnShow[InheritKeyID()] = EmptyOnShowDesc;
-
-            for (auto& L : Clip.Lines)
-            {
-                VL.Value[L.Key] = L.Value;
-                OnShow[NewPoolStr(L.Key)] = L.Desc;
-                std::string dsc;
-                Order.push_back(L.Key); 
-            }
-
-            GenerateLines(VL, Order, false);
+            SetText(Clip.Lines);
+            for (auto& L : Clip.Lines)OnShow[NewPoolStr(L.Key)] = L.Desc;
         }
     }
     return true;
@@ -170,36 +154,40 @@ void IBB_Section::GetClipData(ModuleClipData& Clip)
             Clip.Desc.B = Name;
             Clip.Inherit = Inherit;
             Clip.Register = PoolStr(Register);
-            std::unordered_map <std::string, IniToken> Tokens;
+            std::unordered_map <std::string, std::vector<IniToken>> Tokens;
             for (auto& sec : SubSecs)
             {
                 for (auto& [key, lin] : sec.Lines)
                 {
                     if (key == InheritKeyID())
                     {
-                        Clip.Inherit = lin.Data->GetStringForExport();
+                        Clip.Inherit = lin.Indexed(0)->GetStringForExport();
                         continue;
                     }
-                    auto& Tok = Tokens[PoolStr(key)];
-                    Tok.Empty = false;
-                    Tok.HasDesc = !OnShow[key].empty();
-                    Tok.IsSection = false;
-                    Tok.Key = PoolStr(key);
-                    Tok.Value = lin.Data->GetStringForExport();
-                    Tok.Desc = OnShow[key];
+                    auto& Toks = Tokens[PoolStr(key)];
+                    lin.ForEach([&](LineData& L) {
+                        IniToken Tok;
+                        Tok.Empty = false;
+                        Tok.HasDesc = !OnShow[key].empty();
+                        Tok.IsSection = false;
+                        Tok.Key = PoolStr(key);
+                        Tok.Value = L->GetStringForExport();
+                        Tok.Desc = OnShow[key];
+                        Toks.push_back(std::move(Tok));
+                    });
                 }
             }
             for (auto& s : LineOrder)
             {
                 if (auto It = Tokens.find(PoolStr(s)); It != Tokens.end())
                 {
-                    Clip.Lines.push_back(std::move(It->second));
+                    for(auto&& T : It->second)Clip.Lines.push_back(std::move(T));
                     Tokens.erase(It);
                 }
             }
             for (auto& [key, tok] : Tokens)
             {
-                Clip.Lines.push_back(std::move(tok));
+                for (auto&& T : tok)Clip.Lines.push_back(std::move(T));
             }
 
             //IBB_VariableList DD;
@@ -224,7 +212,7 @@ bool IBB_Section::SetText(const std::vector<IniToken>& Tokens)
     IsLinkGroup = false;
     bool Ret = true;
     auto l = this->GetLineFromSubSecs(InheritKeyID());
-    if (l)Inherit = l->Data->GetString();
+    if (l)Inherit = l->Indexed(0)->GetString();//继承暂时禁止可重
     SubSecs.clear();
     LineOrder.clear();
     OnShow.clear();
@@ -245,7 +233,7 @@ bool IBB_Section::SetText(const std::vector<IniToken>& Tokens)
 
         auto& Sub = SubSecs.at(It->second);
         {
-            if (!Sub.MergeLine(TokKeyID, tok.Value, false, IBB_IniMergeMode::Replace, false))Ret = false;
+            if (!Sub.MergeLine(TokKeyID, Index_AlwaysNew, tok.Value, IBB_IniMergeMode::Replace, false))Ret = false;
         }
 
         if (tok.HasDesc)
@@ -262,23 +250,72 @@ bool IBB_Section::SetText(const std::vector<IniToken>& Tokens)
         }
     };
 
-    IniToken i;
-    i.Key = InheritKeyName;
-    i.Value = Inherit;
-    i.HasDesc = false;
-    i.IsSection = false;
-    i.Empty = false;
-    u(i);
+    {
+        IniToken i;
+        i.Key = InheritKeyName;
+        i.Value = Inherit;
+        i.HasDesc = false;
+        i.IsSection = false;
+        i.Empty = false;
+        u(i);
+    }
+
+    if (SingleVal)
+    {
+        bool NoSingleVal = std::ranges::all_of(Tokens, [](const IniToken& Tok) { return Tok.Key != SingleValName; });
+        if (NoSingleVal)
+        {
+            IniToken i;
+            i.Key = SingleValName;
+            i.Value = "";
+            i.HasDesc = true;
+            i.Desc = EmptyOnShowDesc;
+            i.IsSection = false;
+            i.Empty = false;
+            u(i);
+        }
+    }
+
     for (auto& tok : Tokens)
     {
         if (tok.Empty || tok.IsSection)continue;
         u(tok);
     }
 
+    
+
     UpdateAll();
 
     return Ret;
 }
+
+/*
+bool IBB_Section::GenerateLines(const IBB_VariableList& Par, const std::vector<std::string>& Order, bool InitOnShow)
+{
+    bool Ret = true;
+    SubSecs.clear();
+    bool RemakeOrder = Order.empty();
+    LineOrder = Order |
+        std::views::transform([](auto ID) {return NewPoolStr(ID); }) |
+        std::ranges::to<std::vector>();
+    std::unordered_map<IBB_SubSec_Default*, int> SubSecList;
+    for (const auto& [Key, Value] : Par.Value)
+    {
+        auto ptr = IBF_Inst_DefaultTypeList.List.KeyBelongToSubSec(Key);
+        auto It = SubSecList.find(ptr);
+        if (It == SubSecList.end())
+        {
+            It = SubSecList.insert({ ptr,SubSecs.size() }).first;
+            SubSecs.emplace_back(ptr, this);
+        }
+        auto& Sub = SubSecs.at(It->second);
+        auto KeyID = NewPoolStr(Key);
+        if (!Sub.MergeLine(KeyID, Value, InitOnShow, IBB_IniMergeMode::Replace))Ret = false;
+        if (RemakeOrder)LineOrder.push_back(KeyID);
+    }
+    return Ret;
+}
+*/
 
 std::vector<std::string> IBB_Section::GetLineOrderString() const
 {
@@ -313,21 +350,21 @@ std::vector<StrPoolID> IBB_Section::GetKeys(bool PrintExtraData) const
     }
     return Ret;
 }
-IBB_VariableList IBB_Section::GetLineList(bool PrintExtraData, bool FromExport, std::vector<std::string>* TmpLineOrder) const
+IBB_VariableMultiList IBB_Section::GetLineList(bool PrintExtraData, bool FromExport, std::vector<std::string>* TmpLineOrder) const
 {
-    IBB_VariableList Ret;
+    IBB_VariableMultiList Ret;
     if (IsLinkGroup)
     {
         for (const auto& L : LinkGroup_NewLinkTo)
         {
             auto pf = L.From.GetSec(*(Root->Root)), pt = L.To.GetSec(*(Root->Root));
             if (pf != nullptr && pt != nullptr)
-                Ret.Value["_LINK_FROM_" + pf->Name] = "_LINK_TO_" + pt->Name;
+                Ret.Push("_LINK_FROM_" + pf->Name, "_LINK_TO_" + pt->Name);
         }
         if (PrintExtraData)
         {
-            Ret.Value["_SECTION_NAME"] = Name;
-            Ret.Value["_IS_LINKGROUP"] = "true";
+            Ret.Push("_SECTION_NAME", Name);
+            Ret.Push("_IS_LINKGROUP", "true");
             IBB_VariableList VL;
             VarList.Flatten(VL);
             Ret.Merge(VL, false);
@@ -336,11 +373,11 @@ IBB_VariableList IBB_Section::GetLineList(bool PrintExtraData, bool FromExport, 
     else
     {
         for (const auto& Sub : SubSecs)
-            Ret.Merge(Sub.GetLineList(PrintExtraData, FromExport, TmpLineOrder), false);
+            Ret.Merge(Sub.GetLineList(PrintExtraData, FromExport, TmpLineOrder));
         if (PrintExtraData)
         {
-            Ret.Value["_SECTION_NAME"] = Name;
-            Ret.Value["_IS_LINKGROUP"] = "false";
+            Ret.Push("_SECTION_NAME", Name);
+            Ret.Push("_IS_LINKGROUP", "false");
             IBB_VariableList VL;
             VarList.Flatten(VL);
             Ret.Merge(VL, false);
@@ -361,9 +398,10 @@ std::string IBB_Section::GetText(bool PrintExtraData, bool FromExport, bool ForE
     if (IsLinkGroup)
     {
         auto LineList = GetLineList(PrintExtraData, FromExport);
-        for (auto& [K, V] : LineList.Value)
+        for (auto& [K, Vals] : LineList.Value)
         {
-            Text += K + "=" + V + "\n";
+            for (auto& V : Vals)
+                Text += K + "=" + V + "\n";
         }
     }
     else
@@ -374,21 +412,25 @@ std::string IBB_Section::GetText(bool PrintExtraData, bool FromExport, bool ForE
         {
             if (LineList.HasValue(s))
             {
-                auto& Val = LineList.GetVariable(s);
-                if (ForEdit && OnShow.find(NewPoolStr(s)) != OnShow.end())
+                auto& Vals = LineList.GetVars(s);
+                for (auto& Val : Vals)
                 {
-                    auto& ons = OnShow.at(NewPoolStr(s));
-                    if (ons.empty()) Text += s + "=" + LineList.GetVariable(s) + "\n";
-                    else if (ons == EmptyOnShowDesc) Text += "#" + s + "=" + LineList.GetVariable(s) + "\n";
-                    else Text += ons + "#" + s + "=" + LineList.GetVariable(s) + "\n";
+                    if (ForEdit && OnShow.find(NewPoolStr(s)) != OnShow.end())
+                    {
+                        auto& ons = OnShow.at(NewPoolStr(s));
+                        if (ons.empty()) Text += s + "=" + Val + "\n";
+                        else if (ons == EmptyOnShowDesc) Text += "#" + s + "=" + Val + "\n";
+                        else Text += ons + "#" + s + "=" + Val + "\n";
+                    }
+                    else Text += s + "=" + Val + "\n";
+                    LineList.Value.erase(s);
                 }
-                else Text += s + "=" + Val + "\n";
-                LineList.Value.erase(s);
             }
         }
-        for (auto& [K, V] : LineList.Value)
+        for (auto& [K, Vals] : LineList.Value)
         {
-            Text += K + "=" + V + "\n";
+            for (auto& V : Vals)
+                Text += K + "=" + V + "\n";
         }
     }
 
@@ -594,31 +636,6 @@ std::vector<IBB_NewLink>& IBB_Section::GetLinkedBy_NoCached() const
     return IBF_Inst_Project.GetLinkedBy_NoCached(GetThisDesc());
 }
 
-bool IBB_Section::GenerateLines(const IBB_VariableList& Par, const std::vector<std::string>& Order, bool InitOnShow)
-{
-    bool Ret = true;
-    SubSecs.clear();
-    bool RemakeOrder = Order.empty();
-    LineOrder = Order |
-        std::views::transform([](auto ID) {return NewPoolStr(ID); }) |
-        std::ranges::to<std::vector>();
-    std::unordered_map<IBB_SubSec_Default*, int> SubSecList;
-    for (const auto& [Key, Value] : Par.Value)
-    {
-        auto ptr = IBF_Inst_DefaultTypeList.List.KeyBelongToSubSec(Key);
-        auto It = SubSecList.find(ptr);
-        if (It == SubSecList.end())
-        {
-            It = SubSecList.insert({ ptr,SubSecs.size() }).first;
-            SubSecs.emplace_back(ptr, this);
-        }
-        auto& Sub = SubSecs.at(It->second);
-        auto KeyID = NewPoolStr(Key);
-        if (!Sub.MergeLine(KeyID, Value, InitOnShow, IBB_IniMergeMode::Replace))Ret = false;
-        if (RemakeOrder)LineOrder.push_back(KeyID);
-    }
-    return Ret;
-}
 
 const std::vector<std::string>& SplitParamCached(const std::string& Text);
 
@@ -654,7 +671,7 @@ bool IBB_Section::RemoveLine(StrPoolID Key)
     return UpdateAll();
 }
 
-bool IBB_Section::MergeLine(StrPoolID Key, const std::string& Value, IBB_IniMergeMode Mode, bool NoUpdate)
+bool IBB_Section::MergeLine(StrPoolID Key, size_t Index, const std::string& Value, IBB_IniMergeMode Mode, bool NoUpdate)
 {
     switch (Mode)
     {
@@ -663,7 +680,7 @@ bool IBB_Section::MergeLine(StrPoolID Key, const std::string& Value, IBB_IniMerg
         auto ptr = IBF_Inst_DefaultTypeList.List.KeyBelongToSubSec(Key);
         PushLineOrder(Key);
         auto& Sub = GetSubSecByDef(ptr);
-        return Sub.MergeLine(Key, Value, false, IBB_IniMergeMode::Replace, NoUpdate);
+        return Sub.MergeLine(Key, Index, Value, IBB_IniMergeMode::Replace, NoUpdate);
     }
     case IBB_IniMergeMode::Merge:
     {
@@ -687,14 +704,14 @@ bool IBB_Section::MergeLine(StrPoolID Key, const std::string& Value, IBB_IniMerg
         auto LineIt = Sub.Lines.find(Key);
         std::string NewVal;
         if (LineIt == Sub.Lines.end())NewVal = Value;
-        else NewVal = MergeVal(LineIt->second.Data->GetString(), Value);
-        return Sub.MergeLine(Key, NewVal, false, IBB_IniMergeMode::Replace, NoUpdate);
+        else NewVal = MergeVal(LineIt->second.Indexed(Index)->GetString(), Value);
+        return Sub.MergeLine(Key, Index, NewVal, IBB_IniMergeMode::Replace, NoUpdate);
         return true;
     }
     case IBB_IniMergeMode::Reserve:
     {
         if (HasLine(Key))return true;
-        return MergeLine(Key, Value, IBB_IniMergeMode::Replace, NoUpdate);
+        return MergeLine(Key, Index, Value, IBB_IniMergeMode::Replace, NoUpdate);
     }
     }
 

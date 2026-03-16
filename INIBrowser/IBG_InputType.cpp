@@ -136,7 +136,13 @@ IBG_InputFormUIResult IBG_InputForm::RenderUI(const LinkNodeSetting& Default)
         ImGui::PopID();
 
         if (TryUpdateLink && IC->SupportLinks())
-            IBR_LinkNode::UpdateLink(*LinkNodeContext::CurSub, LinkNodeContext::LineIndex, CompIdx, nullptr);
+            IBR_LinkNode::UpdateLink(
+                *LinkNodeContext::CurSub,
+                LinkNodeContext::LineIndex,
+                LinkNodeContext::LineMult,
+                CompIdx,
+                nullptr
+            );
 
         Changed |= R.Updated;
         Active |= R.Active;
@@ -1210,7 +1216,7 @@ bool ProcessOnExport(std::string& V)
     bool Changed = false;
     if (ExportContext::OnExport)
     {
-        auto&& [SecID, KeyID] = IBF_Inst_Project.Project.GetSecAndLineID(V, "");
+        auto&& [SecID, KeyID, Mult] = IBF_Inst_Project.Project.GetSecAndLineID(V, "");
         if (auto pSec = SecID.GetSec(IBF_Inst_Project.Project); pSec)
         {
             if (pSec->SingleVal)
@@ -1218,7 +1224,7 @@ bool ProcessOnExport(std::string& V)
                 auto pLine = pSec->GetLineFromSubSecs(SingleValID());
                 if (pLine)
                 {
-                    V = pLine->Data->GetStringForExport();
+                    V = pLine->Indexed(0)->GetStringForExport();
                     Changed = true;
                 }
             }
@@ -1232,7 +1238,7 @@ bool ProcessOnExport(std::string& V)
                 }
                 else
                 {
-                    V = pLine->Data->GetStringForExport();
+                    V = pLine->Indexed(Mult)->GetStringForExport();
                 }
                 Changed = true;
             }

@@ -106,18 +106,27 @@ IBB_SectionID IBB_Project::GetSecID(const std::string& Name, const std::string& 
     else return IBB_SectionID(Idx.Ini.Name, Idx.Section.Name);
 }
 
-std::pair<IBB_SectionID, StrPoolID> IBB_Project::GetSecAndLineID(const std::string& KeyName, const std::string& PriorIni) const
+std::tuple<IBB_SectionID, StrPoolID, size_t> IBB_Project::GetSecAndLineID(const std::string& KeyName, const std::string& PriorIni) const
 {
-    //Acceptor Node : SecName$$KeyID
+    //Acceptor Node : SecName$$KeyID@@LineMult
     auto pos = KeyName.find("$$");
     if (pos == KeyName.npos)
-        return { GetSecID(KeyName, PriorIni), EmptyPoolStr };
+        return { GetSecID(KeyName, PriorIni), EmptyPoolStr, 0 };
     else
     {
         auto SecName = KeyName.substr(0, pos);
         auto KeyIDStr = KeyName.substr(pos + 2);
+
+        auto pos2 = KeyIDStr.find("@@");
+        size_t LineMult = 0;
+        if (pos2 != KeyIDStr.npos)
+        {
+            LineMult = (size_t)std::stoull(KeyIDStr.substr(pos2 + 2));
+            KeyIDStr = KeyIDStr.substr(0, pos2);
+        }
+
         StrPoolID KeyID = NewPoolStr(KeyIDStr);
-        return { GetSecID(SecName, PriorIni), KeyID };
+        return { GetSecID(SecName, PriorIni), KeyID, LineMult };
     }
 }
 

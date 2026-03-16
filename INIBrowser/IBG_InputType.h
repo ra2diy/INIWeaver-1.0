@@ -203,6 +203,8 @@ struct IBG_InputType
         IIF
     }Type { IIF };
 
+    bool Multiple{ false }; //是否是可重语句
+    bool NewLineAfterDesc{ false }; //是否在短描述之后断行
     IASOpt AcceptorSetting;
     IIFPtr Form;
     KVFormatter_t KVFmt;

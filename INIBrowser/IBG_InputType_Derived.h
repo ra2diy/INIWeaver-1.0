@@ -4,7 +4,6 @@
 namespace ExportContext
 {
     extern StrPoolID Key;
-    extern size_t SameKeyIdx;//用于当Key重复时区分不同的Key
     extern bool OnExport;
 }
 

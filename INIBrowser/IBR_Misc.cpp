@@ -95,56 +95,63 @@ void WorkSpaceLine::RenderUI(const char* Line, const char* Hint, IBB_IniLine& Ba
     //Acceptor Logic
     if (auto& acc = Back.Default->GetInputType().AcceptorSetting; acc || AcceptCount > 0 || SpecialAccept)
     {
-        auto Cursor2 = ImGui::GetCursorPos();
-        auto KeyName = Back.Default->Name;
-        auto tgback = LinkNodeContext::CurSub->Root;
-        auto tgreg = acc ? acc->AcceptRegType : tgback->Register;
-        ImVec4 Col = IBB_DefaultRegType::GetRegType(tgreg).FrameColor;
-        ImGui::SetCursorPos({ 0.0f, Y1 });
-        ImGui::Dummy({ ImGui::GetWindowWidth(), Y2 - Y1 }, true);
-        if(!ImGui::GetTopMostPopupModal())
-            IBR_TopMost::CommitDrawOpr({ Cursor.x - LH * 1.2f, Cursor.y }, [=]() {
-                    ImGui::PushID(KeyName);
-                    ImGui::PushStyleColor(ImGuiCol_CheckMark, Col);
-                    ImGui::RadioButton("", true, ImGuiRadioButtonFlags_RoundedSquare);
-                    ImGui::PopStyleColor();
-                    ImGui::PopID();
-                });
+        auto FinalPos = ImGui::GetCursorPos();
 
-        if (ImGui::BeginDragDropTarget())
+        for (size_t i = 0; i < LinkNodeContext::AcceptEdge.size(); i++)
         {
-            auto payload = ImGui::AcceptDragDropPayload("IBR_LineDrag", ImGuiDragDropFlags_AcceptBeforeDelivery);
-            if (payload && (payload->IsPreview() || payload->IsDelivery()))
+            auto& FromY = i == 0 ? Y1 : LinkNodeContext::AcceptEdge[i - 1].y;
+            auto& ToY = LinkNodeContext::AcceptEdge[i].y;
+
+            auto KeyName = Back.Default->Name;
+            auto tgback = LinkNodeContext::CurSub->Root;
+            auto tgreg = acc ? acc->AcceptRegType : tgback->Register;
+            ImVec4 Col = IBB_DefaultRegType::GetRegType(tgreg).FrameColor;
+            ImGui::SetCursorPos({ 0.0f, FromY });
+            ImGui::Dummy({ ImGui::GetWindowWidth(), ToY - FromY }, true);
+            if (!ImGui::GetTopMostPopupModal())
+                IBR_TopMost::CommitDrawOpr({ Cursor.x - LH * 1.2f, Cursor.y - Y1 + FromY }, [=]() {
+                ImGui::PushID(KeyName);
+                ImGui::PushStyleColor(ImGuiCol_CheckMark, Col);
+                ImGui::RadioButton("", true, ImGuiRadioButtonFlags_RoundedSquare);
+                ImGui::PopStyleColor();
+                ImGui::PopID();
+                    });
+
+            if (ImGui::BeginDragDropTarget())
             {
-                const auto& lin = **(LineDragData**)(payload->Data);
-                auto sec = IBR_Inst_Project.GetSection(lin.Desc);
-                auto back = sec.GetBack();
-                auto& rsd = *IBR_Inst_Project.GetSection(tgback->GetThisID()).GetSectionData();
-                if (back && tgback)
+                auto payload = ImGui::AcceptDragDropPayload("IBR_LineDrag", ImGuiDragDropFlags_AcceptBeforeDelivery);
+                if (payload && (payload->IsPreview() || payload->IsDelivery()))
                 {
-                    bool Check = Acceptor_CheckLinkType(back->Register, tgreg, lin.TypeAlt);
-                    if (Check)
+                    const auto& lin = **(LineDragData**)(payload->Data);
+                    auto sec = IBR_Inst_Project.GetSection(lin.Desc);
+                    auto back = sec.GetBack();
+                    auto& rsd = *IBR_Inst_Project.GetSection(tgback->GetThisID()).GetSectionData();
+                    if (back && tgback)
                     {
-                        if (payload->IsPreview())
-                            IBR_Inst_Project.DragConditionText =
-                                rsd.Desc.Ini + " -> " + rsd.DisplayName + " : " + PoolCStr(KeyName);
-                        if (payload->IsDelivery())
+                        bool Check = Acceptor_CheckLinkType(back->Register, tgreg, lin.TypeAlt);
+                        if (Check)
                         {
-                            IBG_Undo.SomethingShouldBeHere();
-                            lin.pSession->ValueToMerge = rsd.Desc.Sec + "$$" + PoolCStr(KeyName);
-                            lin.pSession->NotifyValueToMerge = true;
+                            if (payload->IsPreview())
+                                IBR_Inst_Project.DragConditionText =
+                                rsd.Desc.Ini + " -> " + rsd.DisplayName + " : " + PoolCStr(KeyName) + " #" + std::to_string(i);
+                            if (payload->IsDelivery())
+                            {
+                                IBG_Undo.SomethingShouldBeHere();
+                                lin.pSession->ValueToMerge = TargetValueStr(rsd.Desc.Sec, KeyName, i);
+                                lin.pSession->NotifyValueToMerge = true;
+                            }
                         }
+                        else if (payload->IsPreview())
+                            Acceptor_RefusePreview(back->Register, tgreg, lin.TypeAlt);
                     }
                     else if (payload->IsPreview())
-                        Acceptor_RefusePreview(back->Register, tgreg, lin.TypeAlt);
+                        IBR_Inst_Project.DragConditionText.clear();
                 }
-                else if (payload->IsPreview())
-                    IBR_Inst_Project.DragConditionText.clear();
+                ImGui::EndDragDropTarget();
             }
-            ImGui::EndDragDropTarget();
         }
 
-        ImGui::SetCursorPos(Cursor2);
+        ImGui::SetCursorPos(FinalPos);
     }
 
     //Right Click Logic
@@ -233,18 +240,16 @@ void IBR_IniLine::RenderUI(
 )
 {
     LinkNodeContext::CurLineChangeCompStatus = ExternalSwitchInput;
+    LinkNodeContext::AcceptEdge.clear();
 
     if (IBR_Inst_Debug.LinkDebugMode)
     {
         for (auto& [k, l] : LinkNodeContext::CurSub->LinkSrc)
         {
-            if ((k >> 32) ^ LinkNodeContext::LineIndex)continue;
+            if (GetLineIdx(k) != LinkNodeContext::LineIndex)continue;
             ImGui::TextWrappedEx(LinkNodeContext::CurSub->NewLinkTo[l].GetText().c_str());
         }
-        if (Back.Data)
-        {
-            ImGui::TextWrapped("Value = %s", Back.Data->GetString().c_str());
-        }
+        Back.ForEach([&](LineData& Data) { ImGui::TextWrapped("Value = %s", Data->GetString().c_str()); });
     }
 
 
@@ -476,12 +481,10 @@ namespace IBR_EditFrame
             for (auto& [K, V] : Sub.Lines)
             {
                 auto& Line = EditLines[K];
-                Line.Buffer = V.Data->GetString();
                 Line.Hint = V.Default->DescLong;
                 Line.LinkNode = V.Default->GetNodeSetting();
                 Line.OnShowBuf = rsc->GetOnShow(K);
                 Line.InputOnShow = false;
-                Line.InputType = V.Default->GetInputTypeByValue(Line.Buffer);
             }
         }
     }
@@ -556,12 +559,6 @@ namespace IBR_EditFrame
         IBR_Inst_Project.UpdateAll();
     }
 
-    void AFTER_INTERRUPT_F Modify(StrPoolID s, SidebarLine& L)
-    {
-        auto back = CurSection.GetBack();
-        back->MergeLine(s, L.Buffer, IBB_IniMergeMode::Replace, false);
-    }
-
     void RenderUI_NewLine(IBB_Section* pbk)
     {
         auto FrameWidth = (ImGui::GetWindowWidth() - FontHeight * 4.5f) * 0.5f;
@@ -595,7 +592,7 @@ namespace IBR_EditFrame
                 }
 
                 pbk->OnShow[NewKeyID] = EmptyOnShowDesc;//默认在画布上显示
-                pbk->MergeLine(NewKeyID, NewLineValue, IBB_IniMergeMode::Replace);//添加或替换
+                pbk->MergeLine(NewKeyID, Index_AlwaysNew, NewLineValue, IBB_IniMergeMode::Replace);//添加或替换
                 pbk->OrderKey(NewKeyID, 0);//调整到最前面，方便用户看到
                 IBF_Inst_Project.UpdateAll();
             }

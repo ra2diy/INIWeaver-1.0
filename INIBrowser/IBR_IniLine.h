@@ -19,9 +19,7 @@ struct IBR_IniLine
 struct SidebarLine
 {
     IBR_IniLine Edit;
-    const IBG_InputType* InputType;
     LinkNodeSetting LinkNode;
-    std::string Buffer;
     DescPoolOffset Hint;
     std::string OnShowBuf;
     bool InputOnShow;

@@ -336,7 +336,7 @@ namespace IBR_ProjectManager
             for (auto& [SN, Sec] : Inis[I].Secs)
             {
                 for (auto& Sub : Sec.SubSecs)for (auto& L : Sub.Lines)
-                    if (L.first == InheritKeyID())Sec.Inherit = L.second.Data->GetString();
+                    if (L.first == InheritKeyID())Sec.Inherit = L.second.Indexed(0)->GetString();
                 IBB_Section_Desc Desc = { Inis[I].Name, Sec.Name };
                 if (IgnoredSection.contains(Desc) || Sec.IsLinkGroup || Sec.IsComment() || Sec.SingleVal)continue;
                 std::string V;

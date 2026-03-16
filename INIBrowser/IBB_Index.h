@@ -24,6 +24,34 @@ struct IBB_Module_ParagraphList;
 
 struct PairClipString;
 
+
+
+using LinkSrcIdx = std::tuple<size_t, size_t, size_t>;//LineIdx, LineMult, ComponentIdx
+using LinkSrcCIter = std::multimap<LinkSrcIdx, size_t>::const_iterator;
+inline size_t GetLineIdx(const LinkSrcIdx& i) { return std::get<0>(i); }
+inline size_t GetLineMult(const LinkSrcIdx& i) { return std::get<1>(i); }
+inline size_t GetComponentIdx(const LinkSrcIdx& i) { return std::get<2>(i); }
+
+namespace std
+{
+    template<>
+    struct hash<LinkSrcIdx>
+    {
+        size_t operator()(const LinkSrcIdx& ID) const
+        {
+            size_t i = 0, h;
+            h = std::hash<size_t>{}(std::get<0>(ID));
+            i ^= h + 0x9e3779b9 + (i << 6) + (i >> 2);
+            h = std::hash<size_t>{}(std::get<1>(ID));
+            i ^= h + 0x9e3779b9 + (i << 6) + (i >> 2);
+            h = std::hash<size_t>{}(std::get<2>(ID));
+            i ^= h + 0x9e3779b9 + (i << 6) + (i >> 2);
+            return i;
+        }
+    };
+}
+
+
 template<typename Str>
 struct IBB_TDIndex
 {

@@ -581,6 +581,8 @@ bool IBG_InputType::Load(const JsonObject& Obj)
     else
         return false;
 
+    Multiple = Obj.ItemBoolOr("Multiple", false);
+
     auto oForm = Obj.GetObjectItem("Form");
     if (!oForm)
         return false;

@@ -21,6 +21,16 @@ struct IBB_Module_Default;
 struct IBB_Module;
 struct IBB_Module_ParagraphList;
 
+struct IBB_VariableMultiList
+{
+    std::unordered_map<std::string, std::vector<std::string>>Value;
+    void Push(const std::string& Name, const std::string& Value);
+    void Merge(const IBB_VariableList& Another, bool MergeUpValue);
+    void Merge(const IBB_VariableMultiList& Another);
+    bool HasValue(const std::string& Name) const;
+    std::vector<std::string>& GetVars(const std::string& Name);
+    const std::vector<std::string>& GetVars(const std::string& Name) const;
+};
 
 struct IBB_VariableList
 {
@@ -30,6 +40,7 @@ struct IBB_VariableList
     bool Load(JsonObject FromJson);
     void FillKeys(const std::vector<std::string>& List, const std::string& Val);
     void Merge(const IBB_VariableList& Another, bool MergeUpValue);
+    void Merge(const IBB_VariableMultiList& Another);
 
     const std::string& GetVariable(const std::string& Name) const;
     bool CoverUpValue(const std::string& Name) const;

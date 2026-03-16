@@ -12,6 +12,7 @@ namespace LinkNodeContext
 {
     IBB_SubSec* CurSub;
     size_t LineIndex;
+    size_t LineMult;
     size_t CompIndex;
     ImVec2 CollapsedCenter;
     bool CurLineChangeCompStatus;
@@ -20,12 +21,12 @@ namespace LinkNodeContext
     ImVec2 CurDragStartEqCenter;
     ImU32 CurDragCol;
     bool HasDragNow;
+    std::vector<ImVec2> AcceptEdge;
 }
 
 namespace ExportContext
 {
     StrPoolID Key;
-    size_t SameKeyIdx;//用于当Key重复时区分不同的Key
     std::set<IBB_Section_Desc> MergedDescs;//被Import而合并的Section列表
     bool OnExport;
 }
@@ -86,20 +87,23 @@ namespace IBR_NodeSession
         return a.Comp < b.Comp;
     }
 
-    uint64_t GetSessionIdx(const std::string& Ini, const std::string& Sec, const std::string& Sub, size_t Line, size_t Comp)
+    uint64_t GetSessionIdx(const std::string& Ini, const std::string& Sec, const std::string& Sub, size_t Line, size_t Mult, size_t Comp)
     {
         //Very hot path
         //as fast as possible
         IBB_SectionID SecID(Ini, Sec);
-        return GetSessionIdx(SecID, Sub, Line, Comp);
+        return GetSessionIdx(SecID, Sub, Line, Mult, Comp);
     }
-    uint64_t GetSessionIdx(IBB_SectionID SecID, const std::string& Sub, size_t Line, size_t Comp)
+    uint64_t GetSessionIdx(IBB_SectionID SecID, const std::string& Sub, size_t Line, size_t Mult, size_t Comp)
     {
         size_t i = 0, j = 0, h;
         h = std::hash<std::string>{}(Sub);
         i ^= h + 0x9e3779b9 + (i << 6) + (i >> 2);
         j ^= h + 0x9ddfea08 + (j << 6) + (j >> 2);
         h = std::hash<size_t>{}(Line);
+        i ^= h + 0x9e3779b9 + (i << 6) + (i >> 2);
+        j ^= h + 0x9ddfea08 + (j << 6) + (j >> 2);
+        h = std::hash<size_t>{}(Mult);
         i ^= h + 0x9e3779b9 + (i << 6) + (i >> 2);
         j ^= h + 0x9ddfea08 + (j << 6) + (j >> 2);
         h = std::hash<size_t>{}(Comp);
@@ -112,23 +116,23 @@ namespace IBR_NodeSession
 
     std::unordered_map<uint64_t, SessionValue> SessionData;
 
-    SessionValue& NewSessionValue(const std::string& Ini, const std::string& Sec, const std::string& Sub, size_t Line, size_t Comp)
+    SessionValue& NewSessionValue(const std::string& Ini, const std::string& Sec, const std::string& Sub, size_t Line, size_t Mult, size_t Comp)
     {
-        auto key = GetSessionIdx(Ini, Sec, Sub, Line, Comp);
+        auto key = GetSessionIdx(Ini, Sec, Sub, Line, Mult, Comp);
         auto& val = SessionData[key];
         val.Renew();
         return val;
     }
 
-    SessionValue& GetSessionValue(const std::string& Ini, const std::string& Sec, const std::string& Sub, size_t Line, size_t Comp)
+    SessionValue& GetSessionValue(const std::string& Ini, const std::string& Sec, const std::string& Sub, size_t Line, size_t Mult, size_t Comp)
     {
-        auto key = GetSessionIdx(Ini, Sec, Sub, Line, Comp);
+        auto key = GetSessionIdx(Ini, Sec, Sub, Line, Mult, Comp);
         return SessionData[key];
     }
 
-    SessionValue& GetSessionValue(IBB_SectionID SecID, const std::string& Sub, size_t Line, size_t Comp)
+    SessionValue& GetSessionValue(IBB_SectionID SecID, const std::string& Sub, size_t Line, size_t Mult, size_t Comp)
     {
-        auto key = GetSessionIdx(SecID, Sub, Line, Comp);
+        auto key = GetSessionIdx(SecID, Sub, Line, Mult, Comp);
         return SessionData[key];
     }
 
@@ -173,16 +177,14 @@ namespace IBR_LinkNode
 {
     void PushIdx(
         size_t LineIdx,
+        size_t LineMult,    
         size_t CompIdx,
-        std::unordered_set<uint64_t>* Pushed
+        std::unordered_set<LinkSrcIdx>* Pushed
     )
     {
         if (Pushed)
         {
-            uint64_t l = LineIdx;
-            uint64_t c = CompIdx;
-            uint64_t i = (l << 32) | c;
-            Pushed->insert(i);
+            Pushed->insert(LinkSrcIdx{LineIdx, LineMult, CompIdx});
         }
     }
 
@@ -232,21 +234,22 @@ namespace IBR_LinkNode
     void UpdateLink(
         IBB_SubSec& FromSub,
         size_t LineIdx,
+        size_t LineMult,
         size_t CompIdx,
-        std::unordered_set<uint64_t>* Pushed
+        std::unordered_set<LinkSrcIdx>* Pushed
     )
     {
         bool IsImport = (FromSub.Default->Type == IBB_SubSec_Default::Import);
         auto Center = IsImport ? ImportCenter() : DefaultCenter();
         auto SecID = FromSub.Root->GetThisID();
         auto SessID = IBR_NodeSession::GetSessionIdx(
-            SecID, FromSub.Default->Name, LineIdx, CompIdx
+            SecID, FromSub.Default->Name, LineIdx, LineMult, CompIdx
         );
         IBR_NodeSession::SetSessionStatus(SessID, Center, false);
-        PushIdx(LineIdx, CompIdx, Pushed);
+        PushIdx(LineIdx, LineMult, CompIdx, Pushed);
         if (!IBR_Inst_Project.RefreshLinkList) return;
 
-        auto&& [LinkBegin, LinkEnd] = FromSub.GetLink(LineIdx, CompIdx);
+        auto&& [LinkBegin, LinkEnd] = FromSub.GetLink(LineIdx, LineMult, CompIdx);
         if (LinkBegin == LinkEnd)return;
         auto Links =
             std::ranges::subrange(LinkBegin, LinkEnd) |
@@ -265,6 +268,7 @@ namespace IBR_LinkNode
                 Center,
                 L.To,
                 L.ToKey,
+                L.LineMult,
                 L.SessionID,
                 L.DefaultColor,
                 L.FromKey == ImportKeyID(),
@@ -287,6 +291,7 @@ namespace IBR_LinkNode
         auto psd = IBR_Inst_Project.GetSection(pss->Root->GetThisID()).GetSectionData();
         auto cidx = LinkNodeContext::CompIndex;
         auto lidx = LinkNodeContext::LineIndex;
+        auto lmul = LinkNodeContext::LineMult;
         if (
             psd &&
             pss &&
@@ -297,6 +302,7 @@ namespace IBR_LinkNode
                 *psd,
                 *pss,
                 lidx,
+                lmul,
                 cidx,
                 Hint,
                 DescLong,
@@ -312,6 +318,7 @@ namespace IBR_LinkNode
         IBR_SectionData& Data,
         IBB_SubSec& FromSub,
         size_t LineIdx,
+        size_t LineMult,
         size_t CompIdx,
         const std::string& Hint,
         const std::string& DescLong,
@@ -335,7 +342,7 @@ namespace IBR_LinkNode
         bool IsInherit = (FromSub.Default->Type == IBB_SubSec_Default::Inherit);
         bool IsImport = (FromSub.Default->Type == IBB_SubSec_Default::Import);
         auto UR = DefaultResult;
-        auto&& [LinkBegin, LinkEnd] = FromSub.GetLink(LineIdx, CompIdx);
+        auto&& [LinkBegin, LinkEnd] = FromSub.GetLink(LineIdx, LineMult, CompIdx);
         auto Links =
             std::ranges::subrange(LinkBegin, LinkEnd) |
             std::views::transform([&](auto p) { return FromSub.NewLinkTo[p.second]; });
@@ -343,7 +350,7 @@ namespace IBR_LinkNode
         auto Col = AdjustNodeCol(LinkNode.LinkCol, Empty, IsInherit);
         auto KeyName = FromSub.Lines_ByName[LineIdx];
         auto& Session = IBR_NodeSession::GetSessionValue(
-            FromSub.Root->GetThisID(), FromSub.Default->Name, LineIdx, CompIdx
+            FromSub.Root->GetThisID(), FromSub.Default->Name, LineIdx, LineMult, CompIdx
         );
         auto ModifyAndShow = [&](const std::string& NewValue, bool Active) -> auto
             {
@@ -559,6 +566,7 @@ namespace IBR_LinkNode
                         Center,
                         link.To,
                         link.ToKey,
+                        link.LineMult,
                         link.SessionID,
                         link.DefaultColor,
                         (link.FromKey == ImportKeyID()),
@@ -577,7 +585,7 @@ namespace IBR_LinkNode
 
     void PushRestLinkForDraw(
         IBB_SubSec& FromSub,
-        const std::unordered_set<uint64_t>& Pushed,
+        const std::unordered_set<LinkSrcIdx>& Pushed,
         size_t LineIdx,
         ImVec2 Center,
         bool SrcDragging
@@ -585,7 +593,7 @@ namespace IBR_LinkNode
     {
         for (auto&& [idx, lidx] : FromSub.LinkSrc)
         {
-            size_t Line = idx >> 32;
+            size_t Line = GetLineIdx(idx);
             if (Line != LineIdx)continue;
             if (Pushed.contains(idx))continue;
             auto& link = FromSub.NewLinkTo[lidx];
@@ -594,6 +602,7 @@ namespace IBR_LinkNode
                     Center,
                     link.To,
                     link.ToKey,
+                    link.LineMult,
                     link.SessionID,
                     link.DefaultColor,
                     link.To == link.From,
