@@ -423,8 +423,8 @@ std::string IBB_Section::GetText(bool PrintExtraData, bool FromExport, bool ForE
                         else Text += ons + "#" + s + "=" + Val + "\n";
                     }
                     else Text += s + "=" + Val + "\n";
-                    LineList.Value.erase(s);
                 }
+                LineList.Value.erase(s);
             }
         }
         for (auto& [K, Vals] : LineList.Value)

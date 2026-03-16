@@ -114,6 +114,8 @@ IBG_InputFormUIResult IBG_InputForm::RenderUI(const LinkNodeSetting& Default)
 
     CheckStatus();
 
+    //ImGui::TextColored(IBR_Color::CheckMarkColor, "%d", LinkNodeContext::LineMult);
+
     bool TryUpdateLink = LinkNodeEnabled && LinkNodeContext::CurSub;
     //std::unordered_set<uint64_t> UsedLinks;
     //UsedLinks.clear();
@@ -449,7 +451,7 @@ const IBB_ValueFormat& IFC_Error::GetFormat() {
 }
 
 
-// ========== IFC_Export_UseKey =========
+// ========== IFC_Export_UseKey ===========
 IFC_Export_UseKey::IFC_Export_UseKey()
     : Format(IBB_InputFormat::UseFormat, "") {
 }
@@ -459,7 +461,17 @@ const IBB_ValueFormat& IFC_Export_UseKey::GetFormat() {
     return Format;
 }
 
-// ========== IFC_Export_RandStr =========
+// ========== IFC_Export_LineMult ===========
+IFC_Export_LineMult::IFC_Export_LineMult(int start)
+    : Format(IBB_InputFormat::UseFormat, ""), Start(start) {
+}
+
+const IBB_ValueFormat& IFC_Export_LineMult::GetFormat() {
+    Format.Format.String = std::to_string(LinkNodeContext::LineMult + Start);
+    return Format;
+}
+
+// ========== IFC_Export_RandStr ===========
 IFC_Export_RandStr::IFC_Export_RandStr(int length, int toid)
     : Format(IBB_InputFormat::FixedLen, "", toid), Length(length) {
 }
@@ -1233,7 +1245,7 @@ bool ProcessOnExport(std::string& V)
             {
                 if (auto& Acc = pLine->Default->GetInputType().AcceptorSetting; Acc && Acc->AcceptFormats)
                 {
-                    auto iif = pLine->GetNewIIF();
+                    auto iif = pLine->GetNewIIF(Mult);
                     iif->FormatComponents = Acc->AcceptFormats;
                     V = iif->RegenFormattedString();
                 }

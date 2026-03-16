@@ -13,7 +13,7 @@ extern const char* LinkAltPropType;
 namespace ExportContext
 {
     extern StrPoolID Key;
-    extern size_t SameKeyIdx;//用于当Key重复时区分不同的Key
+    extern size_t LineMult;
     extern bool OnExport;
 }
 
@@ -121,7 +121,8 @@ std::tuple<IBB_SectionID, StrPoolID, size_t> IBB_Project::GetSecAndLineID(const 
         size_t LineMult = 0;
         if (pos2 != KeyIDStr.npos)
         {
-            LineMult = (size_t)std::stoull(KeyIDStr.substr(pos2 + 2));
+            auto LMS = KeyIDStr.substr(pos2 + 2);
+            LineMult = LMS.empty() ? 0 : (size_t)std::stoull(LMS.c_str());
             KeyIDStr = KeyIDStr.substr(0, pos2);
         }
 

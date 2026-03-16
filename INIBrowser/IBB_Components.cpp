@@ -18,7 +18,7 @@ bool operator<(const IBB_Section_Desc& A, const IBB_Section_Desc& B)
 void IBB_VariableMultiList::Push(const std::string& Name, const std::string& Val)
 {
     auto& V = Value[Name];
-    if (std::find(V.begin(), V.end(), Val) == V.end())
+    //if (std::find(V.begin(), V.end(), Val) == V.end())
         V.push_back(Val);
 }
 void IBB_VariableMultiList::Merge(const IBB_VariableList& Another, bool MergeUpValue)

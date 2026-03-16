@@ -305,7 +305,7 @@ bool IBB_SubSec::UpdateAll()
 
                             //sprintf_s(LogBufB, "New Link <%s->%u:%u> to %s, ", Root->Name.c_str(), LineIdx, cidx, toidx.operator IBB_Section_Desc().GetText().c_str());
                             //GlobalLogB.AddLog(LogBufB, false);
-                            ClaimLink(LineIdx, TargetLineMult, cidx, NewLT.size());
+                            ClaimLink(LineIdx, LineMult, cidx, NewLT.size());
 
                             ImU32 Col = piic->UseCustomSetting ? piic->NodeSetting.LinkCol :
                                 (_Line.Default ? _Line.Default->LinkNode.LinkCol : (ImU32)IBB_DefaultRegType::GetDefaultNodeColor());
@@ -314,7 +314,7 @@ bool IBB_SubSec::UpdateAll()
                                 RootID,
                                 Default->Name,
                                 LineIdx,
-                                TargetLineMult,
+                                LineMult,
                                 cidx
                             );
                             NewLT.emplace_back(
@@ -322,7 +322,7 @@ bool IBB_SubSec::UpdateAll()
                                 toidx,
                                 KeyName,
                                 ToKey,
-                                LineMult,
+                                TargetLineMult,
                                 Col,
                                 seid
                             );
@@ -341,14 +341,14 @@ bool IBB_SubSec::UpdateAll()
                     auto& IniType = _Line.Default->GetIniType();
                     auto&& [toidx, ToKey, TargetLineMult] = IBF_Inst_Project.Project.GetSecAndLineID(str, IniType);
                     if (toidx.Empty())continue;//目标不存在，跳过
-                    ClaimLink(LineIdx, TargetLineMult, 0, NewLT.size());
+                    ClaimLink(LineIdx, LineMult, 0, NewLT.size());
                     ImU32 Col = (_Line.Default ? _Line.Default->LinkNode.LinkCol : (ImU32)IBB_DefaultRegType::GetDefaultNodeColor());
                     auto RootID = Root->GetThisID();
                     auto seid = IBR_NodeSession::GetSessionIdx(
                         RootID,
                         Default->Name,
                         LineIdx,
-                        TargetLineMult,
+                        LineMult,
                         0
                     );
                     NewLT.emplace_back(

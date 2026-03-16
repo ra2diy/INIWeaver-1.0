@@ -70,6 +70,7 @@ namespace KVFormatter
     {
         bool IsMyType = (INIType == "_MyType");
         bool IsLinkType = (INIType == "_LinkType");
+        bool IsAnyType = (INIType == "_AnyType");
         return [=](IBB_VariableMultiList& Dest, const std::string& Key, const std::string& Value, std::vector<std::string>* TmpLineOrder, IBB_Section* AtSec)
             {
                 IM_UNUSED(Key);
@@ -85,9 +86,12 @@ namespace KVFormatter
                         }
                         return INIType;
                     }();
-                        
-                    IBB_Project_Index idx(INI, std::string(sv));
-                    auto pSec = idx.GetSec(IBF_Inst_Project.Project);
+
+                    IBB_Project_Index idx;
+                    if (!IsAnyType)idx = IBB_Project_Index(INI, std::string(sv));
+                    else idx = IBF_Inst_Project.Project.GetSecIndex(std::string(sv), "");
+                    IBB_Section* pSec = idx.GetSec(IBF_Inst_Project.Project);
+                    
                     if (!pSec)continue;
                     if (MergeTargetOnExport)ExportContext::MergedDescs.insert(idx);
                     auto Lines = pSec->GetLineList(false, true, TmpLineOrder);

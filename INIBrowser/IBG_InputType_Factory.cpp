@@ -353,6 +353,9 @@ IFCPtr InputTypeFactory::CreateFormatComponent(IBB_ValueContainer& Cont, const J
     // {"ValueIDToString": <int>}
     //IFC_Export_UseKey()
     // "<Export_Key>"
+    //IFC_Export_UseKey()
+    // {"LineIndexFrom" : <int>}
+    //IFC_Export_LineMult(int Start)
 
     ((void)Cont);
 
@@ -375,6 +378,7 @@ IFCPtr InputTypeFactory::CreateFormatComponent(IBB_ValueContainer& Cont, const J
     auto oStdFormat = Obj.GetObjectItem("StdFormat");
     auto oValueIDToString = Obj.GetObjectItem("ValueIDToString");
     auto oRandStr = Obj.GetObjectItem("RandomString");
+    auto oLineIndexFrom = Obj.GetObjectItem("LineIndexFrom");
 
     if (oKey && oFallback && oKey.IsTypeString() && oFallback.IsTypeString())
     {
@@ -396,6 +400,10 @@ IFCPtr InputTypeFactory::CreateFormatComponent(IBB_ValueContainer& Cont, const J
     {
         auto ID = oValueID ? oValueID.GetInt() : -1;
         return std::make_unique<IFC_Export_RandStr>(oRandStr.GetInt(), ID);
+    }
+    else if (oLineIndexFrom && oLineIndexFrom.IsTypeNumber())
+    {
+        return std::make_unique<IFC_Export_LineMult>(oLineIndexFrom.GetInt());
     }
     else
         return nullptr;
@@ -582,6 +590,7 @@ bool IBG_InputType::Load(const JsonObject& Obj)
         return false;
 
     Multiple = Obj.ItemBoolOr("Multiple", false);
+    NewLineAfterDesc = Obj.ItemBoolOr("NewLineAfterDesc", false);
 
     auto oForm = Obj.GetObjectItem("Form");
     if (!oForm)

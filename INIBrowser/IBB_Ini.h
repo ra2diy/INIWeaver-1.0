@@ -117,6 +117,7 @@ struct IBB_IniLine
     LineData& Indexed(size_t Index) { return IsMultiple() ? Multiple(Index) : Single(); }
     const LineData& Indexed(size_t Index) const { return IsMultiple() ? Multiple(Index) : Single(); }
     const std::vector<LineData>& Multis() const { return std::get<std::vector<LineData>>(Data); }
+    size_t Count() const { return IsMultiple() ? Multis().size() : (Single() ? 1 : 0); }
     template<typename T> T* GetData(size_t Index) const
     {
         return dynamic_cast<T*>(Indexed(Index).get());
@@ -149,7 +150,7 @@ struct IBB_IniLine
     void RenderUI(const LinkNodeSetting& LinkNode, bool IsWorkspace);
     void RenderUI(bool IsWorkspace);
     const void* GetComponentID();
-    IIFPtr GetNewIIF() const;
+    IIFPtr GetNewIIF(size_t Index) const;
 
     IBB_IniLine() {}
     IBB_IniLine(const std::string& Value, IBB_IniLine_Default* Def);

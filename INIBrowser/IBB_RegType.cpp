@@ -121,7 +121,7 @@ R"({
     },
     "ExportMode": {
         "Type": "Import",
-        "IniType": "_MyType",
+        "IniType": "_AnyType",
         "MergeTarget": false
     }
  })";
@@ -138,7 +138,7 @@ R"({
     },
     "ExportMode": {
         "Type": "Import",
-        "IniType": "_MyType",
+        "IniType": "_AnyType",
         "MergeTarget": true
     }
  })";

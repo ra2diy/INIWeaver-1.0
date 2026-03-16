@@ -66,6 +66,16 @@ struct IFC_Export_UseKey final : public IBB_FormatComponent
     const IBB_ValueFormat& GetFormat();
 };
 
+
+struct IFC_Export_LineMult final : public IBB_FormatComponent
+{
+    IBB_ValueFormat Format;
+    int Start;
+    IFC_Export_LineMult(int Start);
+
+    const IBB_ValueFormat& GetFormat();
+};
+
 struct IFC_Export_RandStr final : public IBB_FormatComponent
 {
     IBB_ValueFormat Format;

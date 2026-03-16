@@ -30,7 +30,7 @@ struct SidebarLine
 struct WorkSpaceLine
 {
     static IBR_IniLine Edit;
-    ImVec2 AcceptCenter{ 0.0f, 0.0f };
+    std::vector<ImVec2> AcceptCenter;
     int AcceptCount{ 0 };
     bool Collapsed{ true };
     bool SpecialAccept{ false };

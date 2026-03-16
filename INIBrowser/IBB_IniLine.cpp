@@ -733,19 +733,21 @@ void IBB_IniLine::MakeKVForExport(IBB_VariableMultiList& vl, IBB_Section* AtSec,
     auto& input = Default->GetInputType();
     auto key = PoolStr(Default->Name);
 
-    const auto ExportKV = [&](const LineData& Data) {
+    const auto ExportKV = [&](const LineData& Data, int Index) {
         auto IIF = Default->GetInputType().Form->Duplicate();
         auto Str = Data->GetString();
         IIF->ParseFromString(Str);
+        LinkNodeContext::LineMult = (size_t)Index;
         ExportContext::OnExport = true;
         Data->SetValue(IIF->RegenFormattedString());
         ExportContext::OnExport = false;
         auto value = Data->GetStringForExport();
         Data->SetValue(Str);
         input.KVFmt(vl, key, value, TmpLineOrder, AtSec);
+        LinkNodeContext::LineMult = 0;
     };
 
-    ForEach(ExportKV);
+    ForEachWithIdx(ExportKV);
 }
 
 IBB_IniLine::IBB_IniLine(IBB_IniLine&& F) noexcept
@@ -763,8 +765,11 @@ void IBB_IniLine::RenderUI(const LinkNodeSetting& LinkNode, bool IsWorkspace)
     }
     ForEachWithIdx([&](LineData& Data, int Idx) {
         LinkNodeContext::LineMult = (size_t)Idx;
+        ImGui::PushID(Idx);
         Data->RenderUI(Default, LinkNode, IsWorkspace);
+        ImGui::PopID();
         LinkNodeContext::AcceptEdge.push_back(ImGui::GetCursorPos());
+        LinkNodeContext::LineMult = 0;
     });
 }
 void IBB_IniLine::RenderUI(bool IsWorkspace)
@@ -776,8 +781,8 @@ const void* IBB_IniLine::GetComponentID()
 {
     return Indexed(0).get();
 }
-IIFPtr IBB_IniLine::GetNewIIF() const
+IIFPtr IBB_IniLine::GetNewIIF(size_t Index) const
 {
-    auto& LD = Indexed(0);
+    auto& LD = Indexed(Index);
     return LD ? LD->GetNewIIF(Default) : Default->GetInputType().Form->Duplicate();
 }

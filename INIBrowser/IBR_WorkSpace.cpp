@@ -1489,7 +1489,13 @@ namespace IBR_WorkSpace
                         auto it = RSD->ActiveLines.find(Link.DestKey);
                         if (it != RSD->ActiveLines.end())
                         {
-                            if(!it->second.Collapsed)pb = it->second.AcceptCenter;
+                            if (!it->second.Collapsed)
+                            {
+                                auto& ac = it->second.AcceptCenter;
+                                if(ac.size() > Link.LineMult)pb = ac[Link.LineMult];
+                                else if (ac.size())pb = ac.back();
+                                //else pb不修正
+                            }
                         }
                     }
                     float LineWidth = FontHeight / 5.0f;

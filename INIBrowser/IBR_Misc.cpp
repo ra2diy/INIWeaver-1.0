@@ -55,6 +55,7 @@ void WorkSpaceLine::RenderUI(const char* Line, const char* Hint, IBB_IniLine& Ba
     auto Y1 = ImGui::GetCursorPos().y;
     auto LH = ImGui::GetTextLineHeight();
     bool RightClicked{ false };
+    AcceptCenter.resize(Back.Count());
 
     //Input OnShow Logic
     if (InputOnShow)
@@ -80,7 +81,6 @@ void WorkSpaceLine::RenderUI(const char* Line, const char* Hint, IBB_IniLine& Ba
     SwitchInput = false;
 
     //Highlight Logic
-    AcceptCenter = { Cursor.x - LH * 0.7f, Cursor.y + LH * 0.5f };
     auto Y2 = ImGui::GetCursorPos().y;
     if (Highlight)
     {
@@ -107,10 +107,11 @@ void WorkSpaceLine::RenderUI(const char* Line, const char* Hint, IBB_IniLine& Ba
             auto tgback = LinkNodeContext::CurSub->Root;
             auto tgreg = acc ? acc->AcceptRegType : tgback->Register;
             ImVec4 Col = IBB_DefaultRegType::GetRegType(tgreg).FrameColor;
+            AcceptCenter[i] = {Cursor.x - LH * 0.7f, Cursor.y - Y1 + FromY + LH * 0.5f};
             ImGui::SetCursorPos({ 0.0f, FromY });
             ImGui::Dummy({ ImGui::GetWindowWidth(), ToY - FromY }, true);
             if (!ImGui::GetTopMostPopupModal())
-                IBR_TopMost::CommitDrawOpr({ Cursor.x - LH * 1.2f, Cursor.y - Y1 + FromY }, [=]() {
+                IBR_TopMost::CommitDrawOpr({ AcceptCenter[i].x - LH * 0.5f, AcceptCenter[i].y - LH * 0.5f }, [=]() {
                 ImGui::PushID(KeyName);
                 ImGui::PushStyleColor(ImGuiCol_CheckMark, Col);
                 ImGui::RadioButton("", true, ImGuiRadioButtonFlags_RoundedSquare);
@@ -253,7 +254,6 @@ void IBR_IniLine::RenderUI(
         Back.ForEach([&](LineData& Data) { ImGui::TextWrapped("Value = %s", Data->GetString().c_str()); });
     }
 
-
     ImGui::TextWrappedEx(Line);
 
     if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
@@ -265,15 +265,54 @@ void IBR_IniLine::RenderUI(
     if (ImGui::IsItemClicked(ImGuiMouseButton_Right))
         if (RightClicked)*RightClicked = true;
 
-    ImGui::SameLine();
-    ImGui::BeginGroup();
+    auto BaseCursorY = ImGui::GetCursorPosY();
+
+    auto nlad = Back.Default->GetInputType().NewLineAfterDesc;
+    auto multiple = Back.IsMultiple();
+    bool pressed_insert = false;
+
+
     ImGui::PushID(Back.GetComponentID());
+    if (nlad && multiple)
+    {
+        ImGui::SameLine();//如果nlad，那么放在文本后面；
+        pressed_insert = ImGui::Button(" + ");
+    }
+    if(!nlad)ImGui::SameLine();
+    ImGui::BeginGroup();
     Back.RenderUI(IsWorkSpace);
-    ImGui::PopID();
     auto CursorY = ImGui::GetCursorPosY();
     ImGui::EndGroup();
     //防止组内额外的空行传到组外
     ImGui::SetCursorPosY(CursorY);
+
+    auto EndCursor = ImGui::GetCursorPos();
+    if (!nlad && multiple)//如果没有，那么放在描述下面。
+    {
+        ImGui::SetCursorPos({ EndCursor.x, BaseCursorY });
+        pressed_insert = ImGui::Button(" + ");
+        ImGui::SetCursorPos(EndCursor);
+
+        //挤不下了，另起一行
+        if (fabs(EndCursor.y - BaseCursorY) < FontHeight)ImGui::NewLine();
+    }
+
+    ImGui::PopID();
+
+    if (multiple && pressed_insert)
+    {
+        auto tgback = LinkNodeContext::CurSub->Root;
+        auto def = Back.Default;
+        IBRF_CoreBump.SendToR({ [tgback, def]()
+        {
+            tgback->MergeLine(
+                def->Name,
+                Index_AlwaysNew,
+                def->GetInputType().Form->GetFormattedString(),
+                IBB_IniMergeMode::Replace
+            );
+        } });
+    }
 }
 
 
@@ -538,8 +577,11 @@ namespace IBR_EditFrame
         TextEditReset = false;
     }
 
-    void ExitTextEdit()
+    void ExitTextEdit(bool Save)
     {
+        OnTextEdit = false;
+        if (!Save)return;
+
         auto pbk = CurSection.GetBack();
         auto rsd = CurSection.GetSectionData();
         if (!pbk || !rsd)
@@ -547,7 +589,6 @@ namespace IBR_EditFrame
             Empty = true;
             return;
         }
-        OnTextEdit = false;
 
         IBG_Undo.SomethingShouldBeHere();
 
@@ -674,9 +715,15 @@ namespace IBR_EditFrame
         ImGui::Text(locc("GUI_TextEditModeTitle"));
 
         ImGui::SameLine();
-        if (ImGui::Button(locc("GUI_Exit")))
+        if (ImGui::Button(locc("GUI_ExitAndSave")))
         {
-            ExitTextEdit();
+            ExitTextEdit(true);
+            return;
+        }
+        ImGui::SameLine();
+        if (ImGui::Button(locc("GUI_ExitNoSave")))
+        {
+            ExitTextEdit(false);
             return;
         }
 
@@ -686,7 +733,7 @@ namespace IBR_EditFrame
         if (!ImGui::IsItemActive())
         {
             if (TextEditReset)
-                ExitTextEdit();
+                ExitTextEdit(true);
         }
         else TextEditReset = true;
     }
@@ -753,7 +800,11 @@ namespace IBR_EditFrame
             if (pLine)
             {
                 LinkNodeContext::CurSub = pSub;
+                ImGui::BeginGroup();
                 V.RenderUI(PoolCStr(K), PoolDesc(V.Hint), *pLine);
+                auto Y = ImGui::GetCursorPosY();
+                ImGui::EndGroup();
+                ImGui::SetCursorPosY(Y);
                 LinkNodeContext::CurSub = nullptr;
             }
             else ImGui::TextColored(IBR_Color::IllegalLineColor, "%s", locc("GUI_MissingLineData"));
