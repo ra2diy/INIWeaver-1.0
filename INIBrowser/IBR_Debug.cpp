@@ -7,6 +7,7 @@
 #include "IBB_ModuleAlt.h"
 #include "IBR_Debug.h"
 #include "IBR_LinkNode.h"
+#include "IBR_Misc.h"
 
 namespace PreLink
 {

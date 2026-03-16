@@ -1,5 +1,5 @@
 ﻿#include "IBR_Localization.h"
-#include "IBRender.h"
+#include "IBR_Project.h"
 #include "FromEngine/Include.h"
 #include "Global.h"
 #include <imgui_internal.h>

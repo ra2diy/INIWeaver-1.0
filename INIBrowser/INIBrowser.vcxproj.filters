@@ -39,7 +39,7 @@
     <ClInclude Include="FromEngine\RFBump.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="IBRender.h">
+    <ClInclude Include="IBR_Project.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="IBFront.h">
@@ -220,6 +220,9 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="IBB_IniLine.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="IBR_Misc.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

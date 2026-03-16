@@ -1,4 +1,4 @@
-﻿#include "IBRender.h"
+﻿#include "IBR_Project.h"
 #include "IBFront.h"
 #include "Global.h"
 #include "FromEngine/RFBump.h"
@@ -10,6 +10,7 @@
 #include "IBR_Debug.h"
 #include "IBR_Combo.h"
 #include "IBR_Components.h"
+#include "IBR_Misc.h"
 
 extern bool LastInputStdStringActive;
 

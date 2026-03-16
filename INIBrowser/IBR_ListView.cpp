@@ -1,5 +1,5 @@
 ﻿#include "IBR_ListView.h"
-#include "IBRender.h"
+#include "IBR_Project.h"
 #include "IBFront.h"
 #include "Global.h"
 #include "IBB_RegType.h"
@@ -7,6 +7,7 @@
 #include "imgui_internal.h"
 #include <ranges>
 #include <locale>
+#include "IBR_Misc.h"
 
 
 namespace ImGui

@@ -1,6 +1,5 @@
 ﻿#include "IBB_ModuleAlt.h"
 #include <wincrypt.h>
-#include "IBFront.h"
 #include "Global.h"
 #include "Shlwapi.h"
 #include <imgui_internal.h>
@@ -8,32 +7,19 @@
 #include <fileapi.h>
 #include <handleapi.h>
 #include <minwinbase.h>
-#include <Windows.h>
 #include <winscard.h>
-#include <cctype>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
 #include <exception>
 #include <format>
-#include <map>
-#include <memory>
 #include <stdexcept>
-#include <string>
 #include <type_traits>
-#include <unordered_map>
-#include <vector>
 #include <__msvc_string_view.hpp>
-#include <imgui.h>
-#include "FromEngine/external_file.h"
-#include "FromEngine/global_tool_func.h"
-#include "FromEngine/RFBump.h"
-#include "FromEngine/types.h"
+#include "FromEngine/Include.h"
 #include "IBB_Components.h"
 #include "IBG_Ini.h"
 #include "IBR_Components.h"
 #include "IBR_Localization.h"
 #include "IBB_FileChecker.h"
+#include "IBR_Misc.h"
 
 #pragma comment(lib, "crypt32.lib")
 

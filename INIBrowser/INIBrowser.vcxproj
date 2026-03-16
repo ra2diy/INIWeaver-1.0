@@ -202,7 +202,7 @@
     <ClInclude Include="IBG_InputType.h" />
     <ClInclude Include="IBG_InputType_Defines.h" />
     <ClInclude Include="IBG_InputType_Derived.h" />
-    <ClInclude Include="IBRender.h" />
+    <ClInclude Include="IBR_Project.h" />
     <ClInclude Include="IBR_Combo.h" />
     <ClInclude Include="IBR_Debug.h" />
     <ClInclude Include="IBR_Font.h" />
@@ -212,6 +212,7 @@
     <ClInclude Include="IBR_ListView.h" />
     <ClInclude Include="IBR_Localization.h" />
     <ClInclude Include="IBR_Components.h" />
+    <ClInclude Include="IBR_Misc.h" />
     <ClInclude Include="IBSave.h" />
     <ClInclude Include="MainStage.h" />
     <ClInclude Include="Initialize.h" />

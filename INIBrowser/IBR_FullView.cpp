@@ -1,10 +1,11 @@
-﻿#include "IBRender.h"
+﻿#include "IBR_Project.h"
 #include "IBFront.h"
 #include "Global.h"
 #include "FromEngine/RFBump.h"
 #include "FromEngine/global_timer.h"
 #include "IBR_Debug.h"
 #include <imgui_internal.h>
+#include "IBR_Misc.h"
 
 namespace IBR_FullView
 {

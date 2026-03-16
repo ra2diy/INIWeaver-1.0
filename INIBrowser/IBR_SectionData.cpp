@@ -1,4 +1,4 @@
-﻿#include "IBRender.h"
+﻿#include "IBR_Project.h"
 #include "IBFront.h"
 #include "Global.h"
 #include "FromEngine/RFBump.h"
@@ -10,6 +10,7 @@
 #include "IBR_Combo.h"
 #include <imgui_internal.h>
 #include <ranges>
+#include "IBR_Misc.h"
 
 void DrawNoEntrySymbol(ImVec2 pos, float size, ImU32 col) {
     ImDrawList* drawList = ImGui::GetWindowDrawList();

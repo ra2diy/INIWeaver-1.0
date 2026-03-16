@@ -1,5 +1,5 @@
 ﻿
-#include "IBRender.h"
+#include "IBR_Project.h"
 #include "IBFront.h"
 #include "Global.h"
 #include "FromEngine/RFBump.h"
@@ -9,6 +9,7 @@
 #include<imgui_internal.h>
 #include <ranges>
 #include "IBR_ListView.h"
+#include "IBR_Misc.h"
 
 void _PROJ_CMD_WRITE  _PROJ_CMD_UPDATE IBR_Project::TriggerRefreshLink()
 {

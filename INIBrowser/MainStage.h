@@ -3,13 +3,14 @@
 #pragma once
 
 
-#include"FromEngine/Include.h"
-#include"FromEngine/global_timer.h"
-#include"Global.h"
-#include"IBR_Components.h"
-#include<ShlObj.h>
-#include<imgui_internal.h>
-#include"IBR_Debug.h"
+#include "FromEngine/Include.h"
+#include "FromEngine/global_timer.h"
+#include "Global.h"
+#include "IBR_Components.h"
+#include <ShlObj.h>
+#include <imgui_internal.h>
+#include "IBR_Debug.h"
+#include "IBR_Misc.h"
 
 std::string FontPath = ".\\Resources\\";//全过程不变
 std::wstring FontPathW = L".\\Resources\\";//全过程不变

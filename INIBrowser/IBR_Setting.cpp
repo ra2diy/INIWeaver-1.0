@@ -1,4 +1,4 @@
-#include "IBRender.h"
+ï»¿#include "IBR_Project.h"
 #include "IBFront.h"
 #include "Global.h"
 #include "FromEngine/RFBump.h"
@@ -78,7 +78,7 @@ void IBR_Setting::RenderUI()
     {
         auto CRgMax = ImGui::GetWindowContentRegionMax(), CRgMin = ImGui::GetWindowContentRegionMin();
 
-        //ImGui::Text(u8"ËùÓĞĞŞ¸Ä½«ÔÚÖØÆôºóÉúĞ§");
+        //ImGui::Text(u8"æ‰€æœ‰ä¿®æ”¹å°†åœ¨é‡å¯åç”Ÿæ•ˆ");
 
         ImGui::BeginChild(113007, { CRgMax.x - CRgMin.x , CRgMax.y - CRgMin.y - FontHeight * 10.0f },
             false, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysUseWindowPadding);
@@ -96,11 +96,11 @@ void IBR_Setting::RenderUI()
 
         ImGui::NewLine();
         ImGui::NewLine();
-        if (ImGui::Button(u8"´ò¿ªconfig.ini"))
+        if (ImGui::Button(u8"æ‰“å¼€config.ini"))
             ::ShellExecuteA(nullptr, "open", ".\\Resources\\Config.ini", NULL, NULL, SW_SHOWNORMAL);
         if (ImGui::IsItemHovered())
         {
-            DescLong = u8"Ò»²¿·ÖÉèÖÃ´íÎó»áµ¼ÖÂÎŞ·¨Æô¶¯³ÌĞò\n²»½¨ÒéËæÒâĞŞ¸Ä\nÕâ²¿·ÖÉèÖÃ·ÅÔÚConfig.iniÖĞ\n¸Ä¶¯½«ÔÚÖØÆôºóÉúĞ§";
+            DescLong = u8"ä¸€éƒ¨åˆ†è®¾ç½®é”™è¯¯ä¼šå¯¼è‡´æ— æ³•å¯åŠ¨ç¨‹åº\nä¸å»ºè®®éšæ„ä¿®æ”¹\nè¿™éƒ¨åˆ†è®¾ç½®æ”¾åœ¨Config.iniä¸­\næ”¹åŠ¨å°†åœ¨é‡å¯åç”Ÿæ•ˆ";
             Appear = true;
         }
         */

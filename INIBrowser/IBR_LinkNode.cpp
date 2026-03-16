@@ -7,6 +7,7 @@
 #include "IBR_Combo.h"
 #include "FromEngine/global_tool_func.h"
 #include <imgui_internal.h>
+#include "IBR_Misc.h"
 
 namespace LinkNodeContext
 {

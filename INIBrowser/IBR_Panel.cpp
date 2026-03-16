@@ -5,6 +5,7 @@
 #include "IBR_ListView.h"
 #include "IBR_Debug.h"
 #include <imgui_internal.h>
+#include "IBR_Misc.h"
 
 extern bool EnableDebugList;
 

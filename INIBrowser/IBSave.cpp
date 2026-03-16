@@ -1,6 +1,6 @@
 ﻿
 #include "IBSave.h"
-#include "IBRender.h"
+#include "IBR_Misc.h"
 #include "Global.h"
 #include <shlwapi.h>
 #include ".\FromEngine\global_tool_func.h"

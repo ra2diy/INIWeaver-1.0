@@ -1,4 +1,5 @@
 ﻿#include "IBR_HotKey.h"
+#include "IBR_Misc.h"
 
 namespace IBR_HotKey
 {

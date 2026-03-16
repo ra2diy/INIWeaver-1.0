@@ -1,5 +1,6 @@
 ﻿
-#include "IBRender.h"
+#include "IBR_Project.h"
+#include "IBR_Misc.h"
 #include "IBFront.h"
 #include "Global.h"
 #include "FromEngine/RFBump.h"

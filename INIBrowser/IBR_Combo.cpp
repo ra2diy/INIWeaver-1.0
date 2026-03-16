@@ -4,6 +4,7 @@
 #include "IBR_Components.h"
 #include "IBB_PropStringPool.h"
 #include <ranges>
+#include "IBR_Misc.h"
 
 namespace ImGui
 {

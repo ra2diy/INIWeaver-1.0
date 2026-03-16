@@ -6,6 +6,7 @@
 #include "FromEngine/global_timer.h"
 #include<imgui_internal.h>
 #include <ranges>
+#include "IBR_Misc.h"
 
 namespace ImGui
 {

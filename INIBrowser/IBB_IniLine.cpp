@@ -3,6 +3,7 @@
 #include <ranges>
 #include "IBB_RegType.h"
 #include "IBG_InputType_Derived.h"
+#include "IBR_Misc.h"
 
 namespace ExportContext
 {
