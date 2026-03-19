@@ -36,9 +36,12 @@ bool InputTextStdString(const char* label, std::string& str,
 
 void AdjustCursor()
 {
+    auto w = ImGui::GetCurrentWindow();
+    auto mx = w->DC.CursorMaxPos.y;
     ImGui::NewLine();
     ImGui::SameLine();
     ImGui::SetCursorPosX(ImGui::GetCursorPosX() - ImGui::GetStyle().ItemSpacing.x);
+    if(w->DC.CursorMaxPos.y >= mx + ImGui::GetTextLineHeight())w->DC.CursorMaxPos.y -= ImGui::GetTextLineHeight();
 }
 
 

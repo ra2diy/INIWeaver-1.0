@@ -803,7 +803,7 @@ void IBR_SectionData::RenderUI_Comment(IBB_Section* Bsec)
     else
     {
         auto TSize = ImGui::CalcTextSize(CommentEdit.get());
-        TSize.x = std::max(TSize.x + FontHeight * 1.2f, FontHeight * 14.6f);
+        TSize.x = std::max(TSize.x + FontHeight * 1.2f, FontHeight * 16.8f);
         TSize.y = std::max(TSize.y + FontHeight, FontHeight * 8.0f);
         //IBR_HintManager::SetHint(std::to_string(TSize.x) + ","+ std::to_string(TSize.y),HintStayTimeMillis);
         if (ImGui::InputTextMultiline(("##COMMENT" + ModuleStrID).c_str(), CommentEdit.get(), MAX_STRING_LENGTH,

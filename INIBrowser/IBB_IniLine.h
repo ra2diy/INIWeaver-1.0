@@ -10,7 +10,6 @@ struct IBB_IniLine_Data_String final : public IBB_IniLine_Data_Base
     IBB_IniLine_Data_String(const IBG_InputType& inp);
 
     bool SetValue(const std::string& Val);
-    bool MergeValue(const std::string& Val);
     bool Clear();
     void RenderUI(IBB_IniLine_Default* Default, const LinkNodeSetting& LinkNode, bool IsWorkspace);
     void Replace(size_t CompIdx, const std::string& OldName, const std::string& NewName);
@@ -32,7 +31,6 @@ struct IBB_IniLine_Data_Bool final : public IBB_IniLine_Data_Base
     IBB_IniLine_Data_Bool(const IBG_InputType& inp);
 
     bool SetValue(const std::string& Val);
-    bool MergeValue(const std::string& Val);
     bool Clear();
     void RenderUI(IBB_IniLine_Default* Default, const LinkNodeSetting& LinkNode, bool IsWorkspace);
     void Replace(size_t CompIdx, const std::string& OldName, const std::string& NewName);
@@ -51,7 +49,6 @@ struct IBB_IniLine_Data_IIF final : public IBB_IniLine_Data_Base
     IBB_IniLine_Data_IIF(const IBB_IniLine_Default* Default);
 
     bool SetValue(const std::string& Val);
-    bool MergeValue(const std::string& Val);
     bool Clear();
     void RenderUI(IBB_IniLine_Default* Default, const LinkNodeSetting& LinkNode, bool IsWorkspace);
     void Replace(size_t CompIdx, const std::string& OldName, const std::string& NewName);

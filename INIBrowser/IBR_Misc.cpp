@@ -286,10 +286,13 @@ void IBR_IniLine::RenderUI(
     if(!nlad)ImGui::SameLine();
     ImGui::BeginGroup();
     Back.RenderUI(IsWorkSpace);
+
+    auto CMP = ImGui::GetCurrentWindow()->DC.CursorMaxPos;
     auto CursorY = ImGui::GetCursorPosY();
     ImGui::EndGroup();
     //防止组内额外的空行传到组外
     ImGui::SetCursorPosY(CursorY);
+    ImGui::GetCurrentWindow()->DC.CursorMaxPos.y = CMP.y;
 
     auto EndCursor = ImGui::GetCursorPos();
     if (!nlad && multiple)//如果没有，那么放在描述下面。
@@ -807,9 +810,11 @@ namespace IBR_EditFrame
                 LinkNodeContext::CurSub = pSub;
                 ImGui::BeginGroup();
                 V.RenderUI(PoolCStr(K), PoolDesc(V.Hint), *pLine);
+                auto CMP = ImGui::GetCurrentWindow()->DC.CursorMaxPos;
                 auto Y = ImGui::GetCursorPosY();
                 ImGui::EndGroup();
                 ImGui::SetCursorPosY(Y);
+                ImGui::GetCurrentWindow()->DC.CursorMaxPos.y = CMP.y;
                 LinkNodeContext::CurSub = nullptr;
             }
             else ImGui::TextColored(IBR_Color::IllegalLineColor, "%s", locc("GUI_MissingLineData"));

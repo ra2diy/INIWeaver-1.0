@@ -109,6 +109,28 @@ void DrawOpenFolderIcon(ImVec2 Pos, float Size)
     draw_list->AddLine(c3, c4, IM_COL32(227, 161, 50, 255), Size * 0.1f);
     draw_list->AddLine(c4, c5, IM_COL32(227, 161, 50, 255), Size * 0.1f);
 }
+std::wstring GetAbsolutePath(LPCWSTR relativePath) {
+    if (!relativePath) return L"";
+
+    // 第一次调用：获取所需缓冲区大小
+    DWORD size = GetFullPathNameW(relativePath, 0, nullptr, nullptr);
+    if (size == 0) {
+        // 错误处理（例如：无效路径）
+        return L"";
+    }
+
+    // 分配缓冲区（size 包括终止 null 字符）
+    std::wstring absolutePath(size, L'\0');
+    DWORD result = GetFullPathNameW(relativePath, size, &absolutePath[0], nullptr);
+    if (result == 0 || result >= size) {
+        // 错误处理
+        return L"";
+    }
+
+    // 移除多余的终止 null（std::wstring 以 \0 结尾，但 resize 到实际长度）
+    absolutePath.resize(result);
+    return absolutePath;
+}
 
 
 std::string_view TrimView(std::string_view Line)
@@ -994,7 +1016,7 @@ void IBB_ModuleAlt::PreLoadFromFile(const wchar_t* FileName)
     //如果已经完全加载了，就不需要再加载了。
     if (FullyLoaded) return;
 
-    Path = FileName;
+    Path = GetAbsolutePath(FileName);
     Available = false;
     FullyLoaded = false;
     FromClipBoard = false;

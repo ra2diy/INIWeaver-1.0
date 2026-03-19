@@ -714,7 +714,7 @@ bool IBB_Section::MergeLine(StrPoolID Key, size_t Index, const std::string& Valu
     case IBB_IniMergeMode::Merge:
     {
         auto ptr = IBF_Inst_DefaultTypeList.List.KeyBelongToSubSec(Key);
-        const auto MergeVal = [](const std::string & Orig, const std::string & Value)->std::string
+        const auto MergeVal = [&](const std::string & Orig, const std::string & Value)->std::string
         {
             auto & pv = SplitParamCached(Orig);
             bool Unique = std::ranges::all_of(pv, [&](const auto& elem) { return elem != Value; });
@@ -726,6 +726,9 @@ bool IBB_Section::MergeLine(StrPoolID Key, size_t Index, const std::string& Valu
                 if (!str.empty())str += ",";
                 str += Value;
             }
+            void TakeByLinkLimit(std::string& Value, int LinkLimit);
+            auto L = IBF_Inst_DefaultTypeList.List.KeyBelongToLine(Key);
+            if (L)TakeByLinkLimit(str, L->GetLinkLimit());
             return str;
         };
         PushLineOrder(Key);

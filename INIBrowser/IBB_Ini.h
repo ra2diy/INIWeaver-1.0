@@ -79,7 +79,6 @@ struct IBB_IniLine_Data_Base
     bool Empty() { return _Empty; }
 
     virtual bool SetValue(const std::string&) = 0;
-    virtual bool MergeValue(const std::string&) = 0;
     virtual bool Clear() = 0;
     virtual void RenderUI(IBB_IniLine_Default* Default, const LinkNodeSetting& LinkNode, bool IsWorkspace) = 0;
     virtual void Replace(size_t CompIdx, const std::string& OldName, const std::string& NewName) = 0;

@@ -383,7 +383,6 @@ bool IBB_IniLine_Data_String::SetValue(const std::string& Val)
     return true;
     //return LinkNodeContext::CurSub ? LinkNodeContext::CurSub->UpdateAll() : true;
 }
-bool IBB_IniLine_Data_String::MergeValue(const std::string& Val) { return SetValue(Val); }
 bool IBB_IniLine_Data_String::Clear()
 {
     _Empty = true;
@@ -425,6 +424,7 @@ void IBB_IniLine_Data_String::RenderUI(IBB_IniLine_Default* Default, const LinkN
     auto Result = RenderIICInputText(pText, Status, Value, LinkNode,
         [&](const std::string& NewValue, bool Active) {
             SetValue(NewValue);
+            TakeByLinkLimit(Value, Default->GetLinkLimit());
             return IBB_UpdateResult{ true, Active, 0 };
     });
 
@@ -471,7 +471,6 @@ bool IBB_IniLine_Data_Bool::SetValue(const std::string& Val)
     Value = IsTrueString(Val);
     return true;
 }
-bool IBB_IniLine_Data_Bool::MergeValue(const std::string& Val) { return SetValue(Val); }
 bool IBB_IniLine_Data_Bool::Clear()
 {
     _Empty = true;
@@ -528,7 +527,6 @@ bool IBB_IniLine_Data_IIF::SetValue(const std::string& Val)
     _Empty = Val.empty();
     return LinkNodeContext::CurSub ? LinkNodeContext::CurSub->UpdateAll() : true;
 }
-bool IBB_IniLine_Data_IIF::MergeValue(const std::string& Val) { return SetValue(Val); }
 bool IBB_IniLine_Data_IIF::Clear()
 {
     Value->ResetState();
@@ -656,7 +654,9 @@ bool MergeSingleData(LineData& Data, IBB_IniLine_Default* Default, const std::st
     else if (Mode == IBB_IniMergeMode::Merge)
     {
         if (Data->Empty())return Data->SetValue(Another);
-        else return Data->MergeValue(Another);
+        else {
+            return Data->SetValue(Another);
+        }
     }
     else
     {
