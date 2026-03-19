@@ -51,6 +51,9 @@ extern const char* MyTypeName;
 StrPoolID AnyTypeID();
 StrPoolID MyTypeID();
 
+ImColor LoadColorFromJson(JsonObject Obj, bool& Colored);
+ImColor LoadColorFromJson(JsonObject Obj, const ImColor& Default);
+
 namespace IBB_DefaultRegType
 {
     extern const ImColor DefaultColor;

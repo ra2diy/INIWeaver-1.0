@@ -437,5 +437,8 @@
     <None Include="..\Release\Global\TypeAltSpecial.csv">
       <Filter>资源文件</Filter>
     </None>
+    <None Include="..\Release\Global\RegisterTypesStringList.json">
+      <Filter>资源文件</Filter>
+    </None>
   </ItemGroup>
 </Project>

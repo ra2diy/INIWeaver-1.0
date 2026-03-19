@@ -27,6 +27,7 @@ std::string FileName(const std::string& ss);//文件名
 std::wstring FileName(const std::wstring& ss);//文件名
 bool IsExistingDir(const wchar_t* Path);
 extern bool RefreshLangBuffer2;
+std::vector<std::string> SplitParam(const std::string& Text);
 
 std::wstring RemoveSpec(std::wstring W)
 {
@@ -339,14 +340,34 @@ namespace IBR_ProjectManager
                 for (auto& Sub : Sec.SubSecs)for (auto& L : Sub.Lines)
                     if (L.first == InheritKeyID())Sec.Inherit = L.second.Indexed(0)->GetString();
                 IBB_Section_Desc Desc = { Inis[I].Name, Sec.Name };
-                if (IgnoredSection.contains(Desc) || Sec.IsLinkGroup || Sec.IsComment() || Sec.SingleVal)continue;
+                if (
+                    IgnoredSection.contains(Desc) ||
+                    Sec.IsLinkGroup ||
+                    Sec.IsComment() ||
+                    Sec.SkipExport  ||
+                    Sec.SingleVal
+                )continue;
                 std::string V;
+
+                auto Inherit = Sec.FinalInherit();
+
                 V += ';'; V += DisplayRev[Desc];  V += '\n';
-                V += '['; V += Sec.Name;
-                if(!Sec.Inherit.empty())
-                { V+="]:["; V+=Sec.Inherit; }
-                V += "]\n";
+                if (Inherit.empty())
+                {
+                    V += '['; V += Sec.Name;
+                    V += "]\n";
+                }
+                else
+                {
+                    for (auto&& inh : SplitParam(Inherit))
+                    {
+                        V += '['; V += Sec.Name;
+                        V += "]:["; V += inh;
+                        V += "]\n";
+                    }
+                }
                 V += Sec.GetText(false, true);
+                
                 TextPieces[I][Sec.Name] = std::move(V);
             }
         }

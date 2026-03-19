@@ -2,6 +2,9 @@
 #include "IBB_CustomBool.h"
 #include <ranges>
 
+ImColor LoadColorFromJson(JsonObject Obj, bool& Colored);
+ImColor LoadColorFromJson(JsonObject Obj, const ImColor& Default);
+
 
 // ======== InputTypeFactory ==========
 
@@ -122,18 +125,7 @@ IICPtr InputTypeFactory::CreateInputComponent_Special(IBB_ValueContainer& Cont, 
             ImColor Col;
             bool Colored = false;
             auto oColor = Obj.GetObjectItem("Color");
-            auto V = oColor.GetArrayInt();
-            if (V.size() == 3)
-            {
-                Col = ImColor(V[0], V[1], V[2]);
-                Colored = true;
-            }
-            else if (V.size() >= 4)
-            {
-                Col = ImColor(V[0], V[1], V[2], V[3]);
-                Colored = true;
-            }
-
+            Col = LoadColorFromJson(oColor, Colored);
 
             //【, "Disabled": <bool>】【, "Wrapped": <bool>】
             bool Disabled = Obj.ItemBoolOr("Disabled", false);
@@ -516,6 +508,12 @@ IASOpt InputTypeFactory::CreateAcceptorSetting(IBB_ValueContainer& Cont, const J
     auto oFormat = Obj.GetObjectItem("ValueFormat");
     if(oFormat)Setting.AcceptFormats = InputTypeFactory::CreateFormatComponentVector(Cont, oFormat, HasError);
     else Setting.AcceptFormats = nullptr;
+
+    ImColor Col;
+    bool Colored;
+    auto oColor = Obj.GetObjectItem("NodeColor");
+    Col = LoadColorFromJson(oColor, Colored);
+    Setting.NodeColor = Colored ? std::make_optional(Col) : std::nullopt;
 
     return Setting;
 }

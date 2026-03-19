@@ -364,7 +364,7 @@ namespace IBR_LinkNode
         auto DC = IsImport ? ImportCenter() : DefaultCenter();
         auto Center = IsImport ? ImportCenterInWindow() : DefaultCenterInWindow();
         auto Style = IsInherit ? ImGuiRadioButtonFlags_RoundedSquare : GlobalNodeStyle;
-        if (Session.LastCenterRatio < 10.0f)Session.LastCenterRatio = 10.0f;
+        if (Session.LastCenterRatio < 14.0f)Session.LastCenterRatio = 14.0f;
         auto CenterRatio = Center.x / FontHeight;
         if (CenterRatio > Session.LastCenterRatio + 1.0f)CenterRatio = Session.LastCenterRatio + 1.0f;
         auto Oldx = Center.x;

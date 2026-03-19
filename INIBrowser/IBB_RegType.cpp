@@ -41,6 +41,32 @@ StrPoolID MyTypeID()
     return ID;
 }
 
+ImColor LoadColorFromJson(JsonObject Obj, bool& Colored)
+{
+    ImColor Col;
+    Colored = false;
+    if (!Obj)return Col;
+    auto V = Obj.GetArrayInt();
+    if (V.size() == 3)
+    {
+        Col = ImColor(V[0], V[1], V[2]);
+        Colored = true;
+    }
+    else if (V.size() >= 4)
+    {
+        Col = ImColor(V[0], V[1], V[2], V[3]);
+        Colored = true;
+    }
+    return Col;
+}
+ImColor LoadColorFromJson(JsonObject Obj, const ImColor& Default)
+{
+    bool Colored;
+    ImColor Col = LoadColorFromJson(Obj, Colored);
+    if (!Colored)Col = Default;
+    return Col;
+}
+
 namespace IBB_DefaultRegType
 {
     std::unordered_map<StrPoolID, std::set<StrPoolID>>CompoundTypeIndex;
@@ -197,14 +223,7 @@ R"({
         if (S.Available())Reg.IniType = S.GetString();
         else Reg.IniType = DefaultIniName;
         S = Obj.GetObjectItem(u8"FrameColor");
-        if (S.Available())
-        {
-            auto V = S.GetArrayInt();
-            if (V.size() == 3)Reg.FrameColorL = ImColor(V[0], V[1], V[2]);
-            else if (V.size() >= 4)Reg.FrameColorL = ImColor(V[0], V[1], V[2], V[3]);
-            else Reg.FrameColorL = DefaultColor;
-        }
-        else Reg.FrameColorL = DefaultColor;
+        Reg.FrameColorL = LoadColorFromJson(S, DefaultColor);
 
         Reg.Export = Obj.ItemBoolOr(u8"NeedRegisterList", false);
         Reg.RegNameAsDisplay = Obj.ItemBoolOr(u8"UseRegName", false);

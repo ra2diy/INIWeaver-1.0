@@ -728,12 +728,36 @@ IBB_IniLine::IBB_IniLine(const std::string& Value, IBB_IniLine_Default* Def)
     }
 }
 
+std::string IBB_IniLine::FinalExportString(size_t Index) const
+{
+    LinkNodeContext::LineMult = Index;
+    auto& DD = Indexed(Index);
+    auto IIF = Default->GetInputType().Form->Duplicate();
+    auto Str = DD->GetString();
+    IIF->ParseFromString(Str);
+    bool Orig = ExportContext::OnExport;
+    ExportContext::OnExport = true;
+    DD->SetValue(IIF->RegenFormattedString());
+    ExportContext::OnExport = Orig;
+    auto value = DD->GetStringForExport();
+    DD->SetValue(Str);
+    return value;
+}
+
+
 void IBB_IniLine::MakeKVForExport(IBB_VariableMultiList& vl, IBB_Section* AtSec, std::vector<std::string>* TmpLineOrder) const
 {
     auto& input = Default->GetInputType();
     auto key = PoolStr(Default->Name);
 
     const auto ExportKV = [&](const LineData& Data, int Index) {
+        /*
+        IM_UNUSED(Data);
+        LinkNodeContext::LineMult = (size_t)Index;
+        auto value = FinalExportString((size_t)Index);
+        input.KVFmt(vl, key, value, TmpLineOrder, AtSec);
+        LinkNodeContext::LineMult = 0;
+        */
         auto IIF = Default->GetInputType().Form->Duplicate();
         auto Str = Data->GetString();
         IIF->ParseFromString(Str);

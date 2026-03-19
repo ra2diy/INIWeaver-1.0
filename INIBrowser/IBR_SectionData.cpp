@@ -64,7 +64,7 @@ void DrawCheckmark(ImVec2 pos, float size, ImU32 col) {
     drawList->AddLine(p2, p3, col, 2.0f);
 }
 
-
+const std::vector<std::string>& SplitParamCached(const std::string& Text);
 
 namespace ImGui
 {
@@ -392,9 +392,20 @@ bool IBR_SectionData::RenderUI_Line(const std::string& OnShow, StrPoolID Name)
     };
 
     const auto InheritStr = [&]() {
-        auto& Q = back->Inherit;
-        auto w = IBR_WorkSpace::ShowRegName ? UTF8toUnicode(Q) :
-            (IBR_Inst_Project.HasSection({ Desc.Ini, Q }) ? UTF8toUnicode(IBR_Inst_Project.GetSection(IBB_Section_Desc{ Desc.Ini, Q }).GetDisplayName()) : UTF8toUnicode(Q));
+        std::wstring w;
+        for (auto& Q : SplitParamCached(back->Inherit))
+        {
+            if (IBR_WorkSpace::ShowRegName)w += UTF8toUnicode(Q);
+            else
+            {
+                auto Idx = IBF_Inst_Project.Project.GetSecIndex(Q, Desc.Ini);
+                auto RSec = IBR_Inst_Project.GetSection(Idx);
+                if (RSec.HasBack())w += UTF8toUnicode(RSec.GetDisplayName());
+                else w += UTF8toUnicode(Q);
+                w.push_back(',');
+            }
+        }
+        if (!w.empty())w.pop_back();
         std::wstring Nul;
         if (w.empty()) return loc("GUI_NoInherit");
         else return UnicodetoUTF8(std::vformat(locw("GUI_InheritFrom"), std::make_wformat_args(ShowInherit() ? w : Nul)));
@@ -1016,7 +1027,8 @@ void IBR_SectionData::RenderUI()
 
     RenderUI_Acceptor(LastFinalY);
 
-    if(!Bsec->SingleVal)RenderUI_TitleBar(Rsec, Bsec, TriggeredRightMenu, LastFinalY);
+    if(!Bsec->SingleVal && !Bsec->SkipTitle)
+        RenderUI_TitleBar(Rsec, Bsec, TriggeredRightMenu, LastFinalY);
     
     ImVec2 HeadLineRN = ImGui::GetLineEndPos() - ImVec2{ FontHeight * 1.5f, HalfLine };
     {

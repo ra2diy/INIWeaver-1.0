@@ -8,6 +8,14 @@
 #include "IBG_InputType_Defines.h"
 #include <ranges>
 
+namespace ExportContext
+{
+    extern StrPoolID Key;
+    extern std::set<IBB_Section_Desc> MergedDescs;//被Import而合并的Section列表
+    extern bool OnExport;
+}
+
+
 bool IBB_Section::Generate(const ModuleClipData& Clip)
 {
     /*
@@ -80,6 +88,10 @@ bool IBB_Section::Generate(const ModuleClipData& Clip)
 
             SingleVal = IsTrueString(VarList.GetVariable("SingleVal"));
             VarList.Value.erase("SingleVal");
+            SkipExport = IsTrueString(VarList.GetVariable("SkipExport"));
+            VarList.Value.erase("SkipExport");
+            SkipTitle = IsTrueString(VarList.GetVariable("SkipTitle"));
+            VarList.Value.erase("SkipTitle");
 
             SetText(Clip.Lines);
             for (auto& L : Clip.Lines)OnShow[NewPoolStr(L.Key)] = L.Desc;
@@ -162,7 +174,6 @@ void IBB_Section::GetClipData(ModuleClipData& Clip)
                     if (key == InheritKeyID())
                     {
                         Clip.Inherit = lin.Indexed(0)->GetStringForExport();
-                        continue;
                     }
                     auto& Toks = Tokens[PoolStr(key)];
                     lin.ForEach([&](LineData& L) {
@@ -198,6 +209,8 @@ void IBB_Section::GetClipData(ModuleClipData& Clip)
                 Clip.VarList.push_back({ A, B });
 
             Clip.VarList.push_back({ "SingleVal", SingleVal ? "true" : "false" });
+            Clip.VarList.push_back({ "SkipExport", SkipExport ? "true" : "false" });
+            Clip.VarList.push_back({ "SkipTitle", SkipTitle ? "true" : "false" });
         }
     }
 }
@@ -250,16 +263,6 @@ bool IBB_Section::SetText(const std::vector<IniToken>& Tokens)
         }
     };
 
-    {
-        IniToken i;
-        i.Key = InheritKeyName;
-        i.Value = Inherit;
-        i.HasDesc = false;
-        i.IsSection = false;
-        i.Empty = false;
-        u(i);
-    }
-
     if (SingleVal)
     {
         bool NoSingleVal = std::ranges::all_of(Tokens, [](const IniToken& Tok) { return Tok.Key != SingleValName; });
@@ -282,7 +285,16 @@ bool IBB_Section::SetText(const std::vector<IniToken>& Tokens)
         u(tok);
     }
 
-    
+    if(!HasLine(InheritKeyID()))
+    {
+        IniToken i;
+        i.Key = InheritKeyName;
+        i.Value = Inherit;
+        i.HasDesc = false;
+        i.IsSection = false;
+        i.Empty = false;
+        u(i);
+    }
 
     UpdateAll();
 
@@ -401,7 +413,10 @@ std::string IBB_Section::GetText(bool PrintExtraData, bool FromExport, bool ForE
         for (auto& [K, Vals] : LineList.Value)
         {
             for (auto& V : Vals)
+            {
+                if (FromExport && V.empty())continue;
                 Text += K + "=" + V + "\n";
+            }
         }
     }
     else
@@ -415,6 +430,7 @@ std::string IBB_Section::GetText(bool PrintExtraData, bool FromExport, bool ForE
                 auto& Vals = LineList.GetVars(s);
                 for (auto& Val : Vals)
                 {
+                    if (FromExport && Val.empty())continue;
                     if (ForEdit && OnShow.find(NewPoolStr(s)) != OnShow.end())
                     {
                         auto& ons = OnShow.at(NewPoolStr(s));
@@ -430,7 +446,10 @@ std::string IBB_Section::GetText(bool PrintExtraData, bool FromExport, bool ForE
         for (auto& [K, Vals] : LineList.Value)
         {
             for (auto& V : Vals)
+            {
+                if (FromExport && V.empty())continue;
                 Text += K + "=" + V + "\n";
+            }
         }
     }
 
@@ -498,6 +517,16 @@ const std::string& IBB_Section::GetOnShow(StrPoolID Key) const
     const static std::string Empty{};
     auto _F = this->OnShow.find(Key);
     return _F == this->OnShow.end() ? Empty : _F->second;
+}
+
+std::string IBB_Section::FinalInherit() const
+{
+    auto InheritString = Inherit;
+    ExportContext::OnExport = true;
+    if (auto pLine = GetLineFromSubSecs(InheritKeyID()); pLine)
+        InheritString = pLine->FinalExportString(0);
+    ExportContext::OnExport = false;
+    return InheritString;
 }
 
 StrPoolID IBB_Section::GetDLK(StrPoolID Reg) const

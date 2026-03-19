@@ -285,6 +285,7 @@
   <ItemGroup>
     <None Include="..\Release\Global\RegisterTypes.json" />
     <None Include="..\Release\Global\RegisterTypesCompound.json" />
+    <None Include="..\Release\Global\RegisterTypesStringList.json" />
     <None Include="..\Release\Global\TypeAlt2Art.csv" />
     <None Include="..\Release\Global\TypeAlt2PhobosB48.csv" />
     <None Include="..\Release\Global\TypeAlt2Unit.csv" />

@@ -1224,7 +1224,7 @@ IBB_UpdateResult IIC_InputText::RenderUI(IBB_ValueContainer& Cont, IICStatus& St
     return RenderIICInputText(this, Status, CurrentValue, NodeSetting, mf);
 }
 
-bool ProcessOnExport(std::string& V)
+bool ProcessOnExport_Single(std::string& V)
 {
     bool Changed = false;
     if (ExportContext::OnExport)
@@ -1237,7 +1237,7 @@ bool ProcessOnExport(std::string& V)
                 auto pLine = pSec->GetLineFromSubSecs(SingleValID());
                 if (pLine)
                 {
-                    V = pLine->Indexed(0)->GetStringForExport();
+                    V = pLine->FinalExportString(0);
                     Changed = true;
                 }
             }
@@ -1247,16 +1247,38 @@ bool ProcessOnExport(std::string& V)
                 {
                     auto iif = pLine->GetNewIIF(Mult);
                     iif->FormatComponents = Acc->AcceptFormats;
+                    bool Orig = ExportContext::OnExport;
+                    ExportContext::OnExport = true;
                     V = iif->RegenFormattedString();
+                    ExportContext::OnExport = Orig;
                 }
                 else
                 {
-                    V = pLine->Indexed(Mult)->GetStringForExport();
+                    V = pLine->FinalExportString(Mult);
                 }
                 Changed = true;
             }
         }
     }
+    return Changed;
+}
+
+std::vector<std::string> SplitParam(const std::string& Text);
+
+bool ProcessOnExport(std::string& V)
+{
+    auto Vec = SplitParam(V);
+    bool Changed = false;
+    for (auto& S : Vec)
+    {
+        if (ProcessOnExport_Single(S))
+            Changed = true;
+    }
+    if(Changed)
+        V = Vec |
+        std::views::filter([](const std::string& s) { return !s.empty(); }) |
+        std::views::join_with(',') |
+        std::ranges::to<std::string>();
     return Changed;
 }
 

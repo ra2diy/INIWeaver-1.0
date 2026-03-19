@@ -99,6 +99,17 @@ namespace KVFormatter
                 }
             };
     }
+    KVFormatter_t Nothing()
+    {
+        return[](IBB_VariableMultiList& Dest, const std::string& Key, const std::string& Value, std::vector<std::string>* TmpLineOrder, IBB_Section* AtSec)
+            {
+                IM_UNUSED(Dest);
+                IM_UNUSED(Key);
+                IM_UNUSED(Value);
+                IM_UNUSED(TmpLineOrder);
+                IM_UNUSED(AtSec);
+            };
+    }
 
     KVFormatter_t Recompose(IICVPtr SaveInput, IFCVPtr SaveFormat, ILFVPtr ExportLines, IBB_ValueContainer&& Values)
     {
@@ -143,12 +154,14 @@ namespace KVFormatterFactory
         {
             auto str = j.GetString();
             if (str == "Default")return Default();
+            if (str == "Nothing")return Nothing();
             else return Default();
         }
         else if (j.IsTypeObject())
         {
             auto Type = j.ItemStringOr("Type", "Default");
             if(Type == "Default")return Default();
+            else if (Type == "Nothing")return Nothing();
             else if (Type == "SplitValue")
             {
                 auto Delim = j.ItemStringOr("Delim", ",");

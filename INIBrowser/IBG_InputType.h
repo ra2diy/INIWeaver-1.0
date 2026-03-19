@@ -192,6 +192,7 @@ struct IIT_AcceptorSetting
 {
     StrPoolID AcceptRegType;
     IFCVPtr AcceptFormats;//！特殊的是，这个是可空的！
+    std::optional<ImColor> NodeColor;
 };
 
 struct IBG_InputType

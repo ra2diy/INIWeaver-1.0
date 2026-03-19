@@ -144,7 +144,8 @@ struct IBB_IniLine
     }
 
     void MakeKVForExport(IBB_VariableMultiList&, IBB_Section* AtSec, std::vector<std::string>* TmpLineOrder = nullptr) const;
-    
+    std::string FinalExportString(size_t Index) const;
+
     bool Merge(size_t Index, const std::string& Another, IBB_IniMergeMode Mode);
 
     void RenderUI(const LinkNodeSetting& LinkNode, bool IsWorkspace);
@@ -229,6 +230,8 @@ struct IBB_Section
     StrPoolID Register;
     bool CreateAsCommentBlock{ false };
     bool SingleVal{ false };//为True时只有一个值
+    bool SkipTitle{ false };//为True时不显示标题，通常配合SingleVal使用
+    bool SkipExport{ false };//为True时不导出，通常配合SingleVal使用
     IBB_SectionID ID;
 
     struct _Dynamic
@@ -285,6 +288,7 @@ struct IBB_Section
     bool IsOnShow(StrPoolID Key) const;
     const std::string& GetOnShow(StrPoolID Key) const;
     StrPoolID GetDLK(StrPoolID Reg) const;
+    std::string FinalInherit() const;
     
     void SetOnShow(StrPoolID Key, const std::string& Value, bool AllowReapply);
     void SetOnShow(StrPoolID Key);
