@@ -381,6 +381,9 @@ namespace IBR_LinkNode
         bool Clicked = ImGui::RadioButton("", true, Style);
         w->DC.CursorMaxPos = mx;
         w->DC.IdealMaxPos = mxi;
+        void AdjustCursor();
+        AdjustCursor();
+
         bool RightClicked = ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right);
         bool Hovered = ImGui::IsItemHovered();
         bool ShowReg = IBR_WorkSpace::ShowRegName;

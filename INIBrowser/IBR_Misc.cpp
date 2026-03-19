@@ -106,18 +106,29 @@ void WorkSpaceLine::RenderUI(const char* Line, const char* Hint, IBB_IniLine& Ba
             auto KeyName = Back.Default->Name;
             auto tgback = LinkNodeContext::CurSub->Root;
             auto tgreg = acc ? acc->AcceptRegType : tgback->Register;
-            ImVec4 Col = acc && acc->NodeColor ? *acc->NodeColor : IBB_DefaultRegType::GetRegType(tgreg).FrameColor;
+            ImU32 Col = acc && acc->NodeColor ? *acc->NodeColor : IBB_DefaultRegType::GetRegType(tgreg).FrameColor;
             AcceptCenter[i] = {Cursor.x - LH * 0.7f, Cursor.y - Y1 + FromY + LH * 0.5f};
             ImGui::SetCursorPos({ 0.0f, FromY });
             ImGui::Dummy({ ImGui::GetWindowWidth(), ToY - FromY }, true);
-            if (!ImGui::GetTopMostPopupModal())
-                IBR_TopMost::CommitDrawOpr({ AcceptCenter[i].x - LH * 0.5f, AcceptCenter[i].y - LH * 0.5f }, [=]() {
-                ImGui::PushID(KeyName);
-                ImGui::PushStyleColor(ImGuiCol_CheckMark, Col);
-                ImGui::RadioButton("", true, ImGuiRadioButtonFlags_RoundedSquare);
-                ImGui::PopStyleColor();
-                ImGui::PopID();
-                    });
+
+            {
+                const ImVec2 pos = { AcceptCenter[i].x - LH * 0.5f, AcceptCenter[i].y - LH * 0.5f };
+                const float square_sz = ImGui::GetFrameHeight();
+                const ImRect check_bb(pos, pos + ImVec2(square_sz, square_sz));
+                const ImRect total_bb(pos, pos + ImVec2(square_sz, ImGui::GetTextLineHeightWithSpacing()));
+                auto DrawList = ImGui::GetBackgroundDrawList();
+                DrawList->AddRectFilled(
+                    check_bb.Min,
+                    check_bb.Max,
+                    ImGui::GetColorU32(ImGuiCol_FrameBg),
+                    square_sz * 0.1f);
+                const float pad = ImMax(1.0f, IM_FLOOR(square_sz / 6.0f));
+                DrawList->AddRectFilled(
+                    { check_bb.Min.x + pad, check_bb.Min.y + pad },
+                    { check_bb.Max.x - pad, check_bb.Max.y - pad },
+                    Col,
+                    square_sz * 0.1f);
+            }
 
             if (ImGui::BeginDragDropTarget())
             {
