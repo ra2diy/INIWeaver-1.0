@@ -266,12 +266,21 @@ void IBR_IniLine::RenderUI(
     }
 
     auto nlad = Back.Default->GetInputType().NewLineAfterDesc;
+    auto slid = Back.Default->GetInputType().ShowLineID;
+    auto slif = Back.Default->GetInputType().LineIDFrom;
     auto multiple = Back.IsMultiple();
     bool pressed_insert = false;
+    ImVec2 slix;
 
     if(!nlad)LinkNodeContext::AcceptEdge.push_back(ImGui::GetCursorPos());
 
     ImGui::TextEx(Line);
+    if (slid && !nlad && multiple)
+    {
+        ImGui::SameLine();
+        slix = ImGui::GetCursorPos();
+        ImGui::TextColored(ImVec4(0, 0, 0, 0), "%d", Back.Count() + slif);
+    }
     auto PrevLineX = ImGui::GetCurrentWindow()->DC.CursorPosPrevLine.x;
     auto& MaxX = ImGui::GetCurrentWindow()->DC.CursorMaxPos.x;
     if (MaxX < PrevLineX + FontHeight * 2.0F)MaxX = PrevLineX + FontHeight * 2.0F;
@@ -297,10 +306,29 @@ void IBR_IniLine::RenderUI(
     {
         ImGui::SameLine();//如果nlad，那么放在文本后面；
         pressed_insert = ImGui::Button(" + ");
+        if (slid)
+        {
+            slix = ImGui::GetCursorPos();
+            ImGui::TextColored(ImVec4(0, 0, 0, 0), "%d", Back.Count() + slif);
+            ImGui::SameLine();
+        }
     }
     if(!nlad)ImGui::SameLine();
     ImGui::BeginGroup();
     Back.RenderUI(IsWorkSpace);
+
+    if (slid && multiple)
+    {
+        for (size_t i = 0; i < LinkNodeContext::AcceptEdge.size() - 1; i++)
+        {
+            auto& FromY = LinkNodeContext::AcceptEdge[i].y;
+            //slix.x, FromY
+            auto Pos = ImGui::GetCursorPos();
+            ImGui::SetCursorPos({ slix.x, FromY });
+            ImGui::TextDisabled("%d", i + slif);
+            ImGui::SetCursorPos(Pos);
+        }
+    }
 
     auto CMP = ImGui::GetCurrentWindow()->DC.CursorMaxPos;
     auto CursorY = ImGui::GetCursorPosY();

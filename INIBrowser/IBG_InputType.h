@@ -76,6 +76,9 @@ struct IBG_InputComponent : public std::enable_shared_from_this<IBG_InputCompone
     IICStatus InitialStatus;
     LinkNodeSetting NodeSetting;
     bool UseCustomSetting;//true : 保持自定义值 false : NodeSetting会随时刷新
+    bool Disabled;//是否禁用输入框（不接受输入，UI上表现为灰色），但仍然会显示输入框
+    bool UseNodeColorInFrame;//是否把输入框染上节点的颜色
+    bool IsLightColor;
     IBB_ValueConstraint Constraint;
 };
 
@@ -223,6 +226,8 @@ struct IBG_InputType
 
     bool Multiple{ false }; //是否是可重语句
     bool NewLineAfterDesc{ false }; //是否在短描述之后断行
+    bool ShowLineID{ false }; //是否显示可重语句的行号
+    int LineIDFrom{ 0 };
     IASOpt AcceptorSetting;
     IIFPtr Form;
     KVFormatter_t KVFmt;

@@ -314,6 +314,13 @@ namespace IBR_PopupManager
 
     void CurrentPopupFixPos(int OldW, int OldH, int NewW, int NewH)
     {
+        auto X = CurrentPopupPos.x / static_cast<float>(OldW);
+        auto Y = CurrentPopupPos.y / static_cast<float>(OldH);
+        CurrentPopupNewPos.x = X * NewW;
+        CurrentPopupNewPos.y = Y * NewH;
+        CurrentPopupExtraMove = true;
+
+        /*
         //sprintf_s(LogBuf, "From (%d, %d) to (%d, %d)", OldW, OldH, NewW, NewH);
         //IBR_HintManager::SetHint(LogBuf, HintStayTimeMillis);
 
@@ -352,6 +359,7 @@ namespace IBR_PopupManager
         // 计算弹窗左上角在新窗口中的位置
         CurrentPopupNewPos.x = newPopupCenterX - popupW * 0.5f;
         CurrentPopupNewPos.y = newPopupCenterY - popupH * 0.5f;
+        */
     }
 
     struct JsonParseErrorPopup

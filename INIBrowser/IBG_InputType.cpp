@@ -157,7 +157,33 @@ IBG_InputFormUIResult IBG_InputForm::RenderUI(const LinkNodeSetting& Default)
             IC->NodeSetting = Default;
 
         ImGui::PushID(IC.get());
+        if (IC->Disabled)ImGui::BeginDisabled();
+        if (IC->UseNodeColorInFrame)
+        {
+            //处理Active和Hovered的提亮：
+            ImColor Col = IC->NodeSetting.LinkCol;
+            ImVec4 X;
+            //如果LinkCol很亮，就用暗色的文字，否则用亮色的文字
+            IC->IsLightColor = (Col.Value.x * 0.299f + Col.Value.y * 0.587f + Col.Value.z * 0.114f) > 0.5f;
+            if (!IBF_Inst_Setting.IsDarkMode())ImGui::PushStyleColor(ImGuiCol_FrameBg, Col.Value);
+            ImGui::ColorConvertRGBtoHSV(Col.Value.x, Col.Value.y, Col.Value.z, X.x, X.y, X.z);
+            if (IBF_Inst_Setting.IsDarkMode())
+            {
+                X.z *= 0.7f; X.y *= 0.7f;
+                ImGui::ColorConvertHSVtoRGB(X.x, X.y, X.z, Col.Value.x, Col.Value.y, Col.Value.z);
+                ImGui::PushStyleColor(ImGuiCol_FrameBg, Col.Value);
+            }
+            X.z = std::min(X.z * 1.2f, 0.95f);
+            ImGui::ColorConvertHSVtoRGB(X.x, X.y, X.z, Col.Value.x, Col.Value.y, Col.Value.z);
+            ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, Col.Value);
+            X.z = std::min(X.z * 1.2f, 0.95f);
+            ImGui::ColorConvertHSVtoRGB(X.x, X.y, X.z, Col.Value.x, Col.Value.y, Col.Value.z);
+            ImGui::PushStyleColor(ImGuiCol_FrameBgActive, Col.Value);
+            
+        }
         auto R = IC->RenderUI(ValueContainer, CS);
+        if (IC->UseNodeColorInFrame)ImGui::PopStyleColor(3);
+        if (IC->Disabled)ImGui::EndDisabled();
         ImGui::PopID();
 
         if (TryUpdateLink && IC->SupportLinks())
@@ -1276,7 +1302,9 @@ IBB_UpdateResult RenderIICInputText(
         ImGui::SetNextItemWidth(W);
         auto w = ImGui::GetCurrentWindow();
         auto mx = w->DC.CursorMaxPos;
+        if (pIn->UseNodeColorInFrame) ImGui::PushStyleColor(ImGuiCol_Text, pIn->IsLightColor ? ImVec4(0, 0, 0, 1) : ImVec4(1, 1, 1, 1));
         auto Changed = InputTextStdString(pIn->Hint.Short.c_str(), InitialValue);
+        if (pIn->UseNodeColorInFrame) ImGui::PopStyleColor();
         w->DC.CursorMaxPos = mx;
         if (ImGui::IsItemHovered())IBR_ToolTip(pIn->Hint.Long);
         if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))Status.InputMethod = IICStatus::Link;
@@ -1511,10 +1539,11 @@ IBB_UpdateResult IIC_EnumCombo::RenderUI(IBB_ValueContainer& Cont, IICStatus&) {
     auto Size = ImGui::CalcTextSize(Hint.Short.c_str(), NULL, true);
     ImGui::SetNextItemWidth(
         ImGui::GetWindowContentRegionWidth() - ImGui::GetCursorPosX() - Size.x - ImGui::GetStyle().FramePadding.x);
+    if (UseNodeColorInFrame) ImGui::PushStyleColor(ImGuiCol_Text, IsLightColor ? ImVec4(0, 0, 0, 1) : ImVec4(1, 1, 1, 1));
     if(IBR_Combo(Hint.Short.c_str(),
         (Options.contains(CurrentValue) ? Options[CurrentValue].Short : CurrentValue).c_str(), 0,
         [&] {
-            
+            if (UseNodeColorInFrame) ImGui::PopStyleColor();
             Active = ImGui::IsItemActive();
             for (auto& Key : OptionOrder)
             {
@@ -1537,8 +1566,10 @@ IBB_UpdateResult IIC_EnumCombo::RenderUI(IBB_ValueContainer& Cont, IICStatus&) {
     ));
     else if (ImGui::IsItemHovered())
     {
+        if (UseNodeColorInFrame) ImGui::PopStyleColor();
         IBR_ToolTip(Hint.Long);
     }
+    else if (UseNodeColorInFrame) ImGui::PopStyleColor();
 
     AdjustCursor();
     
@@ -1759,7 +1790,9 @@ IBB_UpdateResult IIC_InputInt::RenderUI(IBB_ValueContainer& Cont, IICStatus& Sta
         ImGui::SetNextItemWidth(W);
         auto w = ImGui::GetCurrentWindow();
         auto mx = w->DC.CursorMaxPos;
+        if (UseNodeColorInFrame) ImGui::PushStyleColor(ImGuiCol_Text, IsLightColor ? ImVec4(0, 0, 0, 1) : ImVec4(1, 1, 1, 1));
         auto Changed = InputTextStdString(Hint.Short.c_str(), CurrentValue);
+        if (UseNodeColorInFrame) ImGui::PopStyleColor();
         w->DC.CursorMaxPos = mx;
         if (ImGui::IsItemHovered())IBR_ToolTip(Hint.Long);
         if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))Status.InputMethod = IICStatus::Link;
@@ -1986,8 +2019,10 @@ IBB_UpdateResult IIC_SliderInt::RenderUI(IBB_ValueContainer& Cont, IICStatus&) {
 
     //auto Size = ImGui::CalcTextSize(Hint.c_str(), NULL, true);
     //ImGui::SetNextItemWidth(ImGui::GetWindowContentRegionWidth() - ImGui::GetCursorPosX() - Size.x);
+    if (UseNodeColorInFrame) ImGui::PushStyleColor(ImGuiCol_Text, IsLightColor ? ImVec4(0, 0, 0, 1) : ImVec4(1, 1, 1, 1));
     auto Changed = ImGui::SliderInt(Hint.Short.c_str(), &Val, Min, Max, SlideFormat.c_str(),
         Logarithmic ? ImGuiSliderFlags_Logarithmic : ImGuiSliderFlags_None);
+    if (UseNodeColorInFrame) ImGui::PopStyleColor();
     if (ImGui::IsItemHovered())IBR_ToolTip(Hint.Long);
 
     if (Changed)

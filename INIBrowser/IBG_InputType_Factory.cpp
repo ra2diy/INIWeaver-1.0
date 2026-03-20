@@ -51,6 +51,9 @@ IICPtr InputTypeFactory::CreateInputComponent(IBB_ValueContainer& Cont, const Js
         piic->Constraint = CreateValueConstraint(oConstraint);
     }
 
+    piic->Disabled = Obj.ItemBoolOr("Disabled", false);
+    piic->UseNodeColorInFrame = Obj.ItemBoolOr("ColoredFrame", false);
+
     return piic;
 }
 
@@ -682,6 +685,18 @@ bool IBG_InputType::Load(const JsonObject& Obj)
 
     Multiple = Obj.ItemBoolOr("Multiple", false);
     NewLineAfterDesc = Obj.ItemBoolOr("NewLineAfterDesc", false);
+
+    auto oLineIDFrom = Obj.GetObjectItem("LineIDFrom");
+    if (oLineIDFrom && oLineIDFrom.IsTypeNumber())
+    {
+        ShowLineID = true;
+        LineIDFrom = oLineIDFrom.GetInt();
+    }
+    else
+    {
+        ShowLineID = false;
+        LineIDFrom = -1;
+    }
 
     auto oForm = Obj.GetObjectItem("Form");
     if (!oForm)
