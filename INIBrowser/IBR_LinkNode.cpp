@@ -30,6 +30,8 @@ namespace ExportContext
     StrPoolID Key;
     std::set<IBB_Section_Desc> MergedDescs;//被Import而合并的Section列表
     bool OnExport;
+    const IBB_IniLine* ExportingLine;
+    const IBB_Section* ExportingSection;
 }
 
 bool LinkNodeSetting::Load(JsonObject Obj, bool* HasCustom)

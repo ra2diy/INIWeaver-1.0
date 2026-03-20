@@ -44,6 +44,13 @@ IICPtr InputTypeFactory::CreateInputComponent(IBB_ValueContainer& Cont, const Js
         piic->UseCustomSetting = false;
     }
 
+    auto oConstraint = Obj.GetObjectItem("Constraint");
+
+    if (oConstraint)
+    {
+        piic->Constraint = CreateValueConstraint(oConstraint);
+    }
+
     return piic;
 }
 
@@ -271,7 +278,35 @@ IICPtr InputTypeFactory::CreateInputComponent_Special(IBB_ValueContainer& Cont, 
         }
         else if (typeStr == "ColorPanel")
         {
-            return std::make_unique<IIC_ColorPanel>();
+            //IIC_ColorPanel(IBB_ValueContainer& Cont, int valueid, const std::string& InitialValue, const IICDescStr& hint, ValueMode vm, FormatMode fm);
+            // {"Type": "ColorPanel", "ValueID": <int>, "InitialValue": <string>【, "ValueMode": <string>】【, "FormatMode": <string>】【, "Hint": <Desc>】}
+
+            auto oValueID = Obj.GetObjectItem("ValueID");
+            if (!oValueID || !oValueID.IsTypeNumber())
+                return nullptr;
+            int ValueID = oValueID.GetInt();
+
+            auto InitValue = Obj.ItemStringOr("InitialValue", "");
+            auto oHint = Obj.GetObjectItem("Hint");
+            IICDescStr Hint = IICDescStr::Load(oHint);
+
+            auto VModeStr = Obj.ItemStringOr("ValueMode", "RGB");
+            auto FModeStr = Obj.ItemStringOr("FormatMode", "Int");
+            IIC_ColorPanel::ValueMode VMode;
+            IIC_ColorPanel::FormatMode FMode;
+
+            if (VModeStr == "RGB") VMode = IIC_ColorPanel::RGB;
+            else if (VModeStr == "RGB") VMode = IIC_ColorPanel::RGB;
+            else if (VModeStr == "HSV") VMode = IIC_ColorPanel::HSV;
+            else VMode = IIC_ColorPanel::RGB;
+
+            if (FModeStr == "Int") FMode = IIC_ColorPanel::Int;
+            else if (FModeStr == "Float") FMode = IIC_ColorPanel::Float;
+            else if (FModeStr == "Hex") FMode = IIC_ColorPanel::Hex;
+            else if (FModeStr == "#Hex") FMode = IIC_ColorPanel::Hash_Hex;
+            else FMode = IIC_ColorPanel::Int;
+
+            return std::make_unique<IIC_ColorPanel>(Cont, ValueID, InitValue, Hint, VMode, FMode);
         }
         else if (typeStr == "InputInt")
         {
@@ -371,6 +406,10 @@ IFCPtr InputTypeFactory::CreateFormatComponent(IBB_ValueContainer& Cont, const J
     auto oValueIDToString = Obj.GetObjectItem("ValueIDToString");
     auto oRandStr = Obj.GetObjectItem("RandomString");
     auto oLineIndexFrom = Obj.GetObjectItem("LineIndexFrom");
+    auto oCollectID = Obj.GetObjectItem("CollectID");
+    auto oCollectFormat = Obj.GetObjectItem("CollectFormat");
+    auto oFromKey = Obj.GetObjectItem("FromKey");
+    auto oNonEmpty = Obj.GetObjectItem("NonEmpty");
 
     if (oKey && oFallback && oKey.IsTypeString() && oFallback.IsTypeString())
     {
@@ -396,6 +435,31 @@ IFCPtr InputTypeFactory::CreateFormatComponent(IBB_ValueContainer& Cont, const J
     else if (oLineIndexFrom && oLineIndexFrom.IsTypeNumber())
     {
         return std::make_unique<IFC_Export_LineMult>(oLineIndexFrom.GetInt());
+    }
+    else if (oCollectID && oCollectID.IsTypeNumber())
+    {
+        std::optional<StrPoolID> FromLine;
+        FromLine = oFromKey && oFromKey.IsTypeString() ? std::make_optional(NewPoolStr(oFromKey.GetString())) : std::nullopt;
+        bool NonEmpty = oNonEmpty && oNonEmpty.IsTypeBool() ? oNonEmpty.GetBool() : false;
+        return std::make_unique<IFC_Export_Collection_ID>(oCollectID.GetInt(), FromLine, NonEmpty);
+    }
+    else if (oCollectFormat && oCollectFormat.IsTypeArray())
+    {
+        bool HasError;
+        auto pifcv = CreateFormatComponentVector(Cont, oCollectFormat, HasError);
+        if (HasError)return nullptr;
+
+        std::optional<StrPoolID> FromLine;
+        FromLine = oFromKey && oFromKey.IsTypeString() ? std::make_optional(NewPoolStr(oFromKey.GetString())) : std::nullopt;
+        bool NonEmpty = oNonEmpty && oNonEmpty.IsTypeBool() ? oNonEmpty.GetBool() : false;
+        return std::make_unique<IFC_Export_Collection_IFCV>(pifcv, FromLine, NonEmpty);
+    }
+    else if (oFromKey && oFromKey.IsTypeString())
+    {
+        std::optional<StrPoolID> FromLine;
+        FromLine = NewPoolStr(oFromKey.GetString());
+        bool NonEmpty = oNonEmpty && oNonEmpty.IsTypeBool() ? oNonEmpty.GetBool() : false;
+        return std::make_unique<IFC_Export_Collection_Value>(FromLine, NonEmpty);
     }
     else
         return nullptr;
@@ -516,6 +580,35 @@ IASOpt InputTypeFactory::CreateAcceptorSetting(IBB_ValueContainer& Cont, const J
     Setting.NodeColor = Colored ? std::make_optional(Col) : std::nullopt;
 
     return Setting;
+}
+
+IBB_ValueConstraint InputTypeFactory::CreateValueConstraint(const JsonObject& Obj)
+{
+    IBB_ValueConstraint ivc;
+    if(!Obj || !Obj.IsTypeObject())return ivc;
+    for (auto& [k, v] : Obj.GetMapObject())
+    {
+        int ValueID;
+        try { ValueID = std::stoi(k); }
+        catch (...) { continue; }
+        auto& Cond = ivc.Conditions[ValueID];
+        Cond = CreateValueCond(v);
+    }
+    return ivc;
+}
+
+IBB_ValueCond InputTypeFactory::CreateValueCond(const JsonObject& Obj)
+{
+    IBB_ValueCond ivc;
+    ivc.NeedsEmpty = false;
+    ivc.Neg = false;
+    if (!Obj || !Obj.IsTypeString())return ivc;
+    auto Str = Obj.GetString();
+    if (Str.empty())return ivc;
+    if (Str.front() == '!') { ivc.Neg = true; Str.erase(Str.begin()); }
+    if (Str == "<EMPTY>")ivc.NeedsEmpty = true;
+    else ivc.Value = Str;
+    return ivc;
 }
 
 

@@ -400,6 +400,7 @@ namespace IBR_ProjectManager
                     if (ExportContext::MergedDescs.contains({ IniName, S }))
                         continue;
                     auto& V = TextPieces[I][S];
+                    if (V.empty())continue;
                     F.PutStr(V);
                     F.Ln();
                     F.Ln();
@@ -410,6 +411,7 @@ namespace IBR_ProjectManager
                 {
                     if (ExportContext::MergedDescs.contains({ IniName, K }))
                         continue;
+                    if (V.empty())continue;
                     F.PutStr(V);
                     F.Ln();
                     F.Ln();

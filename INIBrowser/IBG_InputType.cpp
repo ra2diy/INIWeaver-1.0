@@ -81,6 +81,23 @@ void IBB_ValueContainer::Clear()
     Values.clear();
 }
 
+bool IBB_ValueContainer::Satisfy(const IBB_ValueConstraint& Constraint)
+{
+    if (Constraint.Conditions.empty())return true;
+    return std::ranges::all_of(Constraint.Conditions,
+        [this](auto&& p) {
+            return p.second.Satisfy(GetValue(p.first));
+        });
+}
+
+bool IBB_ValueCond::Satisfy(const IBB_InputValue& V) const
+{
+    bool B;
+    if (NeedsEmpty)B = V.Value.empty();
+    else B = Value.empty() || V.Value == Value;
+    return Neg ? !B : B;
+}
+
 IBB_InputValue& IBG_InputForm::GetValue(int ValueID)
 {
     return ValueContainer.GetValue(ValueID);
@@ -126,6 +143,8 @@ IBG_InputFormUIResult IBG_InputForm::RenderUI(const LinkNodeSetting& Default)
 
     for (auto&& [CompIdx, IC, CSOrig] : std::views::zip(std::views::iota(0u), *InputComponents, ComponentStatus))
     {
+        if (!ValueContainer.Satisfy(IC->Constraint))continue;
+
         LinkNodeContext::CompIndex = CompIdx;
         //存在不可缓存的状态
         if (!IC->CanProvideState(ValueContainer))
@@ -481,6 +500,66 @@ IFC_Export_RandStr::IFC_Export_RandStr(int length, int toid)
 
 const IBB_ValueFormat& IFC_Export_RandStr::GetFormat() {
     Format.Format.String = RandStr(Length);
+    return Format;
+}
+
+// ========== IFC_Export_Collection_ID ===========
+IFC_Export_Collection_ID::IFC_Export_Collection_ID(int VID, std::optional<StrPoolID> Line, bool nonEmpty)
+    : Format(IBB_InputFormat::UseFormat, ""), ValueID(VID), FromLine(Line), NonEmpty(nonEmpty) {
+}
+
+const IBB_ValueFormat& IFC_Export_Collection_ID::GetFormat() {
+    auto pLine = ExportContext::ExportingLine;
+    auto pSec = ExportContext::ExportingSection;
+    auto L = FromLine && pSec ? pSec->GetLineFromSubSecs(*FromLine) : pLine;
+    if (L)
+    {
+        Format.Format.String =
+            L->FinalCollectValue(ValueID) |
+            std::views::filter([&](const std::string& s) { return NonEmpty ? !s.empty() : true; }) |
+            std::views::join_with(',') |
+            std::ranges::to<std::string>();
+    }
+    return Format;
+}
+
+// ========== IFC_Export_Collection_ID ===========
+IFC_Export_Collection_Value::IFC_Export_Collection_Value(std::optional<StrPoolID> Line, bool nonEmpty)
+    : Format(IBB_InputFormat::UseFormat, ""), FromLine(Line), NonEmpty(nonEmpty) {
+}
+
+const IBB_ValueFormat& IFC_Export_Collection_Value::GetFormat() {
+    auto pLine = ExportContext::ExportingLine;
+    auto pSec = ExportContext::ExportingSection;
+    auto L = FromLine && pSec ? pSec->GetLineFromSubSecs(*FromLine) : pLine;
+    if (L)
+    {
+        Format.Format.String =
+            L->FinalCollectExportString() |
+            std::views::filter([&](const std::string& s) { return NonEmpty ? !s.empty() : true; }) |
+            std::views::join_with(',') |
+            std::ranges::to<std::string>();
+    }
+    return Format;
+}
+
+// ========== IFC_Export_Collection_IFCV ===========
+IFC_Export_Collection_IFCV::IFC_Export_Collection_IFCV(IFCVPtr pifcv, std::optional<StrPoolID> Line, bool nonEmpty)
+    : Format(IBB_InputFormat::UseFormat, ""), pIFCV(pifcv), FromLine(Line), NonEmpty(nonEmpty) {
+}
+
+const IBB_ValueFormat& IFC_Export_Collection_IFCV::GetFormat() {
+    auto pLine = ExportContext::ExportingLine;
+    auto pSec = ExportContext::ExportingSection;
+    auto L = FromLine && pSec ? pSec->GetLineFromSubSecs(*FromLine) : pLine;
+    if (L)
+    {
+        Format.Format.String =
+            L->FinalCollectValue(pIFCV) |
+            std::views::filter([&](const std::string& s) { return NonEmpty ? !s.empty() : true; }) |
+            std::views::join_with(',') |
+            std::ranges::to<std::string>();
+    }
     return Format;
 }
 
@@ -1287,6 +1366,7 @@ bool ProcessOnExport(std::string& V)
 
 std::string IIC_InputText::FormatValue(IBB_ValueContainer& Cont, IBB_InputValue& Val, const IBB_InputFormat& Format)
 {
+    if (!Val.StateValPtr)Val.ResetState<IIS_String>();
     auto V = Val.StateValPtr->Format(Format);
     if (ProcessOnExport(V))
         Val.NeedsUpdate(Cont, *this);
@@ -1360,9 +1440,9 @@ IBB_UpdateResult IIC_MultipleChoice::RenderUI(IBB_ValueContainer& Cont, IICStatu
         Active |= ImGui::IsItemActive();
         if (ImGui::IsItemHovered() && !DescLong.empty())
             IBR_ToolTip(DescLong.c_str());
-        if (SameLine)
+        if (SameLine && idx != (int)OptionOrder.size())
         {
-            if (MaxInOneLine <= 0 || (idx % MaxInOneLine && idx != (int)OptionOrder.size()))
+            if (MaxInOneLine <= 0 || (idx % MaxInOneLine))
                 ImGui::SameLine();
         }
     }
@@ -1387,6 +1467,7 @@ IBB_UpdateResult IIC_MultipleChoice::RenderUI(IBB_ValueContainer& Cont, IICStatu
 
 std::string IIC_MultipleChoice::FormatValue(IBB_ValueContainer&, IBB_InputValue& Val, const IBB_InputFormat& Format)
 {
+    if (!Val.StateValPtr)Val.ResetState<IIS_String>();
     return Val.StateValPtr->Format(Format);
 }
 
@@ -1475,6 +1556,7 @@ IBB_UpdateResult IIC_EnumCombo::RenderUI(IBB_ValueContainer& Cont, IICStatus&) {
 
 std::string IIC_EnumCombo::FormatValue(IBB_ValueContainer&, IBB_InputValue& Val, const IBB_InputFormat& Format)
 {
+    if (!Val.StateValPtr)Val.ResetState<IIS_String>();
     return Val.StateValPtr->Format(Format);
 }
 
@@ -1531,9 +1613,9 @@ IBB_UpdateResult IIC_EnumRadio::RenderUI(IBB_ValueContainer& Cont, IICStatus&) {
         if (ImGui::IsItemHovered() && !DescLong.empty())
             IBR_ToolTip(DescLong.c_str());
         Active |= ImGui::IsItemActive();
-        if (SameLine)
+        if (SameLine && idx != (int)OptionOrder.size())
         {
-            if (MaxInOneLine <= 0 || (idx % MaxInOneLine && idx != (int)OptionOrder.size()))
+            if (MaxInOneLine <= 0 || (idx % MaxInOneLine))
                 ImGui::SameLine();
         }
     }
@@ -1552,6 +1634,7 @@ IBB_UpdateResult IIC_EnumRadio::RenderUI(IBB_ValueContainer& Cont, IICStatus&) {
 
 std::string IIC_EnumRadio::FormatValue(IBB_ValueContainer&, IBB_InputValue& Val, const IBB_InputFormat& Format)
 {
+    if (!Val.StateValPtr)Val.ResetState<IIS_String>();
     return Val.StateValPtr->Format(Format);
 }
 
@@ -1617,6 +1700,7 @@ IBB_UpdateResult IIC_Bool::RenderUI(IBB_ValueContainer& Cont, IICStatus&)
 
 std::string IIC_Bool::FormatValue(IBB_ValueContainer&, IBB_InputValue& Val, const IBB_InputFormat& Format)
 {
+    if (!Val.StateValPtr)Val.ResetState<IIS_Bool>();
     auto& Ptr = Val.StateValPtr;
     auto StateVal = Val.StateValue<IIS_Bool>();
     if (StateVal)StateVal->FmtType = FmtType;
@@ -1703,6 +1787,7 @@ IBB_UpdateResult IIC_InputInt::RenderUI(IBB_ValueContainer& Cont, IICStatus& Sta
 
 std::string IIC_InputInt::FormatValue(IBB_ValueContainer& Cont, IBB_InputValue& Val, const IBB_InputFormat& Format)
 {
+    if (!Val.StateValPtr)Val.ResetState<IIS_String>();
     auto V = Val.StateValPtr->Format(Format);
     if(ProcessOnExport(V))
         Val.NeedsUpdate(Cont, *this);
@@ -1727,10 +1812,19 @@ void IIC_InputInt::ResetState(IBB_ValueContainer& Cont) const
 
 // ========== IIC_ColorPanel ==========
 
+IIC_ColorPanel::IIC_ColorPanel(IBB_ValueContainer& Cont, int valueid, const std::string& InitialValue, const IICDescStr& hint, ValueMode vm, FormatMode fm)
+    : Hint(hint), ValueID(valueid), VMode(vm), FMode(fm) {
+    Hint.Short += "##";
+    Hint.Short += RandStr(12);
+    auto& Val = Cont.GetValue(ValueID);
+    Val.ResetState<IIS_String>(InitialValue);
+    Val.NeedsUpdate(Cont, *this);
+}
+
 IBB_UpdateResult IIC_ColorPanel::RenderUI(IBB_ValueContainer& Cont, IICStatus& Status)
 {
-    const auto GetCol = [&](int v1, int v2, int v3) {
-        switch (Mode)
+    const auto GetColInt = [&](int v1, int v2, int v3) {
+        switch (VMode)
         {
         case IIC_ColorPanel::RGB:
             return ImColor(v1, v2, v3);
@@ -1739,77 +1833,130 @@ IBB_UpdateResult IIC_ColorPanel::RenderUI(IBB_ValueContainer& Cont, IICStatus& S
             return ImColor(v3, v2, v1);
             break;
         case IIC_ColorPanel::HSV:
-            return ImColor::HSV(float(v1) / 360.0f, float(v2) / 255.0f, float(v3) / 255.0f);
+            return ImColor::HSV(float(v1) / 255.0f, float(v2) / 255.0f, float(v3) / 255.0f);
             break;
         default:
             break;
         }
         return ImColor{};
      };
-    const auto GetVal = [&](int vid) {
-        auto& Var = Cont.GetValue(vid);
-        auto State = Var.StateValue<IIS_Int>();
-        int Val;
-        if (State) Val = State->Value;
-        else
+    const auto GetColFloat = [&](float v1, float v2, float v3) {
+        switch (VMode)
         {
-            try { Val = std::stoi(Var.Value); }
-            catch (...) { Val = 0; }
+        case IIC_ColorPanel::RGB:
+            return ImColor(v1, v2, v3);
+            break;
+        case IIC_ColorPanel::BGR:
+            return ImColor(v3, v2, v1);
+            break;
+        case IIC_ColorPanel::HSV:
+            return ImColor::HSV(v1, v2, v3);
+            break;
+        default:
+            break;
         }
-        return Val;
-    };
-    int Val1 = GetVal(ValueID1);
-    int Val2 = GetVal(ValueID1);
-    int Val3 = GetVal(ValueID1);
-    auto Col = GetCol(Val1, Val2, Val3);
+        return ImColor{};
+        };
+    auto& Var = Cont.GetValue(ValueID);
+    static const IBB_InputFormat Fmt = { IBB_InputFormat::ToString, "" };
+    auto CurrentValue = Var.Dirty ? Var.StateValPtr->Format(Fmt) : Var.Value;
+    auto Col = [&]() {
+        int v1, v2, v3;
+        float f1, f2, f3;
+        switch (FMode)
+        {
+        case IIC_ColorPanel::Int:
+            sscanf(CurrentValue.c_str(), "%d,%d,%d", &v1, &v2, &v3);
+            return GetColInt(v1, v2, v3);
+        case IIC_ColorPanel::Float:
+            sscanf(CurrentValue.c_str(), "%f,%f,%f", &f1, &f2, &f3);
+            return GetColFloat(f1, f2, f3);
+        case IIC_ColorPanel::Hex:
+        case IIC_ColorPanel::Hash_Hex:
+            if (CurrentValue[0] == '#')
+                sscanf(CurrentValue.c_str() + 1, "%x", &v1);//RRGGBB
+            else
+                sscanf(CurrentValue.c_str(), "%x", &v1);
+            v2 = (v1 >> 8) & 0xFF;
+            v3 = v1 & 0xFF;
+            v1 = (v1 >> 16) & 0xFF;
+            return GetColInt(v1, v2, v3);
+        default: return ImColor();
+        }
+    }();
 
-    if (Status.InputMethod == IICStatus::Link)
+    if (Status.InputMethod == IICStatus::Input)
     {
-        if (ImGui::ColorButton(u8"阿巴", Col))
-            Status.InputMethod = IICStatus::Input;
+        if(ImGui::ColorButton(Hint.Short.c_str(), Col))
+        //if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+            Status.InputMethod = IICStatus::Link;
+        if (ImGui::IsItemHovered())IBR_ToolTip(Hint.Long);
 
         return { false, ImGui::IsItemActive(), -1 };
 
     }
     else
     {
-        ImGui::PushID(114514);
-        if (ImGui::Button(u8"⇔"))Status.InputMethod = IICStatus::Link;
-        ImGui::ColorEdit3(Hint.c_str(), &Col.Value.x);
+        ImGui::PushID(this);
+        if(ImGui::CloseButton((ImGuiID)this, ImGui::GetCursorScreenPos()))
+        //if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+            Status.InputMethod = IICStatus::Input;
+        ImGui::NewLine();
+        bool Changed = false, Active = false;
+        //Changed |= ImGui::ColorEdit3(Hint.Short.c_str(), &Col.Value.x);
+        //Active |= ImGui::IsItemActive();
+        Changed |= ImGui::ColorPicker3(Hint.Short.c_str(), &Col.Value.x);
+        Active |= ImGui::IsItemActive();
         ImGui::PopID();
-        ImGui::ColorPicker3(Hint.c_str(), &Col.Value.x);
-    }
+        
+        if (Changed)
+        {
+            char Buf[100]{};
+            switch (FMode)
+            {
+            case IIC_ColorPanel::Int:
+                sprintf(Buf, "%d,%d,%d", (int)(Col.Value.x * 255), (int)(Col.Value.y * 255), (int)(Col.Value.z * 255));
+                break;
+            case IIC_ColorPanel::Float:
+                sprintf(Buf, "%f,%f,%f", Col.Value.x, Col.Value.y, Col.Value.z);
+                break;
+            case IIC_ColorPanel::Hex:
+                sprintf(Buf, "%02X%02X%02X", (int)(Col.Value.x * 255), (int)(Col.Value.y * 255), (int)(Col.Value.z * 255));
+                break;
+            case IIC_ColorPanel::Hash_Hex:
+                sprintf(Buf, "#%02X%02X%02X", (int)(Col.Value.x * 255), (int)(Col.Value.y * 255), (int)(Col.Value.z * 255));
+                break;
+            }
 
+            auto State = Var.StateValue<IIS_String>();
+            if (State) State->Text = Buf;
+            else Var.ResetState<IIS_String>(Buf);
+            return { true, Active, ValueID };
+        }
+        else return { false, Active, -1 };
+    }
 }
 
 std::string IIC_ColorPanel::FormatValue(IBB_ValueContainer&, IBB_InputValue& Val, const IBB_InputFormat& Format)
 {
+    if (!Val.StateValPtr)Val.ResetState<IIS_String>();
     return Val.StateValPtr->Format(Format);
 }
 
 void IIC_ColorPanel::ParseValue(IBB_ValueContainer& Cont, const IBB_InputFormat& Format)
 {
-    auto& Val1 = Cont.GetValue(ValueID1);
-    Val1.StateValPtr->Parse(Format, Val1.Value);
-    auto& Val2 = Cont.GetValue(ValueID2);
-    Val2.StateValPtr->Parse(Format, Val2.Value);
-    auto& Val3 = Cont.GetValue(ValueID3);
-    Val3.StateValPtr->Parse(Format, Val3.Value);
+    auto& Val = Cont.GetValue(ValueID);
+    Val.StateValPtr->Parse(Format, Val.Value);
 }
 
 bool IIC_ColorPanel::CanProvideState(IBB_ValueContainer& Cont) const
 {
-    return
-        Cont.GetValue(ValueID1).CorrectState<IIS_Int>() &&
-        Cont.GetValue(ValueID2).CorrectState<IIS_Int>() &&
-        Cont.GetValue(ValueID3).CorrectState<IIS_Int>();
+    return Cont.GetValue(ValueID).CorrectState<IIS_String>();
 }
 
 void IIC_ColorPanel::ResetState(IBB_ValueContainer& Cont) const
 {
-    Cont.GetValue(ValueID1).ResetState<IIS_Int>();
-    Cont.GetValue(ValueID2).ResetState<IIS_Int>();
-    Cont.GetValue(ValueID3).ResetState<IIS_Int>();
+    Cont.GetValue(ValueID).ResetState<IIS_String>();
 }
 
 // ========== IIC_SliderInt ==========
@@ -1834,6 +1981,7 @@ IBB_UpdateResult IIC_SliderInt::RenderUI(IBB_ValueContainer& Cont, IICStatus&) {
     {
         try { Val = std::stoi(Var.Value); }
         catch (...) { Val = 0; }
+        Var.ResetState<IIS_Int>(Val);
     }
 
     //auto Size = ImGui::CalcTextSize(Hint.c_str(), NULL, true);
@@ -1853,6 +2001,7 @@ IBB_UpdateResult IIC_SliderInt::RenderUI(IBB_ValueContainer& Cont, IICStatus&) {
 
 std::string IIC_SliderInt::FormatValue(IBB_ValueContainer&, IBB_InputValue& Val, const IBB_InputFormat& Format)
 {
+    if (!Val.StateValPtr)Val.ResetState<IIS_Int>();
     return Val.StateValPtr->Format(Format);
 }
 

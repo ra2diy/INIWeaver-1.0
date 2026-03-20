@@ -13,6 +13,7 @@ namespace ExportContext
     extern StrPoolID Key;
     extern std::set<IBB_Section_Desc> MergedDescs;//被Import而合并的Section列表
     extern bool OnExport;
+    extern const IBB_Section* ExportingSection;
 }
 
 
@@ -372,6 +373,9 @@ std::vector<StrPoolID> IBB_Section::GetKeys(bool PrintExtraData) const
 }
 IBB_VariableMultiList IBB_Section::GetLineList(bool PrintExtraData, bool FromExport, std::vector<std::string>* TmpLineOrder) const
 {
+    auto pexp = ExportContext::ExportingSection;
+    if (FromExport)ExportContext::ExportingSection = this;
+
     IBB_VariableMultiList Ret;
     if (IsLinkGroup)
     {
@@ -405,9 +409,12 @@ IBB_VariableMultiList IBB_Section::GetLineList(bool PrintExtraData, bool FromExp
     }
 
     if (FromExport)
+    {
         Ret.Value = Ret.Value |
-        std::views::filter([&](auto& p) { return !p.second.empty(); }) |
-        std::ranges::to<std::unordered_map>();
+            std::views::filter([&](auto& p) { return !p.second.empty(); }) |
+            std::ranges::to<std::unordered_map>();
+        ExportContext::ExportingSection = pexp;
+    }
 
     return Ret;
 }
@@ -436,6 +443,16 @@ std::string IBB_Section::GetText(bool PrintExtraData, bool FromExport, bool ForE
             if (LineList.HasValue(s))
             {
                 auto& Vals = LineList.GetVars(s);
+                if (FromExport)
+                {
+                    std::unordered_set<std::string> Seen;
+                    Vals.erase(std::remove_if(Vals.begin(), Vals.end(), [&](const std::string& v) {
+                        if (v.empty())return true;
+                        if (Seen.contains(v))return true;
+                        Seen.insert(v);
+                        return false;
+                        }), Vals.end());
+                }
                 for (auto& Val : Vals)
                 {
                     if (FromExport && Val.empty())continue;

@@ -144,6 +144,9 @@ struct IBB_IniLine
 
     void MakeKVForExport(IBB_VariableMultiList&, IBB_Section* AtSec, std::vector<std::string>* TmpLineOrder = nullptr) const;
     std::string FinalExportString(size_t Index) const;
+    std::vector<std::string> FinalCollectValue(size_t ValueID) const;
+    std::vector<std::string> FinalCollectValue(IFCVPtr pifcv) const;
+    std::vector<std::string> FinalCollectExportString() const;
 
     bool Merge(size_t Index, const std::string& Another, IBB_IniMergeMode Mode);
 

@@ -10,6 +10,7 @@ namespace ExportContext
     extern StrPoolID Key;
     extern std::set<IBB_Section_Desc> MergedDescs;//被Import而合并的Section列表
     extern bool OnExport;
+    extern const IBB_IniLine* ExportingLine;
 }
 
 extern const char* Internal_IniName;
@@ -744,6 +745,58 @@ std::string IBB_IniLine::FinalExportString(size_t Index) const
     return value;
 }
 
+std::vector<std::string> IBB_IniLine::FinalCollectValue(IFCVPtr pifcv) const
+{
+    std::vector<std::string> R;
+    R.resize(Count());
+    auto CollectSingle = [&](const LineData& DD, int _Index) {
+        size_t Index = (size_t)_Index;
+        LinkNodeContext::LineMult = Index;
+        auto IIF = Default->GetInputType().Form->Duplicate();
+        auto Str = DD->GetString();
+        IIF->ParseFromString(Str);
+        IIF->FormatComponents = pifcv;
+        bool Orig = ExportContext::OnExport;
+        ExportContext::OnExport = true;
+        R[Index] = IIF->RegenFormattedString();
+        ExportContext::OnExport = Orig;
+        };
+    ForEachWithIdx(CollectSingle);
+    return R;
+}
+
+std::vector<std::string> IBB_IniLine::FinalCollectExportString() const
+{
+    std::vector<std::string> R;
+    R.resize(Count());
+    auto CollectSingle = [&](const LineData&, int _Index) {
+        size_t Index = (size_t)_Index;
+        R[Index] = FinalExportString(Index);
+    };
+    ForEachWithIdx(CollectSingle);
+    return R;
+}
+
+std::vector<std::string> IBB_IniLine::FinalCollectValue(size_t ValueID) const
+{
+    std::vector<std::string> R;
+    R.resize(Count());
+    auto CollectSingle = [&](const LineData& DD, int _Index) {
+        size_t Index = (size_t)_Index;
+        LinkNodeContext::LineMult = Index;
+        auto IIF = Default->GetInputType().Form->Duplicate();
+        auto Str = DD->GetString();
+        IIF->ParseFromString(Str);
+        bool Orig = ExportContext::OnExport;
+        ExportContext::OnExport = true;
+        IIF->RegenFormattedString();
+        ExportContext::OnExport = Orig;
+        R[Index] = IIF->GetValue(ValueID).Value;
+    };
+    ForEachWithIdx(CollectSingle);
+    return R;
+}
+
 
 void IBB_IniLine::MakeKVForExport(IBB_VariableMultiList& vl, IBB_Section* AtSec, std::vector<std::string>* TmpLineOrder) const
 {
@@ -767,7 +820,9 @@ void IBB_IniLine::MakeKVForExport(IBB_VariableMultiList& vl, IBB_Section* AtSec,
         ExportContext::OnExport = false;
         auto value = Data->GetStringForExport();
         Data->SetValue(Str);
+        ExportContext::ExportingLine = this;
         input.KVFmt(vl, key, value, TmpLineOrder, AtSec);
+        ExportContext::ExportingLine = nullptr;
         LinkNodeContext::LineMult = 0;
     };
 

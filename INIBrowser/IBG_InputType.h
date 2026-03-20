@@ -49,6 +49,19 @@ struct IICStatus
     bool Load(const JsonObject& Obj);
 };
 
+struct IBB_ValueCond
+{
+    std::string Value;
+    bool Neg;
+    bool NeedsEmpty;
+    bool Satisfy(const IBB_InputValue& V) const;
+};
+
+struct IBB_ValueConstraint
+{
+    std::map<int, IBB_ValueCond> Conditions;
+};
+
 struct IBG_InputComponent : public std::enable_shared_from_this<IBG_InputComponent>
 {
     virtual ~IBG_InputComponent() = default;
@@ -63,6 +76,7 @@ struct IBG_InputComponent : public std::enable_shared_from_this<IBG_InputCompone
     IICStatus InitialStatus;
     LinkNodeSetting NodeSetting;
     bool UseCustomSetting;//true : 保持自定义值 false : NodeSetting会随时刷新
+    IBB_ValueConstraint Constraint;
 };
 
 struct IBB_FormatComponent : public std::enable_shared_from_this<IBB_FormatComponent>
@@ -138,6 +152,8 @@ struct InputTypeFactory
     static ILFVPtr CreateLineFormatVector(IBB_ValueContainer& Cont, const JsonObject& Obj, bool& HasError);
 
     static IASOpt CreateAcceptorSetting(IBB_ValueContainer& Cont, const JsonObject& Obj, bool& HasError);
+    static IBB_ValueConstraint CreateValueConstraint(const JsonObject& Obj);
+    static IBB_ValueCond CreateValueCond(const JsonObject& Obj);
 };
 
 struct IBB_ValueContainer
@@ -145,6 +161,7 @@ struct IBB_ValueContainer
     std::map<int, IBB_InputValue> Values;
     IBB_InputValue& GetValue(int ValueID);
     void Clear();
+    bool Satisfy(const IBB_ValueConstraint& Constraint);
 };
 
 struct IBG_InputFormUIResult

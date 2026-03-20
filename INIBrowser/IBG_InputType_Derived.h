@@ -1,10 +1,14 @@
 ﻿#pragma once
 #include "IBG_InputType.h"
 
+struct IBB_IniLine;
+
 namespace ExportContext
 {
     extern StrPoolID Key;
     extern bool OnExport;
+    extern const IBB_IniLine* ExportingLine;
+    extern const IBB_Section* ExportingSection;
 }
 
 struct IFC_PureText final : public IBB_FormatComponent
@@ -66,7 +70,6 @@ struct IFC_Export_UseKey final : public IBB_FormatComponent
     const IBB_ValueFormat& GetFormat();
 };
 
-
 struct IFC_Export_LineMult final : public IBB_FormatComponent
 {
     IBB_ValueFormat Format;
@@ -81,6 +84,38 @@ struct IFC_Export_RandStr final : public IBB_FormatComponent
     IBB_ValueFormat Format;
     int Length;
     IFC_Export_RandStr(int length, int toid);
+
+    const IBB_ValueFormat& GetFormat();
+};
+
+struct IFC_Export_Collection_ID final : public IBB_FormatComponent
+{
+    IBB_ValueFormat Format;
+    int ValueID;
+    bool NonEmpty;
+    std::optional<StrPoolID> FromLine;
+    IFC_Export_Collection_ID(int ValueID, std::optional<StrPoolID> FromLine, bool nonEmpty);
+
+    const IBB_ValueFormat& GetFormat();
+};
+
+struct IFC_Export_Collection_Value final : public IBB_FormatComponent
+{
+    IBB_ValueFormat Format;
+    bool NonEmpty;
+    std::optional<StrPoolID> FromLine;
+    IFC_Export_Collection_Value(std::optional<StrPoolID> FromLine, bool nonEmpty);
+
+    const IBB_ValueFormat& GetFormat();
+};
+
+struct IFC_Export_Collection_IFCV final : public IBB_FormatComponent
+{
+    IBB_ValueFormat Format;
+    IFCVPtr pIFCV;
+    bool NonEmpty;
+    std::optional<StrPoolID> FromLine;
+    IFC_Export_Collection_IFCV(IFCVPtr pifcv, std::optional<StrPoolID> FromLine, bool nonEmpty);
 
     const IBB_ValueFormat& GetFormat();
 };
@@ -298,23 +333,28 @@ struct IIC_InputInt final : public IBG_InputComponent
 
 struct IIC_ColorPanel final : public IBG_InputComponent
 {
-    enum _Mode {
+    enum ValueMode {
         RGB,
         BGR,
         HSV
-    }Mode;
-    std::string Hint;
-    int ValueID1, ValueID2, ValueID3;
-    IIC_ColorPanel() { ValueID1 = 0; ValueID2 = 1; ValueID3 = 2; Hint = "TEST"; Mode = _Mode::RGB; }
-    //IIC_ColorPanel(IBB_ValueContainer& Cont, int valueid, int InitialValue, int min, int max, const std::string& hint);
+    }VMode;
+    enum FormatMode {
+        Int,
+        Float,
+        Hex,
+        Hash_Hex,
+    }FMode;
+    IICDescStr Hint;
+    int ValueID;
+    IIC_ColorPanel(IBB_ValueContainer& Cont, int valueid, const std::string& InitialValue, const IICDescStr& hint, ValueMode vm, FormatMode fm);
 
     IBB_UpdateResult RenderUI(IBB_ValueContainer& Cont, IICStatus& Status);
     std::string FormatValue(IBB_ValueContainer&, IBB_InputValue& Val, const IBB_InputFormat& Format);
     void ParseValue(IBB_ValueContainer& Cont, const IBB_InputFormat& Format);
     bool CanProvideState(IBB_ValueContainer& Cont) const;
     void ResetState(IBB_ValueContainer& Cont) const;
-    int GetCurrentTargetValueID() const { return -1; }
-    bool SupportLinks() const { return false; }
+    int GetCurrentTargetValueID() const { return ValueID; }
+    bool SupportLinks() const { return true; }
 };
 
 struct IIC_SliderInt final : public IBG_InputComponent
