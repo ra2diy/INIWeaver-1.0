@@ -263,7 +263,11 @@ namespace IBR_ListView
                 if (Freeze)dat->Frozen = true;
                 if (Unfreeze)dat->Frozen = false;
                 if (Hide)dat->Hidden = true;
-                if (Show)dat->Hidden = false;
+                if (Show)
+                {
+                    dat->Hidden = false;
+                    dat->UpdatePosByEq = true;
+                }
 
                 if (dat->Frozen)SelAndFrozenN++;
                 if (dat->Hidden)SelAndHiddenN++;

@@ -206,23 +206,25 @@ std::optional<ModuleID_t> _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE IB
 
 std::optional<std::vector<ModuleID_t>> _PROJ_CMD_WRITE _PROJ_CMD_CAN_UNDO _PROJ_CMD_UPDATE IBR_Project::DecomposeSection(ModuleID_t ID)
 {
-    auto pData = GetSectionFromID(ID).GetSectionData();
-    if (!pData)return std::nullopt;
+    auto pComData = GetSectionFromID(ID).GetSectionData();
+    if (!pComData)return std::nullopt;
     IBG_Undo.SomethingShouldBeHere();
-    if (!pData->Decomposable())return std::nullopt;
+    if (!pComData->Decomposable())return std::nullopt;
 
     //unlink
-    std::ranges::for_each(pData->IncludingModules, [this, ID](auto id) {
+    std::ranges::for_each(pComData->IncludingModules, [this, ID, pComData](auto id) {
         auto pData = GetSectionFromID(id).GetSectionData();
         if (pData && pData->IncludedByModule == ID)
         {
             pData->IncludedByModule = INVALID_MODULE_ID;
             pData->IncludedByModule_TmpDesc = {};
             pData->CollapsedInComposed = false;
+            pData->EqPos = pComData->EqPos + pData->EqDelta;
+            pData->UpdatePosByEq = true;
         }
         });
-    auto ModuleIDs { std::move(pData->IncludingModules) };
-    pData->IncludingModules.clear();
+    auto ModuleIDs { std::move(pComData->IncludingModules) };
+    pComData->IncludingModules.clear();
 
     DeleteSection(ID);
     return ModuleIDs;

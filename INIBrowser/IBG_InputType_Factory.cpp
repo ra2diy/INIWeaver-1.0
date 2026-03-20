@@ -296,7 +296,7 @@ IICPtr InputTypeFactory::CreateInputComponent_Special(IBB_ValueContainer& Cont, 
             IIC_ColorPanel::FormatMode FMode;
 
             if (VModeStr == "RGB") VMode = IIC_ColorPanel::RGB;
-            else if (VModeStr == "RGB") VMode = IIC_ColorPanel::RGB;
+            else if (VModeStr == "BGR") VMode = IIC_ColorPanel::BGR;
             else if (VModeStr == "HSV") VMode = IIC_ColorPanel::HSV;
             else VMode = IIC_ColorPanel::RGB;
 

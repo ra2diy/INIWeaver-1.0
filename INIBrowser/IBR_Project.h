@@ -73,6 +73,7 @@ struct IBR_SectionData
     bool CollapsedInComposed{ false };
     bool Frozen{ false };
     bool Hidden{ false };
+    bool UpdatePosByEq{ false };
     float FinalY{ 0.0f };
     float WidthFix{ 0.0f };
     std::shared_ptr<BufString> CommentEdit;

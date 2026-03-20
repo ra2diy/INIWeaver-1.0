@@ -1657,6 +1657,11 @@ namespace IBR_WorkSpace
                 if (sp.first == IBR_EditFrame::CurSection.ID)ImGui::SetNextWindowFocus();
                 //sd.First = false;//延迟清理
             }
+            if (sd.UpdatePosByEq)
+            {
+                ImGui::SetNextWindowPos(TA);
+                sd.UpdatePosByEq = false;
+            }
 
             for (auto& p : vu)p();//for Undo & Redo
 
@@ -1754,6 +1759,7 @@ namespace IBR_WorkSpace
                         PosHelper un = { sd.EqPos,TA }, re = { NP,PCopy };
                         sd.EqPos = NP;
 
+                        /*
                         IBG_Undo.Release();
                         auto top = IBG_Undo.Top();
                         auto sn = sd.Desc.Ini + "[" + sd.Desc.Sec + "].EqPos";
@@ -1781,6 +1787,7 @@ namespace IBR_WorkSpace
                             it.Extra = [=]()->std::any {return std::any{ std::make_pair(un,re) }; };
                             IBG_Undo.Push(it);
                         }
+                        */
                         //EqPos
                     }
                     else if (abs(SCopy - sd.EqSize * IBR_FullView::Ratio).max() >= 1.0)
@@ -1789,6 +1796,7 @@ namespace IBR_WorkSpace
                         PosHelper un = { sd.EqSize,sd.EqSize * IBR_FullView::Ratio }, re = { NP,SCopy };
                         sd.EqSize = NP;
 
+                        /*
                         IBG_Undo.Release();
                         auto top = IBG_Undo.Top();
                         auto sn = sd.Desc.Ini + "[" + sd.Desc.Sec + "].EqSize";
@@ -1816,6 +1824,7 @@ namespace IBR_WorkSpace
                             it.Extra = [=]()->std::any {return std::any{ std::make_pair(un,re) }; };
                             IBG_Undo.Push(it);
                         }
+                        */
                         //EqSize
                     }
                     {
