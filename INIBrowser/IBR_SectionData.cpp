@@ -803,7 +803,8 @@ void IBR_SectionData::RenderUI_Comment(IBB_Section* Bsec)
     else
     {
         auto TSize = ImGui::CalcTextSize(CommentEdit.get());
-        TSize.x = std::max(TSize.x + FontHeight * 1.2f, FontHeight * 16.8f);
+        auto wbase = Bsec->GetWidthBase();
+        TSize.x = std::max(TSize.x + FontHeight * 1.2f, FontHeight * (wbase - 0.2f));
         TSize.y = std::max(TSize.y + FontHeight, FontHeight * 8.0f);
         //IBR_HintManager::SetHint(std::to_string(TSize.x) + ","+ std::to_string(TSize.y),HintStayTimeMillis);
         if (ImGui::InputTextMultiline(("##COMMENT" + ModuleStrID).c_str(), CommentEdit.get(), MAX_STRING_LENGTH,
@@ -839,11 +840,15 @@ void IBR_SectionData::RenderUI_Collapsed(IBB_Section* Bsec, ImVec2 HeadLineRN, I
             }
         }
     }
+    auto w = ImGui::GetCurrentWindow();
+    auto mx = w->DC.CursorMaxPos;
     ImGui::SetCursorPos({ ImGui::GetWindowWidth() - FontHeight * 4.0f, FinalY - FontHeight * 0.15f });
     if (ImGui::SmallButton(("+##ExpandBtn" + ModuleStrID).c_str(), { FontHeight * 1.5f,FontHeight * 1.2f }))
     {
         CollapsedInComposed = false;
     }
+    w->DC.CursorMaxPos = mx;
+
     if (ImGui::IsItemHovered())
         IBR_ToolTip(loc("GUI_UnfoldModule"));
 }
@@ -917,11 +922,14 @@ void IBR_SectionData::RenderUI_Virtual()
 
 void IBR_SectionData::RenderUI_Composed()
 {
+    auto w = ImGui::GetCurrentWindow();
+    auto mx = w->DC.CursorMaxPos;
     ImGui::SetCursorPos({ ImGui::GetWindowWidth() - FontHeight * 4.0f, FinalY - FontHeight * 0.15f });
     if (ImGui::SmallButton(("-##ExpandBtn" + ModuleStrID).c_str(), { FontHeight * 1.5f,FontHeight * 1.2f }))
     {
         CollapsedInComposed = true;
     }
+    w->DC.CursorMaxPos = mx;
     if (ImGui::IsItemHovered())
         IBR_ToolTip(loc("GUI_FoldModule"));
 }

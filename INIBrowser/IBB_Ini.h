@@ -231,6 +231,7 @@ struct IBB_Section
     bool SingleVal{ false };//为True时只有一个值
     bool SkipTitle{ false };//为True时不显示标题，通常配合SingleVal使用
     bool SkipExport{ false };//为True时不导出，通常配合SingleVal使用
+    float WidthRatio{ 1.0F };
     IBB_SectionID ID;
 
     struct _Dynamic
@@ -246,6 +247,7 @@ struct IBB_Section
     bool MergeLine(StrPoolID Key, size_t Index, const std::string& Value, IBB_IniMergeMode Mode, bool NoUpdate = false);
     void OrderKey(StrPoolID Key, size_t NewOrder);
     void CheckSubsecOrder();
+    float GetWidthBase() const;
 
     bool UpdateAll();
     bool UpdateLineOrder();

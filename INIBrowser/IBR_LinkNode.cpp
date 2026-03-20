@@ -67,6 +67,7 @@ namespace ImGui
     ImVec2 GetLineBeginPos();
     bool IsWindowClicked(ImGuiMouseButton Button);
     const char* FindRenderedTextEnd(const char* text, const char* text_end);
+    void Dummy(const ImVec2& size, bool AffectsLayout);
 }
 
 namespace IBR_NodeSession
@@ -281,6 +282,7 @@ namespace IBR_LinkNode
     }
 
     IBB_UpdateResult RenderUI_Node(
+        IICStatus& Status,
         const std::string& Hint,
         const std::string& DescLong,
         const IBB_UpdateResult& DefaultResult,
@@ -300,6 +302,7 @@ namespace IBR_LinkNode
         )
         {
             return IBR_LinkNode::RenderUI_Node(
+                Status,
                 *psd,
                 *pss,
                 lidx,
@@ -316,6 +319,7 @@ namespace IBR_LinkNode
     }
 
     IBB_UpdateResult RenderUI_Node(
+        IICStatus& Status,
         IBR_SectionData& Data,
         IBB_SubSec& FromSub,
         size_t LineIdx,
@@ -335,13 +339,25 @@ namespace IBR_LinkNode
             {
                 ImGui::TextUnformatted(Hint.c_str(), End);
                 if (ImGui::IsItemHovered())IBR_ToolTip(DescLong);
+                if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))Status.InputMethod = IICStatus::Input;
                 ImGui::SameLine();
             }
         }
 
+        {
+            auto XLeft = ImGui::GetCursorPos().x;
+            auto XRight = ImGui::GetWindowContentRegionWidth();
+            auto YUp = ImGui::GetCursorPos().y;
+            auto YDown = YUp + ImGui::GetTextLineHeight();
+            ImGui::Dummy(ImVec2(XRight - XLeft, YDown - YUp), true);
+            if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))Status.InputMethod = IICStatus::Input;
+            ImGui::SetCursorPos({ XLeft , YUp });
+        }
 
         bool IsInherit = (FromSub.Default->Type == IBB_SubSec_Default::Inherit);
         bool IsImport = (FromSub.Default->Type == IBB_SubSec_Default::Import);
+        auto Style = IsInherit ? ImGuiRadioButtonFlags_RoundedSquare : GlobalNodeStyle;
+        bool Clicked;
         auto UR = DefaultResult;
         auto&& [LinkBegin, LinkEnd] = FromSub.GetLink(LineIdx, LineMult, CompIdx);
         auto Links =
@@ -353,6 +369,7 @@ namespace IBR_LinkNode
         auto& Session = IBR_NodeSession::GetSessionValue(
             FromSub.Root->GetThisID(), FromSub.Default->Name, LineIdx, LineMult, CompIdx
         );
+        auto DC = IsImport ? ImportCenter() : DefaultCenter();
         auto ModifyAndShow = [&](const std::string& NewValue, bool Active) -> auto
             {
                 FromSub.Root->SetOnShow(KeyName);
@@ -361,28 +378,31 @@ namespace IBR_LinkNode
 
         ImGui::PushStyleColor(ImGuiCol_CheckMark, Col.Value);
 
-        auto DC = IsImport ? ImportCenter() : DefaultCenter();
-        auto Center = IsImport ? ImportCenterInWindow() : DefaultCenterInWindow();
-        auto Style = IsInherit ? ImGuiRadioButtonFlags_RoundedSquare : GlobalNodeStyle;
-        if (Session.LastCenterRatio < 14.0f)Session.LastCenterRatio = 14.0f;
-        auto CenterRatio = Center.x / FontHeight;
-        if (CenterRatio > Session.LastCenterRatio + 1.0f)CenterRatio = Session.LastCenterRatio + 1.0f;
-        auto Oldx = Center.x;
-        Center.x = CenterRatio * FontHeight;
-        DC.x = DC.x + (Center.x - Oldx);
-        ImGui::SetCursorPosX(Center.x - FontHeight * 0.5f);
-        Session.LastCenterRatio = CenterRatio;
+        {
+            auto Center = IsImport ? ImportCenterInWindow() : DefaultCenterInWindow();
+            auto wbase = FromSub.Root->GetWidthBase();
+            if (Session.LastCenterRatio < wbase - 2.5f)Session.LastCenterRatio = wbase - 2.5f;
+            auto CenterRatio = Center.x / FontHeight;
+            if (CenterRatio > Session.LastCenterRatio + 1.0f)CenterRatio = Session.LastCenterRatio + 1.0f;
+            auto Oldx = Center.x;
+            Center.x = CenterRatio * FontHeight;
+            DC.x = DC.x + (Center.x - Oldx);
+            ImGui::SetCursorPosX(Center.x - FontHeight * 0.5f);
+            Session.LastCenterRatio = CenterRatio;
+        }
 
         ImGui::PushID(LineIdx << 16 | CompIdx);
 
-        auto w = ImGui::GetCurrentWindow();
-        auto mx = w->DC.CursorMaxPos;
-        auto mxi = w->DC.IdealMaxPos;
-        bool Clicked = ImGui::RadioButton("", true, Style);
-        w->DC.CursorMaxPos = mx;
-        w->DC.IdealMaxPos = mxi;
-        void AdjustCursor();
-        AdjustCursor();
+        {
+            auto w = ImGui::GetCurrentWindow();
+            auto mx = w->DC.CursorMaxPos;
+            auto mxi = w->DC.IdealMaxPos;
+            Clicked = ImGui::RadioButton("", true, Style);
+            w->DC.CursorMaxPos = mx;
+            w->DC.IdealMaxPos = mxi;
+            void AdjustCursor();
+            AdjustCursor();
+        }
 
         bool RightClicked = ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right);
         bool Hovered = ImGui::IsItemHovered();

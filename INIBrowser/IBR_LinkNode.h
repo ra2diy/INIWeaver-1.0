@@ -87,6 +87,7 @@ namespace IBR_LinkNode
     ImColor AdjustNodeCol(ImU32 Color, bool Empty, bool Inherit);
 
     IBB_UpdateResult RenderUI_Node(
+        IICStatus& Status,
         IBR_SectionData& Data,
         IBB_SubSec& FromSub,
         size_t LineIdx,
@@ -100,6 +101,7 @@ namespace IBR_LinkNode
     );
 
     IBB_UpdateResult RenderUI_Node(
+        IICStatus& Status,
         const std::string& Hint,
         const std::string& DescLong,
         const IBB_UpdateResult& DefaultResult,

@@ -1664,9 +1664,11 @@ namespace IBB_ModuleAltDefault
     };
     std::unordered_map<std::string, IBB_ModuleAlt> ArtModules;
     ModuleTree AllModules;
+    ModuleTree SpecialModules;
     std::wstring Range1;
     std::wstring Range2;
     std::wstring Range3;
+    std::wstring Range4;
     std::wstring GenerateModulePath()
     {
         return CurrentDirW + Range3 + RandWStr(12) + L".ini";
@@ -1727,12 +1729,14 @@ namespace IBB_ModuleAltDefault
         md->FullyLoad();
         return md;
     }
-    void Load(const wchar_t* FileRange, const wchar_t* FileRange2, const wchar_t* FileRange3)
+    void Load(const wchar_t* FileRange, const wchar_t* FileRange2, const wchar_t* FileRange3, const wchar_t* FileRange4)
     {
-        Range1 = FileRange;
-        Range2 = FileRange2;
-        Range3 = FileRange3;
+        Range1 = FileRange;//Modules
+        Range2 = FileRange2;//ImageModules
+        Range3 = FileRange3;//导出目的地
+        Range4 = FileRange4;//SpecialModules
         AllModules.LoadFromDir(FileRange);
+        SpecialModules.LoadFromDir(FileRange4);
         for (auto& File : FindFileRange(FileRange2))
         {
             IBB_FileCheck(File.FullPath, false, true, false);
@@ -1763,6 +1767,10 @@ namespace IBB_ModuleAltDefault
         return result;
     }
 
+    void SpecialTree_RenderUI()
+    {
+        SpecialModules.RenderUI();
+    }
     void Tree_RenderUI()
     {
         AllModules.RenderUI();
@@ -1770,6 +1778,7 @@ namespace IBB_ModuleAltDefault
     void Tree_ResetHover()
     {
         AllModules.ResetHover();
+        SpecialModules.ResetHover();
     }
 }
 

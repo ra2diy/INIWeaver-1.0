@@ -219,7 +219,7 @@ namespace IBR_WorkSpace
         }
         else
         {
-            ImGui::BeginChild("##RightClick_Module", { FontHeight * 10.0F,FontHeight * 14.0F }, false);
+            ImGui::BeginChild("##RightClick_Module", { FontHeight * 10.0F,FontHeight * 16.0F }, false);
             IBB_ModuleAltDefault::Tree_RenderUI();
             ImGui::EndChild();
         }
@@ -631,6 +631,7 @@ namespace IBR_WorkSpace
             .SetFlag(ImGuiWindowFlags_NoFocusOnAppearing)
             .EnableInstantClose()
             .PushMsgBack([]() {
+                IBB_ModuleAltDefault::SpecialTree_RenderUI();
                 if (IBR_Inst_Project.IBR_SectionMap.empty())
                 {
                     ImGui::TextDisabled(locc("GUI_SelectAll"));
@@ -656,6 +657,7 @@ namespace IBR_WorkSpace
                     IBR_Inst_Project.RenameAll();
                     return IBR_PopupManager::ClearRightClickMenu();
                 }
+                /*
                 ImGui::Text(locc("GUI_CreateCommentBlock"));
                 if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
                 {
@@ -670,6 +672,7 @@ namespace IBR_WorkSpace
                     IBRF_CoreBump.SendToR({ [=]() {IBR_Inst_Project.CreateSingleValBlock(EqMouse); } });
                     return IBR_PopupManager::ClearRightClickMenu();
                 }
+                */
                 ImGui::PopStyleColor();
                 RenderRightClickTable();
                 ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_PopupBg));
@@ -1817,9 +1820,11 @@ namespace IBR_WorkSpace
                     }
                     {
                         auto sz = ImGui::GetWindowSize();
+                        auto pbk = sd.GetBack_Inl();
+                        auto wbase = FontHeight * pbk->GetWidthBase();
                         if (sd.FinalY < 1.0F)sd.FinalY = FontHeight * 8.0F;
-                        if (sd.WidthFix > FontHeight * 17.0f)ImGui::SetWindowSize({ sd.WidthFix, sd.FinalY + FontHeight * 2.0F });
-                        else ImGui::Dummy({ FontHeight * 17.0f, 0.0F });
+                        if (sd.WidthFix > wbase)ImGui::SetWindowSize({ sd.WidthFix, sd.FinalY + FontHeight * 2.0F });
+                        else ImGui::Dummy({ wbase, 0.0F });
                     }
                 }
 

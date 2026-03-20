@@ -199,7 +199,12 @@ namespace Initialize
         IBRF_CoreBump.SendToF([] {
             IBB_DefaultRegType::LoadFromFile(L".\\Global\\RegisterTypes*.json");//FIRST !
             IBF_Inst_DefaultTypeList.ReadAltSetting(L".\\Global\\TypeAlt*");//SECOND ! DEPENDENT
-            IBB_ModuleAltDefault::Load(L".\\Global\\Modules\\*.*", L".\\Global\\ImageModules\\*.*", L"\\Global\\Modules\\");//THIRD ! DEPENDENT
+            IBB_ModuleAltDefault::Load(
+                L".\\Global\\Modules\\*.*",
+                L".\\Global\\ImageModules\\*.*",
+                L"\\Global\\Modules\\",
+                L".\\Global\\SpecialModules\\*.*"
+            );//THIRD ! DEPENDENT
             IBR_Inst_Debug.DebugLoad();
             LoadDatabaseComplete = true;
             });

@@ -92,6 +92,13 @@ bool IBB_Section::Generate(const ModuleClipData& Clip)
             VarList.Value.erase("SkipExport");
             SkipTitle = IsTrueString(VarList.GetVariable("SkipTitle"));
             VarList.Value.erase("SkipTitle");
+            if (auto wr = VarList.GetVariable("WidthRatio"); !wr.empty())
+            {
+                float wrv = strtof(wr.c_str(), nullptr);
+                if (wrv > 0.0f)WidthRatio = wrv;
+                if (fabs(WidthRatio - 1.0F) < 1E-6)WidthRatio = 1.0f;
+            }
+            VarList.Value.erase("WidthRatio");
 
             SetText(Clip.Lines);
             for (auto& L : Clip.Lines)OnShow[NewPoolStr(L.Key)] = L.Desc;
@@ -211,6 +218,7 @@ void IBB_Section::GetClipData(ModuleClipData& Clip)
             Clip.VarList.push_back({ "SingleVal", SingleVal ? "true" : "false" });
             Clip.VarList.push_back({ "SkipExport", SkipExport ? "true" : "false" });
             Clip.VarList.push_back({ "SkipTitle", SkipTitle ? "true" : "false" });
+            if (fabs(WidthRatio - 1.0F) > 1E-6)Clip.VarList.push_back({ "WidthRatio", std::to_string(WidthRatio) });
         }
     }
 }
@@ -285,7 +293,7 @@ bool IBB_Section::SetText(const std::vector<IniToken>& Tokens)
         u(tok);
     }
 
-    if(!HasLine(InheritKeyID()))
+    if(!SkipExport && !HasLine(InheritKeyID()))
     {
         IniToken i;
         i.Key = InheritKeyName;
@@ -578,6 +586,11 @@ void IBB_Section::RecheckLineOrder()
         }
     }
     LineOrder = std::move(NewLineOrder);
+}
+
+float IBB_Section::GetWidthBase() const
+{
+    return 17.0f * WidthRatio;
 }
 
 const IBB_IniLine* IBB_Section::GetLineFromSubSecs(StrPoolID KeyName) const

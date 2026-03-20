@@ -1188,7 +1188,7 @@ IBB_UpdateResult RenderIICInputText(
     if (Status.InputMethod == IICStatus::Link)
     {
         IBB_UpdateResult def = { false, false, -1 };
-        return IBR_LinkNode::RenderUI_Node(pIn->Hint.Short, pIn->Hint.Long, def, LinkNode, ModifyFunc);
+        return IBR_LinkNode::RenderUI_Node(Status, pIn->Hint.Short, pIn->Hint.Long, def, LinkNode, ModifyFunc);
     }
     else
     {
@@ -1200,7 +1200,7 @@ IBB_UpdateResult RenderIICInputText(
         auto Changed = InputTextStdString(pIn->Hint.Short.c_str(), InitialValue);
         w->DC.CursorMaxPos = mx;
         if (ImGui::IsItemHovered())IBR_ToolTip(pIn->Hint.Long);
-
+        if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))Status.InputMethod = IICStatus::Link;
 
         auto Active = ImGui::IsItemActive();
         AdjustCursor();
@@ -1663,7 +1663,7 @@ IBB_UpdateResult IIC_InputInt::RenderUI(IBB_ValueContainer& Cont, IICStatus& Sta
     if (Status.InputMethod == IICStatus::Link)
     {
         IBB_UpdateResult def = { false, false, -1 };
-        return IBR_LinkNode::RenderUI_Node(Hint.Short, Hint.Long, def, NodeSetting, mf);
+        return IBR_LinkNode::RenderUI_Node(Status, Hint.Short, Hint.Long, def, NodeSetting, mf);
     }
     else
     {
@@ -1678,6 +1678,7 @@ IBB_UpdateResult IIC_InputInt::RenderUI(IBB_ValueContainer& Cont, IICStatus& Sta
         auto Changed = InputTextStdString(Hint.Short.c_str(), CurrentValue);
         w->DC.CursorMaxPos = mx;
         if (ImGui::IsItemHovered())IBR_ToolTip(Hint.Long);
+        if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))Status.InputMethod = IICStatus::Link;
         if (Changed)
         {
             char* ss;

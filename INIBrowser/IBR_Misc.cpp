@@ -271,7 +271,11 @@ void IBR_IniLine::RenderUI(
 
     if(!nlad)LinkNodeContext::AcceptEdge.push_back(ImGui::GetCursorPos());
 
-    ImGui::TextWrappedEx(Line);
+    ImGui::TextEx(Line);
+    auto PrevLineX = ImGui::GetCurrentWindow()->DC.CursorPosPrevLine.x;
+    auto& MaxX = ImGui::GetCurrentWindow()->DC.CursorMaxPos.x;
+    if (MaxX < PrevLineX + FontHeight * 2.0F)MaxX = PrevLineX + FontHeight * 2.0F;
+
 
     if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
         LinkNodeContext::CurLineChangeCompStatus = true;
