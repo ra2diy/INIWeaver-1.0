@@ -228,9 +228,10 @@ bool IBB_SubSec::RenameInLinkTo(size_t LinkIdx, const std::string& OldName, cons
 void IBB_SubSec::UpdateNewLinkTo(std::vector<IBB_NewLink>&& NewLT)
 {
     auto& Proj = *(Root->Root->Root);
+    bool IsImport = Default->Type == IBB_SubSec_Default::Import;
     for (auto& L : NewLinkTo)
     {
-        if (L.FromLoc.Key == ImportKeyID())
+        if (IsImport)
         {
             auto pf = L.ToLoc.Sec.GetSec(Proj);
             if (!pf)continue;
@@ -244,7 +245,7 @@ void IBB_SubSec::UpdateNewLinkTo(std::vector<IBB_NewLink>&& NewLT)
     }
     for (auto& L : NewLT)
     {
-        if (L.FromLoc.Key == ImportKeyID())
+        if (IsImport)
         {
             auto pf = L.ToLoc.Sec.GetSec(Proj);
             if (!pf)continue;

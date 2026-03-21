@@ -275,7 +275,7 @@ namespace IBR_LinkNode
                 L.ToLoc.Mult,
                 L.SessionID,
                 L.DefaultColor,
-                L.FromLoc.Key == ImportKeyID(),
+                FromSub.Default->Type == IBB_SubSec_Default::Import,
                 L.ToLoc.Sec == L.FromLoc.Sec,
                 false
             );
@@ -595,7 +595,7 @@ namespace IBR_LinkNode
                         link.ToLoc.Mult,
                         link.SessionID,
                         link.DefaultColor,
-                        (link.FromLoc.Key == ImportKeyID()),
+                        FromSub.Default->Type == IBB_SubSec_Default::Import,
                         link.ToLoc.Sec == link.FromLoc.Sec,
                         true
                     );

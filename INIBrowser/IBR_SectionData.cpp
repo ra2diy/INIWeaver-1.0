@@ -830,7 +830,7 @@ void IBR_SectionData::RenderUI_Collapsed(IBB_Section* Bsec, ImVec2 HeadLineRN, I
         {
             if (IBR_Inst_Project.RefreshLinkList)
             {
-                bool FromImport = (lt.FromLoc.Key == ImportKeyID());
+                bool FromImport = (sub.Default->Type == IBB_SubSec_Default::Import);
                 bool IsLinkingToSelf = (lt.FromLoc.Sec == lt.ToLoc.Sec);
                 IBR_LinkNode::PushLinkForDraw(HeadLineRN, lt.ToLoc.Sec, lt.ToLoc.Key, lt.ToLoc.Mult, lt.SessionID, lt.DefaultColor, FromImport, IsLinkingToSelf, true);
             }
