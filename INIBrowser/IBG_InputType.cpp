@@ -93,8 +93,26 @@ bool IBB_ValueContainer::Satisfy(const IBB_ValueConstraint& Constraint)
 bool IBB_ValueCond::Satisfy(const IBB_InputValue& V) const
 {
     bool B;
-    if (NeedsEmpty)B = V.Value.empty();
-    else B = Value.empty() || V.Value == Value;
+    switch (RegexState)
+    {
+    case IBB_ValueCond::Match:
+        B = RegexNotNone_Nothrow(V.Value, Value);
+        break;
+    case IBB_ValueCond::Full:
+        B = RegexFull_Nothrow(V.Value, Value);
+        break;
+    case IBB_ValueCond::NotMatch:
+        B = RegexNone_Nothrow(V.Value, Value);
+        break;
+    case IBB_ValueCond::NotFull:
+        B = RegexNotFull_Nothrow(V.Value, Value);
+        break;
+    case IBB_ValueCond::None:
+    default:
+        if (NeedsEmpty)B = V.Value.empty();
+        else B = Value.empty() || V.Value == Value;
+        break;
+    }
     return Neg ? !B : B;
 }
 
@@ -1270,13 +1288,52 @@ std::string IIC_Separator::FormatValue(IBB_ValueContainer&, IBB_InputValue&,  co
     return "";
 }
 
+// ========== IIC_Setter_String ==========
+
+IIC_Setter_String::IIC_Setter_String(IBB_ValueContainer& Cont, int valueid, const std::string& InitialText)
+    : Value(InitialText), ValueID(valueid)
+{
+    auto& Val = Cont.GetValue(ValueID);
+    Val.ResetState<IIS_String>(InitialText);
+    Val.NeedsUpdate(Cont, *this);
+}
+
+IBB_UpdateResult IIC_Setter_String::RenderUI(IBB_ValueContainer& Cont, IICStatus&)
+{
+    auto& Var = Cont.GetValue(ValueID);
+    auto State = Var.StateValue<IIS_String>();
+    if (State) State->Text = Value;
+    else Var.ResetState<IIS_String>(Value);
+    return { true, false, ValueID };
+}
+
+std::string IIC_Setter_String::FormatValue(IBB_ValueContainer&, IBB_InputValue& Val, const IBB_InputFormat& Format)
+{
+    if (!Val.StateValPtr)Val.ResetState<IIS_String>();
+    return Val.StateValPtr->Format(Format);
+}
+
+void IIC_Setter_String::ParseValue(IBB_ValueContainer& Cont, const IBB_InputFormat& Format)
+{
+    auto& Val = Cont.GetValue(ValueID);
+    Val.StateValPtr->Parse(Format, Val.Value);
+}
+
+bool IIC_Setter_String::CanProvideState(IBB_ValueContainer&) const
+{
+    return true;
+}
+
+void IIC_Setter_String::ResetState(IBB_ValueContainer& Cont) const
+{
+    Cont.GetValue(ValueID).ResetState<IIS_String>();
+}
+
 // ========== IIC_InputText ==========
 
 IIC_InputText::IIC_InputText(IBB_ValueContainer& Cont, int valueid, const std::string& InitialText, const IICDescStr& hint)
     : Hint(hint), ValueID(valueid)
 {
-    Hint.Short += "##";
-    Hint.Short += RandStr(12);
     auto& Val = Cont.GetValue(ValueID);
     Val.ResetState<IIS_String>(InitialText);
     Val.NeedsUpdate(Cont, *this);
@@ -1297,13 +1354,17 @@ IBB_UpdateResult RenderIICInputText(
     }
     else
     {
-        auto Size = ImGui::CalcTextSize(pIn->Hint.Short.c_str(), NULL, true);
-        auto W = ImGui::GetWindowContentRegionWidth() - ImGui::GetCursorPosX() - Size.x;
+        ImGui::TextEx(pIn->Hint.Short.c_str());
+        if (ImGui::IsItemHovered())IBR_ToolTip(pIn->Hint.Long);
+        if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))Status.InputMethod = IICStatus::Link;
+        ImGui::SameLine();
+
+        auto W = ImGui::GetWindowContentRegionWidth() - ImGui::GetCursorPosX();
         ImGui::SetNextItemWidth(W);
         auto w = ImGui::GetCurrentWindow();
         auto mx = w->DC.CursorMaxPos;
         if (pIn->UseNodeColorInFrame) ImGui::PushStyleColor(ImGuiCol_Text, pIn->IsLightColor ? ImVec4(0, 0, 0, 1) : ImVec4(1, 1, 1, 1));
-        auto Changed = InputTextStdString(pIn->Hint.Short.c_str(), InitialValue);
+        auto Changed = InputTextStdString("", InitialValue);
         if (pIn->UseNodeColorInFrame) ImGui::PopStyleColor();
         w->DC.CursorMaxPos = mx;
         if (ImGui::IsItemHovered())IBR_ToolTip(pIn->Hint.Long);
@@ -1518,8 +1579,6 @@ void IIC_MultipleChoice::ResetState(IBB_ValueContainer& Cont) const
 // ========== IIC_EnumCombo ==========
 IIC_EnumCombo::IIC_EnumCombo(IBB_ValueContainer& Cont, int valueid, const std::string& InitialValue, const IICDescStr& hint, const std::unordered_map<std::string, IICDescStr>& options, const std::vector<std::string>& order)
     : Options(options), Hint(hint), ValueID(valueid), OptionOrder(order) {
-    Hint.Short += "##";
-    Hint.Short += RandStr(12);
     auto& Val = Cont.GetValue(ValueID);
     Val.ResetState<IIS_String>(InitialValue);
     Val.NeedsUpdate(Cont, *this);
@@ -1535,12 +1594,15 @@ IBB_UpdateResult IIC_EnumCombo::RenderUI(IBB_ValueContainer& Cont, IICStatus&) {
     static const IBB_InputFormat Fmt = { IBB_InputFormat::ToString, "" };
     auto CurrentValue = Var.Dirty ? Var.StateValPtr->Format(Fmt) : Var.Value;
 
+    ImGui::TextEx(Hint.Short.c_str());
+    if (ImGui::IsItemHovered())IBR_ToolTip(Hint.Long);
+    ImGui::SameLine();
+
     auto Active = false;
-    auto Size = ImGui::CalcTextSize(Hint.Short.c_str(), NULL, true);
     ImGui::SetNextItemWidth(
-        ImGui::GetWindowContentRegionWidth() - ImGui::GetCursorPosX() - Size.x - ImGui::GetStyle().FramePadding.x);
+        ImGui::GetWindowContentRegionWidth() - ImGui::GetCursorPosX() - ImGui::GetStyle().FramePadding.x);
     if (UseNodeColorInFrame) ImGui::PushStyleColor(ImGuiCol_Text, IsLightColor ? ImVec4(0, 0, 0, 1) : ImVec4(1, 1, 1, 1));
-    if(IBR_Combo(Hint.Short.c_str(),
+    if(IBR_Combo("",
         (Options.contains(CurrentValue) ? Options[CurrentValue].Short : CurrentValue).c_str(), 0,
         [&] {
             if (UseNodeColorInFrame) ImGui::PopStyleColor();
@@ -1608,8 +1670,8 @@ void IIC_EnumCombo::ResetState(IBB_ValueContainer& Cont) const
 }
 
 // ========== IIC_EnumRadio ==========
-IIC_EnumRadio::IIC_EnumRadio(IBB_ValueContainer& Cont, int valueid, const std::string& InitialValue, const std::unordered_map<std::string, IICDescStr>& options, bool sameline, int maxInOneLine, const std::vector<std::string>& order)
-    : Options(options), ValueID(valueid), Hint(RandStr(12)), SameLine(sameline), MaxInOneLine(maxInOneLine), OptionOrder(order) {
+IIC_EnumRadio::IIC_EnumRadio(IBB_ValueContainer& Cont, int valueid, const std::string& InitialValue, const std::unordered_map<std::string, IICDescStr>& options, bool sameline, int maxInOneLine, const std::vector<std::string>& order, const IICDescStr& hint)
+    : Options(options), HintID(RandStr(12)), ValueID(valueid), SameLine(sameline), MaxInOneLine(maxInOneLine), OptionOrder(order), Hint(hint) {
     auto& Val = Cont.GetValue(ValueID);
     Val.ResetState<IIS_String>(InitialValue);
     Val.NeedsUpdate(Cont, *this);
@@ -1620,7 +1682,14 @@ IBB_UpdateResult IIC_EnumRadio::RenderUI(IBB_ValueContainer& Cont, IICStatus&) {
     //TODO STATUS
 
     bool Changed = false;
-    ImGui::PushID(Hint.c_str());
+    ImGui::PushID(HintID.c_str());
+
+    if (!Hint.Short.empty())
+    {
+        ImGui::TextWrapped("%s", Hint.Short.c_str());
+        if (ImGui::IsItemHovered())
+            IBR_ToolTip(Hint.Long);
+    }
 
     auto& Var = Cont.GetValue(ValueID);
     static const IBB_InputFormat Fmt = { IBB_InputFormat::ToString, "" };
@@ -1688,8 +1757,6 @@ void IIC_EnumRadio::ResetState(IBB_ValueContainer& Cont) const
 // ========== IIC_Bool ==========
 IIC_Bool::IIC_Bool(IBB_ValueContainer& Cont, int valueid, bool InitialValue, StrBoolType fmt, const IICDescStr& hint)
     : ValueID(valueid), Hint(hint), FmtType(fmt) {
-    Hint.Short += "##";
-    Hint.Short += RandStr(12);
     auto& Val = Cont.GetValue(ValueID);
     Val.ResetState<IIS_Bool>(InitialValue, FmtType);
     Val.NeedsUpdate(Cont, *this);
@@ -1697,7 +1764,10 @@ IIC_Bool::IIC_Bool(IBB_ValueContainer& Cont, int valueid, bool InitialValue, Str
 
 void RenderIICBool(IIC_Bool* pBool, bool& Val)
 {
-    ImGui::Checkbox(pBool->Hint.Short.c_str(), &Val);
+    ImGui::TextEx(pBool->Hint.Short.c_str());
+    if (ImGui::IsItemHovered())IBR_ToolTip(pBool->Hint.Long);
+    ImGui::SameLine();
+    ImGui::Checkbox("", &Val);
     if (ImGui::IsItemHovered())IBR_ToolTip(pBool->Hint.Long);
 }
 
@@ -1757,8 +1827,6 @@ void IIC_Bool::ResetState(IBB_ValueContainer& Cont) const
 // ========== IIC_InputInt ==========
 IIC_InputInt::IIC_InputInt(IBB_ValueContainer& Cont, int valueid, int InitialValue, int min, int max, const IICDescStr& hint)
     : Min(min), Max(max), Hint(hint), ValueID(valueid) {
-    Hint.Short += "##";
-    Hint.Short += RandStr(12);
     auto& Val = Cont.GetValue(ValueID);
     Val.ResetState<IIS_Int>(InitialValue);
     Val.NeedsUpdate(Cont, *this);
@@ -1785,13 +1853,17 @@ IBB_UpdateResult IIC_InputInt::RenderUI(IBB_ValueContainer& Cont, IICStatus& Sta
         static const IBB_InputFormat Fmt = { IBB_InputFormat::ToString, "" };
         auto CurrentValue = Var.Dirty ? Var.StateValPtr->Format(Fmt) : Var.Value;
 
-        auto Size = ImGui::CalcTextSize(Hint.Short.c_str(), NULL, true);
-        auto W = ImGui::GetWindowContentRegionWidth() - ImGui::GetCursorPosX() - Size.x;
+        ImGui::TextEx(Hint.Short.c_str());
+        if (ImGui::IsItemHovered())IBR_ToolTip(Hint.Long);
+        if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))Status.InputMethod = IICStatus::Link;
+        ImGui::SameLine();
+
+        auto W = ImGui::GetWindowContentRegionWidth() - ImGui::GetCursorPosX();
         ImGui::SetNextItemWidth(W);
         auto w = ImGui::GetCurrentWindow();
         auto mx = w->DC.CursorMaxPos;
         if (UseNodeColorInFrame) ImGui::PushStyleColor(ImGuiCol_Text, IsLightColor ? ImVec4(0, 0, 0, 1) : ImVec4(1, 1, 1, 1));
-        auto Changed = InputTextStdString(Hint.Short.c_str(), CurrentValue);
+        auto Changed = InputTextStdString("", CurrentValue);
         if (UseNodeColorInFrame) ImGui::PopStyleColor();
         w->DC.CursorMaxPos = mx;
         if (ImGui::IsItemHovered())IBR_ToolTip(Hint.Long);
@@ -1847,8 +1919,6 @@ void IIC_InputInt::ResetState(IBB_ValueContainer& Cont) const
 
 IIC_ColorPanel::IIC_ColorPanel(IBB_ValueContainer& Cont, int valueid, const std::string& InitialValue, const IICDescStr& hint, ValueMode vm, FormatMode fm)
     : Hint(hint), ValueID(valueid), VMode(vm), FMode(fm) {
-    Hint.Short += "##";
-    Hint.Short += RandStr(12);
     auto& Val = Cont.GetValue(ValueID);
     Val.ResetState<IIS_String>(InitialValue);
     Val.NeedsUpdate(Cont, *this);
@@ -1920,7 +1990,12 @@ IBB_UpdateResult IIC_ColorPanel::RenderUI(IBB_ValueContainer& Cont, IICStatus& S
 
     if (Status.InputMethod == IICStatus::Input)
     {
-        if(ImGui::ColorButton(Hint.Short.c_str(), Col))
+        ImGui::TextEx(Hint.Short.c_str());
+        if (ImGui::IsItemHovered())IBR_ToolTip(Hint.Long);
+        if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))Status.InputMethod = IICStatus::Link;
+        ImGui::SameLine();
+
+        if(ImGui::ColorButton("", Col))
         //if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
             Status.InputMethod = IICStatus::Link;
         if (ImGui::IsItemHovered())IBR_ToolTip(Hint.Long);
@@ -1930,15 +2005,18 @@ IBB_UpdateResult IIC_ColorPanel::RenderUI(IBB_ValueContainer& Cont, IICStatus& S
     }
     else
     {
+        ImGui::TextEx(Hint.Short.c_str());
+        if (ImGui::IsItemHovered())IBR_ToolTip(Hint.Long);
+        if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))Status.InputMethod = IICStatus::Input;
+        ImGui::SameLine();
+
         ImGui::PushID(this);
         if(ImGui::CloseButton((ImGuiID)this, ImGui::GetCursorScreenPos()))
         //if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
             Status.InputMethod = IICStatus::Input;
         ImGui::NewLine();
         bool Changed = false, Active = false;
-        //Changed |= ImGui::ColorEdit3(Hint.Short.c_str(), &Col.Value.x);
-        //Active |= ImGui::IsItemActive();
-        Changed |= ImGui::ColorPicker3(Hint.Short.c_str(), &Col.Value.x);
+        Changed |= ImGui::ColorPicker3("", &Col.Value.x);
         Active |= ImGui::IsItemActive();
         ImGui::PopID();
         
@@ -1995,8 +2073,6 @@ void IIC_ColorPanel::ResetState(IBB_ValueContainer& Cont) const
 // ========== IIC_SliderInt ==========
 IIC_SliderInt::IIC_SliderInt(IBB_ValueContainer& Cont, int valueid, int InitialValue, int min, int max, const IICDescStr& hint, const std::string& slidefmt, bool log)
     : Min(min), Max(max), Hint(hint), SlideFormat(slidefmt), Logarithmic(log), ValueID(valueid) {
-    Hint.Short += "##";
-    Hint.Short += RandStr(12);
     auto& Val = Cont.GetValue(ValueID);
     Val.ResetState<IIS_Int>(InitialValue);
     Val.NeedsUpdate(Cont, *this);
@@ -2017,10 +2093,14 @@ IBB_UpdateResult IIC_SliderInt::RenderUI(IBB_ValueContainer& Cont, IICStatus&) {
         Var.ResetState<IIS_Int>(Val);
     }
 
+    ImGui::TextEx(Hint.Short.c_str());
+    if (ImGui::IsItemHovered())IBR_ToolTip(Hint.Long);
+    ImGui::SameLine();
+
     //auto Size = ImGui::CalcTextSize(Hint.c_str(), NULL, true);
     //ImGui::SetNextItemWidth(ImGui::GetWindowContentRegionWidth() - ImGui::GetCursorPosX() - Size.x);
     if (UseNodeColorInFrame) ImGui::PushStyleColor(ImGuiCol_Text, IsLightColor ? ImVec4(0, 0, 0, 1) : ImVec4(1, 1, 1, 1));
-    auto Changed = ImGui::SliderInt(Hint.Short.c_str(), &Val, Min, Max, SlideFormat.c_str(),
+    auto Changed = ImGui::SliderInt("", &Val, Min, Max, SlideFormat.c_str(),
         Logarithmic ? ImGuiSliderFlags_Logarithmic : ImGuiSliderFlags_None);
     if (UseNodeColorInFrame) ImGui::PopStyleColor();
     if (ImGui::IsItemHovered())IBR_ToolTip(Hint.Long);

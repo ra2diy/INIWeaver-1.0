@@ -159,6 +159,20 @@ IICPtr InputTypeFactory::CreateInputComponent_Special(IBB_ValueContainer& Cont, 
             return std::make_unique<IIC_NewLine>();
         else if (typeStr == "Separator")
             return std::make_unique<IIC_Separator>();
+        else if (typeStr == "SetValue")
+        {
+            //IIC_Setter_String(IBB_ValueContainer& Cont, int valueid, const std::string& InitialText)
+            // {"Type": "SetValue", "ValueID": <int> 【, "Value": <string>】}
+
+            auto oValueID = Obj.GetObjectItem("ValueID");
+            if (!oValueID || !oValueID.IsTypeNumber())
+                return nullptr;
+            int ValueID = oValueID.GetInt();
+
+            auto InitValue = Obj.ItemStringOr("Value", "");
+
+            return std::make_unique<IIC_Setter_String>(Cont, ValueID, InitValue);
+        }
         else if (typeStr == "InputText")
         {
             //IIC_InputText(int valueid, const std::string& InitialText, const std::string& hint)
@@ -256,7 +270,10 @@ IICPtr InputTypeFactory::CreateInputComponent_Special(IBB_ValueContainer& Cont, 
             auto MaxInOneLine = Obj.ItemIntOr("MaxInOneLine", -1);
             auto OptionOrder = Obj.ItemArrayKeyOr("Options");
 
-            return std::make_unique<IIC_EnumRadio>(Cont, ValueID, InitValue, Options, SameLine, MaxInOneLine, OptionOrder);
+            auto oHint = Obj.GetObjectItem("Hint");
+            IICDescStr Hint = IICDescStr::Load(oHint);
+
+            return std::make_unique<IIC_EnumRadio>(Cont, ValueID, InitValue, Options, SameLine, MaxInOneLine, OptionOrder, Hint);
 
         }
         else if (typeStr == "Bool")
@@ -605,13 +622,44 @@ IBB_ValueCond InputTypeFactory::CreateValueCond(const JsonObject& Obj)
     IBB_ValueCond ivc;
     ivc.NeedsEmpty = false;
     ivc.Neg = false;
-    if (!Obj || !Obj.IsTypeString())return ivc;
-    auto Str = Obj.GetString();
-    if (Str.empty())return ivc;
-    if (Str.front() == '!') { ivc.Neg = true; Str.erase(Str.begin()); }
-    if (Str == "<EMPTY>")ivc.NeedsEmpty = true;
-    else ivc.Value = Str;
-    return ivc;
+    ivc.RegexState = IBB_ValueCond::None;
+    if (!Obj)return ivc;
+    if (Obj.IsTypeString())
+    {
+        auto Str = Obj.GetString();
+        if (Str.empty())return ivc;
+        if (Str.front() == '!') { ivc.Neg = true; Str.erase(Str.begin()); }
+        if (Str == "<EMPTY>")ivc.NeedsEmpty = true;
+        else ivc.Value = Str;
+        return ivc;
+    }
+    else if (Obj.IsTypeObject())
+    {
+        auto M = Obj.GetMapString();
+        if (M.contains("RegexFull"))
+        {
+            ivc.RegexState = IBB_ValueCond::Full;
+            ivc.Value = M.at("RegexFull");
+        }
+        else if (M.contains("RegexMatch"))
+        {
+            ivc.RegexState = IBB_ValueCond::Match;
+            ivc.Value = M.at("RegexMatch");
+        }
+        else if (M.contains("RegexNotFull"))
+        {
+            ivc.RegexState = IBB_ValueCond::NotFull;
+            ivc.Value = M.at("RegexNotFull");
+        }
+        else if (M.contains("RegexNotMatch"))
+        {
+            ivc.RegexState = IBB_ValueCond::NotMatch;
+            ivc.Value = M.at("RegexNotMatch");
+        }
+        else ivc.RegexState = IBB_ValueCond::None;
+        return ivc;
+    }
+    else return ivc;
 }
 
 

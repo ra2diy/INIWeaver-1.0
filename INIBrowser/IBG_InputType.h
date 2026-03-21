@@ -52,6 +52,14 @@ struct IICStatus
 struct IBB_ValueCond
 {
     std::string Value;
+    enum _RegexState
+    {
+        None,
+        Match,
+        NotMatch,
+        Full,
+        NotFull
+    }RegexState;
     bool Neg;
     bool NeedsEmpty;
     bool Satisfy(const IBB_InputValue& V) const;

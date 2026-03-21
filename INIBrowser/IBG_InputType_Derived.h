@@ -227,6 +227,21 @@ struct IIC_Separator final : public IBG_InputComponent
     bool SupportLinks() const { return false; }
 };
 
+struct IIC_Setter_String final : public IBG_InputComponent
+{
+    std::string Value;
+    int ValueID;
+    IIC_Setter_String(IBB_ValueContainer& Cont, int valueid, const std::string& InitialText);
+
+    IBB_UpdateResult RenderUI(IBB_ValueContainer& Cont, IICStatus& Status);
+    std::string FormatValue(IBB_ValueContainer&, IBB_InputValue& Val, const IBB_InputFormat& Format);
+    void ParseValue(IBB_ValueContainer& Cont, const IBB_InputFormat& Format);
+    bool CanProvideState(IBB_ValueContainer& Cont) const;
+    void ResetState(IBB_ValueContainer& Cont) const;
+    int GetCurrentTargetValueID() const { return ValueID; }
+    bool SupportLinks() const { return false; }
+};
+
 struct IIC_InputText final : public IBG_InputComponent
 {
     IICDescStr Hint;
@@ -284,11 +299,12 @@ struct IIC_EnumRadio final : public IBG_InputComponent
 {
     std::unordered_map<std::string, IICDescStr> Options;//AllowedValue : DisplayName ; if empty then any value allowed
     std::vector<std::string> OptionOrder;
-    std::string Hint;
+    IICDescStr Hint;
+    std::string HintID;
     bool SameLine;
     int MaxInOneLine;//如果SameLine为true，设置每行最大选项数，超过则换行；如果SameLine为false，则此项无效
     int ValueID;
-    IIC_EnumRadio(IBB_ValueContainer& Cont, int valueid, const std::string& InitialValue, const std::unordered_map<std::string, IICDescStr>& options, bool sameline, int MaxInOneLine, const std::vector<std::string>& OptionOrder);
+    IIC_EnumRadio(IBB_ValueContainer& Cont, int valueid, const std::string& InitialValue, const std::unordered_map<std::string, IICDescStr>& options, bool sameline, int MaxInOneLine, const std::vector<std::string>& OptionOrder, const IICDescStr& hint);
 
     IBB_UpdateResult RenderUI(IBB_ValueContainer& Cont, IICStatus& Status);
     std::string FormatValue(IBB_ValueContainer&, IBB_InputValue& Val, const IBB_InputFormat& Format);
