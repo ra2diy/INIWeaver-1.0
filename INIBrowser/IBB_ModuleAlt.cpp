@@ -1585,8 +1585,11 @@ namespace IBB_ModuleAltDefault
                     if (!S->Sub.empty() || !S->Modules.empty())
                     {
                         ImGui::SameLine();
+                        auto w = ImGui::GetCurrentWindow();
+                        auto mx = w->DC.CursorMaxPos;
                         ImGui::SetCursorPosX(ImGui::GetWindowWidth() - 1.0F * FontHeight);
                         ImGui::Text(u8">");
+                        w->DC.CursorMaxPos = mx;
 
                         ImVec2 ppos = ImGui::GetLineEndPos();
                         ppos.y -= ImGui::GetTextLineHeightWithSpacing();
