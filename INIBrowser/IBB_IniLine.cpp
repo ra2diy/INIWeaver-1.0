@@ -731,7 +731,9 @@ IBB_IniLine::IBB_IniLine(const std::string& Value, IBB_IniLine_Default* Def)
 
 std::string IBB_IniLine::FinalExportString(size_t Index) const
 {
+    auto OldMult = LinkNodeContext::LineMult;
     LinkNodeContext::LineMult = Index;
+
     auto& DD = Indexed(Index);
     auto IIF = Default->GetInputType().Form->Duplicate();
     auto Str = DD->GetString();
@@ -742,6 +744,8 @@ std::string IBB_IniLine::FinalExportString(size_t Index) const
     ExportContext::OnExport = Orig;
     auto value = DD->GetStringForExport();
     DD->SetValue(Str);
+
+    LinkNodeContext::LineMult = OldMult;
     return value;
 }
 
@@ -751,6 +755,7 @@ std::vector<std::string> IBB_IniLine::FinalCollectValue(IFCVPtr pifcv) const
     R.resize(Count());
     auto CollectSingle = [&](const LineData& DD, int _Index) {
         size_t Index = (size_t)_Index;
+        auto OldMult = LinkNodeContext::LineMult;
         LinkNodeContext::LineMult = Index;
         auto IIF = Default->GetInputType().Form->Duplicate();
         auto Str = DD->GetString();
@@ -760,6 +765,7 @@ std::vector<std::string> IBB_IniLine::FinalCollectValue(IFCVPtr pifcv) const
         ExportContext::OnExport = true;
         R[Index] = IIF->RegenFormattedString();
         ExportContext::OnExport = Orig;
+        LinkNodeContext::LineMult = OldMult;
         };
     ForEachWithIdx(CollectSingle);
     return R;
@@ -783,6 +789,7 @@ std::vector<std::string> IBB_IniLine::FinalCollectValue(size_t ValueID) const
     R.resize(Count());
     auto CollectSingle = [&](const LineData& DD, int _Index) {
         size_t Index = (size_t)_Index;
+        auto OldMult = LinkNodeContext::LineMult;
         LinkNodeContext::LineMult = Index;
         auto IIF = Default->GetInputType().Form->Duplicate();
         auto Str = DD->GetString();
@@ -792,6 +799,7 @@ std::vector<std::string> IBB_IniLine::FinalCollectValue(size_t ValueID) const
         IIF->RegenFormattedString();
         ExportContext::OnExport = Orig;
         R[Index] = IIF->GetValue(ValueID).Value;
+        LinkNodeContext::LineMult = OldMult;
     };
     ForEachWithIdx(CollectSingle);
     return R;
@@ -814,6 +822,7 @@ void IBB_IniLine::MakeKVForExport(IBB_VariableMultiList& vl, IBB_Section* AtSec,
         auto IIF = Default->GetInputType().Form->Duplicate();
         auto Str = Data->GetString();
         IIF->ParseFromString(Str);
+        auto OldMult = LinkNodeContext::LineMult;
         LinkNodeContext::LineMult = (size_t)Index;
         ExportContext::OnExport = true;
         Data->SetValue(IIF->RegenFormattedString());
@@ -823,7 +832,7 @@ void IBB_IniLine::MakeKVForExport(IBB_VariableMultiList& vl, IBB_Section* AtSec,
         ExportContext::ExportingLine = this;
         input.KVFmt(vl, key, value, TmpLineOrder, AtSec);
         ExportContext::ExportingLine = nullptr;
-        LinkNodeContext::LineMult = 0;
+        LinkNodeContext::LineMult = OldMult;
     };
 
     ForEachWithIdx(ExportKV);
@@ -843,12 +852,13 @@ void IBB_IniLine::RenderUI(const LinkNodeSetting& LinkNode, bool IsWorkspace)
         return;
     }
     ForEachWithIdx([&](LineData& Data, int Idx) {
+        auto OldMult = LinkNodeContext::LineMult;
         LinkNodeContext::LineMult = (size_t)Idx;
         ImGui::PushID(Idx);
         Data->RenderUI(Default, LinkNode, IsWorkspace);
         ImGui::PopID();
         LinkNodeContext::AcceptEdge.push_back(ImGui::GetCursorPos());
-        LinkNodeContext::LineMult = 0;
+        LinkNodeContext::LineMult = OldMult;
     });
 }
 void IBB_IniLine::RenderUI(bool IsWorkspace)
