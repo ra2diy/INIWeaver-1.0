@@ -155,7 +155,10 @@ OrderCheckTResult<IBB_LineLocation> TopoSortByKeyLink(const IBB_Project& Proj)
         for (auto& [Name, Sec] : Ini.Secs)
             for (auto& Sub : Sec.SubSecs)
                 for (auto& Link : Sub.NewLinkTo)
+                {
                     Conn[Link.FromLoc].push_back(Link.ToLoc);
+                    Conn[Link.ToLoc];
+                }
     for(auto& [From, To] : Conn)
         Nodes.push_back({ From, To });
     return GenerateOrderT(Nodes);

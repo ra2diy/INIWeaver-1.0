@@ -317,7 +317,7 @@ R"({
     bool Load(JsonObject Obj)
     {
         auto S = Obj.GetObjectItem(u8"Default");
-        std::string S_StrBool = "yes_no";
+        std::string S_StrBool = "\"yes_no\"";
         if (S.Available())
         {
             LoadReg(__Default, S);
