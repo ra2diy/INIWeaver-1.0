@@ -4,18 +4,19 @@
 #include "Global.h"
 #include <queue>
 
-OrderCheckResult IBB_OrderChecker::GenerateOrder()
+template<typename T>
+OrderCheckTResult<T> GenerateOrderT(const std::vector<SectionTNode<T>>& Nodes)
 {
     //Kahn's algorithm
     //尝试生成拓扑序，如果成功则返回拓扑序，否则说明存在环，返回nullopt
-    std::vector<const IBB_Section*> Ret;
-    std::unordered_map<const IBB_Section*, int> InDegree;
+    std::vector<T> Ret;
+    std::unordered_map<T, int> InDegree;
     for (auto& Node : Nodes)
         InDegree[Node.Idx] = 0;
     for (auto& Node : Nodes)
         for (auto& To : Node.To)
             InDegree[To]++;
-    std::queue<const IBB_Section*> Q;
+    std::queue<T> Q;
     for (auto& [Sec, Deg] : InDegree)
         if (Deg == 0)Q.push(Sec);
     while (!Q.empty())
@@ -39,9 +40,9 @@ OrderCheckResult IBB_OrderChecker::GenerateOrder()
     else
     {
         //从入度不为0的节点中随便选一个开始DFS，直到回到这个节点，记录路径即为环
-        std::unordered_map<const IBB_Section*, bool> Visited;
-        std::vector<const IBB_Section*> Path;
-        std::function<bool(const IBB_Section*)> Dfs = [&](const IBB_Section* Cur)->bool
+        std::unordered_map<T, bool> Visited;
+        std::vector<T> Path;
+        std::function<bool(T)> Dfs = [&](T Cur)->bool
             {
                 Visited[Cur] = true;
                 Path.push_back(Cur);
@@ -59,7 +60,8 @@ OrderCheckResult IBB_OrderChecker::GenerateOrder()
                                 auto It = std::find(Path.begin(), Path.end(), To);
                                 if (It != Path.end())
                                 {
-                                    std::vector<const IBB_Section*> Ring(It, Path.end());
+                                    std::vector<T> Ring(It, Path.end());
+                                    Path = std::move(Ring);
                                     return true;
                                 }
                             }
@@ -74,6 +76,11 @@ OrderCheckResult IBB_OrderChecker::GenerateOrder()
             }
         return { true, std::move(Path) };
     }
+}
+
+OrderCheckResult IBB_OrderChecker::GenerateOrder()
+{
+    return GenerateOrderT(Nodes);
 }
 
 IBB_OrderChecker::IBB_OrderChecker(const IBB_Project& Proj, const Section_Pred& Pred, const Section_LinkGen& LinkGen)
@@ -96,9 +103,9 @@ OrderCheckResult TopoSortByInherit(const IBB_Project& Proj)
             {
                 for (auto& Sub : Sec->SubSecs)
                     for (auto& Link : Sub.NewLinkTo)
-                        if (Link.FromKey == InheritKeyID())
+                        if (Link.FromLoc.Key == InheritKeyID())
                         {
-                            auto pSec = Link.To.GetSec(Proj);
+                            auto pSec = Link.ToLoc.Sec.GetSec(Proj);
                             if (pSec)Ret.push_back(pSec);
                         }
             }
@@ -117,13 +124,39 @@ OrderCheckResult TopoSortByImport(const IBB_Project& Proj)
             {
                 for (auto& Sub : Sec->SubSecs)
                     for(auto& Link : Sub.NewLinkTo)
-                        if (Link.FromKey == ImportKeyID())
+                        if (Link.FromLoc.Key == ImportKeyID())
                         {
-                            auto pSec = Link.To.GetSec(Proj);
+                            auto pSec = Link.ToLoc.Sec.GetSec(Proj);
                             if (pSec)Ret.push_back(pSec);
                         }
             }
             return Ret;
         });
     return Checker.GenerateOrder();
+}
+
+size_t KeyLinkHash(IBB_SectionID ID, StrPoolID Key, size_t Mult)
+{
+    size_t Seed = 0;
+    std::hash<IBB_SectionID> IDHash;
+    std::hash<StrPoolID> StrHash;
+    std::hash<size_t> SizeTHash;
+    Seed ^= IDHash(ID) + 0x9e3779b9 + (Seed << 6) + (Seed >> 2);
+    Seed ^= StrHash(Key) + 0x9e3779b9 + (Seed << 6) + (Seed >> 2);
+    Seed ^= SizeTHash(Mult) + 0x9e3779b9 + (Seed << 6) + (Seed >> 2);
+    return Seed;
+}
+
+OrderCheckTResult<IBB_LineLocation> TopoSortByKeyLink(const IBB_Project& Proj)
+{
+    std::vector<SectionTNode<IBB_LineLocation>> Nodes;
+    std::unordered_map<IBB_LineLocation, std::vector<IBB_LineLocation>> Conn;
+    for (auto& Ini : Proj.Inis)
+        for (auto& [Name, Sec] : Ini.Secs)
+            for (auto& Sub : Sec.SubSecs)
+                for (auto& Link : Sub.NewLinkTo)
+                    Conn[Link.FromLoc].push_back(Link.ToLoc);
+    for(auto& [From, To] : Conn)
+        Nodes.push_back({ From, To });
+    return GenerateOrderT(Nodes);
 }

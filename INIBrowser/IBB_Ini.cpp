@@ -106,7 +106,7 @@ IBB_SectionID IBB_Project::GetSecID(const std::string& Name, const std::string& 
     else return IBB_SectionID(Idx.Ini.Name, Idx.Section.Name);
 }
 
-std::tuple<IBB_SectionID, StrPoolID, size_t> IBB_Project::GetSecAndLineID(const std::string& KeyName, const std::string& PriorIni) const
+IBB_LineLocation IBB_Project::GetSecAndLineID(const std::string& KeyName, const std::string& PriorIni) const
 {
     //Acceptor Node : SecName$$KeyID@@LineMult
     auto pos = KeyName.find("$$");

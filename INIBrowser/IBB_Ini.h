@@ -163,13 +163,46 @@ struct IBB_IniLine
     ~IBB_IniLine() = default;
 };
 
+std::string TargetValueStr(const std::string& ToSec, StrPoolID ToKey, size_t LineMult);
+
+struct IBB_LineLocation
+{
+    IBB_SectionID Sec;
+    StrPoolID Key;
+    size_t Mult;
+
+    bool operator==(const IBB_LineLocation& R) const
+    {
+        return Sec == R.Sec && Key == R.Key && Mult == R.Mult;
+    }
+
+    std::string Ini() const;
+    std::string Section() const;
+    std::string KeyStr() const;
+    std::string Target() const;
+    std::string GetText() const;
+    std::string GetTextBackPart() const;
+    bool Empty() const;
+};
+
+size_t KeyLinkHash(IBB_SectionID ID, StrPoolID Key, size_t Mult);
+namespace std
+{
+    template<>
+    struct hash<IBB_LineLocation>
+    {
+        size_t operator()(const IBB_LineLocation& LL) const
+        {
+            return KeyLinkHash(LL.Sec, LL.Key, LL.Mult);
+        }
+    };
+}
+
+
 struct IBB_NewLink
 {
-    IBB_SectionID From;
-    IBB_SectionID To;
-    StrPoolID FromKey;
-    StrPoolID ToKey;
-    size_t LineMult;
+    IBB_LineLocation FromLoc;
+    IBB_LineLocation ToLoc;
     ImU32 DefaultColor;
     uint64_t SessionID;
 
@@ -178,7 +211,7 @@ struct IBB_NewLink
     std::string TargetValue() const;
 };
 
-std::string TargetValueStr(const std::string& ToSec, StrPoolID ToKey, size_t LineMult);
+
 
 struct IBB_SubSec
 {

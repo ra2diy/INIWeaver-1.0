@@ -270,13 +270,13 @@ namespace IBR_LinkNode
             //OutputDebugStringA(std::format("{} ; {}.{} -> {}",L.GetText(), L.From.ID, L.FromKey, L.To.ID).c_str());
             PushLinkForDraw(
                 Center,
-                L.To,
-                L.ToKey,
-                L.LineMult,
+                L.ToLoc.Sec,
+                L.ToLoc.Key,
+                L.ToLoc.Mult,
                 L.SessionID,
                 L.DefaultColor,
-                L.FromKey == ImportKeyID(),
-                L.To == L.From,
+                L.FromLoc.Key == ImportKeyID(),
+                L.ToLoc.Sec == L.FromLoc.Sec,
                 false
             );
         }
@@ -440,7 +440,7 @@ namespace IBR_LinkNode
 
                 Session.LinkList = Links |
                         std::views::transform([&](auto p) {
-                        auto Sec = IBR_Inst_Project.GetSection(p.To);
+                        auto Sec = IBR_Inst_Project.GetSection(p.ToLoc.Sec);
                         auto T = p.TargetValue();
                         return IBR_NodeSession::SessionLinkList{ Sec.HasBack() ? Sec.GetDisplayName() : T, T, true };
                     }) |
@@ -490,8 +490,8 @@ namespace IBR_LinkNode
             else
                 Str = Links |
                 std::views::transform([&](auto p) {
-                auto Sec = IBR_Inst_Project.GetSection(p.To);
-                return Sec.HasBack() ? Sec.GetDisplayName() : p.To.Section();
+                auto Sec = IBR_Inst_Project.GetSection(p.ToLoc.Sec);
+                return Sec.HasBack() ? Sec.GetDisplayName() : p.ToLoc.Section();
                     }) |
                 std::views::filter([&](auto&& s) { return !s.empty(); }) |
                         std::views::join_with(',') |
@@ -585,18 +585,18 @@ namespace IBR_LinkNode
         auto& Bsec = *FromSub.Root;
         for (auto& link : FromSub.NewLinkTo)
         {
-            if (!Bsec.IsOnShow(link.FromKey))
+            if (!Bsec.IsOnShow(link.FromLoc.Key))
             {
                 if (IBR_Inst_Project.RefreshLinkList)
                     PushLinkForDraw(
                         Center,
-                        link.To,
-                        link.ToKey,
-                        link.LineMult,
+                        link.ToLoc.Sec,
+                        link.ToLoc.Key,
+                        link.ToLoc.Mult,
                         link.SessionID,
                         link.DefaultColor,
-                        (link.FromKey == ImportKeyID()),
-                        link.To == link.From,
+                        (link.FromLoc.Key == ImportKeyID()),
+                        link.ToLoc.Sec == link.FromLoc.Sec,
                         true
                     );
                 else
@@ -626,12 +626,12 @@ namespace IBR_LinkNode
             if (IBR_Inst_Project.RefreshLinkList)
                 PushLinkForDraw(
                     Center,
-                    link.To,
-                    link.ToKey,
-                    link.LineMult,
+                    link.ToLoc.Sec,
+                    link.ToLoc.Key,
+                    link.ToLoc.Mult,
                     link.SessionID,
                     link.DefaultColor,
-                    link.To == link.From,
+                    link.ToLoc.Sec == link.FromLoc.Sec,
                     SrcDragging,
                     false
                 );

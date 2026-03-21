@@ -27,7 +27,7 @@ std::string DecodeListForExport(const std::string& Val)
         std::string R;
         for (auto& V : pSec->LinkGroup_NewLinkTo)
         {
-            auto pp = V.To.GetSec(IBF_Inst_Project.Project);
+            auto pp = V.ToLoc.Sec.GetSec(IBF_Inst_Project.Project);
             if (pp)
             {
                 R += pp->Name;

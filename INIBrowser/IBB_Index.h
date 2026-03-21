@@ -18,9 +18,6 @@ struct IBB_VariableList;
 struct IBB_Link;
 struct IBB_Section_Desc;
 
-struct IBB_Module_Default;
-struct IBB_Module;
-struct IBB_Module_ParagraphList;
 
 struct PairClipString;
 

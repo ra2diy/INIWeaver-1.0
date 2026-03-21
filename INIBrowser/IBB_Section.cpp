@@ -130,7 +130,7 @@ void IBB_Section::GetClipData(ModuleClipData& Clip)
         for (auto& [A, B] : DefaultLinkKey)
             Clip.DefaultLinkKey.push_back({ PoolStr(A), PoolStr(B) });
         for (auto& L : LinkGroup_NewLinkTo)
-            Clip.LinkGroup_LinkTo.push_back(L.To);
+            Clip.LinkGroup_LinkTo.push_back(L.ToLoc.Sec);
         for (auto& [A, B] : VarList.Value)
             Clip.VarList.push_back({ A, B });
     }
@@ -381,7 +381,7 @@ IBB_VariableMultiList IBB_Section::GetLineList(bool PrintExtraData, bool FromExp
     {
         for (const auto& L : LinkGroup_NewLinkTo)
         {
-            auto pf = L.From.GetSec(*(Root->Root)), pt = L.To.GetSec(*(Root->Root));
+            auto pf = L.FromLoc.Sec.GetSec(*(Root->Root)), pt = L.ToLoc.Sec.GetSec(*(Root->Root));
             if (pf != nullptr && pt != nullptr)
                 Ret.Push("_LINK_FROM_" + pf->Name, "_LINK_TO_" + pt->Name);
         }
@@ -854,19 +854,19 @@ bool IBB_Section::AcceptNewNameInLinkTo(IBB_SectionID NewID, IBB_Section* Target
     {
         //直接修改链接本身
         for (auto& Link : LinkGroup_NewLinkTo)
-            if (Link.To.GetSec(Proj) == Target)
-                Link.To = { Link.To.Ini(), NewName };
+            if (Link.ToLoc.Sec.GetSec(Proj) == Target)
+                Link.ToLoc.Sec = { Link.ToLoc.Ini(), NewName };
     }
     else
     {
         for (auto& Sub : SubSecs)
             for (auto&& [idx, Link] : std::views::zip(std::views::iota(0u), Sub.NewLinkTo))
-                if (Link.To.GetSec(Proj) == Target)
+                if (Link.ToLoc.Sec.GetSec(Proj) == Target)
                 {
                     //按照这个Link，找到所有from的地方并修改to到新name
                     Ret &= Sub.RenameInLinkTo(idx, Target->Name, NewName);
                     //然后修改链接本身
-                    Link.To = NewID;
+                    Link.ToLoc.Sec = NewID;
                 }
     }
     return Ret;
@@ -884,7 +884,7 @@ bool IBB_Section::RemoveNameInLinkTo(IBB_Section* Target)
         std::vector<IBB_NewLink> NL;
         //直接修改链接本身
         for (auto& Link : LinkGroup_NewLinkTo)
-            if (Link.To.GetSec(Proj) != Target)
+            if (Link.ToLoc.Sec.GetSec(Proj) != Target)
                 NL.push_back(Link);
     }
     else
@@ -894,7 +894,7 @@ bool IBB_Section::RemoveNameInLinkTo(IBB_Section* Target)
             std::vector<IBB_NewLink> NL;
             std::map<size_t, size_t> OldToNew;
             for (auto&& [idx, Link] : std::views::zip(std::views::iota(0u), Sub.NewLinkTo))
-                if (Link.To.GetSec(Proj) == Target)
+                if (Link.ToLoc.Sec.GetSec(Proj) == Target)
                     //按照这个Link，找到所有from的地方并修改to到新name
                     Ret &= Sub.RenameInLinkTo(idx, Target->Name, "");
                 else if(!Link.Empty())
@@ -930,12 +930,12 @@ bool IBB_Section::Rename(const std::string& NewName)
         for (auto& Link : LinkGroup_NewLinkTo)
         {
             //找到连到的对象，改他们linkedby
-            Ret &= AcceptNewNameInLinkedBy(Link.To, NewName);
+            Ret &= AcceptNewNameInLinkedBy(Link.ToLoc.Sec, NewName);
             //然后修改链接本身From
-            Link.From = NewID;
+            Link.FromLoc.Sec = NewID;
             //自连则也要修改To
-            if (Link.To == ID)
-                Link.To = NewID;
+            if (Link.ToLoc.Sec == ID)
+                Link.ToLoc.Sec = NewID;
         }
     }
     else
@@ -946,29 +946,29 @@ bool IBB_Section::Rename(const std::string& NewName)
                 //按照这个Link，找到所有from的地方并修改to到新name
                 Ret &= Sub.RenameInLinkTo(idx, Name, NewName);
                 //找到连到的对象，改他们linkedby
-                Ret &= AcceptNewNameInLinkedBy(Link.To, NewName);
+                Ret &= AcceptNewNameInLinkedBy(Link.ToLoc.Sec, NewName);
                 //然后修改链接本身
-                Link.From = NewID;
+                Link.FromLoc.Sec = NewID;
                 //自连则也要修改To
-                if (Link.To == ID)
-                    Link.To = NewID;
+                if (Link.ToLoc.Sec == ID)
+                    Link.ToLoc.Sec = NewID;
             }
     }
     for (auto& Link : GetLinkedBy_NoCached())
     {
         //按照From追溯到来源
-        auto Src = Link.From.GetSec(Proj);
+        auto Src = Link.FromLoc.Sec.GetSec(Proj);
         //空挂则跳过
         if (!Src)
             continue;
         //自连则也要修改From
         else if (Src == this)
-            Link.From = NewID;
+            Link.FromLoc.Sec = NewID;
         //非自连则修改LinkTo的情况
         else
             Ret &= Src->AcceptNewNameInLinkTo(NewID, this, NewName);
         //然后修改链接本身
-        Link.To = NewID;
+        Link.ToLoc.Sec = NewID;
         
     }
     Name = NewName;
@@ -990,7 +990,7 @@ bool IBB_Section::Isolate()
     for (auto& Link : GetLinkedBy_NoCached())
     {
         //按照From追溯到来源
-        auto Src = Link.From.GetSec(Proj);
+        auto Src = Link.FromLoc.Sec.GetSec(Proj);
         if (Src && Src != this)
             Ret &= Src->RemoveNameInLinkTo(this);
     }
@@ -1008,10 +1008,10 @@ bool IBB_Section::UpdateAll()
         for (size_t i = 0; i < LinkGroup_NewLinkTo.size(); i++)
         {
             auto& NL = LinkGroup_NewLinkTo.at(i);
-            if (NL.To.GetSec(*PProj) != nullptr)NewGroup.push_back(NL);
+            if (NL.ToLoc.Sec.GetSec(*PProj) != nullptr)NewGroup.push_back(NL);
         }
         for (auto& L : NewGroup)
-            L.FromKey = EmptyPoolStr;
+            L.FromLoc.Key = EmptyPoolStr;
         LinkGroup_NewLinkTo = NewGroup;
     }
     else

@@ -48,21 +48,48 @@ std::string TargetValueStr(const std::string& ToSec, StrPoolID ToKey, size_t Lin
     else return ToSec + "$$" + PoolStr(ToKey) + "@@" + std::to_string(LineMult);
 }
 
+std::string IBB_LineLocation::Ini() const
+{
+    return Sec.Ini();
+}
+std::string IBB_LineLocation::Section() const
+{
+    return Sec.Section();
+}
+std::string IBB_LineLocation::KeyStr() const
+{
+    return PoolStr(Key);
+}
+std::string IBB_LineLocation::Target() const
+{
+    return TargetValueStr(Section(), Key, Mult);
+}
+std::string IBB_LineLocation::GetTextBackPart() const
+{
+    return (Key == EmptyPoolStr ? "" : "." + KeyStr()) + (Mult == 0 ? "" : ("@@" + std::to_string(Mult)));
+}
+std::string IBB_LineLocation::GetText() const
+{
+    return Sec.ToDesc().GetText() + GetTextBackPart();
+}
+bool IBB_LineLocation::Empty() const
+{
+    return Sec.Empty();
+}
+
 std::string IBB_NewLink::TargetValue() const
 {
-    return TargetValueStr(To.Section(), ToKey, LineMult);
+    return ToLoc.Target();
 }
 
 std::string IBB_NewLink::GetText() const
 {
-    return
-        "FROM " + From.operator IBB_Section_Desc().GetText() + "." + PoolStr(FromKey) +
-        " TO " + To.operator IBB_Section_Desc().GetText() + (ToKey == EmptyPoolStr ? "" : "." + PoolStr(ToKey));
+    return "FROM " + FromLoc.GetText() + " TO " + ToLoc.GetText();
 }
 
 bool IBB_NewLink::Empty() const
 {
-    return From.Empty() || To.Empty();
+    return FromLoc.Empty() || ToLoc.Empty();
 }
 
 IBB_SubSec::IBB_SubSec(IBB_SubSec&& A) noexcept :
@@ -99,7 +126,7 @@ bool IBB_SubSec::ChangeRoot(IBB_Section* NewRoot)
     if (NewRoot != nullptr)
     {
         auto ti = NewRoot->GetThisID();
-        for (auto& L : NewLinkTo)L.From = ti;
+        for (auto& L : NewLinkTo)L.FromLoc.Sec = ti;
     }
     Root = NewRoot;
     return true;
@@ -150,7 +177,7 @@ IBB_VariableMultiList IBB_SubSec::GetLineList(bool PrintExtraData, bool FromExpo
     }
     if (PrintExtraData)for (const auto& L : NewLinkTo)
     {
-        auto pf = L.From.GetSec(*(Root->Root->Root)), pt = L.To.GetSec(*(Root->Root->Root));
+        auto pf = L.FromLoc.Sec.GetSec(*(Root->Root->Root)), pt = L.ToLoc.Sec.GetSec(*(Root->Root->Root));
         if (pf != nullptr && pt != nullptr)
             Ret.Push("_LINK_FROM_" + pf->Name, "_LINK_TO_" + pt->Name);
     }
@@ -203,30 +230,30 @@ void IBB_SubSec::UpdateNewLinkTo(std::vector<IBB_NewLink>&& NewLT)
     auto& Proj = *(Root->Root->Root);
     for (auto& L : NewLinkTo)
     {
-        if (L.FromKey == ImportKeyID())
+        if (L.FromLoc.Key == ImportKeyID())
         {
-            auto pf = L.To.GetSec(Proj);
+            auto pf = L.ToLoc.Sec.GetSec(Proj);
             if (!pf)continue;
             pf->Dynamic.ImportCount--;
         }
-        if (L.ToKey != EmptyPoolStr)
+        if (L.ToLoc.Key != EmptyPoolStr)
         {
-            auto pRSD = IBR_Inst_Project.GetSection(L.To).GetSectionData();
-            if (pRSD)pRSD->ActiveLines[L.ToKey].AcceptCount--;
+            auto pRSD = IBR_Inst_Project.GetSection(L.ToLoc.Sec).GetSectionData();
+            if (pRSD)pRSD->ActiveLines[L.ToLoc.Key].AcceptCount--;
         }
     }
     for (auto& L : NewLT)
     {
-        if (L.FromKey == ImportKeyID())
+        if (L.FromLoc.Key == ImportKeyID())
         {
-            auto pf = L.To.GetSec(Proj);
+            auto pf = L.ToLoc.Sec.GetSec(Proj);
             if (!pf)continue;
             pf->Dynamic.ImportCount++;
         }
-        if (L.ToKey != EmptyPoolStr)
+        if (L.ToLoc.Key != EmptyPoolStr)
         {
-            auto pRSD = IBR_Inst_Project.GetSection(L.To).GetSectionData();
-            if (pRSD)pRSD->ActiveLines[L.ToKey].AcceptCount++;
+            auto pRSD = IBR_Inst_Project.GetSection(L.ToLoc.Sec).GetSectionData();
+            if (pRSD)pRSD->ActiveLines[L.ToLoc.Key].AcceptCount++;
         }
     }
     NewLinkTo = std::move(NewLT);
@@ -318,11 +345,16 @@ bool IBB_SubSec::UpdateAll()
                                 cidx
                             );
                             NewLT.emplace_back(
-                                RootID,
-                                toidx,
-                                KeyName,
-                                ToKey,
-                                TargetLineMult,
+                                IBB_LineLocation(
+                                    RootID,
+                                    KeyName,
+                                    LineMult
+                                ),
+                                IBB_LineLocation(
+                                    toidx,
+                                    ToKey,
+                                    TargetLineMult
+                                ),
                                 Col,
                                 seid
                             );
@@ -352,11 +384,16 @@ bool IBB_SubSec::UpdateAll()
                         0
                     );
                     NewLT.emplace_back(
-                        RootID,
-                        toidx,
-                        KeyName,
-                        ToKey,
-                        TargetLineMult,
+                        IBB_LineLocation(
+                            RootID,
+                            KeyName,
+                            LineMult
+                        ),
+                        IBB_LineLocation(
+                            toidx,
+                            ToKey,
+                            TargetLineMult
+                        ),
                         Col,
                         seid
                     );

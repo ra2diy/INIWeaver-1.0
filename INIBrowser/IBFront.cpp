@@ -210,7 +210,7 @@ void IBF_Project::RegenLinkedBy(const IBB_Section_Desc& Desc)
     auto& Arr = LinkedBy[Desc];
     Arr.clear();
     auto S = [&](IBB_NewLink& L) {
-            if(L.To.ToDesc() == Desc)
+            if(L.ToLoc.Sec.ToDesc() == Desc)
                 Arr.push_back(L);
         };
     for(auto& Ini:Project.Inis)

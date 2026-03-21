@@ -337,7 +337,7 @@ bool IBB_Project::AddNewLinkToLinkGroup(const IBB_Section_Desc& From, const IBB_
             return false;
         }
     }
-    FromPtr->LinkGroup_NewLinkTo.push_back({ FIn,TIn, EmptyPoolStr , IBB_DefaultRegType::GetDefaultNodeColor() });
+    FromPtr->LinkGroup_NewLinkTo.push_back({ {FIn, EmptyPoolStr},{TIn, EmptyPoolStr}, IBB_DefaultRegType::GetDefaultNodeColor() });
     return true;
 }
 

@@ -16,10 +16,7 @@ struct IBB_Project_Index;
 struct IBB_SectionID;
 struct IBB_VariableList;
 struct IBB_Link;
-
-struct IBB_Module_Default;
-struct IBB_Module;
-struct IBB_Module_ParagraphList;
+struct IBB_LineLocation;
 
 struct IBB_VariableMultiList
 {

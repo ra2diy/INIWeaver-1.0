@@ -282,8 +282,10 @@ namespace IBR_ProjectManager
 
         auto ImportOrder = TopoSortByImport(IBF_Inst_Project.Project);
         auto InheritOrder = TopoSortByInherit(IBF_Inst_Project.Project);
+        auto LinkOrder = TopoSortByKeyLink(IBF_Inst_Project.Project);
+        auto HasCycle = ImportOrder.HasCycle || InheritOrder.HasCycle || LinkOrder.HasCycle;
 
-        if (ImportOrder.HasCycle || InheritOrder.HasCycle)
+        if (HasCycle)
         {
             IBRF_CoreBump.SendToR({ [] {
                 IBR_HintManager::SetHint(loc("GUI_OutputFailure"),HintStayTimeMillis);
@@ -324,7 +326,24 @@ namespace IBR_ProjectManager
                     IBR_PopupManager::AddOutputErrorPopup(std::move(F), loc("Log_InheritCycleDetected"));
                 } });
         }
-        if (ImportOrder.HasCycle || InheritOrder.HasCycle)return;
+        if (LinkOrder.HasCycle)
+        {
+            auto Str = LinkOrder.Order_Or_Ring |
+                std::views::transform([&DisplayRev](const IBB_LineLocation& Loc) -> std::string {
+                auto Desc = Loc.Sec.ToDesc();
+                if (DisplayRev.contains(Desc))return DisplayRev[Desc] + Loc.GetTextBackPart();
+                else return Loc.GetText();
+                    }) |
+                std::views::join_with(" -> \n"s) |
+                        std::ranges::to<std::string>();
+
+                    auto StrW = UTF8toUnicode(Str);
+                    auto Fmt = UnicodetoUTF8(std::vformat(locw("Log_CycleInfo"), std::make_wformat_args(StrW)));
+                    IBRF_CoreBump.SendToR({ [F = std::move(Fmt)]() mutable {
+                        IBR_PopupManager::AddOutputErrorPopup(std::move(F), loc("Log_KeyLinkCycleDetected"));
+                    } });
+        }
+        if (HasCycle)return;
 
         size_t N = TargetIniPath.size();
         std::vector<std::unordered_map<std::string, std::string>>TextPieces;
