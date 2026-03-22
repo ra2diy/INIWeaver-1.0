@@ -94,6 +94,8 @@ struct IBB_FormatComponent : public std::enable_shared_from_this<IBB_FormatCompo
 {
     virtual ~IBB_FormatComponent() = default;
     virtual const IBB_ValueFormat& GetFormat() = 0;
+
+    IBB_ValueConstraint Constraint;
 };
 
 struct IBB_InputState
@@ -153,6 +155,7 @@ struct InputTypeFactory
 {
     static IICPtr CreateInputComponent_Special(IBB_ValueContainer& Cont, const JsonObject& Obj);
     static IICPtr CreateInputComponent(IBB_ValueContainer& Cont, const JsonObject& Obj);
+    static IFCPtr CreateFormatComponent_Special(IBB_ValueContainer& Cont, const JsonObject& Obj);
     static IFCPtr CreateFormatComponent(IBB_ValueContainer& Cont, const JsonObject& Obj);
 
     static IICPtr GetParseErrorInputComponent(const std::string& Desc);

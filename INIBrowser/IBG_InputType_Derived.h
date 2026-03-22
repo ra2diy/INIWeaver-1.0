@@ -70,6 +70,14 @@ struct IFC_Export_UseKey final : public IBB_FormatComponent
     const IBB_ValueFormat& GetFormat();
 };
 
+struct IFC_Export_UseReg final : public IBB_FormatComponent
+{
+    IBB_ValueFormat Format;
+    IFC_Export_UseReg();
+
+    const IBB_ValueFormat& GetFormat();
+};
+
 struct IFC_Export_LineMult final : public IBB_FormatComponent
 {
     IBB_ValueFormat Format;

@@ -45,7 +45,6 @@ IICPtr InputTypeFactory::CreateInputComponent(IBB_ValueContainer& Cont, const Js
     }
 
     auto oConstraint = Obj.GetObjectItem("Constraint");
-
     if (oConstraint)
     {
         piic->Constraint = CreateValueConstraint(oConstraint);
@@ -388,6 +387,24 @@ IICPtr InputTypeFactory::CreateInputComponent_Special(IBB_ValueContainer& Cont, 
 
 IFCPtr InputTypeFactory::CreateFormatComponent(IBB_ValueContainer& Cont, const JsonObject& Obj)
 {
+    auto pifc = CreateFormatComponent_Special(Cont, Obj);
+
+    if (!pifc) return nullptr;
+
+    if (Obj && Obj.IsTypeObject())
+    {
+        auto oConstraint = Obj.GetObjectItem("ExportConstraint");
+        if (oConstraint)
+        {
+            pifc->Constraint = CreateValueConstraint(oConstraint);
+        }
+    }
+
+    return pifc;
+}
+
+IFCPtr InputTypeFactory::CreateFormatComponent_Special(IBB_ValueContainer& Cont, const JsonObject& Obj)
+{
     //IFC_PureText(const std::string& Text)
     // <string>
     //IFC_LocalizedText(const std::string& Key, const std::string& Fallback)
@@ -413,11 +430,14 @@ IFCPtr InputTypeFactory::CreateFormatComponent(IBB_ValueContainer& Cont, const J
         auto text = Obj.GetString();
         if (text == "<Export_Key>")
             return std::make_unique<IFC_Export_UseKey>();
+        else if (text == "<Export_Registry>")
+            return std::make_unique<IFC_Export_UseReg>();
         return std::make_unique<IFC_PureText>(text);
     }
 
     if (!Obj.IsTypeObject())return nullptr;
 
+    auto oText = Obj.GetObjectItem("Text");
     auto oKey = Obj.GetObjectItem("Key");
     auto oFallback = Obj.GetObjectItem("FallBack");
     auto oValueID = Obj.GetObjectItem("ValueID");
@@ -430,8 +450,13 @@ IFCPtr InputTypeFactory::CreateFormatComponent(IBB_ValueContainer& Cont, const J
     auto oCollectFormat = Obj.GetObjectItem("CollectFormat");
     auto oFromKey = Obj.GetObjectItem("FromKey");
     auto oNonEmpty = Obj.GetObjectItem("NonEmpty");
+    auto oExportName = Obj.GetObjectItem("ExportName");
 
-    if (oKey && oFallback && oKey.IsTypeString() && oFallback.IsTypeString())
+    if (oText && oText.IsTypeString())
+    {
+        return std::make_unique<IFC_PureText>(oText.GetString());
+    }
+    else if (oKey && oFallback && oKey.IsTypeString() && oFallback.IsTypeString())
     {
         return std::make_unique<IFC_LocalizedText>(oKey.GetString(), oFallback.GetString());
     }
@@ -455,6 +480,13 @@ IFCPtr InputTypeFactory::CreateFormatComponent(IBB_ValueContainer& Cont, const J
     else if (oLineIndexFrom && oLineIndexFrom.IsTypeNumber())
     {
         return std::make_unique<IFC_Export_LineMult>(oLineIndexFrom.GetInt());
+    }
+    else if (oExportName && oExportName.IsTypeString())
+    {
+        auto S = oExportName.GetString();
+        if (S == "Key")return std::make_unique<IFC_Export_UseKey>();
+        else if (S == "Registry")return std::make_unique<IFC_Export_UseReg>();
+        return nullptr;
     }
     else if (oCollectID && oCollectID.IsTypeNumber())
     {

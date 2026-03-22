@@ -263,6 +263,8 @@ const std::string& IBG_InputForm::GetFormattedString()
         {
             const auto& VF = FC->GetFormat();
 
+            if (ExportContext::OnExport && !ValueContainer.Satisfy(FC->Constraint))continue;
+
             switch (VF.Format.Type)
             {
             case IBB_InputFormat::UseFormat:
@@ -544,6 +546,17 @@ IFC_Export_RandStr::IFC_Export_RandStr(int length, int toid)
 
 const IBB_ValueFormat& IFC_Export_RandStr::GetFormat() {
     Format.Format.String = RandStr(Length);
+    return Format;
+}
+
+// ========== IFC_Export_UseReg ===========
+IFC_Export_UseReg::IFC_Export_UseReg()
+    : Format(IBB_InputFormat::UseFormat, "") {
+}
+
+const IBB_ValueFormat& IFC_Export_UseReg::GetFormat() {
+    auto pSec = ExportContext::ExportingSection;
+    Format.Format.String = pSec ? pSec->Name : "";
     return Format;
 }
 
@@ -1419,9 +1432,22 @@ bool ProcessOnExport_Single(std::string& V)
                     auto iif = pLine->GetNewIIF(Mult);
                     iif->FormatComponents = Acc->AcceptFormats;
                     bool Orig = ExportContext::OnExport;
+                    auto OrigKey = ExportContext::Key;
+                    auto opLine = ExportContext::ExportingLine;
+                    auto opSec = ExportContext::ExportingSection;
+                    auto OrigMult = LinkNodeContext::LineMult;
+                    ExportContext::Key = KeyID;
                     ExportContext::OnExport = true;
+                    ExportContext::ExportingLine = pLine;
+                    ExportContext::ExportingSection = pSec;
+                    LinkNodeContext::LineMult = Mult;
                     V = iif->RegenFormattedString();
                     ExportContext::OnExport = Orig;
+                    ExportContext::Key = OrigKey;
+                    ExportContext::ExportingLine = opLine;
+                    ExportContext::ExportingSection = opSec;
+                    LinkNodeContext::LineMult = OrigMult;
+
                 }
                 else
                 {
