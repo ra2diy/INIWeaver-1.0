@@ -99,16 +99,13 @@ OrderCheckResult TopoSortByKeyID(const IBB_Project& Proj, StrPoolID Key)
         [](const IBB_Section*) { return true; },
         [&](const IBB_Section* Sec) {
             std::vector<const IBB_Section*> Ret;
-            if (!Sec->Inherit.empty())
-            {
-                for (auto& Sub : Sec->SubSecs)
-                    for (auto& Link : Sub.NewLinkTo)
-                        if (Link.FromLoc.Key == Key)
-                        {
-                            auto pSec = Link.ToLoc.Sec.GetSec(Proj);
-                            if (pSec)Ret.push_back(pSec);
-                        }
-            }
+            for (auto& Sub : Sec->SubSecs)
+                for (auto& Link : Sub.NewLinkTo)
+                    if (Link.FromLoc.Key == Key)
+                    {
+                        auto pSec = Link.ToLoc.Sec.GetSec(Proj);
+                        if (pSec)Ret.push_back(pSec);
+                    }
             return Ret;
         });
     return Checker.GenerateOrder();

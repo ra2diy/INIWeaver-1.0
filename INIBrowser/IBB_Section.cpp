@@ -727,6 +727,7 @@ bool IBB_Section::RemoveLine(StrPoolID Key)
     auto& LB = pSub->Lines_ByName;
     LB.erase(std::remove(LB.begin(), LB.end(), Key), LB.end());
     pSub->Lines.erase(Key);
+    if (Key == InheritKeyID())Inherit.clear();
     return UpdateAll();
 }
 

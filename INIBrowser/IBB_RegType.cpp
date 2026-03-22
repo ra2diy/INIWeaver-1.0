@@ -398,7 +398,7 @@ R"({
         if (S)
         {
             auto oRingCheckKeys = S.GetObjectItem(u8"RingCheck");
-            if (S && S.IsTypeArray())
+            if (oRingCheckKeys && oRingCheckKeys.IsTypeArray())
                 for (auto& V : oRingCheckKeys.GetArrayString())
                     RingCheckKeys.insert(NewPoolStr(V));
 
