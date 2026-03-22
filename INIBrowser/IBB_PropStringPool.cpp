@@ -60,16 +60,10 @@ IBB_PropConstDescPool IBB_Inst_DescPool;
 IBB_PropStringPool IBB_Inst_StrPool;
 
 extern const char* InheritKeyName;
-extern const char* ImportKeyName;
 extern const char* SingleValName;
 StrPoolID InheritKeyID()
 {
     static StrPoolID ID = NewPoolStr(InheritKeyName);
-    return ID;
-}
-StrPoolID ImportKeyID()
-{
-    static StrPoolID ID = NewPoolStr(ImportKeyName);
     return ID;
 }
 StrPoolID SingleValID()

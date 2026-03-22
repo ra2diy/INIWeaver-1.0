@@ -12,6 +12,13 @@ const char* InheritSubSecName = "A__INHERIT_SUBSEC";
 const char* DefaultSubSecName = "B__DEFAULT_SUBSEC";
 const char* ImportSubSecName  = "D__IMPORT_SUBSEC";
 
+namespace IBB_DefaultRegType
+{
+    extern std::unordered_set<StrPoolID> RingCheckKeys;
+    extern std::unordered_map<StrPoolID, IBB_SubSec_Default::_Type> InSubSecKeys;
+}
+
+
 void IBB_DefaultTypeList::EnsureType(const IBB_DefaultTypeAlt& D)
 {
     auto& L = IniLine_Default[D.Name];
@@ -29,28 +36,27 @@ void IBB_DefaultTypeList::EnsureType(const IBB_DefaultTypeAlt& D)
 
 bool IBB_DefaultTypeList::LoadFromAlt()
 {
+    //Subsec在模块上按照字典序排列，不能随便起名字，否则可能会影响显示顺序
     auto& DefaultSubSec = SubSec_Default[DefaultSubSecName];
     DefaultSubSec.Name = DefaultSubSecName;
+    DefaultSubSec.Type = IBB_SubSec_Default::Default;
+
+    auto& InheritSubSec = SubSec_Default[InheritSubSecName];
+    InheritSubSec.Name = InheritSubSecName;
+    InheritSubSec.Type = IBB_SubSec_Default::Inherit;
+
+    auto& ImportSubSec = SubSec_Default[ImportSubSecName];
+    ImportSubSec.Name = ImportSubSecName;
+    ImportSubSec.Type = IBB_SubSec_Default::Import;
 
     //默认都在DefaultSubSec里，然后再分出去
     for (auto& [k, v] : IniLine_Default)v.InSubSec = &DefaultSubSec;
-    
-    DefaultSubSec.Type = IBB_SubSec_Default::Default;
 
-    //Subsec在模块上按照字典序排列，不能随便起名字，否则可能会影响显示顺序
+    for (auto& [k, v] : IBB_DefaultRegType::InSubSecKeys)
     {
-        
-        auto& InheritSubSec = SubSec_Default[InheritSubSecName];
-        InheritSubSec.Name = InheritSubSecName;
-        InheritSubSec.Type = IBB_SubSec_Default::Inherit;
-        IniLine_Default[InheritKeyID()].InSubSec = &InheritSubSec;
-    }
-
-    {
-        auto& ImportSubSec = SubSec_Default[ImportSubSecName];
-        ImportSubSec.Name = ImportSubSecName;
-        ImportSubSec.Type = IBB_SubSec_Default::Import;
-        IniLine_Default[ImportKeyID()].InSubSec = &ImportSubSec;
+        if (v == IBB_SubSec_Default::Inherit)IniLine_Default[k].InSubSec = &InheritSubSec;
+        else if (v == IBB_SubSec_Default::Import)IniLine_Default[k].InSubSec = &ImportSubSec;
+        else IniLine_Default[k].InSubSec = &DefaultSubSec;
     }
 
     return true;

@@ -82,6 +82,8 @@ namespace IBB_DefaultRegType
         false, false, false, false, u8"模块", "", 0};
     StrBoolType DefaultStrBoolType;
     ImColor DefaultNodeColor;
+    std::unordered_set<StrPoolID> RingCheckKeys;
+    std::unordered_map<StrPoolID, IBB_SubSec_Default::_Type> InSubSecKeys;
 
     std::unordered_map<_TEXT_UTF8 std::string, IBG_InputType> InputTypes;
 
@@ -391,6 +393,25 @@ R"({
             for (auto& [N, V] : S.GetMapObject())
                 if (!InputTypes[N].Load(V))
                     rttpt(UTF8toUnicode(N), V.PrintData());
+
+        S = Obj.GetObjectItem(u8"SpecialKeys");
+        if (S)
+        {
+            auto oRingCheckKeys = S.GetObjectItem(u8"RingCheck");
+            if (S && S.IsTypeArray())
+                for (auto& V : oRingCheckKeys.GetArrayString())
+                    RingCheckKeys.insert(NewPoolStr(V));
+
+            auto oInSubSecKeys = S.GetObjectItem(u8"InSubSec");
+            if (oInSubSecKeys && oInSubSecKeys.IsTypeObject())
+                for (auto& [K, V] : oInSubSecKeys.GetMapString())
+                {
+                    IBB_SubSec_Default::_Type T = IBB_SubSec_Default::Default;
+                    if (V == u8"Inherit")T = IBB_SubSec_Default::Inherit;
+                    else if (V == u8"Import")T = IBB_SubSec_Default::Import;
+                    InSubSecKeys[NewPoolStr(K)] = T;
+                }
+        }
 
         return true;
     }

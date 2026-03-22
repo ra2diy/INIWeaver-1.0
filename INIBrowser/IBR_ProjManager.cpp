@@ -36,6 +36,11 @@ std::wstring RemoveSpec(std::wstring W)
     return W;
 }
 
+namespace IBB_DefaultRegType
+{
+    extern std::unordered_set<StrPoolID> RingCheckKeys;
+    extern std::unordered_map<StrPoolID, IBB_SubSec_Default::_Type> InSubSecKeys;
+}
 
 namespace IBR_ProjectManager
 {
@@ -280,10 +285,14 @@ namespace IBR_ProjectManager
         std::map<IBB_Section_Desc, std::string> DisplayRev;
         for (auto& [K, V] : IBF_Inst_Project.DisplayNames)DisplayRev[V] = K;
 
-        auto ImportOrder = TopoSortByImport(IBF_Inst_Project.Project);
-        auto InheritOrder = TopoSortByInherit(IBF_Inst_Project.Project);
+        //auto ImportOrder = TopoSortByImport(IBF_Inst_Project.Project);
+        auto KeyOrders = IBB_DefaultRegType::RingCheckKeys |
+            std::views::transform([](StrPoolID Key) { return std::make_pair(Key, TopoSortByKeyID(IBF_Inst_Project.Project, Key)); }) |
+            std::ranges::to<std::vector>();
+        auto KeyOrderHasCycle = std::ranges::any_of(KeyOrders, [](const auto& b) { return b.second.HasCycle; });
+        auto InheritOrder = TopoSortByKeyID(IBF_Inst_Project.Project, InheritKeyID());
         auto LinkOrder = TopoSortByKeyLink(IBF_Inst_Project.Project);
-        auto HasCycle = ImportOrder.HasCycle || InheritOrder.HasCycle || LinkOrder.HasCycle;
+        auto HasCycle = KeyOrderHasCycle || InheritOrder.HasCycle || LinkOrder.HasCycle;
 
         if (HasCycle)
         {
@@ -292,22 +301,28 @@ namespace IBR_ProjectManager
                 IBR_PopupManager::ClearCurrentPopup();
             } });
         }
-        if (ImportOrder.HasCycle)
+        for (auto& [KeyID, KeyOrder] : KeyOrders)
         {
-            auto Str = ImportOrder.Order_Or_Ring |
-                std::views::transform([&DisplayRev](const IBB_Section* Sec) -> std::string {
+            if (KeyID == InheritKeyID())continue;//继承的环会在后面单独弹窗
+            if (KeyOrder.HasCycle)
+            {
+                auto Str = KeyOrder.Order_Or_Ring |
+                    std::views::transform([&DisplayRev](const IBB_Section* Sec) -> std::string {
                     auto Desc = Sec->GetThisDesc();
                     if (DisplayRev.contains(Desc))return DisplayRev[Desc];
                     else return Desc.GetText();
-                }) |
-                std::views::join_with(" -> \n"s) |
-                std::ranges::to<std::string>();
-                
-            auto StrW = UTF8toUnicode(Str);
-            auto Fmt = UnicodetoUTF8(std::vformat(locw("Log_CycleInfo"), std::make_wformat_args(StrW)));
-            IBRF_CoreBump.SendToR({ [F=std::move(Fmt)] () mutable {
-                IBR_PopupManager::AddOutputErrorPopup(std::move(F), loc("Log_ImportCycleDetected"));
-            } });
+                        }) |
+                    std::views::join_with(" -> \n"s) |
+                            std::ranges::to<std::string>();
+
+                        auto StrW = UTF8toUnicode(Str);
+                        auto Fmt = UnicodetoUTF8(std::vformat(locw("Log_CycleInfo"), std::make_wformat_args(StrW)));
+                        auto Key = UTF8toUnicode(PoolStr(KeyID));
+                        auto Fmt2 = UnicodetoUTF8(std::vformat(locw("Log_KeyCycleDetected"), std::make_wformat_args(Key)));
+                        IBRF_CoreBump.SendToR({ [F = std::move(Fmt), F2 = std::move(Fmt2)]() mutable {
+                            IBR_PopupManager::AddOutputErrorPopup(std::move(F), F2);
+                        } });
+            }
         }
         if (InheritOrder.HasCycle)
         {

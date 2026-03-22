@@ -43,10 +43,8 @@ extern std::atomic<bool> SettingSaveComplete;
 extern const wchar_t* SettingFileName;
 extern const char* DefaultIniName;
 extern const char* InheritKeyName;
-extern const char* ImportKeyName;
 extern const char* SingleValName;
 StrPoolID InheritKeyID();
-StrPoolID ImportKeyID();
 StrPoolID SingleValID();
 
 

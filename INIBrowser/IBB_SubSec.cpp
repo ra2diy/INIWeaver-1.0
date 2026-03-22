@@ -406,11 +406,8 @@ bool IBB_SubSec::UpdateAll()
         
     }
 
-    if (Default->Type == IBB_SubSec_Default::Inherit)
-    {
-        auto it = Lines.find(InheritKeyID());
-        if (it != Lines.end())Root->Inherit = it->second.Indexed(0)->GetString();
-    }
+    if (auto it = Lines.find(InheritKeyID()); it != Lines.end())
+        Root->Inherit = it->second.Indexed(0)->GetString();
 
     UpdateNewLinkTo(std::move(NewLT));
 

@@ -32,6 +32,5 @@ struct IBB_OrderChecker
     IBB_OrderChecker(const IBB_Project& Proj, const Section_Pred& Pred, const Section_LinkGen& LinkGen);
 };
 
-OrderCheckResult TopoSortByInherit(const IBB_Project& Proj);
-OrderCheckResult TopoSortByImport(const IBB_Project& Proj);
+OrderCheckResult TopoSortByKeyID(const IBB_Project& Proj, StrPoolID Key);
 OrderCheckTResult<IBB_LineLocation> TopoSortByKeyLink(const IBB_Project& Proj);
