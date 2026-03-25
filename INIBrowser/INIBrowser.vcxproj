@@ -213,6 +213,7 @@
     <ClInclude Include="IBR_Localization.h" />
     <ClInclude Include="IBR_Components.h" />
     <ClInclude Include="IBR_Misc.h" />
+    <ClInclude Include="IBR_TopMost.h" />
     <ClInclude Include="IBSave.h" />
     <ClInclude Include="MainStage.h" />
     <ClInclude Include="Initialize.h" />
@@ -256,6 +257,7 @@
     <ClCompile Include="IBR_Combo.cpp" />
     <ClCompile Include="IBR_Font.cpp" />
     <ClCompile Include="IBR_HotKey.cpp" />
+    <ClCompile Include="IBR_InputTypeDebug.cpp" />
     <ClCompile Include="IBR_LinkNode.cpp" />
     <ClCompile Include="IBR_ListView.cpp" />
     <ClCompile Include="IBR_Localization.cpp" />
@@ -269,6 +271,7 @@
     <ClCompile Include="IBR_Section.cpp" />
     <ClCompile Include="IBR_SectionData.cpp" />
     <ClCompile Include="IBR_Setting.cpp" />
+    <ClCompile Include="IBR_TopMost.cpp" />
     <ClCompile Include="IBR_WorkSpace.cpp" />
     <ClCompile Include="IBSave.cpp" />
     <ClCompile Include="INIBrowser.cpp" />

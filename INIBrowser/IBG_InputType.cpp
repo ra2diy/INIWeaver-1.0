@@ -1315,9 +1315,17 @@ IBB_UpdateResult IIC_Setter_String::RenderUI(IBB_ValueContainer& Cont, IICStatus
 {
     auto& Var = Cont.GetValue(ValueID);
     auto State = Var.StateValue<IIS_String>();
-    if (State) State->Text = Value;
-    else Var.ResetState<IIS_String>(Value);
-    return { true, false, ValueID };
+    if (State)
+    {
+        bool Changed = State->Text != Value;
+        if (Changed)State->Text = Value;
+        return { Changed, false, ValueID };
+    }
+    else
+    {
+        Var.ResetState<IIS_String>(Value);
+        return { true, false, ValueID };
+    }
 }
 
 std::string IIC_Setter_String::FormatValue(IBB_ValueContainer&, IBB_InputValue& Val, const IBB_InputFormat& Format)
@@ -1804,7 +1812,7 @@ IBB_UpdateResult IIC_Bool::RenderUI(IBB_ValueContainer& Cont, IICStatus&)
     auto& Var = Cont.GetValue(ValueID);
     static const IBB_InputFormat Fmt = { IBB_InputFormat::ToString, "" };
     auto State = Var.StateValue<IIS_Bool>();
-    State->FmtType = FmtType;
+    if (State)State->FmtType = FmtType;
     bool Val;
     if (State)Val = State->Value;
     else if (Var.Dirty)Val = IsTrueString(Var.StateValPtr->Format(Fmt));

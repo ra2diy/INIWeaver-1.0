@@ -100,8 +100,14 @@ void WorkSpaceLine::RenderUI(const char* Line, const char* Hint, IBB_IniLine& Ba
 
         for (size_t i = 0; i < LinkNodeContext::AcceptEdge.size() - 1; i++)
         {
-            auto& FromY = LinkNodeContext::AcceptEdge[i].y;
-            auto& ToY = LinkNodeContext::AcceptEdge[i + 1].y;
+            auto FromY = LinkNodeContext::AcceptEdge[i].y;
+            auto ToY = LinkNodeContext::AcceptEdge[i + 1].y;
+
+            if (acc && acc->AcceptFullArea)
+            {
+                FromY = 0;
+                ToY = ImGui::GetWindowHeight();
+            }
 
             auto KeyName = Back.Default->Name;
             auto tgback = LinkNodeContext::CurSub->Root;
@@ -270,11 +276,14 @@ void IBR_IniLine::RenderUI(
     auto slif = Back.Default->GetInputType().LineIDFrom;
     auto multiple = Back.IsMultiple();
     bool pressed_insert = false;
+    bool pressed_remove = false;
     ImVec2 slix;
 
     if(!nlad)LinkNodeContext::AcceptEdge.push_back(ImGui::GetCursorPos());
 
+    ImGui::PushID(Back.GetComponentID());
     ImGui::TextEx(Line);
+
     if (slid && !nlad && multiple)
     {
         ImGui::SameLine();
@@ -300,12 +309,14 @@ void IBR_IniLine::RenderUI(
     
 
 
-    ImGui::PushID(Back.GetComponentID());
+    
     if(nlad) LinkNodeContext::AcceptEdge.push_back(ImGui::GetCursorPos());
-    if (nlad && multiple)
+    if ((nlad || !*Line) && multiple)
     {
         ImGui::SameLine();//如果nlad，那么放在文本后面；
-        pressed_insert = ImGui::Button(" + ");
+        pressed_insert = ImGui::Button("+", ImVec2{ (float)FontHeight, (float)FontHeight});
+        //ImGui::SameLine();
+        //pressed_remove = ImGui::Button("-", ImVec2{ (float)FontHeight, (float)FontHeight });
         if (slid)
         {
             slix = ImGui::GetCursorPos();
@@ -338,10 +349,12 @@ void IBR_IniLine::RenderUI(
     ImGui::GetCurrentWindow()->DC.CursorMaxPos.y = CMP.y;
 
     auto EndCursor = ImGui::GetCursorPos();
-    if (!nlad && multiple)//如果没有，那么放在描述下面。
+    if (!nlad && *Line && multiple)//如果没有，那么放在描述下面。
     {
         ImGui::SetCursorPos({ EndCursor.x, BaseCursorY });
-        pressed_insert = ImGui::Button(" + ");
+        pressed_insert = ImGui::Button("+", ImVec2{ (float)FontHeight, (float)FontHeight });
+        //ImGui::SameLine();
+        //pressed_remove = ImGui::Button("-", ImVec2{ (float)FontHeight, (float)FontHeight });
         ImGui::SetCursorPos(EndCursor);
 
         //挤不下了，另起一行
@@ -362,6 +375,16 @@ void IBR_IniLine::RenderUI(
                 def->GetInputType().Form->GetFormattedString(),
                 IBB_IniMergeMode::Replace
             );
+        } });
+    }
+    if (multiple && pressed_remove)
+    {
+        auto tgback = LinkNodeContext::CurSub->Root;
+        auto def = Back.Default;
+        auto idx = Back.Count() - 1;
+        IBRF_CoreBump.SendToR({ [tgback, def, idx]()
+        {
+            tgback->RemoveLine(def->Name, idx);
         } });
     }
 }

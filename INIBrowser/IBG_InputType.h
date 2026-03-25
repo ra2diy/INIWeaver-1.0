@@ -223,6 +223,7 @@ struct IIT_AcceptorSetting
 {
     StrPoolID AcceptRegType;
     IFCVPtr AcceptFormats;//！特殊的是，这个是可空的！
+    bool AcceptFullArea;
     std::optional<ImColor> NodeColor;
 };
 

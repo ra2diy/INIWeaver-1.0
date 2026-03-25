@@ -94,6 +94,11 @@ namespace IBB_DefaultRegType
             IBR_PopupManager::AddLoadConfigErrorPopup(wss + "\n" + loc("Log_PresetTypeInfo") + "\n" + Info, "");
         };
 
+    void RTTPT(const std::wstring& wcs, const std::string& Info)
+    {
+        rttpt(wcs, Info);
+    }
+
     void InitInputTypes(const std::string& S_StrBool)
     {
         static bool CALLED = false;

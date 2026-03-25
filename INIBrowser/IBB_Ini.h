@@ -280,6 +280,7 @@ struct IBB_Section
 
     // MergeType is unused to a LinkGroup
     bool RemoveLine(StrPoolID Key);
+    bool RemoveLine(StrPoolID Key, size_t Index);
     bool MergeLine(StrPoolID Key, size_t Index, const std::string& Value, IBB_IniMergeMode Mode, bool NoUpdate = false);
     void OrderKey(StrPoolID Key, size_t NewOrder);
     void CheckSubsecOrder();

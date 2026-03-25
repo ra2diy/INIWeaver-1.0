@@ -11,6 +11,7 @@
 #include "IBR_Combo.h"
 #include "IBR_Components.h"
 #include "IBR_Misc.h"
+#include "IBR_TopMost.h"
 
 extern bool LastInputStdStringActive;
 
@@ -829,6 +830,8 @@ namespace IBR_WorkSpace
     //画布上的键鼠动作
     void ProcessBackgroundOpr()
     {
+        if (IBR_TopMost::IsTopMostMenuOn())return;
+
         //PREPROCESSING I : Remove Illegal States
         {
             if (IsResizingWindow())return;
@@ -1613,6 +1616,7 @@ namespace IBR_WorkSpace
     {
         IBB_Section_Desc _RenderUI_OnRender;
         if (!IBR_ProjectManager::IsOpen())return;
+        if (IBR_TopMost::IsTopMostMenuOn())return;
         auto vu = ExtSetPos.Release();
 
         bool Cleared = false;

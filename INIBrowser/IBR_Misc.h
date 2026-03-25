@@ -173,22 +173,6 @@ namespace IBR_WorkSpace
     dImVec2 GetMassCenter(const std::vector<ModuleID_t>& Target);
 }
 
-namespace IBR_TopMost
-{
-    extern const char* LayerName;
-    using RenderPayload = std::function<void(ImDrawList* DList)>;
-
-    void CommitText(const ImVec2& pos, ImU32 col, const char* text, int Priority = 0);
-    void CommitRect(const ImVec2& p_min, const ImVec2& p_max, ImU32 col, float rounding = 0.0f, ImDrawFlags flags = 0, float thickness = 1.0f, int Priority = 0);
-    void CommitPushClipRect(const ImVec2& clip_rect_min, const ImVec2& clip_rect_max, bool intersect_with_current_clip_rect = false, int Priority = 0);
-    void CommitRectFilled(const ImVec2& p_min, const ImVec2& p_max, ImU32 col, float rounding = 0.0f, ImDrawFlags flags = 0, int Priority = 0);
-    void CommitPopClipRect(int Priority = 0);
-    void CommitPayload(const RenderPayload& Payload, int Priority = 0);
-    void CommitDrawOpr(const ImVec2& pos, const StdMessage& Msg);
-    void RenderUI();
-
-}
-
 namespace IBR_EditFrame
 {
     extern IBR_Section CurSection;

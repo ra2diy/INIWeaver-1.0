@@ -225,6 +225,9 @@
     <ClInclude Include="IBR_Misc.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="IBR_TopMost.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="INIBrowser.cpp">
@@ -387,6 +390,12 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="IBB_IniLine.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="IBR_TopMost.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="IBR_InputTypeDebug.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

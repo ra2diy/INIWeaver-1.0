@@ -11,6 +11,7 @@
 #include <imgui_internal.h>
 #include "IBR_Debug.h"
 #include "IBR_Misc.h"
+#include "IBR_TopMost.h"
 
 std::string FontPath = ".\\Resources\\";//全过程不变
 std::wstring FontPathW = L".\\Resources\\";//全过程不变

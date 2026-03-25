@@ -4,9 +4,10 @@
 #include "IBR_HotKey.h"
 #include "FromEngine/RFBump.h"
 #include "FromEngine/global_timer.h"
-#include<imgui_internal.h>
+#include <imgui_internal.h>
 #include <ranges>
 #include "IBR_Misc.h"
+#include "IBR_TopMost.h"
 
 namespace ImGui
 {
@@ -1046,101 +1047,4 @@ namespace IBR_SelectMode
         UpdateMassSelect();
         RenderUI_MassSelect();
     }
-}
-
-
-namespace IBR_TopMost
-{
-    const char* LayerName = "##IBR_TopMost_Popup";
-    std::map<int, std::vector<RenderPayload>> Payloads;
-    std::vector<std::pair<ImVec2, StdMessage>> DrawOprPayloads;
-
-    void CommitText(const ImVec2& pos, ImU32 col, const char* text, int Priority)
-    {
-        CommitPayload([=, T = std::string(text)](ImDrawList* DList)
-            {
-                DList->AddText(pos, col, T.c_str());
-            }, Priority);
-    }
-    void CommitRect(const ImVec2& p_min, const ImVec2& p_max, ImU32 col, float rounding, ImDrawFlags flags, float thickness, int Priority)
-    {
-        CommitPayload([=](ImDrawList* DList)
-            {
-                DList->AddRect(p_min, p_max, col, rounding, flags, thickness);
-            }, Priority);
-    }
-    void CommitPushClipRect(const ImVec2& clip_rect_min, const ImVec2& clip_rect_max, bool intersect_with_current_clip_rect, int Priority)
-    {
-        CommitPayload([=](ImDrawList* DList)
-            {
-                DList->PushClipRect(clip_rect_min, clip_rect_max, intersect_with_current_clip_rect);
-            }, Priority);
-    }
-    void CommitRectFilled(const ImVec2& p_min, const ImVec2& p_max, ImU32 col, float rounding, ImDrawFlags flags, int Priority)
-    {
-        CommitPayload([=](ImDrawList* DList)
-            {
-                DList->AddRectFilled(p_min, p_max, col, rounding, flags);
-            }, Priority);
-    }
-    void CommitPopClipRect(int Priority)
-    {
-        CommitPayload([](ImDrawList* DList)
-            {
-                DList->PopClipRect();
-            }, Priority);
-    }
-    void CommitPayload(const RenderPayload& Payload, int Priority)
-    {
-        Payloads[Priority].push_back(Payload);
-    }
-    void CommitDrawOpr(const ImVec2& pos, const StdMessage& Msg)
-    {
-        DrawOprPayloads.push_back({ pos, Msg });
-    }
-
-    void RenderUI()
-    {
-        if (Payloads.empty() && DrawOprPayloads.empty())return;
-
-        ImGui::SetNextWindowBgAlpha(0.0f);
-        ImGui::SetNextWindowPos(IBR_RealCenter::WorkSpaceUL);
-        ImGui::SetNextWindowSize(IBR_RealCenter::WorkSpaceDR - IBR_RealCenter::WorkSpaceUL);
-        ImGui::Begin(LayerName, nullptr,
-            ImGuiWindowFlags_NoInputs |
-            ImGuiWindowFlags_NoTitleBar |
-            ImGuiWindowFlags_NoScrollbar |
-            ImGuiWindowFlags_NoFocusOnAppearing |
-            ImGuiWindowFlags_NoResize |
-            ImGuiWindowFlags_NoScrollWithMouse |
-            ImGuiWindowFlags_NoMouseInputs
-        );
-        ImGui::SetWindowFontScale(IBR_FullView::Ratio);
-        auto Window = ImGui::GetCurrentWindow();
-
-        //ImGui::Text("Hello World");
-        //ImGui::Text("This is a message!");
-
-        for (auto& [Pos, Msg] : DrawOprPayloads)
-        {
-            ImGui::SetCursorScreenPos(Pos);
-            ImGui::BeginGroup();
-            Msg();
-            ImGui::EndGroup();
-        }
-
-        ImDrawList* DList = ImGui::GetWindowDrawList();//ImGui::GetForegroundDrawList();
-        for (auto& [Pri, PayloadList] : Payloads)
-            for(auto& Payload : PayloadList)
-                Payload(DList);
-
-        
-
-        ImGui::End();
-        Payloads.clear();
-        DrawOprPayloads.clear();
-
-        ImGui::GetCurrentContext()->ExtraTopMostWindow2 = Window;
-    }
-
 }

@@ -11,6 +11,7 @@
 #include <imgui_internal.h>
 #include <ranges>
 #include "IBR_Misc.h"
+#include "IBR_TopMost.h"
 
 void DrawNoEntrySymbol(ImVec2 pos, float size, ImU32 col) {
     ImDrawList* drawList = ImGui::GetWindowDrawList();

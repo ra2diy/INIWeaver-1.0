@@ -562,11 +562,18 @@ IFCVPtr InputTypeFactory::CreateFormatComponentVector(IBB_ValueContainer& Cont, 
     {
         if (item.IsTypeObject() && item.HasItem("ValueList"))
         {
+            auto oConstraint = Obj.GetObjectItem("ExportConstraint");
+            IBB_ValueConstraint Constraint;
+            if (oConstraint)Constraint = CreateValueConstraint(oConstraint);
+            else Constraint.Conditions.clear();
+
             auto List = item.ItemArrayInt("ValueList");
             for (auto& vid : List)
             {
                 FormatComponents->push_back(std::make_unique<IFC_ToString>(vid));
+                FormatComponents->back()->Constraint = Constraint;
                 FormatComponents->push_back(std::make_unique<IFC_PureText>(","));
+                FormatComponents->back()->Constraint = Constraint;
             }
             if(!List.empty())FormatComponents->pop_back();
             continue;
@@ -624,6 +631,8 @@ IASOpt InputTypeFactory::CreateAcceptorSetting(IBB_ValueContainer& Cont, const J
     auto oFormat = Obj.GetObjectItem("ValueFormat");
     if(oFormat)Setting.AcceptFormats = InputTypeFactory::CreateFormatComponentVector(Cont, oFormat, HasError);
     else Setting.AcceptFormats = nullptr;
+
+    Setting.AcceptFullArea = Obj.ItemBoolOr("FullArea", false);
 
     ImColor Col;
     bool Colored;

@@ -731,6 +731,14 @@ bool IBB_Section::RemoveLine(StrPoolID Key)
     return UpdateAll();
 }
 
+bool IBB_Section::RemoveLine(StrPoolID Key, size_t Index)
+{
+    auto [pLine, pSub] = GetLineFromSubSecsEx2(Key);
+    if (!pLine || !pSub)return false;
+    auto cnt = pLine->Count();
+    if (Index >= cnt)return false;
+}
+
 bool IBB_Section::MergeLine(StrPoolID Key, size_t Index, const std::string& Value, IBB_IniMergeMode Mode, bool NoUpdate)
 {
     switch (Mode)

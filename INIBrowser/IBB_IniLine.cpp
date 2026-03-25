@@ -842,7 +842,9 @@ void IBB_IniLine::MakeKVForExport(IBB_VariableMultiList& vl, IBB_Section* AtSec,
         auto value = Data->GetStringForExport();
         Data->SetValue(Str);
         ExportContext::ExportingLine = this;
+        ExportContext::OnExport = true;
         input.KVFmt(vl, key, value, TmpLineOrder, AtSec);
+        ExportContext::OnExport = false;
         ExportContext::ExportingLine = nullptr;
         LinkNodeContext::LineMult = OldMult;
         ExportContext::Key = OrigKey;

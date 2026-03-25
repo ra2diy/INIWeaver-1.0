@@ -8,6 +8,11 @@
 #include "IBR_Debug.h"
 #include "IBR_LinkNode.h"
 #include "IBR_Misc.h"
+#include "IBR_TopMost.h"
+
+void ITD_Column1();
+void ITD_Column2();
+void ITD_Init();
 
 namespace PreLink
 {
@@ -91,6 +96,23 @@ void IBR_Debug::RenderUI()
     ImGui::Checkbox(locc("GUI_DebugNoEnterEdit"), &DontGoToEdit);
     ImGui::Checkbox(locc("GUI_DebugCrazyRendering"), &DontDrawBg);
     ImGui::Checkbox(locc("GUI_DebugLinkInspect"), &LinkDebugMode);
+
+    if (IBR_TopMost::MenuMatchesSource(MenuItemID_DEBUG, 114514))
+    {
+        if (ImGui::Button(u8"关闭实时表单调试"))
+            IBR_TopMost::CloseTopMostMenu();
+    }
+    else if (ImGui::Button(u8"打开实时表单调试"))
+    {
+        ITD_Init();
+        IBR_TopMost::OpenTopMostFrom(MenuItemID_DEBUG, 114514, [this]() {
+            ImGui::BeginColumns("##DebugRealTimeInfo", 2);
+            ITD_Column1();
+            ImGui::NextColumn();
+            ITD_Column2();
+            ImGui::EndColumns();
+        });
+    }
 
     if (ImGui::Button(locc("GUI_DebugClipboard2Json")))
     {

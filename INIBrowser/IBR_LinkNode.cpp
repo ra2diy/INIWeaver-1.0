@@ -283,6 +283,53 @@ namespace IBR_LinkNode
         //GlobalLogB.AddLog("");
     }
 
+    void RenderUI_Node_Disabled(
+        IICStatus& Status,
+        const std::string& Hint,
+        const std::string& DescLong,
+        const LinkNodeSetting& LinkNode
+    )
+    {
+        {
+            auto End = ImGui::FindRenderedTextEnd(Hint.c_str(), nullptr);
+            auto Len = End - Hint.c_str();
+            if (Len)
+            {
+                ImGui::TextUnformatted(Hint.c_str(), End);
+                if (ImGui::IsItemHovered())IBR_ToolTip(DescLong);
+                if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))Status.InputMethod = IICStatus::Input;
+                ImGui::SameLine();
+            }
+        }
+
+        {
+            auto XLeft = ImGui::GetCursorPos().x;
+            auto XRight = ImGui::GetWindowContentRegionWidth();
+            auto YUp = ImGui::GetCursorPos().y;
+            auto YDown = YUp + ImGui::GetTextLineHeight();
+            
+            ImGui::Dummy(ImVec2(XRight - XLeft, YDown - YUp), true);
+            //ImGui::DebugDrawItemRect();
+            //if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))Status.InputMethod = IICStatus::Input;
+            ImGui::SetCursorPos({ XLeft , YUp });
+        }
+
+        auto Center = DefaultCenterInWindow();
+        ImGui::SetCursorPosX(Center.x - FontHeight * 0.5f);
+
+        auto Col = AdjustNodeCol(LinkNode.LinkCol, false, false);
+        ImGui::PushStyleColor(ImGuiCol_CheckMark, Col.Value);
+        auto w = ImGui::GetCurrentWindow();
+        auto mx = w->DC.CursorMaxPos;
+        auto mxi = w->DC.IdealMaxPos;
+        ImGui::RadioButton("", true, GlobalNodeStyle);
+        w->DC.CursorMaxPos = mx;
+        w->DC.IdealMaxPos = mxi;
+        void AdjustCursor();
+        AdjustCursor();
+        ImGui::PopStyleColor();
+    }
+
     IBB_UpdateResult RenderUI_Node(
         IICStatus& Status,
         const std::string& Hint,
@@ -292,6 +339,12 @@ namespace IBR_LinkNode
         const std::function<IBB_UpdateResult(const std::string& NewValue, bool Active)>& ModifyFunc
     )
     {
+        if (!LinkNodeContext::CurSub)
+        {
+            RenderUI_Node_Disabled(Status, Hint, DescLong, LinkNode);
+            return DefaultResult;
+        }
+
         auto pss = LinkNodeContext::CurSub;
         auto psd = IBR_Inst_Project.GetSection(pss->Root->GetThisID()).GetSectionData();
         auto cidx = LinkNodeContext::CompIndex;
