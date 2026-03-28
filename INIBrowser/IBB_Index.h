@@ -36,13 +36,17 @@ namespace std
     {
         size_t operator()(const LinkSrcIdx& ID) const
         {
+            // 根据 size_t 的位数选择常量
+            constexpr size_t magic = (sizeof(size_t) == 8)
+                ? 0x9e3779b97f4a7c15ULL  // 64位黄金比例常数
+                : 0x9e3779b9;             // 32位黄金比例常数
             size_t i = 0, h;
             h = std::hash<size_t>{}(std::get<0>(ID));
-            i ^= h + 0x9e3779b9 + (i << 6) + (i >> 2);
+            i ^= h + magic + (i << 6) + (i >> 2);
             h = std::hash<size_t>{}(std::get<1>(ID));
-            i ^= h + 0x9e3779b9 + (i << 6) + (i >> 2);
+            i ^= h + magic + (i << 6) + (i >> 2);
             h = std::hash<size_t>{}(std::get<2>(ID));
-            i ^= h + 0x9e3779b9 + (i << 6) + (i >> 2);
+            i ^= h + magic + (i << 6) + (i >> 2);
             return i;
         }
     };
@@ -53,7 +57,7 @@ template<typename Str>
 struct IBB_TDIndex
 {
     bool UseIndex;
-    int Index;
+    size_t Index;
     Str Name;
 
     bool operator==(const IBB_TDIndex<Str>& A) const
@@ -220,7 +224,7 @@ typename std::unordered_map<Str, T>::iterator IBB_TDIndex<Str>::Search(std::unor
     }
     else
     {
-        int i = 0;
+        size_t i = 0;
         Str Nr{};
         for (const auto& It : Source)
         {
@@ -349,7 +353,7 @@ typename std::unordered_map<Str, T>::const_iterator IBB_TDIndex<Str>::Search(con
     }
     else
     {
-        int i = 0;
+        size_t i = 0;
         Str Nr{};
         for (const auto& It : Source)
         {
@@ -402,7 +406,7 @@ typename std::unordered_map<Str, T>::const_iterator IBB_TDIndex<Str>::Search(con
     }
     else
     {
-        int i = 0;
+        size_t i = 0;
         Str Nr{};
         for (const auto& It : Source)
         {

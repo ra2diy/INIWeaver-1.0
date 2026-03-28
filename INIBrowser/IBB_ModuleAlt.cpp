@@ -27,8 +27,12 @@
 std::string DataToBase64(const std::vector<BYTE>& Data) {
     DWORD dwLength = 0;
 
+    if (sizeof(size_t) == 8 && Data.size() > 0x7FFFFFFF)
+        throw std::runtime_error("Data size exceeds the maximum limit for Base64 encoding.");
+    auto Size = (DWORD)Data.size();
+
     // 计算 Base64 字符串的长度
-    if (!CryptBinaryToStringA(Data.data(), Data.size(), CRYPT_STRING_BASE64 | CRYPT_STRING_NOCRLF, nullptr, &dwLength)) {
+    if (!CryptBinaryToStringA(Data.data(), Size, CRYPT_STRING_BASE64 | CRYPT_STRING_NOCRLF, nullptr, &dwLength)) {
         throw std::runtime_error("Failed to calculate Base64 length.");
     }
 
@@ -36,7 +40,7 @@ std::string DataToBase64(const std::vector<BYTE>& Data) {
     std::string base64Str(dwLength, '\0');
 
     // 将二进制数据转换为 Base64 字符串
-    if (!CryptBinaryToStringA(Data.data(), Data.size(), CRYPT_STRING_BASE64 | CRYPT_STRING_NOCRLF, &base64Str[0], &dwLength)) {
+    if (!CryptBinaryToStringA(Data.data(), Size, CRYPT_STRING_BASE64 | CRYPT_STRING_NOCRLF, &base64Str[0], &dwLength)) {
         throw std::runtime_error("Failed to convert data to Base64.");
     }
 
@@ -50,8 +54,12 @@ std::string DataToBase64(const std::vector<BYTE>& Data) {
 std::vector<BYTE> Base64ToData(const std::string_view Str) {
     DWORD dwLength = 0;
 
+    if (sizeof(size_t) == 8 && Str.size() > 0x7FFFFFFF)
+        throw std::runtime_error("Base64 string size exceeds the maximum limit for decoding.");
+    auto Size = (DWORD)Str.size();
+
     // 计算二进制数据的长度
-    if (!CryptStringToBinaryA(Str.data(), Str.size(), CRYPT_STRING_BASE64, nullptr, &dwLength, nullptr, nullptr)) {
+    if (!CryptStringToBinaryA(Str.data(), Size, CRYPT_STRING_BASE64, nullptr, &dwLength, nullptr, nullptr)) {
         throw std::runtime_error("Failed to calculate binary data length.");
     }
 
@@ -59,7 +67,7 @@ std::vector<BYTE> Base64ToData(const std::string_view Str) {
     std::vector<BYTE> data(dwLength);
 
     // 将 Base64 字符串转换为二进制数据
-    if (!CryptStringToBinaryA(Str.data(), Str.size(), CRYPT_STRING_BASE64, data.data(), &dwLength, nullptr, nullptr)) {
+    if (!CryptStringToBinaryA(Str.data(), Size, CRYPT_STRING_BASE64, data.data(), &dwLength, nullptr, nullptr)) {
         throw std::runtime_error("Failed to convert Base64 to data.");
     }
 
@@ -433,7 +441,7 @@ ClipWriteStream& operator<<(ClipWriteStream& stm, float v)
     stm.PushBytes((LPCBYTE)&v, sizeof(v));
     return stm;
 }
-ClipWriteStream& operator<<(ClipWriteStream& stm, size_t v)
+ClipWriteStream& operator<<(ClipWriteStream& stm, uint32_t v)
 {
     stm.Align();
     stm.PushBytes((LPCBYTE)&v, sizeof(v));
@@ -441,7 +449,7 @@ ClipWriteStream& operator<<(ClipWriteStream& stm, size_t v)
 }
 ClipWriteStream& operator<<(ClipWriteStream& stm, const std::string& v)
 {
-    stm << v.size();
+    stm << (uint32_t)v.size();
     stm.PushBytes((LPCBYTE)v.c_str(), v.size());
     return stm;
 }
@@ -478,17 +486,18 @@ ClipReadStream& operator>>(ClipReadStream& stm, float& v)
     v = stm.Get<float>();
     return stm;
 }
-ClipReadStream& operator>>(ClipReadStream& stm, size_t& v)
+ClipReadStream& operator>>(ClipReadStream& stm, uint32_t& v)
 {
     stm.Align();
-    v = stm.Get<size_t>();
+    v = stm.Get<uint32_t>();
     return stm;
 }
 ClipReadStream& operator>>(ClipReadStream& stm, std::string& v)
 {
-    size_t x;
+    uint32_t x;
     stm >> x;
-    v.resize(x);
+    size_t sz = x;
+    v.resize(sz);
     memcpy(v.data(), stm.GetByte(x), x);
     return stm;
 }

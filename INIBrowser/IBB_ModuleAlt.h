@@ -143,8 +143,7 @@ struct ModuleClipData
 
 ClipWriteStream& operator<<(ClipWriteStream& stm, bool v);
 ClipWriteStream& operator<<(ClipWriteStream& stm, float v);
-ClipWriteStream& operator<<(ClipWriteStream& stm, size_t v);
-//ClipWriteStream& operator<<(ClipWriteStream& stm, uint32_t v);
+ClipWriteStream& operator<<(ClipWriteStream& stm, uint32_t v);
 ClipWriteStream& operator<<(ClipWriteStream& stm, const std::string& v);
 ClipWriteStream& operator<<(ClipWriteStream& stm, const IniToken& v);
 ClipWriteStream& operator<<(ClipWriteStream& stm, const ImVec2& v);
@@ -153,7 +152,7 @@ ClipWriteStream& operator<<(ClipWriteStream& stm, const PairClipOnShow& v);
 template<typename T>
 ClipWriteStream& operator<<(ClipWriteStream& stm, const std::vector<T>& v)
 {
-    stm << v.size();
+    stm << (uint32_t)v.size();
     for (auto& w : v)
         stm << w;
     return stm;
@@ -161,8 +160,7 @@ ClipWriteStream& operator<<(ClipWriteStream& stm, const std::vector<T>& v)
 
 ClipReadStream& operator>>(ClipReadStream& stm, bool& v);
 ClipReadStream& operator>>(ClipReadStream& stm, float& v);
-ClipReadStream& operator>>(ClipReadStream& stm, size_t& v);
-//ClipReadStream& operator>>(ClipReadStream& stm, uint32_t& v);
+ClipReadStream& operator>>(ClipReadStream& stm, uint32_t& v);
 ClipReadStream& operator>>(ClipReadStream& stm, std::string& v);
 ClipReadStream& operator>>(ClipReadStream& stm, IniToken& v);
 ClipReadStream& operator>>(ClipReadStream& stm, ImVec2& v);
@@ -171,9 +169,10 @@ ClipReadStream& operator>>(ClipReadStream& stm, PairClipOnShow& v);
 template<typename T>
 ClipReadStream& operator>>(ClipReadStream& stm, std::vector<T>& v)
 {
-    size_t x;
+    uint32_t x;
     stm >> x;
-    v.resize(x);
+    size_t sz = x;
+    v.resize(sz);
     for (auto& w : v)
         stm >> w;
     return stm;

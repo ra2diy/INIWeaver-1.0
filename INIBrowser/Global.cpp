@@ -3,13 +3,13 @@
 #include "IBR_Debug.h"
 
 //所有版本号相关数据
-const std::string Version = u8"1.0.8";
-const std::wstring VersionW = L"1.0.8";
+const std::string Version = u8"1.0.9";
+const std::wstring VersionW = L"1.0.9";
 const int VersionMajor = 1;
 const int VersionMinor = 0;
-const int VersionRelease = 8;
+const int VersionRelease = 9;
 const int VersionN = VersionMajor * 10000 + VersionMinor * 100 + VersionRelease;
-const std::string VersionNStr = u8"010008";
+const std::string VersionNStr = u8"010009";
 //剪贴板格式不更新就不要动了
 const std::string ClipDataFormatVersion = u8"1.0.6";
 

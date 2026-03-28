@@ -69,7 +69,7 @@ public:
 	char* GetStr(char* Buf, size_t Size)const
 	{
 		if (!IsOpen)return 0;
-		return fgets(Buf, Size, fp);
+		return fgets(Buf, (int)Size, fp);
 	}
 	size_t PutStr(std::string_view Buf)const
 	{

@@ -63,7 +63,7 @@ void ITD_Init()
 
 void ITD_Column1()
 {
-    if (ImGui::TreeNode(u8"已载入的输入类型"))
+    if (ImGui::TreeNode(locc("GUI_ITDLoadedInputType")))
     {
         for(auto& [k,v] : IBB_DefaultRegType::InputTypes)
             if (ImGui::Selectable(k.c_str(), ITDContext::CurrentInputName == k && !ITDContext::FromNew))
@@ -77,7 +77,7 @@ void ITD_Column1()
         ImGui::TreePop();
     }
 
-    if (ImGui::TreeNode(u8"临时的输入类型"))
+    if (ImGui::TreeNode(locc("GUI_ITDTempInputType")))
     {
         for (auto& [k, v] : ITDContext::NewInputTypes)
             if (ImGui::Selectable(k.c_str(), ITDContext::CurrentInputName == k && ITDContext::FromNew))
@@ -91,7 +91,7 @@ void ITD_Column1()
         ImGui::TreePop();
     }
 
-    if (ImGui::Button(u8"新建输入类型"))
+    if (ImGui::Button(locc("GUI_ITDCreateInputType")))
     {
         if (!ITDContext::NewFormBuf)
             ITDContext::NewFormBuf = std::make_shared<BufString>();
@@ -99,13 +99,13 @@ void ITD_Column1()
     }
 
     ImGui::BeginDisabled();
-    if (ImGui::Button(u8"预览语句"))
+    if (ImGui::Button(locc("GUI_ITDPreviewIniLine")))
     {
         RightCol = ITD_CurRightCol::LinePreview;
     }
 
     
-    if (ImGui::Button(u8"其他工具"))
+    if (ImGui::Button(locc("GUI_ITDOtherTools")))
     {
         RightCol = ITD_CurRightCol::MiscTools;
     }

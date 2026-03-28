@@ -19,6 +19,12 @@
     <Filter Include="fmt">
       <UniqueIdentifier>{2092f611-0774-48d5-b5a1-a2170a6da556}</UniqueIdentifier>
     </Filter>
+    <Filter Include="资源文件\x86">
+      <UniqueIdentifier>{efb48770-f359-46f4-8829-496a42d14c17}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="资源文件\x64">
+      <UniqueIdentifier>{832cd861-9607-412b-82a9-23ce2d1a14c4}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Resource.h">
@@ -398,6 +404,9 @@
     <ClCompile Include="IBR_InputTypeDebug.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="IBB_FileAssoc.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Image Include="icon1.ico">
@@ -410,47 +419,53 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\Release\Global\RegisterTypes.json">
-      <Filter>资源文件</Filter>
-    </None>
     <None Include="..\Release\Resources\language.ini">
-      <Filter>资源文件</Filter>
+      <Filter>资源文件\x86</Filter>
     </None>
-    <None Include="..\Release\Resources\config.json">
-      <Filter>资源文件</Filter>
+    <None Include="..\Release\Global\RegisterTypes.json">
+      <Filter>资源文件\x86</Filter>
     </None>
     <None Include="..\Release\Global\RegisterTypesCompound.json">
-      <Filter>资源文件</Filter>
-    </None>
-    <None Include="..\Release\Global\TypeAlt2Art.csv">
-      <Filter>资源文件</Filter>
-    </None>
-    <None Include="..\Release\Global\TypeAlt2PhobosB48.csv">
-      <Filter>资源文件</Filter>
-    </None>
-    <None Include="..\Release\Global\TypeAlt2Unit.csv">
-      <Filter>资源文件</Filter>
-    </None>
-    <None Include="..\Release\Global\TypeAlt2Weapon.csv">
-      <Filter>资源文件</Filter>
-    </None>
-    <None Include="..\Release\Global\TypeAlt3Kratos.csv">
-      <Filter>资源文件</Filter>
-    </None>
-    <None Include="..\Release\Global\TypeAlt8Compound.csv">
-      <Filter>资源文件</Filter>
-    </None>
-    <None Include="..\Release\Global\TypeAlt9Links.csv">
-      <Filter>资源文件</Filter>
-    </None>
-    <None Include="..\Release\Global\TypeAltSpecial.csv">
-      <Filter>资源文件</Filter>
-    </None>
-    <None Include="..\Release\Global\RegisterTypesStringList.json">
-      <Filter>资源文件</Filter>
+      <Filter>资源文件\x86</Filter>
     </None>
     <None Include="..\Release\Global\RegisterTypesSpecial.json">
-      <Filter>资源文件</Filter>
+      <Filter>资源文件\x86</Filter>
+    </None>
+    <None Include="..\Release\Resources\config.json">
+      <Filter>资源文件\x86</Filter>
+    </None>
+    <None Include="..\Release\Global\RegisterTypesStringList.json">
+      <Filter>资源文件\x86</Filter>
+    </None>
+    <None Include="..\Release\Global\TypeAlt2Art.csv">
+      <Filter>资源文件\x86</Filter>
+    </None>
+    <None Include="..\Release\Global\TypeAlt2PhobosB48.csv">
+      <Filter>资源文件\x86</Filter>
+    </None>
+    <None Include="..\Release\Global\TypeAlt2Unit.csv">
+      <Filter>资源文件\x86</Filter>
+    </None>
+    <None Include="..\Release\Global\TypeAlt2Weapon.csv">
+      <Filter>资源文件\x86</Filter>
+    </None>
+    <None Include="..\Release\Global\TypeAlt3Kratos.csv">
+      <Filter>资源文件\x86</Filter>
+    </None>
+    <None Include="..\Release\Global\TypeAlt8Compound.csv">
+      <Filter>资源文件\x86</Filter>
+    </None>
+    <None Include="..\Release\Global\TypeAlt9Links.csv">
+      <Filter>资源文件\x86</Filter>
+    </None>
+    <None Include="..\Release\Global\TypeAltSpecial.csv">
+      <Filter>资源文件\x86</Filter>
+    </None>
+    <None Include="..\x64\Release\Resources\config.json">
+      <Filter>资源文件\x64</Filter>
+    </None>
+    <None Include="..\x64\Release\Resources\language.ini">
+      <Filter>资源文件\x64</Filter>
     </None>
   </ItemGroup>
 </Project>

@@ -8,7 +8,12 @@ extern bool RefreshLangBuffer1;
 
 namespace InsertLoad
 {
+#ifdef _WIN64
+    LONG_PTR g_lOriWndProc = NULL;
+#else
     LONG g_lOriWndProc = NULL;
+#endif
+    
 #define  ID_COMBO_ADDR 0x47c
 #define  ID_LEFT_TOOBAR 0x4A0
     LRESULT static __stdcall  _WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -66,7 +71,7 @@ namespace InsertLoad
         }
         break;
         }
-        int i = CallWindowProc((WNDPROC)g_lOriWndProc, hwnd, uMsg, wParam, lParam);
+        int i = CallWindowProcW((WNDPROC)g_lOriWndProc, hwnd, uMsg, wParam, lParam);
         return i;
     }
     UINT_PTR static __stdcall  MyFolderProc(HWND hdlg, UINT uiMsg, WPARAM wParam, LPARAM lParam)
@@ -79,7 +84,12 @@ namespace InsertLoad
             if (lpOfNotify->hdr.code == CDN_INITDONE)
             {
                 SetPropW(GetParent(hdlg), L"OPENFILENAME", (HANDLE)(lpOfNotify->lpOFN));
+#ifdef _WIN64
+                g_lOriWndProc = ::SetWindowLongPtrW(::GetParent(hdlg), GWLP_WNDPROC, (LONG_PTR)_WndProc);
+#else
                 g_lOriWndProc = ::SetWindowLongW(::GetParent(hdlg), GWL_WNDPROC, (LONG)_WndProc);
+#endif
+                
             }
             if (lpOfNotify->hdr.code == CDN_SELCHANGE)
             {
@@ -142,7 +152,7 @@ namespace InsertLoad
         ofn.lpstrFile = szFile;
         ofn.nMaxFile = sizeof(szFile);
         ofn.lpstrFileTitle = wptitle.data();//"选择要导入的文件"
-        ofn.nMaxFileTitle = wptitle.size();
+        ofn.nMaxFileTitle = (DWORD)wptitle.size();
         ofn.lpstrInitialDir = Type.InitialPath.c_str();
         ofn.hInstance = (HMODULE)GetCurrentProcess();
         if (UseFolder)

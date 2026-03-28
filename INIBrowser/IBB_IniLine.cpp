@@ -790,7 +790,7 @@ std::vector<std::string> IBB_IniLine::FinalCollectExportString() const
     return R;
 }
 
-std::vector<std::string> IBB_IniLine::FinalCollectValue(size_t ValueID) const
+std::vector<std::string> IBB_IniLine::FinalCollectValue(int ValueID) const
 {
     std::vector<std::string> R;
     R.resize(Count());

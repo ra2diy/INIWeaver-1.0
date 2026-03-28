@@ -202,7 +202,7 @@ public:
     bool GetStrBool() const { return (Object->valuestring != nullptr && IsTrueString(Object->valuestring)) ? true : false; }
     JsonObject GetObjectItem(const std::string& Str) const;
     size_t ArraySize() const { return (size_t)cJSON_GetArraySize(Object); }
-    JsonObject GetArrayItem(size_t N) const { return { cJSON_GetArrayItem(Object, N) }; }
+    JsonObject GetArrayItem(size_t N) const { return { cJSON_GetArrayItem(Object, (int)N) }; }
     std::vector<int> GetArrayInt() const { return cJSON_GetVectorInt(Object); }
     std::vector<uint8_t> GetArrayBool() const { return cJSON_GetVectorBool(Object); }
     std::vector<std::string> GetArrayString() const { return cJSON_GetVectorString(Object); }
@@ -308,8 +308,8 @@ public:
     void ParseWithOpts(std::string Str, const char** ReturnParseEnd, int RequireNullTerminated);
     void ParseFromFile(const char* FileName);
     void ParseFromFileWithOpts(const char* FileName, int RequireNullTerminated);
-    std::string ParseTmpChecked(std::string&& Str, const std::string& ErrorTip, int* ErrorPosition);
-    std::string ParseFromFileChecked(const char* FileName, const std::string& ErrorTip, int* ErrorPosition);
+    std::string ParseTmpChecked(std::string&& Str, const std::string& ErrorTip, size_t* ErrorPosition);
+    std::string ParseFromFileChecked(const char* FileName, const std::string& ErrorTip, size_t* ErrorPosition);
 };
 
 inline const char* Json_GetErrorPtr() { return cJSON_GetErrorPtr(); }

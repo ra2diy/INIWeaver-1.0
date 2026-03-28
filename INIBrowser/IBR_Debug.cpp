@@ -99,10 +99,10 @@ void IBR_Debug::RenderUI()
 
     if (IBR_TopMost::MenuMatchesSource(MenuItemID_DEBUG, 114514))
     {
-        if (ImGui::Button(u8"关闭实时表单调试"))
+        if (ImGui::Button(locc("GUI_ITDCloseInputForm")))
             IBR_TopMost::CloseTopMostMenu();
     }
-    else if (ImGui::Button(u8"打开实时表单调试"))
+    else if (ImGui::Button(locc("GUI_ITDOpenInputForm")))
     {
         ITD_Init();
         IBR_TopMost::OpenTopMostFrom(MenuItemID_DEBUG, 114514, [this]() {
@@ -132,7 +132,11 @@ void IBR_Debug::RenderUI()
     {
         auto Result = NewPoolStr(PoolQueryBuf);
         char Res[32]{};
+#ifdef _WIN64
+        _i64toa(Result, Res, 16);
+#else
         _itoa(Result, Res, 16);
+#endif
         LastQueryResult = loc("GUI_DebugStringToID") + " : " + PoolQueryBuf + " -> " + Res;
     }
     ImGui::SameLine();

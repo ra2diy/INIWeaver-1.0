@@ -2,6 +2,7 @@
 #include "FromEngine/global_tool_func.h"
 #include "IBB_Setting.h"
 #include "Global.h"
+#include "IBR_Misc.h"
 
 
 IBG_SettingPack GlobalSettingPack;

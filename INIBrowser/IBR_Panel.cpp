@@ -30,7 +30,7 @@ void IBR_MainMenu::RenderUIBar()
 }
 void IBR_MainMenu::RenderUIMenu()
 {
-    sprintf(LogBuf, "%u", Choice);
+    sprintf(LogBuf, "%zu", Choice);
     if (Choice < ItemList.size())ItemList.at(Choice).Menu();
 }
 void IBR_MainMenu::ChooseMenu(size_t S)
@@ -84,6 +84,28 @@ void ControlPanel_File()
     if (ImGui::Button(locc("GUI_CloseProject"), { lw / 2.0f, lh }))IBR_ProjectManager::ProjOpen_CreateAction(); //王德发你猜为什么是CreateAction
     ImGui::SameLine();
     if (ImGui::Button(locc("GUI_OpenProject"), { lw / 2.0f, lh }))IBR_ProjectManager::ProjOpen_OpenAction();//
+    if (ImGui::Button(locc("GUI_SetFileAssoc")))
+    {
+        bool SetFileAssociation();
+        bool GuideUserToSetDefaultProgram();
+        bool IsDefaultForExtension();
+        if (SetFileAssociation())
+        {
+            
+            if (IsDefaultForExtension())
+            {
+                IBR_HintManager::SetHint(locc("GUI_AlreadySetFileAssoc"), HintStayTimeMillis);
+            }
+            else
+            {
+                IBR_HintManager::SetHint(locc("GUI_SetFileAssocSuccess"), HintStayTimeMillis);
+                GuideUserToSetDefaultProgram();
+            }
+        }
+        else
+            IBR_HintManager::SetHint(locc("GUI_SetFileAssocFailure"), HintStayTimeMillis);
+        
+    }
     ImGui::NewLine();
     IBR_RecentManager::RenderUI();//
     /*

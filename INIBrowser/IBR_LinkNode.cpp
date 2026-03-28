@@ -100,19 +100,26 @@ namespace IBR_NodeSession
     }
     uint64_t GetSessionIdx(IBB_SectionID SecID, const std::string& Sub, size_t Line, size_t Mult, size_t Comp)
     {
+        constexpr size_t MAGIC1 = (sizeof(size_t) == 8)
+            ? 0x9e3779b97f4a7c15ULL   // 64位黄金比例
+            : 0x9e3779b9;              // 32位黄金比例
+
+        constexpr size_t MAGIC2 = (sizeof(size_t) == 8)
+            ? 0x94d049bb133111ebULL   // 64位扩展版本
+            : 0x9ddfea08;              // 32位原常数
         size_t i = 0, j = 0, h;
         h = std::hash<std::string>{}(Sub);
-        i ^= h + 0x9e3779b9 + (i << 6) + (i >> 2);
-        j ^= h + 0x9ddfea08 + (j << 6) + (j >> 2);
+        i ^= h + MAGIC1 + (i << 6) + (i >> 2);
+        j ^= h + MAGIC2 + (j << 6) + (j >> 2);
         h = std::hash<size_t>{}(Line);
-        i ^= h + 0x9e3779b9 + (i << 6) + (i >> 2);
-        j ^= h + 0x9ddfea08 + (j << 6) + (j >> 2);
+        i ^= h + MAGIC1 + (i << 6) + (i >> 2);
+        j ^= h + MAGIC2 + (j << 6) + (j >> 2);
         h = std::hash<size_t>{}(Mult);
-        i ^= h + 0x9e3779b9 + (i << 6) + (i >> 2);
-        j ^= h + 0x9ddfea08 + (j << 6) + (j >> 2);
+        i ^= h + MAGIC1 + (i << 6) + (i >> 2);
+        j ^= h + MAGIC2 + (j << 6) + (j >> 2);
         h = std::hash<size_t>{}(Comp);
-        i ^= h + 0x9e3779b9 + (i << 6) + (i >> 2);
-        j ^= h + 0x9ddfea08 + (j << 6) + (j >> 2);
+        i ^= h + MAGIC1 + (i << 6) + (i >> 2);
+        j ^= h + MAGIC2 + (j << 6) + (j >> 2);
         auto Com = (uint64_t(i) << 32) | uint64_t(j);
         Com ^= SecID.ID + 0x9e3779b97f4a7c15 + (Com << 12) + (Com >> 4);
         return Com;
@@ -446,7 +453,7 @@ namespace IBR_LinkNode
             Session.LastCenterRatio = CenterRatio;
         }
 
-        ImGui::PushID(LineIdx << 16 | CompIdx);
+        ImGui::PushID((int)LineIdx << 16 | (int)CompIdx);
 
         {
             auto w = ImGui::GetCurrentWindow();

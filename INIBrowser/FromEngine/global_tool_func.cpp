@@ -917,12 +917,12 @@ void JsonFile::ParseFromFileWithOpts(const char* FileName, int RequireNullTermin
     delete[]FileStr;
 }
 
-std::string JsonFile::ParseFromFileChecked(const char* FileName, const std::string& ErrorTip, int* ErrorPosition)
+std::string JsonFile::ParseFromFileChecked(const char* FileName, const std::string& ErrorTip, size_t* ErrorPosition)
 {
     return ParseTmpChecked(GetStringFromFile(FileName), ErrorTip, ErrorPosition);
 }
 
-std::string JsonFile::ParseTmpChecked(std::string&& Str, const std::string& ErrorTip, int* ErrorPosition)
+std::string JsonFile::ParseTmpChecked(std::string&& Str, const std::string& ErrorTip, size_t* ErrorPosition)
 {
     const char* ErrorPtr = nullptr;
     std::string Str2 = Str;

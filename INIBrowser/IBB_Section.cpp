@@ -238,7 +238,7 @@ bool IBB_Section::SetText(const std::vector<IniToken>& Tokens)
     SubSecs.clear();
     LineOrder.clear();
     OnShow.clear();
-    std::unordered_map<IBB_SubSec_Default*, int> SubSecList;
+    std::unordered_map<IBB_SubSec_Default*, size_t> SubSecList;
     std::unordered_set<StrPoolID> UsedKeys;
     auto u = [&](const IniToken& tok) {
         //if (tok.Value.empty())MessageBoxA(MainWindowHandle, tok.Key.c_str(), "fff1", MB_OK);
@@ -733,10 +733,12 @@ bool IBB_Section::RemoveLine(StrPoolID Key)
 
 bool IBB_Section::RemoveLine(StrPoolID Key, size_t Index)
 {
+    //TODO
     auto [pLine, pSub] = GetLineFromSubSecsEx2(Key);
     if (!pLine || !pSub)return false;
     auto cnt = pLine->Count();
     if (Index >= cnt)return false;
+    return true;
 }
 
 bool IBB_Section::MergeLine(StrPoolID Key, size_t Index, const std::string& Value, IBB_IniMergeMode Mode, bool NoUpdate)

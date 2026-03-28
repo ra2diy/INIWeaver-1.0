@@ -814,7 +814,7 @@ namespace IBR_EditFrame
 
     void RenderUI_OnShow(StrPoolID K, SidebarLine& V, IBB_Section* pbk)
     {
-        ImGui::PushID(K);
+        ImGui::PushID((int)K);
         if (ImGui::RadioButton("", pbk->IsOnShow(K), GlobalNodeStyle))
         {
             IBG_Undo.SomethingShouldBeHere();
@@ -832,7 +832,7 @@ namespace IBR_EditFrame
 
         if (V.InputOnShow)
         {
-            ImGui::PushID(K);
+            ImGui::PushID((int)K);
             ImGui::BeginGroup();
             bool Show = pbk->IsOnShow(K);
             if (V.OnShowBuf == EmptyOnShowDesc)V.OnShowBuf = "";

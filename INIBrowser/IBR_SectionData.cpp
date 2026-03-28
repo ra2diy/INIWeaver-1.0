@@ -264,7 +264,7 @@ IBB_ClipBoardData IBR_SectionData::GetClipBoardData(int& Copied)
         auto IDs = IncludingModules;
         if (auto ido = IBR_Inst_Project.GetSectionID(Desc); ido)
             IDs.push_back(*ido);
-        Copied = IDs.size();
+        Copied = (int)IDs.size();
         IBR_WorkSpace::GenerateClipDataFromIDs(ClipData, IDs);
     }
     else

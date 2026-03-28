@@ -777,7 +777,7 @@ bool Check_A_Format_String_For_Both_Scanf_And_Printf_With_One_Parameter_Is_For_A
             size_t j = i + 1;
             //while 非字母和长度符（h、l、L、j、z、t）
             while (j < Format.size() && (
-                !isalpha(j) || Format[j] == 'h' || Format[j] == 'l' || Format[j] == 'L' ||
+                !isalpha(Format[j]) || Format[j] == 'h' || Format[j] == 'l' || Format[j] == 'L' ||
                 Format[j] == 'j' || Format[j] == 'z' || Format[j] == 't'
                 ))
                 j++;
@@ -2045,7 +2045,7 @@ IBB_UpdateResult IIC_ColorPanel::RenderUI(IBB_ValueContainer& Cont, IICStatus& S
         ImGui::SameLine();
 
         ImGui::PushID(this);
-        if(ImGui::CloseButton((ImGuiID)this, ImGui::GetCursorScreenPos()))
+        if(ImGui::CloseButton(ImGui::GetID(this), ImGui::GetCursorScreenPos()))
         //if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
             Status.InputMethod = IICStatus::Input;
         ImGui::NewLine();

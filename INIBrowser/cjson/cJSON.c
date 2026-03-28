@@ -140,7 +140,7 @@ static int update(printbuffer *p)
 	char *str;
 	if (!p || !p->buffer) return 0;
 	str=p->buffer+p->offset;
-	return p->offset+strlen(str);
+	return p->offset+(int)strlen(str);
 }
 
 /* Render the number nicely from the given item into a string. */
@@ -251,13 +251,13 @@ static const char *parse_string(cJSON *item,const char *str)
 /* Render the cstring provided to an escaped version that can be printed. */
 static char *print_string_ptr(const char *str,printbuffer *p)
 {
-	const char *ptr;char *ptr2,*out;int len=0,flag=0;unsigned char token;
+    const char* ptr; char* ptr2, * out; ptrdiff_t len = 0;int flag = 0; unsigned char token;
 	
 	for (ptr=str;*ptr;ptr++) flag|=((*ptr>0 && *ptr<32)||(*ptr=='\"')||(*ptr=='\\'))?1:0;
 	if (!flag)
 	{
 		len=ptr-str;
-		if (p) out=ensure(p,len+3);
+		if (p) out=ensure(p,(int)len+3);
 		else		out=(char*)cJSON_malloc(len+3);
 		if (!out) return 0;
 		ptr2=out;*ptr2++='\"';
@@ -277,7 +277,7 @@ static char *print_string_ptr(const char *str,printbuffer *p)
 	}
 	ptr=str;while ((token=*ptr) && ++len) {if (strchr("\"\\\b\f\n\r\t",token)) len++; else if (token<32) len+=5;ptr++;}
 	
-	if (p)	out=ensure(p,len+3);
+	if (p)	out=ensure(p,(int)len+3);
 	else	out=(char*)cJSON_malloc(len+3);
 	if (!out) return 0;
 
@@ -479,7 +479,7 @@ static char *print_array(cJSON *item,int depth,int fmt,printbuffer *p)
 		{
 			ret=print_value(child,depth+1,fmt,0);
 			entries[i++]=ret;
-			if (ret) len+=strlen(ret)+2+(fmt?1:0); else fail=1;
+			if (ret) len+=(int)strlen(ret)+2+(fmt?1:0); else fail=1;
 			child=child->next;
 		}
 		
@@ -623,7 +623,7 @@ static char *print_object(cJSON *item,int depth,int fmt,printbuffer *p)
 		{
 			names[i]=str=print_string_ptr(child->string,0);
 			entries[i++]=ret=print_value(child,depth,fmt,0);
-			if (str && ret) len+=strlen(ret)+strlen(str)+2+(fmt?2+depth:0); else fail=1;
+			if (str && ret) len+=(int)strlen(ret)+(int)strlen(str)+2+(fmt?2+depth:0); else fail=1;
 			child=child->next;
 		}
 		

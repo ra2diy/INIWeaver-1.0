@@ -245,7 +245,7 @@ namespace Initialize
 
         if (Code == EXCEPTION_ACCESS_VIOLATION)
         {
-            DWORD op = pException->ExceptionRecord->ExceptionInformation[0];
+            ULONG_PTR op = pException->ExceptionRecord->ExceptionInformation[0];
             PVOID target = (PVOID)pException->ExceptionRecord->ExceptionInformation[1];
             const char* Access = (
                 op == 0 ? "READ" : (
@@ -253,11 +253,13 @@ namespace Initialize
                 op == 8 ? "EXECUTE" : (
                 "UNKNOWN"
                 ))));
-            sprintf_s(CrashBuf, "Addr = %p\nCode = %p\n%s(%d) at %p", Addr, (PVOID)Code, Access, op, target);
+            PVOID CodePtr = reinterpret_cast<PVOID>(Code);
+            sprintf_s(CrashBuf, "Addr = %p\nCode = %p\n%s(%d) at %p", Addr, CodePtr, Access, (LONG)op, target);
         }
         else
         {
-            sprintf_s(CrashBuf, "Addr = %p\nCode = %p\n", Addr, (PVOID)Code);
+            PVOID CodePtr = reinterpret_cast<PVOID>(Code);
+            sprintf_s(CrashBuf, "Addr = %p\nCode = %p\n", Addr, PVOID(CodePtr));
         }
 
         const auto MS_VC_EXCEPTION = 0xE06D7363;
@@ -646,7 +648,11 @@ namespace Initialize
         //glfwHideWindow(window);
 
         TEMPLOG("SetClassLongW(MainWindowHandle, GCL_HICON, (LONG)LoadIcon(hInst, MAKEINTRESOURCE(IDI_ICON1)));");
+#ifdef _WIN64
+        SetClassLongPtrW(MainWindowHandle, GCLP_HICON, (LONG_PTR)LoadIcon(hInst, MAKEINTRESOURCE(IDI_ICON1)));
+#else
         SetClassLongW(MainWindowHandle, GCL_HICON, (LONG)LoadIcon(hInst, MAKEINTRESOURCE(IDI_ICON1)));
+#endif
         //ShowWindow(MainWindowHandle, SW_HIDE);
 
         TEMPLOG("if (window == NULL)return 1;");
@@ -794,7 +800,12 @@ namespace Initialize
 
         TEMPLOG("glfwShowWindow(PreLink::window);");
         glfwShowWindow(PreLink::window);
-        SetClassLong(MainWindowHandle, GCL_HICON, (LONG)LoadIconW(PreLink::hInst, MAKEINTRESOURCE(IDI_ICON1)));
+#ifdef _WIN64
+        SetClassLongW(MainWindowHandle, GCLP_HICON, (LONG_PTR)LoadIconW(PreLink::hInst, MAKEINTRESOURCE(IDI_ICON1)));
+#else
+        SetClassLongW(MainWindowHandle, GCL_HICON, (LONG)LoadIconW(PreLink::hInst, MAKEINTRESOURCE(IDI_ICON1)));
+#endif
+        
         if (EnableLog)
         {
             GlobalLog.AddLog_CurTime(false);
