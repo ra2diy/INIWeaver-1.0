@@ -7821,6 +7821,7 @@ static const char* GetInputSourceName(ImGuiInputSource source)
 // We always call this with the value of 'bool g.IO.ConfigInputTrickleEventQueue'.
 // - trickle_fast_inputs = false : process all events, turn into flattened input state (e.g. successive down/up/down/up will be lost)
 // - trickle_fast_inputs = true  : process as many events as possible (successive down/up/down/up will be trickled over several frames so nothing is lost) (new feature in 1.87)
+extern HWND MainWindowHandle;
 void ImGui::UpdateInputEvents(bool trickle_fast_inputs)
 {
     ImGuiContext& g = *GImGui;
@@ -7834,6 +7835,17 @@ void ImGui::UpdateInputEvents(bool trickle_fast_inputs)
     bool mouse_moved = false, mouse_wheeled = false, key_changed = false, text_inputted = false;
     int  mouse_button_changed = 0x00;
     ImBitArray<ImGuiKey_KeysData_SIZE> key_changed_mask;
+
+    static bool last_ime_compositing;
+    bool ime_compositing = false;
+    if (HWND hwnd = (HWND)MainWindowHandle)
+    {
+        if (HIMC himc = ::ImmGetContext(hwnd))
+        {
+            ime_compositing = (::ImmGetCompositionStringW(himc, GCS_COMPSTR, NULL, 0) > 0);
+            ::ImmReleaseContext(hwnd, himc);
+        }
+    }
 
     int event_n = 0;
     for (; event_n < g.InputEventsQueue.Size; event_n++)
@@ -7878,7 +7890,7 @@ void ImGui::UpdateInputEvents(bool trickle_fast_inputs)
                 mouse_wheeled = true;
             }
         }
-        else if (e->Type == ImGuiInputEventType_Key)
+        else if (e->Type == ImGuiInputEventType_Key && !last_ime_compositing)
         {
             ImGuiKey key = e->Key.Key;
             IM_ASSERT(key != ImGuiKey_None);
@@ -7932,6 +7944,8 @@ void ImGui::UpdateInputEvents(bool trickle_fast_inputs)
             IM_ASSERT(0 && "Unknown event!");
         }
     }
+
+    last_ime_compositing = ime_compositing;
 
     // Record trail (for domain-specific applications wanting to access a precise trail)
     //if (event_n != 0) IMGUI_DEBUG_LOG("Processed: %d / Remaining: %d\n", event_n, g.InputEventsQueue.Size - event_n);
