@@ -1637,7 +1637,7 @@ IBB_UpdateResult IIC_EnumCombo::RenderUI(IBB_ValueContainer& Cont, IICStatus&) {
         ImGui::GetWindowContentRegionWidth() - ImGui::GetCursorPosX() - ImGui::GetStyle().FramePadding.x);
     if (UseNodeColorInFrame) ImGui::PushStyleColor(ImGuiCol_Text, IsLightColor ? ImVec4(0, 0, 0, 1) : ImVec4(1, 1, 1, 1));
     if(IBR_Combo("",
-        (Options.contains(CurrentValue) ? Options[CurrentValue].Short : CurrentValue).c_str(), 0,
+        (Options.contains(CurrentValue) && !IBR_WorkSpace::ShowRegName ? Options[CurrentValue].Short : CurrentValue).c_str(), 0,
         [&] {
             if (UseNodeColorInFrame) ImGui::PopStyleColor();
             Active = ImGui::IsItemActive();
