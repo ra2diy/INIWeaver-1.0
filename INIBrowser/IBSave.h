@@ -62,6 +62,7 @@ struct IBS_Project
     int CreateVersionMajor, CreateVersionMinor, CreateVersionRelease;
     float FullView_Ratio;
     ImVec2 FullView_EqCenter;
+    uint64_t PersistentID;
     std::vector<BYTE> Data;
 
     bool Save();

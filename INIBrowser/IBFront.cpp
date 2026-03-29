@@ -255,6 +255,7 @@ void IBF_Project::Load(const IBS_Project& Proj)
     Project.LastOutputIniName.clear();
     for(auto& l: Proj.LastOutputIniName)
         Project.LastOutputIniName.insert(l);
+    PersistentID = Proj.PersistentID;
     Project.IsNewlyCreated = false;
     Project.ChangeAfterSave = false;
 }
@@ -273,6 +274,7 @@ void IBF_Project::Save(IBS_Project& Proj)
     Proj.LastOutputIniName.reserve(Project.LastOutputIniName.size());
     for (auto& l : Project.LastOutputIniName)
         Proj.LastOutputIniName.push_back(l);
+    Proj.PersistentID = PersistentID;
     Project.IsNewlyCreated = false;
     Project.ChangeAfterSave = false;
 }
@@ -285,6 +287,7 @@ namespace IBR_NodeSession
 void IBF_Project::Clear()
 {
     CurrentProjectRID = 0;
+    PersistentID = 0;
     Project.Clear();
     this->DisplayNames.clear();
     IBR_NodeSession::ClearSession();

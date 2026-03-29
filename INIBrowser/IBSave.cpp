@@ -71,7 +71,7 @@ namespace InsertLoad
         }
         break;
         }
-        int i = CallWindowProcW((WNDPROC)g_lOriWndProc, hwnd, uMsg, wParam, lParam);
+        LRESULT i = CallWindowProcW((WNDPROC)g_lOriWndProc, hwnd, uMsg, wParam, lParam);
         return i;
     }
     UINT_PTR static __stdcall  MyFolderProc(HWND hdlg, UINT uiMsg, WPARAM wParam, LPARAM lParam)
@@ -101,7 +101,7 @@ namespace InsertLoad
                     if (wcslen(wcDirPath))
                     {
                         //去掉文件夹快捷方式的后缀名。
-                        int pathSize = wcslen(wcDirPath);
+                        size_t pathSize = wcslen(wcDirPath);
                         if (pathSize >= 4)
                         {
                             wchar_t* wcExtension = PathFindExtensionW(wcDirPath);
@@ -236,6 +236,7 @@ WriteFileHeader IBS_SaveProject
         File.WriteData(IBS_Inst_Project.FullView_Ratio);
         File.WriteData(IBS_Inst_Project.FullView_EqCenter);
         File.WriteData(IBS_Inst_Project.LastOutputDir);
+        File.WriteData(IBS_Inst_Project.PersistentID);
         std::function<bool(const ExtFileClass&, const std::pair<std::string, std::wstring>&)> F = [](const auto& E, const auto& U)->auto
             {
                 auto R = true;
@@ -272,6 +273,26 @@ ReadFileHeader IBS_LoadProject
                     std::make_wformat_args(VS, FVersion)).c_str(), locwc("Error_LoadProjectFailed"), MB_OK | MB_ICONERROR);
             }
             return false;
+        }
+        else if (FVersion >= 10009)
+        {
+            File.ReadData(IBS_Inst_Project.CreateTime);
+            File.ReadData(IBS_Inst_Project.CreateVersionMajor);
+            File.ReadData(IBS_Inst_Project.CreateVersionMinor);
+            File.ReadData(IBS_Inst_Project.CreateVersionRelease);
+            File.ReadData(IBS_Inst_Project.FullView_Ratio);
+            File.ReadData(IBS_Inst_Project.FullView_EqCenter);
+            File.ReadData(IBS_Inst_Project.LastOutputDir);
+            File.WriteData(IBS_Inst_Project.PersistentID);
+            std::function<bool(const ExtFileClass&, std::pair<std::string, std::wstring>&)> F = [](const auto& E, auto& U)->auto
+                {
+                    auto R = true;
+                    R &= E.ReadData(U.first);
+                    R &= E.ReadData(U.second);
+                    return R;
+                };
+            File.ReadVector(IBS_Inst_Project.LastOutputIniName, F);
+            File.ReadVector(IBS_Inst_Project.Data);
         }
         else if (FVersion >= 204)
         {

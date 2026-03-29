@@ -253,12 +253,12 @@ namespace Initialize
                 op == 8 ? "EXECUTE" : (
                 "UNKNOWN"
                 ))));
-            PVOID CodePtr = reinterpret_cast<PVOID>(Code);
+            PVOID CodePtr = reinterpret_cast<PVOID>(static_cast<UINT_PTR>(Code));
             sprintf_s(CrashBuf, "Addr = %p\nCode = %p\n%s(%d) at %p", Addr, CodePtr, Access, (LONG)op, target);
         }
         else
         {
-            PVOID CodePtr = reinterpret_cast<PVOID>(Code);
+            PVOID CodePtr = reinterpret_cast<PVOID>(static_cast<UINT_PTR>(Code));
             sprintf_s(CrashBuf, "Addr = %p\nCode = %p\n", Addr, PVOID(CodePtr));
         }
 
@@ -801,7 +801,7 @@ namespace Initialize
         TEMPLOG("glfwShowWindow(PreLink::window);");
         glfwShowWindow(PreLink::window);
 #ifdef _WIN64
-        SetClassLongW(MainWindowHandle, GCLP_HICON, (LONG_PTR)LoadIconW(PreLink::hInst, MAKEINTRESOURCE(IDI_ICON1)));
+        SetClassLongPtrW(MainWindowHandle, GCLP_HICON, (LONG_PTR)LoadIconW(PreLink::hInst, MAKEINTRESOURCE(IDI_ICON1)));
 #else
         SetClassLongW(MainWindowHandle, GCL_HICON, (LONG)LoadIconW(PreLink::hInst, MAKEINTRESOURCE(IDI_ICON1)));
 #endif

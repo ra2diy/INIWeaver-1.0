@@ -96,6 +96,9 @@ namespace IBR_ProjectManager
         proj.CreateIni(DefaultIniName);
         proj.CreateIni(Internal_IniName);
 
+        auto A1 = (uint64_t)GlobalRnd();
+        auto A2 = (uint64_t)GlobalRnd();
+        IBF_Inst_Project.PersistentID = A1 << 32 | A2;
         IBF_Inst_Project.CurrentProjectRID = GlobalRnd();
         IBB_DefaultRegType::ClearModuleCount();
         IsProjectOpen = true;

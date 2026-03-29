@@ -52,6 +52,7 @@ struct IBB_NewLink;
 struct IBF_Project
 {
     IBB_Project Project;
+    uint64_t PersistentID;
     uint32_t CurrentProjectRID;
     std::unordered_map<std::string, IBB_Section_Desc> DisplayNames;
     std::map<IBB_Section_Desc, std::vector<IBB_NewLink>> LinkedBy;
