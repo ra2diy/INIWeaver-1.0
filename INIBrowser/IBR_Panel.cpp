@@ -66,7 +66,8 @@ void ControlPanel_WaitOpen()
 
 void ControlPanel_File()
 {
-    auto lw = ImGui::GetWindowContentRegionWidth() - FontHeight * 0.5F;
+    auto lw = ImGui::GetWindowContentRegionWidth() - ImGui::GetStyle().ItemSpacing.x * 2.0F;
+    auto lw1 = ImGui::GetWindowContentRegionWidth() - ImGui::GetStyle().ItemSpacing.x * 1.0F;
     auto lh = FontHeight * 2.0F;
 
     if (ImGui::Button(locc("GUI_Save"), { lw / 3.0f, lh }))IBR_ProjectManager::SaveOptAction();//
@@ -81,10 +82,12 @@ void ControlPanel_File()
     }
     else if (ImGui::Button(locc("GUI_Output"), { lw / 3.0f, lh }))IBR_ProjectManager::OutputAction();//
     ImGui::NewLine();
-    if (ImGui::Button(locc("GUI_CloseProject"), { lw / 2.0f, lh }))IBR_ProjectManager::ProjOpen_CreateAction(); //王德发你猜为什么是CreateAction
+    if (ImGui::Button(locc("GUI_CloseProject"), { lw1 / 2.0f, lh }))IBR_ProjectManager::ProjOpen_CreateAction(); //王德发你猜为什么是CreateAction
     ImGui::SameLine();
-    if (ImGui::Button(locc("GUI_OpenProject"), { lw / 2.0f, lh }))IBR_ProjectManager::ProjOpen_OpenAction();//
-    if (ImGui::Button(locc("GUI_SetFileAssoc")))
+    if (ImGui::Button(locc("GUI_OpenProject"), { lw1 / 2.0f, lh }))IBR_ProjectManager::ProjOpen_OpenAction();//
+
+    ImGui::NewLine();
+    if (ImGui::Button(locc("GUI_SetFileAssoc"), { ImGui::GetWindowContentRegionWidth() , FontHeight * 1.5F }))
     {
         bool SetFileAssociation();
         bool GuideUserToSetDefaultProgram();
