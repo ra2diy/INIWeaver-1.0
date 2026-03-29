@@ -813,6 +813,7 @@ void IBR_SectionData::RenderUI_Comment(IBB_Section* Bsec)
             ImGuiInputTextFlags_NoHorizontalScroll | ImGuiInputTextFlags_WrappedText))
         {
             Bsec->Comment = CommentEdit.get();
+            IBG_Undo.SomethingShouldBeHere();
         }
         if (ImGui::IsItemActive())IBR_WorkSpace::OperateOnText = true;
         if (TSize.x > FontHeight * 14.6f)WidthFix = TSize.x;
