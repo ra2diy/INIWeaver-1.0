@@ -311,42 +311,6 @@ IBB_Section* IBB_Project::CreateNewSection(const IBB_Section_Desc& Desc)
     return Sc;
 }
 
-bool IBB_Project::AddNewLinkToLinkGroup(const IBB_Section_Desc& From, const IBB_Section_Desc& To)
-{
-    IBB_SectionID FIn(From), TIn(To);
-    auto FromPtr = FIn.GetSec(*this);
-    if (FromPtr == nullptr)
-    {
-        FromPtr = CreateNewSection(From);
-        if (FromPtr == nullptr)
-        {
-            if (EnableLog)
-            {
-                GlobalLogB.AddLog_CurTime(false);
-                GlobalLogB.AddLog((u8"IBB_Project::AddNewLinkToLinkGroup ：" + loc("Log_CannotCreateSection")).c_str());
-            }
-            return false;
-        }
-    }
-    if (!FromPtr->IsLinkGroup)return false;
-    auto ToPtr = TIn.GetSec(*this);
-    if (ToPtr == nullptr)
-    {
-        ToPtr = CreateNewSection(To);
-        if (ToPtr == nullptr)
-        {
-            if (EnableLog)
-            {
-                GlobalLogB.AddLog_CurTime(false);
-                GlobalLogB.AddLog((u8"IBB_Project::AddNewLinkToLinkGroup ：" + loc("Log_CannotCreateSection")).c_str());
-            }
-            return false;
-        }
-    }
-    FromPtr->LinkGroup_NewLinkTo.push_back({ {FIn, EmptyPoolStr},{TIn, EmptyPoolStr}, IBB_DefaultRegType::GetDefaultNodeColor() });
-    return true;
-}
-
 bool IBB_Project::AddModule(const ModuleClipData& Module)
 {
     IBB_Project_Index Tg(Module.Desc.A, Module.Desc.B);

@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include "IBG_Ini.h"
+#include "IBG_InputType_Defines.h"
 
 class ClipWriteStream
 {
@@ -105,6 +106,17 @@ struct PairClipString
     
 };
 
+struct SingleIICStatus
+{
+    IICStatus::_ Method;
+    //Reserve 1 int
+};
+
+struct ClipIICStatus
+{
+    std::vector<SingleIICStatus> Status;
+};
+
 struct PairClipOnShow
 {
     std::string Str;
@@ -113,7 +125,6 @@ struct PairClipOnShow
 
 struct ModuleClipData
 {
-    bool IsLinkGroup;
     bool IsComment;
     bool Ignore;
     bool FromClipBoard;
@@ -128,11 +139,20 @@ struct ModuleClipData
     std::string Register;
     std::vector<PairClipString> DefaultLinkKey;
     std::string DisplayName;
-    std::vector<IniToken> Lines;//STD Module Line
-    std::vector<PairClipString> LinkGroup_LinkTo;
+    std::vector<IniToken> Lines;
     std::vector<PairClipString> VarList;
+
     PairClipString IncludedBySection;
     std::vector<PairClipString> IncludingSections;
+
+    bool SingleVal;
+    bool SkipExport;
+    bool SkipTitle;
+    bool ____ReservedBool1{ false };
+    float WidthRatio;
+    std::vector<ClipIICStatus> LineStatus;
+    //Reserve 8 bools & 8 ints
+
 
     void Replace(const std::string& Parameter, const std::string& Argument);
     void Load(const std::string_view Str, int ClipFormatVersion);
@@ -142,6 +162,7 @@ struct ModuleClipData
 };
 
 ClipWriteStream& operator<<(ClipWriteStream& stm, bool v);
+ClipWriteStream& operator<<(ClipWriteStream& stm, uint8_t v);
 ClipWriteStream& operator<<(ClipWriteStream& stm, float v);
 ClipWriteStream& operator<<(ClipWriteStream& stm, uint32_t v);
 ClipWriteStream& operator<<(ClipWriteStream& stm, const std::string& v);
@@ -149,6 +170,8 @@ ClipWriteStream& operator<<(ClipWriteStream& stm, const IniToken& v);
 ClipWriteStream& operator<<(ClipWriteStream& stm, const ImVec2& v);
 ClipWriteStream& operator<<(ClipWriteStream& stm, const PairClipString& v);
 ClipWriteStream& operator<<(ClipWriteStream& stm, const PairClipOnShow& v);
+ClipWriteStream& operator<<(ClipWriteStream& stm, const ClipIICStatus& v);
+ClipWriteStream& operator<<(ClipWriteStream& stm, const SingleIICStatus& v);
 template<typename T>
 ClipWriteStream& operator<<(ClipWriteStream& stm, const std::vector<T>& v)
 {
@@ -159,6 +182,7 @@ ClipWriteStream& operator<<(ClipWriteStream& stm, const std::vector<T>& v)
 }
 
 ClipReadStream& operator>>(ClipReadStream& stm, bool& v);
+ClipReadStream& operator>>(ClipReadStream& stm, uint8_t& v);
 ClipReadStream& operator>>(ClipReadStream& stm, float& v);
 ClipReadStream& operator>>(ClipReadStream& stm, uint32_t& v);
 ClipReadStream& operator>>(ClipReadStream& stm, std::string& v);
@@ -166,6 +190,8 @@ ClipReadStream& operator>>(ClipReadStream& stm, IniToken& v);
 ClipReadStream& operator>>(ClipReadStream& stm, ImVec2& v);
 ClipReadStream& operator>>(ClipReadStream& stm, PairClipString& v);
 ClipReadStream& operator>>(ClipReadStream& stm, PairClipOnShow& v);
+ClipReadStream& operator>>(ClipReadStream& stm, ClipIICStatus& v);
+ClipReadStream& operator>>(ClipReadStream& stm, SingleIICStatus& v);
 template<typename T>
 ClipReadStream& operator>>(ClipReadStream& stm, std::vector<T>& v)
 {

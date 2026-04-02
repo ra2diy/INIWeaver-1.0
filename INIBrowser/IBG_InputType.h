@@ -36,19 +36,6 @@ struct IBB_UpdateResult
     int ValueID;
 };
 
-
-struct IICStatus
-{
-    enum _ : uint8_t {
-        Input,
-        Link
-    } InputMethod{
-        Input
-    };
-
-    bool Load(const JsonObject& Obj);
-};
-
 struct IBB_ValueCond
 {
     std::string Value;

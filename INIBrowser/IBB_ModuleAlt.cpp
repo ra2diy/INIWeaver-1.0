@@ -435,6 +435,12 @@ ClipWriteStream& operator<<(ClipWriteStream& stm, bool v)
     stm.PushBytes((LPCBYTE)&v, sizeof(v));
     return stm;
 }
+ClipWriteStream& operator<<(ClipWriteStream& stm, uint8_t v)
+{
+    stm.Align(1);
+    stm.PushBytes((LPCBYTE)&v, sizeof(v));
+    return stm;
+}
 ClipWriteStream& operator<<(ClipWriteStream& stm, float v)
 {
     stm.Align();
@@ -473,11 +479,28 @@ ClipWriteStream& operator<<(ClipWriteStream& stm, const PairClipOnShow& v)
     stm << v.Show << v.Str;
     return stm;
 }
+ClipWriteStream& operator<<(ClipWriteStream& stm, const ClipIICStatus& v)
+{
+    stm << v.Status;
+    return stm;
+}
+ClipWriteStream& operator<<(ClipWriteStream& stm, const SingleIICStatus& v)
+{
+    stm << static_cast<uint8_t>(v.Method);
+    stm << uint32_t(0);//Reserve 1 int
+    return stm;
+}
 
 ClipReadStream& operator>>(ClipReadStream& stm, bool& v)
 {
     stm.Align(1);
     v = stm.Get<bool>();
+    return stm;
+}
+ClipReadStream& operator>>(ClipReadStream& stm, uint8_t& v)
+{
+    stm.Align(1);
+    v = stm.Get<uint8_t>();
     return stm;
 }
 ClipReadStream& operator>>(ClipReadStream& stm, float& v)
@@ -521,6 +544,20 @@ ClipReadStream& operator>>(ClipReadStream& stm, PairClipOnShow& v)
     stm >> v.Show >> v.Str;
     return stm;
 }
+ClipReadStream& operator>>(ClipReadStream& stm, ClipIICStatus& v)
+{
+    stm >> v.Status;
+    return stm;
+}
+ClipReadStream& operator>>(ClipReadStream& stm, SingleIICStatus& v)
+{
+    uint8_t method;
+    stm >> method;
+    v.Method = static_cast<IICStatus::_>(method);
+    uint32_t dummy;
+    stm >> dummy;//Reserve 1 int
+    return stm;
+}
 
 
 ClipWriteStream& operator<<(ClipWriteStream& stm, const ModuleClipData& v)
@@ -539,9 +576,9 @@ ClipWriteStream& operator<<(ClipWriteStream& stm, const ModuleClipData& v)
     EqDelta
     VarList
     */
-    if (!v.IsLinkGroup && !v.IsComment)
+    if (!v.IsComment)
     {
-        stm << v.IsLinkGroup << v.IsComment << v.Ignore << v.Desc
+        stm << false << v.IsComment << v.Ignore << v.Desc
             << v.Lines << v.Inherit  << v.Register <<v.DefaultLinkKey
             << v.DisplayName << v.EqSize << v.EqDelta << v.VarList;
     }
@@ -553,35 +590,38 @@ ClipWriteStream& operator<<(ClipWriteStream& stm, const ModuleClipData& v)
     EqDelta
     Comment
     */
-    else if (!v.IsLinkGroup)
-    {
-        //MessageBoxW(NULL, UTF8toUnicode(v.Comment).c_str(), L"COMMENT_WRITE", MB_OK);
-        stm << v.IsLinkGroup << v.IsComment << v.Desc << v.EqSize << v.EqDelta << v.Comment;
-    }
-    /*
-    IsLinkGroup=true
-    Desc
-    DefaultLinkKey
-    EqSize
-    EqDelta
-    VarList
-    LinkTo
-    */
     else
     {
-        stm << v.IsLinkGroup << v.Desc << v.DefaultLinkKey << v.EqSize << v.EqDelta << v.VarList << v.LinkGroup_LinkTo;
+        //MessageBoxW(NULL, UTF8toUnicode(v.Comment).c_str(), L"COMMENT_WRITE", MB_OK);
+        stm << false << v.IsComment << v.Desc << v.EqSize << v.EqDelta << v.Comment;
     }
     /*
     IncludedBySection
     IncludingSections
     */
     stm << v.IncludedBySection << v.IncludingSections << v.CollapsedInComposed << v.Frozen << v.Hidden;
+    /*
+    New 1.0.9
+    bool SingleVal;
+    bool SkipExport;
+    bool SkipTitle;
+    bool ____ReservedBool1{ false };
+    float WidthRatio;
+    std::vector<ClipIICStatus> LineStatus;
+    //Reserve 8 bools & 8 ints
+    */
+    {
+        stm << v.SingleVal << v.SkipExport << v.SkipTitle << v.____ReservedBool1 << v.WidthRatio << v.LineStatus;
+        for (int i = 0; i < 8; i++)stm << false;
+        for (int i = 0; i < 8; i++)stm << uint32_t(0);
+    }
     return stm;
 }
 ClipReadStream& operator>>(ClipReadStream& stm, ModuleClipData& v)
 {
-    stm >> v.IsLinkGroup;
-    if (!v.IsLinkGroup)
+    bool IsLinkGroup;
+    stm >> IsLinkGroup;
+    if (!IsLinkGroup)
     {
         stm >> v.IsComment;
     /*
@@ -617,18 +657,10 @@ ClipReadStream& operator>>(ClipReadStream& stm, ModuleClipData& v)
             //MessageBoxW(NULL, UTF8toUnicode(v.Comment).c_str(), L"COMMENT", MB_OK);
         }
     }
-    /*
-    IsLinkGroup=true
-    Desc
-    DefaultLinkKey
-    EqSize
-    EqDelta
-    VarList
-    LinkTo
-    */
     else
     {
-        stm >> v.Desc >> v.DefaultLinkKey >> v.EqSize >> v.EqDelta >> v.VarList >> v.LinkGroup_LinkTo;
+        std::vector<PairClipString> EmptyLinkTo;
+        stm >> v.Desc >> v.DefaultLinkKey >> v.EqSize >> v.EqDelta >> v.VarList >> EmptyLinkTo;
     }
 
     /*
@@ -646,6 +678,48 @@ ClipReadStream& operator>>(ClipReadStream& stm, ModuleClipData& v)
         v.CollapsedInComposed = false;
         v.Frozen = false;
         v.Hidden = false;
+    }
+
+    /*
+    New 1.0.9
+    bool SingleVal;
+    bool SkipExport;
+    bool SkipTitle;
+    bool ____ReservedBool1{ false };
+    float WidthRatio;
+    std::vector<ClipIICStatus> LineStatus;
+    //Reserve 8 bools & 8 ints
+    */
+    if (stm.VersionAtLeast(10009))
+    {
+        // 读取新字段
+        stm >> v.SingleVal >> v.SkipExport >> v.SkipTitle >> v.____ReservedBool1 >> v.WidthRatio >> v.LineStatus;
+        // 跳过保留的8个bool和8个int
+        for (int i = 0; i < 8; ++i) { bool dummy; stm >> dummy; }
+        for (int i = 0; i < 8; ++i) { uint32_t dummy; stm >> dummy; }
+    }
+    else
+    {
+        // 从 VarList 中提取并移除 SingleVal/SkipExport/SkipTitle
+        v.SingleVal = false;
+        v.SkipExport = false;
+        v.SkipTitle = false;
+        v.____ReservedBool1 = false;
+        // 只保留非特殊项
+        std::vector<PairClipString> filteredVarList;
+        for (const auto& item : v.VarList) {
+            if (item.A == "SingleVal") {
+                v.SingleVal = IsTrueString(item.B);
+            } else if (item.A == "SkipExport") {
+                v.SkipExport = IsTrueString(item.B);
+            } else if (item.A == "SkipTitle") {
+                v.SkipTitle = IsTrueString(item.B);
+            } else {
+                filteredVarList.push_back(item);
+            }
+        }
+        v.VarList = std::move(filteredVarList);
+        v.LineStatus.clear();
     }
     return stm;
 }
@@ -675,11 +749,6 @@ void ModuleClipData::Replace(const std::string& Parameter, const std::string& Ar
         X(Tk.Desc);
         X(Tk.Key);
         X(Tk.Value);
-    }
-    for (auto& lt : LinkGroup_LinkTo)
-    {
-        X(lt.B);
-        X(lt.A);
     }
     for (auto& lt : VarList)
     {
@@ -751,7 +820,6 @@ JsonFile ModuleClipData::ToJson() const
     JsonFile F;
     auto Obj = F.GetObj();
     Obj.SetOrCreateObject();
-    Obj.AddBool("IsLinkGroup", IsLinkGroup);
     Obj.AddBool("IsComment", IsComment);
     Obj.AddBool("Ignore", Ignore);
     Obj.AddBool("FromClipBoard", FromClipBoard);
@@ -782,7 +850,6 @@ JsonFile ModuleClipData::ToJson() const
         }
         Obj.AddObjectItem("Lines", GetArrayOfObjects(std::move(vf)));
     }
-    Obj.AddObjectItem("LinkGroup_LinkTo", VectorClipStringToJson(LinkGroup_LinkTo));
     Obj.AddObjectItem("VarList", VectorClipStringToJson(VarList));
     Obj.AddObjectItem("IncludedBySection", ClipStringToJson(IncludedBySection));
     Obj.AddObjectItem("IncludingSections", VectorClipStringToJson(IncludingSections));
@@ -813,6 +880,7 @@ namespace OldClipMagic
     const std::string ClipMagic202 = "IniBrowserClipDataFormat_0.2b2";
     const std::string ClipMagic10000 = "IniBrowserClipDataFormat_1.0";
     const std::string ClipMagic10004 = "IniBrowserClipDataFormat_1.0.4";
+    const std::string ClipMagic10006 = "IniBrowserClipDataFormat_1.0.6";
 }
 
 const char* ClipMagicPrefix = "IniBrowserClipDataFormat_";
@@ -889,7 +957,7 @@ bool IBB_ModuleAlt::SaveToFile()
 
     IBB_ClipBoardData Clip;
     for (auto& M : Modules)
-        if (M.IsComment || M.IsLinkGroup)
+        if (M.IsComment)
             Clip.Modules.push_back(M);
     Clip.ProjectRID = IBF_Inst_Project.CurrentProjectRID;
 
@@ -898,7 +966,7 @@ bool IBB_ModuleAlt::SaveToFile()
 
     E.PutStr("[Register]"); E.Ln();//INI#SEC=REG
     for (auto& M : Modules)
-        if (!M.IsLinkGroup && !M.IsComment)
+        if (!M.IsComment)
         {
             E.PutStr(M.Desc.A + "#" + M.Desc.B + " = " + M.Register);
             E.Ln();
@@ -907,7 +975,7 @@ bool IBB_ModuleAlt::SaveToFile()
 
     for (auto& M : Modules)
     {
-        if (M.IsComment || M.IsLinkGroup)continue;
+        if (M.IsComment)continue;
 
         if (M.Inherit.empty())
         {
@@ -933,6 +1001,25 @@ bool IBB_ModuleAlt::SaveToFile()
         {
             if (D.A == "_Local_AtFile")continue;
             E.PutStr(D.A + "#Var = " + D.B); E.Ln();
+        }
+        if (M.SingleVal) {
+            E.PutStr("SingleVal#Var = true");
+            E.Ln();
+        }
+        if (M.SkipExport)
+        {
+            E.PutStr("SkipExport#Var = true");
+            E.Ln();
+        }
+        if (M.SkipTitle)
+        {
+            E.PutStr("SkipTitle#Var = true");
+            E.Ln();
+        }
+        if (fabs(M.WidthRatio - 1.0F) > 1E-6)
+        {
+            E.PutStr("WidthRatio#Var = " + std::to_string(M.WidthRatio));
+            E.Ln();
         }
         if (M.Frozen)
         {
@@ -1002,7 +1089,8 @@ std::unordered_map<std::string, std::unordered_map<std::string, std::string>> In
 int GetClipFormatVersion(const std::string& Magic)
 {
     if (Magic.starts_with(ClipMagic))return VersionN;
-    if (Magic.starts_with(OldClipMagic::ClipMagic10000)                   ||
+    if (Magic.starts_with(OldClipMagic::ClipMagic10006))return 10006;
+    if (Magic.starts_with(OldClipMagic::ClipMagic10000)||
         Magic.starts_with(OldClipMagic::ClipMagic201)  ||
         Magic.starts_with(OldClipMagic::ClipMagic202)  ||
         Magic.starts_with(OldClipMagic::ClipMagic10004)
@@ -1013,6 +1101,7 @@ int GetClipFormatVersion(const std::string& Magic)
 int GetClipFormatVersion(int AppVersion)
 {
     if (AppVersion > VersionN)return AppVersion;
+    if (AppVersion >= 10009)return 10009;
     if (AppVersion >= 10006)return 10006;
     if (AppVersion >= 200)return 10000;
     return 0;
@@ -1161,9 +1250,7 @@ void IBB_ModuleAlt::LoadFromString(std::wstring_view FileName, std::string&& Fil
             M.DisplayName = "";
             M.Ignore = false;
             M.IsComment = false;
-            M.IsLinkGroup = false;
             M.FromClipBoard = false;
-            M.LinkGroup_LinkTo.clear();
             M.EqDelta.x = (float)1e100;
             M.EqDelta.y = (float)1e100;
             M.Frozen = false;
@@ -1184,7 +1271,26 @@ void IBB_ModuleAlt::LoadFromString(std::wstring_view FileName, std::string&& Fil
                 else if (sec[i].Key == "Var")
                 {
                     //Type#Var=Key
-                    M.VarList.push_back({ sec[i].Desc, sec[i].Value });//Type,Key
+                    if (sec[i].Desc == "SingleVal")
+                    {
+                        M.SingleVal = IsTrueString(sec[i].Value);
+                    }
+                    else if (sec[i].Desc == "SkipExport")
+                    {
+                        M.SkipExport = IsTrueString(sec[i].Value);
+                    }
+                    else if (sec[i].Desc == "SkipTitle")
+                    {
+                        M.SkipTitle = IsTrueString(sec[i].Value);
+                    }
+                    else if (sec[i].Desc == "WidthRatio")
+                    {
+                        M.WidthRatio = (float)std::strtod(sec[i].Value.c_str(), nullptr);
+                    }
+                    else
+                    {
+                        M.VarList.push_back({ sec[i].Desc, sec[i].Value });//Type,Key
+                    }
                 }
                 else if (sec[i].Key == "ImportDeltaX")
                 {

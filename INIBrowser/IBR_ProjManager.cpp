@@ -14,6 +14,7 @@
 #include "IBR_ListView.h"
 #include "IBR_Components.h"
 #include "IBB_OutputOrder.h"
+#include "IBG_UndoTree.h"
 
 extern wchar_t CurrentDirW[];
 extern bool ShouldCloseShellLoop;
@@ -379,7 +380,6 @@ namespace IBR_ProjectManager
                 IBB_Section_Desc Desc = { Inis[I].Name, Sec.Name };
                 if (
                     IgnoredSection.contains(Desc) ||
-                    Sec.IsLinkGroup ||
                     Sec.IsComment() ||
                     Sec.SkipExport  ||
                     Sec.SingleVal

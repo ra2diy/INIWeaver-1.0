@@ -6,6 +6,7 @@
 #include "IBR_Debug.h"
 #include <imgui_internal.h>
 #include "IBR_Misc.h"
+#include "IBG_UndoTree.h"
 
 extern bool EnableDebugList;
 

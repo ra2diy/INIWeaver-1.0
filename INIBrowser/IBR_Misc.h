@@ -6,6 +6,7 @@
 #include "IBR_IniLine.h"
 #include "IBR_Project.h"
 #include <any>
+#include "IBG_UndoTree.h"
 
 
 namespace IBR_RealCenter
@@ -54,28 +55,7 @@ extern IBR_MainMenu IBR_Inst_Menu;
 
 
 
-struct IBG_UndoStack
-{
-    struct _Item
-    {
-        _TEXT_ANSI std::string Id;
-        std::function<void()> UndoAction, RedoAction;
-        std::function<std::any()> Extra;
-    };
-    std::vector<_Item> Stack;
-    //直接赋值得同时改Cursor
-    int Cursor{ -1 };
-    bool Undo();
-    bool Redo();
-    bool CanUndo() const;
-    bool CanRedo() const;
-    void SomethingShouldBeHere();
-    void Release();
-    void Push(const _Item& a);
-    void RenderUI();
-    void Clear();
-    _Item* Top();
-};
+struct IBG_UndoStack;
 extern IBG_UndoStack IBG_Undo;
 
 namespace IBR_ProjectManager

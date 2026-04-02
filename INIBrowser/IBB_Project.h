@@ -59,7 +59,6 @@ struct IBB_Project
     bool CreateRegisterList(const std::string& Name, const std::string& IniName);
     bool AddRegisterList(const IBB_RegisterList& List);
     IBB_Section* CreateNewSection(const IBB_Section_Desc& Desc);
-    bool AddNewLinkToLinkGroup(const IBB_Section_Desc& From, const IBB_Section_Desc& To);
 
     IBB_RegisterList& GetRegisterList(const std::string& Name, const std::string& IniName);//找不到就返回一个新建的
     bool RegisterSection(const std::string& Name, const std::string& IniName, IBB_Section& Section);

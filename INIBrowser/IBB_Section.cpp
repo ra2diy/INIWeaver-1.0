@@ -19,32 +19,8 @@ namespace ExportContext
 
 bool IBB_Section::Generate(const ModuleClipData& Clip)
 {
-    /*
-    IsLinkGroup=true
-    Desc
-    DefaultLinkKey
-    EqSize
-    EqDelta
-    VarList
-    LinkTo
-    */
     for (auto& L : Clip.VarList)VarList.Value[L.A] = L.B;
-    if (Clip.IsLinkGroup)
     {
-        IsLinkGroup = true;
-        SubSecs.clear();
-        Comment.clear();
-        OnShow.clear();
-        LineOrder.clear();
-        Inherit = Clip.Inherit;
-        Register = NewPoolStr(Clip.Register);
-        IBB_DefaultRegType::GenerateDLK(Clip.DefaultLinkKey, Register, DefaultLinkKey, DefaultLinkKey_UpValue);
-        for (auto& L : Clip.LinkGroup_LinkTo)
-            Root->Root->AddNewLinkToLinkGroup({ Root->Name,Name }, { L.A, L.B });
-    }
-    else
-    {
-        IsLinkGroup = false;
    /*
    IsLinkGroup=false
    IsComment=true
@@ -75,33 +51,28 @@ bool IBB_Section::Generate(const ModuleClipData& Clip)
     EqSize
     EqDelta
     VarList
+    SingleVal
+    SkipExport
+    SkipTitle
+    WidthRatio
+    LineStatus
     */
         else
         {
             Comment.clear();
             OnShow.clear();
             LineOrder.clear();
-            LinkGroup_NewLinkTo.clear();
             Register = NewPoolStr(Clip.Register);
             Inherit = Clip.Inherit;
             IBB_DefaultRegType::GenerateDLK(Clip.DefaultLinkKey, Register, DefaultLinkKey, DefaultLinkKey_UpValue);
             std::vector<std::string> Order;
 
-            SingleVal = IsTrueString(VarList.GetVariable("SingleVal"));
-            VarList.Value.erase("SingleVal");
-            SkipExport = IsTrueString(VarList.GetVariable("SkipExport"));
-            VarList.Value.erase("SkipExport");
-            SkipTitle = IsTrueString(VarList.GetVariable("SkipTitle"));
-            VarList.Value.erase("SkipTitle");
-            if (auto wr = VarList.GetVariable("WidthRatio"); !wr.empty())
-            {
-                float wrv = strtof(wr.c_str(), nullptr);
-                if (wrv > 0.0f)WidthRatio = wrv;
-                if (fabs(WidthRatio - 1.0F) < 1E-6)WidthRatio = 1.0f;
-            }
-            VarList.Value.erase("WidthRatio");
+            SingleVal = Clip.SingleVal;
+            SkipExport = Clip.SkipExport;
+            SkipTitle = Clip.SkipTitle;
+            if (fabs(WidthRatio - 1.0F) > 1E-6)WidthRatio = Clip.WidthRatio;
 
-            SetText(Clip.Lines);
+            SetText(Clip.Lines, Clip.LineStatus);
             for (auto& L : Clip.Lines)OnShow[NewPoolStr(L.Key)] = L.Desc;
         }
     }
@@ -111,32 +82,6 @@ bool IBB_Section::Generate(const ModuleClipData& Clip)
 void IBB_Section::GetClipData(ModuleClipData& Clip)
 {
     /*
-    IsLinkGroup=true
-    Desc
-    DefaultLinkKey
-    EqSize
-    EqDelta
-    VarList
-    LinkTo
-    */
-    if (IsLinkGroup)
-    {
-        Clip.IsLinkGroup = true;
-        Clip.IsComment = false;
-        Clip.Desc.A = Root->Name;
-        Clip.Desc.B = Name;
-        //IBB_VariableList DD;
-        //DefaultLinkKey.Flatten(DD);
-        for (auto& [A, B] : DefaultLinkKey)
-            Clip.DefaultLinkKey.push_back({ PoolStr(A), PoolStr(B) });
-        for (auto& L : LinkGroup_NewLinkTo)
-            Clip.LinkGroup_LinkTo.push_back(L.ToLoc.Sec);
-        for (auto& [A, B] : VarList.Value)
-            Clip.VarList.push_back({ A, B });
-    }
-    else
-    {
-    /*
     IsLinkGroup=false
     IsComment=true
     Desc
@@ -144,14 +89,13 @@ void IBB_Section::GetClipData(ModuleClipData& Clip)
     EqDelta
     Comment
     */
-        if (IsComment())
-        {
-            Clip.IsLinkGroup = false;
-            Clip.IsComment = true;
-            Clip.Desc.A = Root->Name;
-            Clip.Desc.B = Name;
-            Clip.Comment = Comment;
-        }
+    if (IsComment())
+    {
+        Clip.IsComment = true;
+        Clip.Desc.A = Root->Name;
+        Clip.Desc.B = Name;
+        Clip.Comment = Comment;
+    }
     /*
     IsLinkGroup=false
     IsComment=false
@@ -165,73 +109,90 @@ void IBB_Section::GetClipData(ModuleClipData& Clip)
     EqSize
     EqDelta
     VarList
+    SingleVal
+    SkipExport
+    SkipTitle
+    WidthRatio
+    LineStatus
     */
-        else
+    else
+    {
+        Clip.IsComment = false;
+        Clip.Desc.A = Root->Name;
+        Clip.Desc.B = Name;
+        Clip.Inherit = Inherit;
+        Clip.Register = PoolStr(Register);
+        struct TokenAndStatus
         {
-            Clip.IsLinkGroup = false;
-            Clip.IsComment = false;
-            Clip.Desc.A = Root->Name;
-            Clip.Desc.B = Name;
-            Clip.Inherit = Inherit;
-            Clip.Register = PoolStr(Register);
-            std::unordered_map <std::string, std::vector<IniToken>> Tokens;
-            for (auto& sec : SubSecs)
+            IniToken Tok;
+            ClipIICStatus Status;
+        };
+        std::unordered_map <std::string, std::vector<TokenAndStatus>> Tokens;
+        for (auto& sec : SubSecs)
+        {
+            for (auto& [key, lin] : sec.Lines)
             {
-                for (auto& [key, lin] : sec.Lines)
+                if (key == InheritKeyID())
                 {
-                    if (key == InheritKeyID())
-                    {
-                        Clip.Inherit = lin.Indexed(0)->GetStringForExport();
-                    }
-                    auto& Toks = Tokens[PoolStr(key)];
-                    lin.ForEach([&](LineData& L) {
-                        IniToken Tok;
-                        Tok.Empty = false;
-                        Tok.HasDesc = !OnShow[key].empty();
-                        Tok.IsSection = false;
-                        Tok.Key = PoolStr(key);
-                        Tok.Value = L->GetStringForExport();
-                        Tok.Desc = OnShow[key];
-                        Toks.push_back(std::move(Tok));
+                    Clip.Inherit = lin.Indexed(0)->GetStringForExport();
+                }
+                auto& Toks = Tokens[PoolStr(key)];
+                lin.ForEach([&](LineData& L) {
+                    IniToken Tok;
+                    ClipIICStatus Status;
+                    Tok.Empty = false;
+                    Tok.HasDesc = !OnShow[key].empty();
+                    Tok.IsSection = false;
+                    Tok.Key = PoolStr(key);
+                    Tok.Value = L->GetStringForExport();
+                    Tok.Desc = OnShow[key];
+                    L->GetClipIICStatus(Status);
+                    Toks.push_back({ std::move(Tok), std::move(Status) });
                     });
-                }
             }
-            for (auto& s : LineOrder)
-            {
-                if (auto It = Tokens.find(PoolStr(s)); It != Tokens.end())
-                {
-                    for(auto&& T : It->second)Clip.Lines.push_back(std::move(T));
-                    Tokens.erase(It);
-                }
-            }
-            for (auto& [key, tok] : Tokens)
-            {
-                for (auto&& T : tok)Clip.Lines.push_back(std::move(T));
-            }
-
-            //IBB_VariableList DD;
-            //DefaultLinkKey.Flatten(DD);
-            for (auto& [A, B] : DefaultLinkKey)
-                Clip.DefaultLinkKey.push_back({ PoolStr(A), PoolStr(B) });
-            for (auto& [A, B] : VarList.Value)
-                Clip.VarList.push_back({ A, B });
-
-            Clip.VarList.push_back({ "SingleVal", SingleVal ? "true" : "false" });
-            Clip.VarList.push_back({ "SkipExport", SkipExport ? "true" : "false" });
-            Clip.VarList.push_back({ "SkipTitle", SkipTitle ? "true" : "false" });
-            if (fabs(WidthRatio - 1.0F) > 1E-6)Clip.VarList.push_back({ "WidthRatio", std::to_string(WidthRatio) });
         }
+        for (auto& s : LineOrder)
+        {
+            if (auto It = Tokens.find(PoolStr(s)); It != Tokens.end())
+            {
+                for (auto&& T : It->second)
+                {
+                    Clip.Lines.push_back(std::move(T.Tok));
+                    Clip.LineStatus.push_back(std::move(T.Status));
+                }
+                Tokens.erase(It);
+            }
+        }
+        for (auto& [key, tok] : Tokens)
+        {
+            for (auto&& T : tok)
+            {
+                Clip.Lines.push_back(std::move(T.Tok));
+                Clip.LineStatus.push_back(std::move(T.Status));
+            }
+        }
+
+        //IBB_VariableList DD;
+        //DefaultLinkKey.Flatten(DD);
+        for (auto& [A, B] : DefaultLinkKey)
+            Clip.DefaultLinkKey.push_back({ PoolStr(A), PoolStr(B) });
+        for (auto& [A, B] : VarList.Value)
+            Clip.VarList.push_back({ A, B });
+
+        Clip.SingleVal = SingleVal;
+        Clip.SkipExport = SkipExport;
+        Clip.SkipTitle = SkipTitle;
+        Clip.WidthRatio = WidthRatio;
     }
 }
 
-bool IBB_Section::SetText(char* Text)
+bool IBB_Section::SetText(char* Text, const std::vector<ClipIICStatus>& LineStatus)
 {
-    return SetText(GetTokens(GetLines(Text)));
+    return SetText(GetTokens(GetLines(Text)), LineStatus);
 }
 
-bool IBB_Section::SetText(const std::vector<IniToken>& Tokens)
+bool IBB_Section::SetText(const std::vector<IniToken>& Tokens, const std::vector<ClipIICStatus>& LineStatus)
 {
-    IsLinkGroup = false;
     bool Ret = true;
     auto l = this->GetLineFromSubSecs(InheritKeyID());
     if (l)Inherit = l->Indexed(0)->GetString();//继承暂时禁止可重
@@ -240,7 +201,7 @@ bool IBB_Section::SetText(const std::vector<IniToken>& Tokens)
     OnShow.clear();
     std::unordered_map<IBB_SubSec_Default*, size_t> SubSecList;
     std::unordered_set<StrPoolID> UsedKeys;
-    auto u = [&](const IniToken& tok) {
+    auto u = [&](const IniToken& tok, const ClipIICStatus& stat) {
         //if (tok.Value.empty())MessageBoxA(MainWindowHandle, tok.Key.c_str(), "fff1", MB_OK);
 
         auto ptr = IBF_Inst_DefaultTypeList.List.KeyBelongToSubSec(tok.Key);
@@ -255,7 +216,7 @@ bool IBB_Section::SetText(const std::vector<IniToken>& Tokens)
 
         auto& Sub = SubSecs.at(It->second);
         {
-            if (!Sub.MergeLine(TokKeyID, Index_AlwaysNew, tok.Value, IBB_IniMergeMode::Replace, false))Ret = false;
+            if (!Sub.InsertLine(TokKeyID, tok.Value, stat, false))Ret = false;
         }
 
         if (tok.HasDesc)
@@ -284,14 +245,17 @@ bool IBB_Section::SetText(const std::vector<IniToken>& Tokens)
             i.Desc = EmptyOnShowDesc;
             i.IsSection = false;
             i.Empty = false;
-            u(i);
+            u(i, ClipIICStatus{});
         }
     }
 
-    for (auto& tok : Tokens)
+    auto EStat = ClipIICStatus{};
+    for (size_t i = 0; i < Tokens.size(); i++)
     {
+        auto& tok = Tokens[i];
         if (tok.Empty || tok.IsSection)continue;
-        u(tok);
+        auto& state = i < LineStatus.size() ? LineStatus[i] : EStat;
+        u(tok, state);
     }
 
     if(!SkipExport && !HasLine(InheritKeyID()))
@@ -302,7 +266,7 @@ bool IBB_Section::SetText(const std::vector<IniToken>& Tokens)
         i.HasDesc = false;
         i.IsSection = false;
         i.Empty = false;
-        u(i);
+        u(i, ClipIICStatus{});
     }
 
     UpdateAll();
@@ -348,26 +312,19 @@ std::vector<std::string> IBB_Section::GetLineOrderString() const
 std::vector<StrPoolID> IBB_Section::GetKeys(bool PrintExtraData) const
 {
     std::vector<StrPoolID> Ret;
-    if (IsLinkGroup)
+    for (const auto& Sub : SubSecs)
     {
-        return Ret;
+        auto K = Sub.GetKeys(PrintExtraData);
+        Ret.insert(Ret.end(), K.begin(), K.end());
     }
-    else
+    if (PrintExtraData)
     {
-        for (const auto& Sub : SubSecs)
-        {
-            auto K = Sub.GetKeys(PrintExtraData);
-            Ret.insert(Ret.end(), K.begin(), K.end());
-        }
-        if (PrintExtraData)
-        {
-            Ret.push_back(NewPoolStr("_SECTION_NAME"));
-            Ret.push_back(NewPoolStr("_IS_LINKGROUP"));
-            IBB_VariableList VL;
-            VarList.Flatten(VL);
-            for (const auto& V : VL.Value)
-                Ret.push_back(NewPoolStr(V.first));
-        }
+        Ret.push_back(NewPoolStr("_SECTION_NAME"));
+        Ret.push_back(NewPoolStr("_IS_LINKGROUP"));
+        IBB_VariableList VL;
+        VarList.Flatten(VL);
+        for (const auto& V : VL.Value)
+            Ret.push_back(NewPoolStr(V.first));
     }
     return Ret;
 }
@@ -377,35 +334,15 @@ IBB_VariableMultiList IBB_Section::GetLineList(bool PrintExtraData, bool FromExp
     if (FromExport)ExportContext::ExportingSection = this;
 
     IBB_VariableMultiList Ret;
-    if (IsLinkGroup)
+    for (const auto& Sub : SubSecs)
+        Ret.Merge(Sub.GetLineList(PrintExtraData, FromExport, TmpLineOrder));
+    if (PrintExtraData)
     {
-        for (const auto& L : LinkGroup_NewLinkTo)
-        {
-            auto pf = L.FromLoc.Sec.GetSec(*(Root->Root)), pt = L.ToLoc.Sec.GetSec(*(Root->Root));
-            if (pf != nullptr && pt != nullptr)
-                Ret.Push("_LINK_FROM_" + pf->Name, "_LINK_TO_" + pt->Name);
-        }
-        if (PrintExtraData)
-        {
-            Ret.Push("_SECTION_NAME", Name);
-            Ret.Push("_IS_LINKGROUP", "true");
-            IBB_VariableList VL;
-            VarList.Flatten(VL);
-            Ret.Merge(VL, false);
-        }
-    }
-    else
-    {
-        for (const auto& Sub : SubSecs)
-            Ret.Merge(Sub.GetLineList(PrintExtraData, FromExport, TmpLineOrder));
-        if (PrintExtraData)
-        {
-            Ret.Push("_SECTION_NAME", Name);
-            Ret.Push("_IS_LINKGROUP", "false");
-            IBB_VariableList VL;
-            VarList.Flatten(VL);
-            Ret.Merge(VL, false);
-        }
+        Ret.Push("_SECTION_NAME", Name);
+        Ret.Push("_IS_LINKGROUP", "false");
+        IBB_VariableList VL;
+        VarList.Flatten(VL);
+        Ret.Merge(VL, false);
     }
 
     if (FromExport)
@@ -419,62 +356,76 @@ IBB_VariableMultiList IBB_Section::GetLineList(bool PrintExtraData, bool FromExp
     return Ret;
 }
 
-std::string IBB_Section::GetText(bool PrintExtraData, bool FromExport, bool ForEdit) const
+std::string IBB_Section::GetText(bool PrintExtraData, bool FromExport, bool ForEdit, std::vector<ClipIICStatus>* pLineStatus) const
 {
     std::string Text;
-    if (IsLinkGroup)
+    auto TmpLineOrder = GetLineOrderString();
+    auto LineList = GetLineList(PrintExtraData, FromExport, &TmpLineOrder);
+    if (pLineStatus)pLineStatus->clear();
+    for (auto& s : TmpLineOrder)
     {
-        auto LineList = GetLineList(PrintExtraData, FromExport);
-        for (auto& [K, Vals] : LineList.Value)
+        if (LineList.HasValue(s))
         {
-            for (auto& V : Vals)
+            auto& Vals = LineList.GetVars(s);
+            if (FromExport)
             {
-                if (FromExport && V.empty())continue;
-                Text += K + "=" + V + "\n";
+                std::unordered_set<std::string> Seen;
+                Vals.erase(std::remove_if(Vals.begin(), Vals.end(), [&](const std::string& v) {
+                    if (v.empty())return true;
+                    if (Seen.contains(v))return true;
+                    Seen.insert(v);
+                    return false;
+                    }), Vals.end());
             }
+            if (!FromExport && pLineStatus)
+            {
+                for (auto&& [idx, Val] : Vals | std::views::enumerate)
+                {
+                    auto Line = GetLineFromSubSecs(NewPoolStr(s));
+                    ClipIICStatus stat;
+                    if (Line)
+                    {
+                        Line->Indexed(idx)->GetClipIICStatus(stat);
+                        pLineStatus->push_back(stat);
+                    }
+                    else pLineStatus->push_back({});
+                }
+            }
+            for (auto& Val : Vals)
+            {
+                if (FromExport && Val.empty())continue;
+                if (ForEdit && OnShow.find(NewPoolStr(s)) != OnShow.end())
+                {
+                    auto& ons = OnShow.at(NewPoolStr(s));
+                    if (ons.empty()) Text += s + "=" + Val + "\n";
+                    else if (ons == EmptyOnShowDesc) Text += "#" + s + "=" + Val + "\n";
+                    else Text += ons + "#" + s + "=" + Val + "\n";
+                }
+                else Text += s + "=" + Val + "\n";
+            }
+            LineList.Value.erase(s);
         }
     }
-    else
+    for (auto& [K, Vals] : LineList.Value)
     {
-        auto TmpLineOrder = GetLineOrderString();
-        auto LineList = GetLineList(PrintExtraData, FromExport, &TmpLineOrder);
-        for (auto& s : TmpLineOrder)
+        if (!FromExport && pLineStatus)
         {
-            if (LineList.HasValue(s))
+            for (auto&& [idx, Val] : Vals | std::views::enumerate)
             {
-                auto& Vals = LineList.GetVars(s);
-                if (FromExport)
+                auto Line = GetLineFromSubSecs(NewPoolStr(K));
+                ClipIICStatus stat;
+                if (Line)
                 {
-                    std::unordered_set<std::string> Seen;
-                    Vals.erase(std::remove_if(Vals.begin(), Vals.end(), [&](const std::string& v) {
-                        if (v.empty())return true;
-                        if (Seen.contains(v))return true;
-                        Seen.insert(v);
-                        return false;
-                        }), Vals.end());
+                    Line->Indexed(idx)->GetClipIICStatus(stat);
+                    pLineStatus->push_back(stat);
                 }
-                for (auto& Val : Vals)
-                {
-                    if (FromExport && Val.empty())continue;
-                    if (ForEdit && OnShow.find(NewPoolStr(s)) != OnShow.end())
-                    {
-                        auto& ons = OnShow.at(NewPoolStr(s));
-                        if (ons.empty()) Text += s + "=" + Val + "\n";
-                        else if (ons == EmptyOnShowDesc) Text += "#" + s + "=" + Val + "\n";
-                        else Text += ons + "#" + s + "=" + Val + "\n";
-                    }
-                    else Text += s + "=" + Val + "\n";
-                }
-                LineList.Value.erase(s);
+                else pLineStatus->push_back({});
             }
         }
-        for (auto& [K, Vals] : LineList.Value)
+        for (auto& V : Vals)
         {
-            for (auto& V : Vals)
-            {
-                if (FromExport && V.empty())continue;
-                Text += K + "=" + V + "\n";
-            }
+            if (FromExport && V.empty())continue;
+            Text += K + "=" + V + "\n";
         }
     }
 
@@ -482,7 +433,7 @@ std::string IBB_Section::GetText(bool PrintExtraData, bool FromExport, bool ForE
     return Text;
 }
 
-std::string IBB_Section::GetTextForEdit() const
+std::string IBB_Section::GetTextForEdit(std::vector<ClipIICStatus>& LineStatus) const
 {
     std::string Ret;
     if (!GetLineFromSubSecs(InheritKeyID()) && !Inherit.empty())
@@ -492,7 +443,7 @@ std::string IBB_Section::GetTextForEdit() const
         Ret += Inherit;
         Ret += "\n";
     }
-    Ret += GetText(false, false, true);
+    Ret += GetText(false, false, true, &LineStatus);
     return Ret;
 }
 
@@ -524,7 +475,7 @@ std::vector<std::pair<size_t, size_t>> IBB_Section::GetRegisteredPositionAlt() c
 
 bool IBB_Section::HasLine(StrPoolID Key) const
 {
-    if (IsLinkGroup || IsComment()) return false;
+    if (IsComment()) return false;
     if (SubSecs.empty())return false;
     if (GetLineFromSubSecs(Key) != nullptr)return true;
     return false;
@@ -819,7 +770,6 @@ void IBB_Section::CheckSubsecOrder()
 IBB_Section::IBB_Section(const std::string& N, IBB_Ini* R) :
     Name(N),
     Root(R),
-    IsLinkGroup(false),
     DefaultLinkKey_UpValue(nullptr),
     ID(Root->Name, N)
 {
@@ -829,11 +779,9 @@ IBB_Section::IBB_Section(const std::string& N, IBB_Ini* R) :
 
 IBB_Section::IBB_Section(IBB_Section&& S) noexcept :
     Root(S.Root),
-    IsLinkGroup(S.IsLinkGroup),
     Name(std::move(S.Name)),
     SubSecs(std::move(S.SubSecs)),
     VarList(std::move(S.VarList)),
-    LinkGroup_NewLinkTo(std::move(S.LinkGroup_NewLinkTo)),
     LineOrder(std::move(S.LineOrder)),
     ID(S.ID),
     DefaultLinkKey(std::move(S.DefaultLinkKey)),
@@ -861,25 +809,15 @@ bool IBB_Section::AcceptNewNameInLinkTo(IBB_SectionID NewID, IBB_Section* Target
     //只能由Rename调用，故Target非空，且非自连。
     auto& Proj = *Root->Root;
     bool Ret = true;
-    if (IsLinkGroup)
-    {
-        //直接修改链接本身
-        for (auto& Link : LinkGroup_NewLinkTo)
+    for (auto& Sub : SubSecs)
+        for (auto&& [idx, Link] : std::views::zip(std::views::iota(0u), Sub.NewLinkTo))
             if (Link.ToLoc.Sec.GetSec(Proj) == Target)
-                Link.ToLoc.Sec = { Link.ToLoc.Ini(), NewName };
-    }
-    else
-    {
-        for (auto& Sub : SubSecs)
-            for (auto&& [idx, Link] : std::views::zip(std::views::iota(0u), Sub.NewLinkTo))
-                if (Link.ToLoc.Sec.GetSec(Proj) == Target)
-                {
-                    //按照这个Link，找到所有from的地方并修改to到新name
-                    Ret &= Sub.RenameInLinkTo(idx, Target->Name, NewName);
-                    //然后修改链接本身
-                    Link.ToLoc.Sec = NewID;
-                }
-    }
+            {
+                //按照这个Link，找到所有from的地方并修改to到新name
+                Ret &= Sub.RenameInLinkTo(idx, Target->Name, NewName);
+                //然后修改链接本身
+                Link.ToLoc.Sec = NewID;
+            }
     return Ret;
 }
 
@@ -890,35 +828,24 @@ bool IBB_Section::RemoveNameInLinkTo(IBB_Section* Target)
     //只能由Isolate调用，故Target非空，且非自连。
     auto& Proj = *Root->Root;
     bool Ret = true;
-    if (IsLinkGroup)
+    for (auto& Sub : SubSecs)
     {
         std::vector<IBB_NewLink> NL;
-        //直接修改链接本身
-        for (auto& Link : LinkGroup_NewLinkTo)
-            if (Link.ToLoc.Sec.GetSec(Proj) != Target)
+        std::map<size_t, size_t> OldToNew;
+        for (auto&& [idx, Link] : std::views::zip(std::views::iota(0u), Sub.NewLinkTo))
+            if (Link.ToLoc.Sec.GetSec(Proj) == Target)
+                //按照这个Link，找到所有from的地方并修改to到新name
+                Ret &= Sub.RenameInLinkTo(idx, Target->Name, "");
+            else if (!Link.Empty())
+            {
                 NL.push_back(Link);
-    }
-    else
-    {
-        for (auto& Sub : SubSecs)
-        {
-            std::vector<IBB_NewLink> NL;
-            std::map<size_t, size_t> OldToNew;
-            for (auto&& [idx, Link] : std::views::zip(std::views::iota(0u), Sub.NewLinkTo))
-                if (Link.ToLoc.Sec.GetSec(Proj) == Target)
-                    //按照这个Link，找到所有from的地方并修改to到新name
-                    Ret &= Sub.RenameInLinkTo(idx, Target->Name, "");
-                else if(!Link.Empty())
-                {
-                    NL.push_back(Link);
-                    OldToNew[idx] = NL.size() - 1;
-                }
-            Sub.UpdateNewLinkTo(std::move(NL));
-            Sub.LinkSrc = Sub.LinkSrc |
-                std::views::filter([&](auto& p) { return OldToNew.contains(p.second); }) |
-                std::views::transform([&](auto& p) { return std::make_pair(p.first, OldToNew[p.second]); }) |
-                std::ranges::to<std::multimap>();
-        }
+                OldToNew[idx] = NL.size() - 1;
+            }
+        Sub.UpdateNewLinkTo(std::move(NL));
+        Sub.LinkSrc = Sub.LinkSrc |
+            std::views::filter([&](auto& p) { return OldToNew.contains(p.second); }) |
+            std::views::transform([&](auto& p) { return std::make_pair(p.first, OldToNew[p.second]); }) |
+            std::ranges::to<std::multimap>();
     }
     return Ret;
 }
@@ -936,35 +863,19 @@ bool IBB_Section::Rename(const std::string& NewName)
     bool Ret = true;
     auto& Proj = *Root->Root;
     IBB_SectionID NewID = IBB_SectionID(Root->Name, NewName);
-    if (IsLinkGroup)
-    {
-        for (auto& Link : LinkGroup_NewLinkTo)
+    for (auto& Sub : SubSecs)
+        for (auto&& [idx, Link] : std::views::zip(std::views::iota(0u), Sub.NewLinkTo))
         {
+            //按照这个Link，找到所有from的地方并修改to到新name
+            Ret &= Sub.RenameInLinkTo(idx, Name, NewName);
             //找到连到的对象，改他们linkedby
             Ret &= AcceptNewNameInLinkedBy(Link.ToLoc.Sec, NewName);
-            //然后修改链接本身From
+            //然后修改链接本身
             Link.FromLoc.Sec = NewID;
             //自连则也要修改To
             if (Link.ToLoc.Sec == ID)
                 Link.ToLoc.Sec = NewID;
         }
-    }
-    else
-    {
-        for (auto& Sub : SubSecs)
-            for (auto&& [idx, Link] : std::views::zip(std::views::iota(0u), Sub.NewLinkTo))
-            {
-                //按照这个Link，找到所有from的地方并修改to到新name
-                Ret &= Sub.RenameInLinkTo(idx, Name, NewName);
-                //找到连到的对象，改他们linkedby
-                Ret &= AcceptNewNameInLinkedBy(Link.ToLoc.Sec, NewName);
-                //然后修改链接本身
-                Link.FromLoc.Sec = NewID;
-                //自连则也要修改To
-                if (Link.ToLoc.Sec == ID)
-                    Link.ToLoc.Sec = NewID;
-            }
-    }
     for (auto& Link : GetLinkedBy_NoCached())
     {
         //按照From追溯到来源
@@ -1011,42 +922,24 @@ bool IBB_Section::Isolate()
 bool IBB_Section::UpdateAll()
 {
     bool Ret = true;
-    auto PProj = Root->Root;
-    if (IsLinkGroup)
+    for (auto& ss : SubSecs)
     {
-        std::vector<IBB_NewLink> NewGroup;
-        NewGroup.reserve(LinkGroup_NewLinkTo.size());
-        for (size_t i = 0; i < LinkGroup_NewLinkTo.size(); i++)
-        {
-            auto& NL = LinkGroup_NewLinkTo.at(i);
-            if (NL.ToLoc.Sec.GetSec(*PProj) != nullptr)NewGroup.push_back(NL);
-        }
-        for (auto& L : NewGroup)
-            L.FromLoc.Key = EmptyPoolStr;
-        LinkGroup_NewLinkTo = NewGroup;
+        ss.Root = this;
+        if (!ss.UpdateAll())Ret = false;
     }
-    else
-    {
-        for (auto& ss : SubSecs)
-        {
-            ss.Root = this;
-            if (!ss.UpdateAll())Ret = false;
-        }
 
-        Ret &= UpdateLineOrder();
+    Ret &= UpdateLineOrder();
 
-        //移除不存在的键的OnShow
-        OnShow = GetKeys(false) |
-            std::views::transform([&](auto&& k) {return std::make_pair(k, OnShow.contains(k) ? OnShow.at(k) : ""); }) |
-            std::views::filter([&](auto&& s) {return !s.second.empty(); }) |
-            std::ranges::to<std::unordered_map>();
-    }
+    //移除不存在的键的OnShow
+    OnShow = GetKeys(false) |
+        std::views::transform([&](auto&& k) {return std::make_pair(k, OnShow.contains(k) ? OnShow.at(k) : ""); }) |
+        std::views::filter([&](auto&& s) {return !s.second.empty(); }) |
+        std::ranges::to<std::unordered_map>();
     return Ret;
 }
 
 bool IBB_Section::UpdateLineOrder()
 {
-    if (IsLinkGroup)return false;
     if (IsComment())return true;
 
     //update LineOrder

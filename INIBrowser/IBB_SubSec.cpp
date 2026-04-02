@@ -120,6 +120,18 @@ bool IBB_SubSec::MergeLine(StrPoolID Key, size_t Index, const std::string& Value
     if (NoUpdate) return Ret;
     else return UpdateAll() && Ret;
 }
+bool IBB_SubSec::InsertLine(StrPoolID Key, const std::string& Value, const ClipIICStatus& stat, bool NoUpdate)
+{
+    if (MergeLine(Key, Index_AlwaysNew, Value, IBB_IniMergeMode::Replace, NoUpdate))
+    {
+        auto it = Lines.find(Key);
+        if (it == Lines.end())return false;
+        auto& L = it->second;
+        L.Latest()->SetClipIICStatus(stat);
+        return true;
+    }
+    else return false;
+}
 
 bool IBB_SubSec::ChangeRoot(IBB_Section* NewRoot)
 {

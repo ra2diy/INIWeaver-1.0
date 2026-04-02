@@ -4,6 +4,7 @@
 #include "IBB_RegType.h"
 #include "IBG_InputType_Derived.h"
 #include "IBR_Misc.h"
+#include "IBB_ModuleAlt.h"
 
 namespace ExportContext
 {
@@ -22,21 +23,6 @@ std::string DecodeListForExport(const std::string& Val)
     if (Val.empty())return "";
     IBB_Section_Desc Desc{ Internal_IniName, Val };
     auto pSec = IBF_Inst_Project.Project.GetSec(Desc);
-    if (pSec && pSec->IsLinkGroup)
-    {
-        std::string R;
-        for (auto& V : pSec->LinkGroup_NewLinkTo)
-        {
-            auto pp = V.ToLoc.Sec.GetSec(IBF_Inst_Project.Project);
-            if (pp)
-            {
-                R += pp->Name;
-                R += ',';
-            }
-        }
-        if (!R.empty())R.pop_back();
-        return R;
-    }
     if (pSec && pSec->SingleVal)
     {
         auto pLine = pSec->GetLineFromSubSecs(SingleValID());
@@ -405,6 +391,16 @@ IIFPtr IBB_IniLine_Data_String::GetNewIIF(IBB_IniLine_Default* Default) const
     piif->ParseFromString(GetString());
     return piif;
 }
+void IBB_IniLine_Data_String::GetClipIICStatus(ClipIICStatus& Status) const
+{
+    Status.Status.clear();
+    Status.Status.push_back(SingleIICStatus(Status_Workspace.InputMethod));
+}
+void IBB_IniLine_Data_String::SetClipIICStatus(const ClipIICStatus& Status)
+{
+    if (!Status.Status.empty())
+        Status_Workspace.InputMethod = Status.Status[0].Method;
+}
 void IBB_IniLine_Data_String::RenderUI(IBB_IniLine_Default* Default, const LinkNodeSetting& LinkNode, bool IsWorkspace)
 {
     auto& Form = Default->GetInputType().Form;
@@ -508,6 +504,14 @@ IIFPtr IBB_IniLine_Data_Bool::GetNewIIF(IBB_IniLine_Default* Default) const
     piif->ParseFromString(GetString());
     return piif;
 }
+void IBB_IniLine_Data_Bool::GetClipIICStatus(ClipIICStatus& Status) const
+{
+    Status.Status.clear();
+}
+void IBB_IniLine_Data_Bool::SetClipIICStatus(const ClipIICStatus& Status)
+{
+    IM_UNUSED(Status);
+}
 void IBB_IniLine_Data_Bool::Replace(size_t, const std::string&, const std::string&)
 {
     //DO NOTHING
@@ -562,6 +566,23 @@ std::string IBB_IniLine_Data_IIF::GetStringForExport() const
 IIFPtr IBB_IniLine_Data_IIF::GetNewIIF(IBB_IniLine_Default*) const
 {
     return Value->Duplicate();
+}
+void IBB_IniLine_Data_IIF::GetClipIICStatus(ClipIICStatus& Status) const
+{
+    for (auto& S : Value->GetComponentStatus())
+    {
+        Status.Status.push_back(SingleIICStatus(S.InputMethod));
+    }
+}
+void IBB_IniLine_Data_IIF::SetClipIICStatus(const ClipIICStatus& Status)
+{
+    Value->CheckStatus();
+    std::vector<IICStatus> NewStatus;
+    auto& ValueStatus = Value->GetComponentStatus();
+    for (size_t i = 0; i < Status.Status.size() && i < ValueStatus.size(); i++)
+    {
+        ValueStatus[i].InputMethod = Status.Status[i].Method;
+    }
 }
 void IBB_IniLine_Data_IIF::Replace(size_t CompIdx, const std::string& OldName, const std::string& NewName)
 {

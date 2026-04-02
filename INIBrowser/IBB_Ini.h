@@ -11,6 +11,7 @@
 #define _TEXT_UTF8
 #endif
 
+struct ClipIICStatus;
 struct IniToken;
 struct ModuleClipData;
 struct LinkNodeSetting;
@@ -87,6 +88,8 @@ struct IBB_IniLine_Data_Base
     virtual IIFPtr GetNewIIF(IBB_IniLine_Default* Default) const = 0;
     virtual std::string GetString() const = 0;
     virtual std::string GetStringForExport() const = 0;
+    virtual void GetClipIICStatus(ClipIICStatus& Status) const = 0;
+    virtual void SetClipIICStatus(const ClipIICStatus& Status) = 0;
 
     IBB_IniLine_Data_Base() {}
     virtual ~IBB_IniLine_Data_Base() {}
@@ -115,6 +118,8 @@ struct IBB_IniLine
     const LineData& Multiple(size_t Index) const { auto& V = Multis(); if (Index < V.size())return V.at(Index); else return Null(); }
     LineData& Indexed(size_t Index) { return IsMultiple() ? Multiple(Index) : Single(); }
     const LineData& Indexed(size_t Index) const { return IsMultiple() ? Multiple(Index) : Single(); }
+    LineData& Latest() { return IsMultiple() ? Multis().back() : Single(); }
+    const LineData& Latest() const { return IsMultiple() ? Multis().back() : Single(); }
     const std::vector<LineData>& Multis() const { return std::get<std::vector<LineData>>(Data); }
     size_t Count() const { return IsMultiple() ? Multis().size() : (Single() ? 1 : 0); }
     template<typename T> T* GetData(size_t Index) const
@@ -239,6 +244,7 @@ struct IBB_SubSec
     bool UpdateAll();
     void UpdateNewLinkTo(std::vector<IBB_NewLink>&& NewLT);
 
+    bool InsertLine(StrPoolID Key, const std::string& Value, const ClipIICStatus& stat, bool NoUpdate = false);
     bool MergeLine(StrPoolID Key, size_t Index, const std::string& Value, IBB_IniMergeMode Mode, bool NoUpdate = false);
     bool ChangeRoot(IBB_Section* NewRoot);
     IBB_SubSec& ChangeRootAndBack(IBB_Section* NewRoot) { ChangeRoot(NewRoot); return *this; }
@@ -254,8 +260,6 @@ struct IBB_Section
     std::vector<size_t> SubSecOrder;
     IBB_VariableList VarList;
 
-    bool IsLinkGroup{ false };//no subsec varlist unklines
-    std::vector<IBB_NewLink> LinkGroup_NewLinkTo;
     std::unordered_map<StrPoolID, StrPoolID> DefaultLinkKey;
     std::unordered_map<StrPoolID, StrPoolID>* DefaultLinkKey_UpValue;
     std::unordered_map<StrPoolID, std::string> OnShow;//EmptyOnShowDesc means no desc
@@ -317,8 +321,8 @@ struct IBB_Section
     std::vector<StrPoolID> GetKeys(bool PrintExtraData) const;
     std::vector<std::string> GetLineOrderString() const;
     IBB_VariableMultiList GetLineList(bool PrintExtraData, bool FromExport, std::vector<std::string>* TmpLineOrder = nullptr) const;//RARELY USED
-    std::string GetText(bool PrintExtraData, bool FromExport = false, bool ForEdit = false) const;
-    std::string GetTextForEdit() const;
+    std::string GetText(bool PrintExtraData, bool FromExport = false, bool ForEdit = false, std::vector<ClipIICStatus>* pLineStatus = nullptr) const;
+    std::string GetTextForEdit(std::vector<ClipIICStatus>& LineStatus) const;
     std::vector<size_t> GetRegisteredPosition() const;//Project的RegList序号
     std::vector<std::pair<size_t, size_t>> GetRegisteredPositionAlt() const;//pair<Project的RegList序号,RegList的Sec*序号>
     bool IsComment() const { return CreateAsCommentBlock || !Comment.empty(); }
@@ -332,8 +336,8 @@ struct IBB_Section
     void SetOnShow(StrPoolID Key);
     void PushLineOrder(StrPoolID Key);
     void RecheckLineOrder();
-    bool SetText(char* Text);//mess Text up
-    bool SetText(const std::vector<IniToken>& Tokens);//do not consider section&inherit
+    bool SetText(char* Text, const std::vector<ClipIICStatus>& LineStatus);//mess Text up
+    bool SetText(const std::vector<IniToken>& Tokens, const std::vector<ClipIICStatus>& LineStatus);//do not consider section&inherit
     void GetClipData(ModuleClipData& Clip);
     bool Generate(const ModuleClipData& Clip);
 

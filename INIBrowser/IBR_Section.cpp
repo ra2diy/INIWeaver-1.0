@@ -8,6 +8,7 @@
 #include "IBB_ModuleAlt.h"
 #include "IBB_RegType.h"
 #include <imgui_internal.h>
+#include "IBG_UndoTree.h"
 
 namespace IBR_WorkSpace
 {

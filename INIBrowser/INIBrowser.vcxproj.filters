@@ -234,6 +234,9 @@
     <ClInclude Include="IBR_TopMost.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="IBG_UndoTree.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="INIBrowser.cpp">

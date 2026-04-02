@@ -283,7 +283,7 @@ ReadFileHeader IBS_LoadProject
             File.ReadData(IBS_Inst_Project.FullView_Ratio);
             File.ReadData(IBS_Inst_Project.FullView_EqCenter);
             File.ReadData(IBS_Inst_Project.LastOutputDir);
-            File.WriteData(IBS_Inst_Project.PersistentID);
+            File.ReadData(IBS_Inst_Project.PersistentID);
             std::function<bool(const ExtFileClass&, std::pair<std::string, std::wstring>&)> F = [](const auto& E, auto& U)->auto
                 {
                     auto R = true;
@@ -312,6 +312,10 @@ ReadFileHeader IBS_LoadProject
                 };
             File.ReadVector(IBS_Inst_Project.LastOutputIniName, F);
             File.ReadVector(IBS_Inst_Project.Data);
+
+            auto A1 = (uint64_t)GlobalRnd();
+            auto A2 = (uint64_t)GlobalRnd();
+            IBS_Inst_Project.PersistentID = A1 << 32 | A2;
         }
         else if (FVersion >= 203)
         {
@@ -323,6 +327,10 @@ ReadFileHeader IBS_LoadProject
             File.ReadData(IBS_Inst_Project.FullView_EqCenter);
             File.ReadData(IBS_Inst_Project.LastOutputDir);
             File.ReadVector(IBS_Inst_Project.Data);
+
+            auto A1 = (uint64_t)GlobalRnd();
+            auto A2 = (uint64_t)GlobalRnd();
+            IBS_Inst_Project.PersistentID = A1 << 32 | A2;
         }
         else//202 or lower
         {
@@ -333,6 +341,10 @@ ReadFileHeader IBS_LoadProject
             File.ReadData(IBS_Inst_Project.FullView_Ratio);
             File.ReadData(IBS_Inst_Project.FullView_EqCenter);
             File.ReadVector(IBS_Inst_Project.Data);
+
+            auto A1 = (uint64_t)GlobalRnd();
+            auto A2 = (uint64_t)GlobalRnd();
+            IBS_Inst_Project.PersistentID = A1 << 32 | A2;
         }
         return true;
     }

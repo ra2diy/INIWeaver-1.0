@@ -11,7 +11,7 @@ const int VersionRelease = 9;
 const int VersionN = VersionMajor * 10000 + VersionMinor * 100 + VersionRelease;
 const std::string VersionNStr = u8"010009";
 //剪贴板格式不更新就不要动了
-const std::string ClipDataFormatVersion = u8"1.0.6";
+const std::string ClipDataFormatVersion = u8"1.0.9";
 
 std::string GetVersionStr(int Ver)
 {

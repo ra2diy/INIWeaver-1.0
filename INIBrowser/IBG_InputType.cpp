@@ -6,6 +6,7 @@
 #include <fmt/scan.h>
 #include <ranges>
 #include "IBR_Misc.h"
+#include "IBG_UndoTree.h"
 
 extern bool InputStdStringActive;
 

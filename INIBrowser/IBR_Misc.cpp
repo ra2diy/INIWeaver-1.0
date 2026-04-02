@@ -23,6 +23,9 @@
 #include "IBR_Combo.h"
 #include "IBR_Debug.h"
 #include "IBR_Misc.h"
+#include "IBB_ModuleAlt.h"
+#include "IBG_UndoTree.h"
+
 
 bool ImGui_TextDisabled_Helper(const char* Text);
 bool SmallButton_Disabled_Helper(bool cond, const char* Text);
@@ -576,6 +579,7 @@ IBG_UndoStack IBG_Undo;
 
 #define AFTER_INTERRUPT_F
 
+
 namespace IBR_EditFrame
 {
     IBR_Section CurSection{ &IBR_Inst_Project,UINT64_MAX };
@@ -585,6 +589,7 @@ namespace IBR_EditFrame
     bool TextEditError{ false }, OnTextEdit{ false }, TextEditReset{ false };
     std::unordered_map<StrPoolID, SidebarLine> EditLines;
     std::string NewLineKey, NewLineValue;
+    std::vector<ClipIICStatus> EditClipIICStatus;
     
     void AFTER_INTERRUPT_F ResetEdit(IBB_Section* rsc)
     {
@@ -642,7 +647,7 @@ namespace IBR_EditFrame
         auto rsc = CurSection.GetBack();
         if (rsc)
         {
-            strcpy(EditBuf, rsc->GetTextForEdit().c_str());
+            strcpy(EditBuf, rsc->GetTextForEdit(EditClipIICStatus).c_str());
             TextEditError = false;
         }
         else TextEditError = true;
@@ -666,7 +671,7 @@ namespace IBR_EditFrame
 
         IBG_Undo.SomethingShouldBeHere();
 
-        pbk->SetText(EditBuf);
+        pbk->SetText(EditBuf, EditClipIICStatus);
         rsd->ActiveLines.clear();
         ResetEdit(pbk);
 

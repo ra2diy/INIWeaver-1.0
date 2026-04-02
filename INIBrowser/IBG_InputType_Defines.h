@@ -3,6 +3,7 @@
 #include <vector>
 #include <optional>
 
+class JsonObject;
 struct IBG_InputComponent;
 struct IBB_FormatComponent;
 struct IBB_ValidateComponent;
@@ -22,3 +23,15 @@ using IICVPtr = std::shared_ptr<std::vector<IICPtr>>;
 using IFCVPtr = std::shared_ptr<std::vector<IFCPtr>>;
 using ILFVPtr = std::shared_ptr<std::vector<IBB_LineFormat>>;
 using IASOpt = std::optional<IIT_AcceptorSetting>;
+
+struct IICStatus
+{
+    enum _ : uint8_t {
+        Input,
+        Link
+    } InputMethod{
+        Input
+    };
+
+    bool Load(const JsonObject& Obj);
+};

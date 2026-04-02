@@ -214,6 +214,7 @@
     <ClInclude Include="IBG_InputType.h" />
     <ClInclude Include="IBG_InputType_Defines.h" />
     <ClInclude Include="IBG_InputType_Derived.h" />
+    <ClInclude Include="IBG_UndoTree.h" />
     <ClInclude Include="IBR_Project.h" />
     <ClInclude Include="IBR_Combo.h" />
     <ClInclude Include="IBR_Debug.h" />

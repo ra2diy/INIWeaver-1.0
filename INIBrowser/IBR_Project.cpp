@@ -10,6 +10,7 @@
 #include <ranges>
 #include "IBR_ListView.h"
 #include "IBR_Misc.h"
+#include "IBG_UndoTree.h"
 
 void _PROJ_CMD_WRITE  _PROJ_CMD_UPDATE IBR_Project::TriggerRefreshLink()
 {
@@ -44,13 +45,7 @@ std::pair<bool, std::vector<ModuleID_t>> _PROJ_CMD_WRITE  _PROJ_CMD_UPDATE IBR_P
     IBD_RInterruptF(x);
     bool Ret = true;
     std::vector<ModuleID_t> Vec;
-    for (auto& M : Modules)if (!M.IsLinkGroup)
-    {
-        auto R = AddModule_Impl(M, UseMouseCenter);
-        if (R)Vec.push_back(R.value());
-        else Ret = false;
-    }
-    for (auto& M : Modules)if (M.IsLinkGroup)
+    for (auto& M : Modules)
     {
         auto R = AddModule_Impl(M, UseMouseCenter);
         if (R)Vec.push_back(R.value());

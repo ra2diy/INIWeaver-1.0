@@ -215,15 +215,9 @@ void IBF_Project::RegenLinkedBy(const IBB_Section_Desc& Desc)
         };
     for(auto& Ini:Project.Inis)
         for (auto& [K, Sec] : Ini.Secs)
-        {
-            if (Sec.IsLinkGroup)
-                for (auto& L : Sec.LinkGroup_NewLinkTo)
+            for (auto& Sub : Sec.SubSecs)
+                for (auto& L : Sub.NewLinkTo)
                     S(L);
-            else
-                for (auto& Sub : Sec.SubSecs)
-                    for (auto& L : Sub.NewLinkTo)
-                        S(L);
-        }
 }
 std::vector<IBB_NewLink>& IBF_Project::GetLinkedBy_Cached(const IBB_Section_Desc& Desc)
 {
