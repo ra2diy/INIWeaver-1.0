@@ -1893,10 +1893,49 @@ namespace IBB_ModuleAltDefault
     {
         AllModules.RenderUI();
     }
+    void Tree_RenderUISidebar()
+    {
+        std::function<void(const ModuleTree&)> Render;
+        Render = [&](const ModuleTree& tree) {
+            for (auto& sub : tree.Sub)
+            {
+                if (sub->Sub.empty() && sub->Modules.empty()) continue;
+                ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow;
+                auto pos = ImGui::GetCursorScreenPos();
+                DrawFolderIcon(pos, (float)FontHeight);
+                ImGui::Dummy(ImVec2((float)FontHeight, (float)FontHeight));
+                ImGui::SameLine();
+                bool open = ImGui::TreeNodeEx(sub->Name.c_str(), flags);
+                if (open)
+                {
+                    Render(*sub);
+                    ImGui::TreePop();
+                }
+            }
+            for (auto& [name, mod] : tree.Modules)
+            {
+                if (!mod) continue;
+                auto label = mod->DescShort.empty() ? name : mod->DescShort;
+                ImGui::Selectable(label.c_str());
+                if (ImGui::IsItemHovered() && !mod->DescLong.empty())
+                    ImGui::SetTooltip("%s", mod->DescLong.c_str());
+                if (ImGui::IsItemClicked(ImGuiMouseButton_Left))
+                {
+                    mod->FullyLoad();
+                    IBR_Inst_Project.AddModule(*mod, GenerateModuleTag());
+                }
+            }
+        };
+        Render(AllModules);
+    }
     void Tree_ResetHover()
     {
         AllModules.ResetHover();
         SpecialModules.ResetHover();
+    }
+    bool IsModuleTreeEmpty()
+    {
+        return AllModules.Sub.empty() && AllModules.Modules.empty();
     }
 }
 

@@ -1074,7 +1074,7 @@ namespace IBR_WorkSpace
                     {
                         IBR_EditFrame::Clear();
                         if(IBR_Inst_Menu.GetMenuItem()==MenuItemID_EDIT)
-                            IBR_Inst_Menu.ChooseMenu(MenuItemID_FILE);
+                            IBR_Inst_Menu.ChooseMenu(MenuItemID_MODULES);
 
                         HasLefttDownToWait = false;
                         if (MoveAfterMass)
@@ -1322,7 +1322,7 @@ namespace IBR_WorkSpace
                 {
                     IBR_EditFrame::Clear();
                     if (IBR_Inst_Menu.GetMenuItem() == MenuItemID_EDIT)
-                        IBR_Inst_Menu.ChooseMenu(MenuItemID_FILE);
+                        IBR_Inst_Menu.ChooseMenu(MenuItemID_MODULES);
 
                     IsBgDragging = false;
                 }
