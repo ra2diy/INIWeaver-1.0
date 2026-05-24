@@ -150,12 +150,18 @@ namespace IBR_ProjectManager
         {
             auto T2 = locw("GUI_OutputModule_Type2");
             auto T3 = locw("GUI_OutputModule_Type3");
-            auto L1 = wcslen(L"*" ExtensionNameW);
-            Filter.resize(T2.size() + T3.size() + 64);
-            wcscpy(Filter.data(), T3.c_str());
-            wcscpy(Filter.data() + T3.size() + 1, L"*" ExtensionNameW);
-            wcscpy(Filter.data() + T3.size() + L1 + 2, T2.c_str());
-            wcscpy(Filter.data() + T3.size() + L1 + T2.size() + 3, L"*.*");
+            auto T5 = locw("GUI_OutputModule_Type5");
+            auto L0 = (int)wcslen(L"*" ExtensionNameW);
+            auto LM = (int)wcslen(L"*.modproj");
+            auto LA = 4;
+            Filter.clear();
+            Filter.reserve(T3.size() + 1 + L0 + 1 + T5.size() + 1 + LM + 1 + T2.size() + 1 + LA + 1);
+            Filter.append(T3);       Filter.push_back(L'\0');
+            Filter.append(L"*" ExtensionNameW); Filter.push_back(L'\0');
+            Filter.append(T5);       Filter.push_back(L'\0');
+            Filter.append(L"*.modproj");       Filter.push_back(L'\0');
+            Filter.append(T2);       Filter.push_back(L'\0');
+            Filter.append(L"*.*");   Filter.push_back(L'\0');
         }
         RefreshLangBuffer2 = false;
         return Filter;
@@ -175,7 +181,7 @@ namespace IBR_ProjectManager
 
     void _IN_SAVE_THREAD Save(std::wstring Path, const std::function<void(bool)>& _IN_SAVE_THREAD Next)
     {
-        if (!Path.ends_with(ExtensionNameW))Path += ExtensionNameW;
+        if (!Path.ends_with(ExtensionNameW) && !Path.ends_with(L".modproj"))Path += ExtensionNameW;
         IBR_RecentManager::Push(Path);
         IBR_RecentManager::Save();
 
@@ -600,7 +606,7 @@ namespace IBR_ProjectManager
     }
     void _IN_RENDER_THREAD SaveAction()
     {
-        if (!IBF_Inst_Project.Project.ChangeAfterSave)
+        if (!IBF_Inst_Project.Project.ChangeAfterSave && !IsModProject())
         {
             IBR_ProjectManager::OutputOnSaveAction();
             return;
@@ -812,6 +818,7 @@ namespace IBR_ProjectManager
     }
     void _IN_RENDER_THREAD OutputOnSaveAction()
     {
+        if (IsModProject()) return;
         if (IBF_Inst_Setting.OutputOnSave())
         {
             auto AllNotEmpty = std::ranges::all_of(
@@ -855,7 +862,7 @@ namespace IBR_ProjectManager
         {
             std::string ext = ExtName(argv[0]);
             for (auto& c : ext)c = (char)toupper(c);
-            if (ext == ExtensionNameC)
+            if (ext == ExtensionNameC || ext == "MODPROJ")
             {
                 ProjOpen_OpenRecentAction(UTF8toUnicode(argv[0]));
                 return;
@@ -867,8 +874,11 @@ namespace IBR_ProjectManager
         {
             std::string Name;
             int Type{ 0 };
+            std::wstring FilePath;
         };
         std::vector<SHPSolution> Shapes;
+        struct WavEntry { std::string name; std::wstring path; };
+        std::vector<WavEntry> WavFiles;
         for (int i = 0; i < argc; i++)
         {
             //get extention name from argv[i] (UTF-8 encoding)
@@ -889,11 +899,43 @@ namespace IBR_ProjectManager
                     IBR_PopupManager::SetCurrentPopup(std::move(IBR_PopupManager::MessageModal(
                     loc("Error_CreateModuleFailed"), loc("Error_UniqueImageModule"),
                     { FontHeight * 10.0f, FontHeight * 7.0f }, false, true)));
-                else IBR_Inst_Project.AddModule(*pVxl, name);
+                else
+                {
+                    auto& var = pVxl->Modules[0].VarList;
+                    var.clear();
+                    std::wstring vxlPath = UTF8toUnicode(argv[i]);
+                    var.push_back({ "AssetFile", UnicodetoUTF8(vxlPath) });
+                    std::wstring hvaPath = vxlPath;
+                    hvaPath.replace(hvaPath.size() - 4, 4, L".hva");
+                    if (PathFileExistsW(hvaPath.c_str()))
+                        var.push_back({ "AssetFile", UnicodetoUTF8(hvaPath) });
+                    IBR_Inst_Project.AddModule(*pVxl, name);
+                    var.clear();
+                }
+            }
+            else if (ext == "PCX")
+            {
+                auto pPcx = IBB_ModuleAltDefault::DefaultPCX();
+                if (!pPcx) {}
+                else if(IBR_Inst_Project.HasSection({ pPcx->GetFirstINI(), s }))
+                    IBR_PopupManager::SetCurrentPopup(std::move(IBR_PopupManager::MessageModal(
+                    loc("Error_CreateModuleFailed"), loc("Error_UniqueImageModule"),
+                    { FontHeight * 10.0f, FontHeight * 7.0f }, false, true)));
+                else
+                {
+                    pPcx->Modules[0].VarList.clear();
+                    pPcx->Modules[0].VarList.push_back({ "AssetFile", UnicodetoUTF8(UTF8toUnicode(argv[i])) });
+                    IBR_Inst_Project.AddModule(*pPcx, s);
+                    pPcx->Modules[0].VarList.clear();
+                }
             }
             else if (ext == "SHP")
             {
-                Shapes.push_back({ name,0 });
+                Shapes.push_back({ name,0,UTF8toUnicode(argv[i]) });
+            }
+            else if (ext == "WAV" || ext == "WAVE")
+            {
+                WavFiles.push_back({ name, UTF8toUnicode(argv[i]) });
             }
             else if (ext == "INI")
             {
@@ -918,6 +960,29 @@ namespace IBR_ProjectManager
                 IBR_PopupManager::SetCurrentPopup(std::move(IBR_PopupManager::MessageModal(
                     loc("Error_CreateModuleFailed"), UnicodetoUTF8(std::vformat(locw("Error_LoadUnsupportedType"), std::make_wformat_args(N))),
                     { FontHeight * 10.0f, FontHeight * 7.0f }, false, true)));
+            }
+        }
+        // Process WAV files: create one Sound module with all filenames
+        if (!WavFiles.empty())
+        {
+            auto pSound = IBB_ModuleAltDefault::DefaultSound();
+            if (pSound)
+            {
+                std::string soundsList;
+                for (size_t i = 0; i < WavFiles.size(); i++)
+                {
+                    if (i) soundsList += " ";
+                    soundsList += WavFiles[i].name;
+                }
+                // Set Sounds= and asset paths on template, then AddModule
+                auto& clip = pSound->Modules[0];
+                for (auto& tok : clip.Lines)
+                    if (tok.Key == "Sounds") { tok.Value = soundsList; break; }
+                clip.VarList.clear();
+                for (auto& w : WavFiles)
+                    clip.VarList.push_back({ "AssetFile", UnicodetoUTF8(w.path) });
+                IBR_Inst_Project.AddModule(*pSound, GenerateModuleTag());
+                clip.VarList.clear();
             }
         }
         auto ShapeCnt = Shapes.size();
@@ -969,7 +1034,13 @@ namespace IBR_ProjectManager
                                     CreateError(locc("Error_NoAnimModule"));
                                 else if(IBR_Inst_Project.HasSection({ pShp->GetFirstINI(), S.Name }))
                                     CreateError(locc("Error_UniqueImageModule"));
-                                else IBR_Inst_Project.AddModule(*pShp, S.Name);
+                                else
+                                {
+                                    pShp->Modules[0].VarList.clear();
+                                    pShp->Modules[0].VarList.push_back({ "AssetFile", UnicodetoUTF8(S.FilePath) });
+                                    IBR_Inst_Project.AddModule(*pShp, S.Name);
+                                    pShp->Modules[0].VarList.clear();
+                                }
                                 break;
                             }
                             case 1://Building
@@ -979,7 +1050,13 @@ namespace IBR_ProjectManager
                                     CreateError(locc("Error_NoBuildingModule"));
                                 else if (IBR_Inst_Project.HasSection({ pShp->GetFirstINI(), S.Name }))
                                     CreateError(locc("Error_UniqueImageModule"));
-                                else IBR_Inst_Project.AddModule(*pShp, S.Name);
+                                else
+                                {
+                                    pShp->Modules[0].VarList.clear();
+                                    pShp->Modules[0].VarList.push_back({ "AssetFile", UnicodetoUTF8(S.FilePath) });
+                                    IBR_Inst_Project.AddModule(*pShp, S.Name);
+                                    pShp->Modules[0].VarList.clear();
+                                }
                                 break;
                             }
                             case 2://Infantry
@@ -989,7 +1066,13 @@ namespace IBR_ProjectManager
                                     CreateError(locc("Error_NoInfantryModule"));
                                 else if (IBR_Inst_Project.HasSection({ pShp->GetFirstINI(), S.Name }))
                                     CreateError(locc("Error_UniqueImageModule"));
-                                else IBR_Inst_Project.AddModule(*pShp, S.Name);
+                                else
+                                {
+                                    pShp->Modules[0].VarList.clear();
+                                    pShp->Modules[0].VarList.push_back({ "AssetFile", UnicodetoUTF8(S.FilePath) });
+                                    IBR_Inst_Project.AddModule(*pShp, S.Name);
+                                    pShp->Modules[0].VarList.clear();
+                                }
                                 break;
                             }
                             case 3://Vehicle
@@ -999,7 +1082,13 @@ namespace IBR_ProjectManager
                                     CreateError(locc("Error_NoVehicleModule"));
                                 else if (IBR_Inst_Project.HasSection({ pShp->GetFirstINI(), S.Name }))
                                     CreateError(locc("Error_UniqueImageModule"));
-                                else IBR_Inst_Project.AddModule(*pShp, S.Name);
+                                else
+                                {
+                                    pShp->Modules[0].VarList.clear();
+                                    pShp->Modules[0].VarList.push_back({ "AssetFile", UnicodetoUTF8(S.FilePath) });
+                                    IBR_Inst_Project.AddModule(*pShp, S.Name);
+                                    pShp->Modules[0].VarList.clear();
+                                }
                                 break;
                             }
                             default:break;
