@@ -1853,6 +1853,20 @@ namespace IBB_ModuleAltDefault
         md->FullyLoad();
         return md;
     }
+    //DefaultSound
+    IBB_ModuleAlt* DefaultSound()
+    {
+        auto md = GetModuleII("DefaultSound");
+        md->FullyLoad();
+        return md;
+    }
+    //DefaultPCX
+    IBB_ModuleAlt* DefaultPCX()
+    {
+        auto md = GetModuleII("DefaultPCX");
+        md->FullyLoad();
+        return md;
+    }
     void Load(const wchar_t* FileRange, const wchar_t* FileRange2, const wchar_t* FileRange3, const wchar_t* FileRange4)
     {
         Range1 = FileRange;//Modules
