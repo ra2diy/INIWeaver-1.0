@@ -660,6 +660,53 @@ void IBR_Project::Save(IBS_Project& Proj)
     Proj.FullView_Ratio = IBR_FullView::Ratio;
     IBB_ClipBoardData ClipData;
     ClipData.GenerateAll(true, true);
+
+    // Resolve .pal asset paths from Palette=/CustomPalette= in SHP modules
+    for (auto& M : ClipData.Modules)
+    {
+        std::string paletteName, customPalette;
+        for (auto& tok : M.Lines)
+        {
+            if (tok.Key == "Palette" && !tok.Value.empty())
+                paletteName = tok.Value;
+            else if (tok.Key == "CustomPalette" && !tok.Value.empty())
+                customPalette = tok.Value;
+        }
+        if (paletteName.empty() && customPalette.empty()) continue;
+
+        // Find .shp path from existing AssetFile entries
+        std::wstring shpDir;
+        for (auto& v : M.VarList)
+        {
+            if (v.A == "AssetFile")
+            {
+                auto w = UTF8toUnicode(v.B);
+                auto p = w.rfind(L'\\');
+                if (p != std::wstring::npos)
+                    shpDir = w.substr(0, p + 1);
+                break;
+            }
+        }
+        if (shpDir.empty()) continue;
+
+        // Derive .pal paths
+        std::vector<std::wstring> palFiles;
+        if (!customPalette.empty())
+        {
+            palFiles.push_back(UTF8toUnicode(customPalette));
+        }
+        else if (!paletteName.empty())
+        {
+            static const wchar_t* suffixes[] = { L"tem",L"sno",L"urb",L"unb",L"lun",L"des" };
+            auto nameW = UTF8toUnicode(paletteName);
+            for (auto* sfx : suffixes)
+                palFiles.push_back(nameW + sfx + L".pal");
+        }
+
+        for (auto& pf : palFiles)
+            M.VarList.push_back({ "AssetFile", UnicodetoUTF8(shpDir + pf) });
+    }
+
     Proj.Data = ClipData.GetStream();
 }
 
