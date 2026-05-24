@@ -283,5 +283,7 @@ namespace IBB_ModuleAltDefault
     IBB_ModuleAlt* DefaultArt_SHPBuilding();
     IBB_ModuleAlt* DefaultArt_SHPInfantry();
     IBB_ModuleAlt* DefaultArt_Animation();
+    IBB_ModuleAlt* DefaultSound();
+    IBB_ModuleAlt* DefaultPCX();
 }
 
