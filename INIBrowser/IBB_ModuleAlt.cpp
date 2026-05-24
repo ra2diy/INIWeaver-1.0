@@ -1559,12 +1559,6 @@ bool CheckClipVersion(int ClipFormatVersion, const std::string& Ver_Prefix)
 
 bool IBB_ClipBoardData::SetStream(const std::vector<BYTE>& Vec, int ClipFormatVersion)
 {
-    if (Vec.empty())
-    {
-        ProjectRID = 0;
-        Modules.clear();
-        return true;
-    }
     if (!CheckClipVersion(ClipFormatVersion, ""))return false;
     ClipReadStream Stm;
     Stm.SetVersion(ClipFormatVersion);

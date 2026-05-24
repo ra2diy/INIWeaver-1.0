@@ -1,7 +1,6 @@
 ﻿
 #include "Global.h"
 #include "IBR_Debug.h"
-#include "IBB_ModProject.h"
 
 //所有版本号相关数据
 const std::string Version = u8"1.0.9";
@@ -79,9 +78,6 @@ IBF_DefaultTypeList IBF_Inst_DefaultTypeList;
 IBF_Project IBF_Inst_Project;
 IBR_Project IBR_Inst_Project;
 IBS_Project IBS_Inst_Project;
-
-//ModProject
-IBB_ModProject IBF_Inst_ModProject;
 
 //调试
 IBR_Debug IBR_Inst_Debug;

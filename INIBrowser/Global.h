@@ -76,15 +76,6 @@ extern IBF_Project IBF_Inst_Project;
 extern IBR_Project IBR_Inst_Project;
 extern IBS_Project IBS_Inst_Project;
 
-//ModProject
-struct IBB_ModProject;
-extern IBB_ModProject IBF_Inst_ModProject;
-inline bool IsModProject() {
-    auto& p = IBF_Inst_Project.Project.Path;
-    if (p.size() < 8) return false;
-    return _wcsicmp(p.c_str() + p.size() - 8, L".modproj") == 0;
-}
-
 //调试
 struct IBR_Debug;
 extern IBR_Debug IBR_Inst_Debug;

@@ -6,7 +6,6 @@
 #include "MainStage.h"
 #include "IBB_ModuleAlt.h"
 #include "IBB_RegType.h"
-#include "IBB_ModProject.h"
 #include <Shlwapi.h>
 #include "IBR_Font.h"
 #include <filesystem>
@@ -199,7 +198,6 @@ namespace Initialize
     {
         IBRF_CoreBump.SendToF([] {
             IBB_DefaultRegType::LoadFromFile(L".\\Global\\RegisterTypes*.json");//FIRST !
-            IBB_ModProject::InitTypes();//ModProject 内部注册类型
             IBF_Inst_DefaultTypeList.ReadAltSetting(L".\\Global\\TypeAlt*");//SECOND ! DEPENDENT
             IBB_ModuleAltDefault::Load(
                 L".\\Global\\Modules\\*.*",
