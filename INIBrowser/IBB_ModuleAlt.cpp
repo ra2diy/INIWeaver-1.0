@@ -1559,6 +1559,12 @@ bool CheckClipVersion(int ClipFormatVersion, const std::string& Ver_Prefix)
 
 bool IBB_ClipBoardData::SetStream(const std::vector<BYTE>& Vec, int ClipFormatVersion)
 {
+    if (Vec.empty())
+    {
+        ProjectRID = 0;
+        Modules.clear();
+        return true;
+    }
     if (!CheckClipVersion(ClipFormatVersion, ""))return false;
     ClipReadStream Stm;
     Stm.SetVersion(ClipFormatVersion);
@@ -1940,6 +1946,13 @@ namespace IBB_ModuleAltDefault
                 }
             }
         };
+        // 系统模块（SpecialModules）
+        if (!SpecialModules.Sub.empty() || !SpecialModules.Modules.empty())
+        {
+            if (ImGui::CollapsingHeader(locc("GUI_SystemModules"), ImGuiTreeNodeFlags_DefaultOpen))
+                Render(SpecialModules);
+        }
+        // 用户模块（AllModules）
         Render(AllModules);
     }
     void Tree_ResetHover()
@@ -1949,7 +1962,8 @@ namespace IBB_ModuleAltDefault
     }
     bool IsModuleTreeEmpty()
     {
-        return AllModules.Sub.empty() && AllModules.Modules.empty();
+        return AllModules.Sub.empty() && AllModules.Modules.empty()
+            && SpecialModules.Sub.empty() && SpecialModules.Modules.empty();
     }
 }
 
