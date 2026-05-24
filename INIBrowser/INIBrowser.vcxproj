@@ -233,6 +233,7 @@
     <ClInclude Include="Resource.h" />
     <ClInclude Include="SaveFile.h" />
     <ClInclude Include="Global.h" />
+    <ClInclude Include="IBB_ModProject.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\ImGui\backends\imgui_impl_glfw.cpp" />
@@ -292,6 +293,7 @@
     <ClCompile Include="IBS_File.cpp" />
     <ClCompile Include="Initialize.cpp" />
     <ClCompile Include="IBB_CustomBool.cpp" />
+    <ClCompile Include="IBB_ModProject.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="icon1.ico" />

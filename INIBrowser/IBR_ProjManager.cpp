@@ -150,12 +150,18 @@ namespace IBR_ProjectManager
         {
             auto T2 = locw("GUI_OutputModule_Type2");
             auto T3 = locw("GUI_OutputModule_Type3");
-            auto L1 = wcslen(L"*" ExtensionNameW);
-            Filter.resize(T2.size() + T3.size() + 64);
-            wcscpy(Filter.data(), T3.c_str());
-            wcscpy(Filter.data() + T3.size() + 1, L"*" ExtensionNameW);
-            wcscpy(Filter.data() + T3.size() + L1 + 2, T2.c_str());
-            wcscpy(Filter.data() + T3.size() + L1 + T2.size() + 3, L"*.*");
+            auto T5 = locw("GUI_OutputModule_Type5");
+            auto L0 = (int)wcslen(L"*" ExtensionNameW);
+            auto LM = (int)wcslen(L"*.modproj");
+            auto LA = 4;
+            Filter.clear();
+            Filter.reserve(T3.size() + 1 + L0 + 1 + T5.size() + 1 + LM + 1 + T2.size() + 1 + LA + 1);
+            Filter.append(T3);       Filter.push_back(L'\0');
+            Filter.append(L"*" ExtensionNameW); Filter.push_back(L'\0');
+            Filter.append(T5);       Filter.push_back(L'\0');
+            Filter.append(L"*.modproj");       Filter.push_back(L'\0');
+            Filter.append(T2);       Filter.push_back(L'\0');
+            Filter.append(L"*.*");   Filter.push_back(L'\0');
         }
         RefreshLangBuffer2 = false;
         return Filter;
@@ -175,7 +181,7 @@ namespace IBR_ProjectManager
 
     void _IN_SAVE_THREAD Save(std::wstring Path, const std::function<void(bool)>& _IN_SAVE_THREAD Next)
     {
-        if (!Path.ends_with(ExtensionNameW))Path += ExtensionNameW;
+        if (!Path.ends_with(ExtensionNameW) && !Path.ends_with(L".modproj"))Path += ExtensionNameW;
         IBR_RecentManager::Push(Path);
         IBR_RecentManager::Save();
 
@@ -600,7 +606,7 @@ namespace IBR_ProjectManager
     }
     void _IN_RENDER_THREAD SaveAction()
     {
-        if (!IBF_Inst_Project.Project.ChangeAfterSave)
+        if (!IBF_Inst_Project.Project.ChangeAfterSave && !IsModProject())
         {
             IBR_ProjectManager::OutputOnSaveAction();
             return;
@@ -812,6 +818,7 @@ namespace IBR_ProjectManager
     }
     void _IN_RENDER_THREAD OutputOnSaveAction()
     {
+        if (IsModProject()) return;
         if (IBF_Inst_Setting.OutputOnSave())
         {
             auto AllNotEmpty = std::ranges::all_of(
@@ -855,7 +862,7 @@ namespace IBR_ProjectManager
         {
             std::string ext = ExtName(argv[0]);
             for (auto& c : ext)c = (char)toupper(c);
-            if (ext == ExtensionNameC)
+            if (ext == ExtensionNameC || ext == "MODPROJ")
             {
                 ProjOpen_OpenRecentAction(UTF8toUnicode(argv[0]));
                 return;
