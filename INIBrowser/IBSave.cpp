@@ -127,6 +127,49 @@ namespace InsertLoad
         return 1;
     }
 
+    // Save dialog hook: swap extension live when filter changes
+    UINT_PTR static __stdcall SaveExtHookProc(HWND hdlg, UINT uiMsg, WPARAM wParam, LPARAM lParam)
+    {
+        ((void)wParam);
+        if (uiMsg == WM_NOTIFY)
+        {
+            LPOFNOTIFY lpOfNotify = (LPOFNOTIFY)lParam;
+            if (lpOfNotify->hdr.code == CDN_TYPECHANGE)
+            {
+                auto pOFN = lpOfNotify->lpOFN;
+                if (pOFN && pOFN->nFilterIndex < 3)
+                {
+                    HWND hEdt = GetDlgItem(GetParent(hdlg), 0x047c); // cmb13 / edt1
+                    int len = GetWindowTextLengthW(hEdt);
+                    if (len > 0 && len < 256)
+                    {
+                        WCHAR buf[260];
+                        GetWindowTextW(hEdt, buf, 260);
+                        auto sl = wcslen(buf);
+                        auto el = wcslen(ExtensionNameW);
+                        // Strip known extensions
+                        if (sl > el && _wcsicmp(buf + sl - el, ExtensionNameW) == 0)
+                            buf[sl -= el] = L'\0';
+                        else if (sl > 8 && _wcsicmp(buf + sl - 8, L".modproj") == 0)
+                            buf[sl -= 8] = L'\0';
+                        else if (sl > 0)
+                        {
+                            auto* dot = wcsrchr(buf, L'.');
+                            if (dot && dot > buf) *dot = L'\0';
+                        }
+                        // Append target extension
+                        if (pOFN->nFilterIndex == 1)
+                            wcscat(buf, ExtensionNameW);
+                        else
+                            wcscat(buf, L".modproj");
+                        SetWindowTextW(hEdt, buf);
+                    }
+                }
+            }
+        }
+        return 0;
+    }
+
     SelectFileRet SelectFileName(HWND Root, const SelectFileType& Type, BOOL(_stdcall* Proc)(LPOPENFILENAMEW), bool UseFolder)
     {
         OPENFILENAMEW ofn;
@@ -162,7 +205,15 @@ namespace InsertLoad
             ofn.nFilterIndex = 1;
             ofn.Flags = OFN_EXPLORER | OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_ENABLEHOOK | OFN_HIDEREADONLY;
         }
-        else ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_EXPLORER | OFN_OVERWRITEPROMPT;
+        else
+        {
+            ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_EXPLORER | OFN_OVERWRITEPROMPT;
+            if (Proc == GetSaveFileNameW)
+            {
+                ofn.Flags |= OFN_ENABLEHOOK;
+                ofn.lpfnHook = SaveExtHookProc;
+            }
+        }
 
         SelectFileRet Ret;
         Ret.Success = (Proc(&ofn));
@@ -245,6 +296,9 @@ WriteFileHeader IBS_SaveProject
                 return R;
             };
         File.WriteVector(IBS_Inst_Project.LastOutputIniName, F);
+        GlobalLogB.AddLog_CurTime(false);
+/*        GlobalLogB.AddLog((std::string("DBG[SaveFile] WRITE_Data: sz=") + std::to_string(IBS_Inst_Project.Data.size())
+            + " Path=" + UnicodetoUTF8(IBS_Inst_Project.Path)).c_str()); */
         File.WriteVector(IBS_Inst_Project.Data);
         return true;
      }

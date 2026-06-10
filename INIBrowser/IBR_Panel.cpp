@@ -7,6 +7,7 @@
 #include <imgui_internal.h>
 #include "IBR_Misc.h"
 #include "IBG_UndoTree.h"
+#include "IBB_ModuleAlt.h"
 
 extern bool EnableDebugList;
 
@@ -88,6 +89,18 @@ void ControlPanel_File()
     if (ImGui::Button(locc("GUI_OpenProject"), { lw1 / 2.0f, lh }))IBR_ProjectManager::ProjOpen_OpenAction();//
 
     ImGui::NewLine();
+    if (IsModProject())
+    {
+        if (ImGui::Button(locc("GUI_CompileMod"), { lw1, lh })) IBR_ProjectManager::CompileModAction();
+    }
+    else
+    {
+        ImGui::BeginDisabled();
+        ImGui::Button(locc("GUI_CompileMod"), { lw1, lh });
+        ImGui::EndDisabled();
+    }
+
+    ImGui::NewLine();
     if (ImGui::Button(locc("GUI_SetFileAssoc"), { ImGui::GetWindowContentRegionWidth() , FontHeight * 1.5F }))
     {
         bool SetFileAssociation();
@@ -111,33 +124,29 @@ void ControlPanel_File()
         
     }
     ImGui::NewLine();
-    IBR_RecentManager::RenderUI();//
-    /*
-    if (!IsProjectOpen)
-    {
-        if (ImGui::Button(u8"新建"))IBR_ProjectManager::CreateAction();//
-        if (ImGui::Button(u8"打开"))IBR_ProjectManager::OpenAction();//
-        ImGui::NewLine();
-        IBR_RecentManager::RenderUI();//
-    }
-    else
-    {
-        if (ImGui::Button(u8"保存"))IBR_ProjectManager::SaveOptAction();//
-        if (ImGui::Button(u8"另存为"))IBR_ProjectManager::SaveAsAction();//
-        if (IBR_Inst_Project.IBR_SectionMap.empty())ImGui::TextDisabled(u8"导出");
-        else if (ImGui::Button(u8"导出"))IBR_ProjectManager::OutputAction();//
+    IBR_RecentManager::RenderUI();
+}
 
-        ImGui::NewLine();
-        if (ImGui::Button(u8"关闭"))IBR_ProjectManager::ProjOpen_CreateAction(); //王德发你猜为什么是CreateAction
-        //IBR_ProjectManager::CloseAction();//
-
-        ImGui::NewLine();
-        //if (ImGui::Button(u8"新建"))IBR_ProjectManager::ProjOpen_CreateAction();//
-        if (ImGui::Button(u8"打开"))IBR_ProjectManager::ProjOpen_OpenAction();//
-        ImGui::NewLine();
-        IBR_RecentManager::RenderUI();//
+void ControlPanel_Modules()
+{
+    static int treeIdBump = 0;
+    ImGui::Text(u8"模块库");
+    ImGui::SameLine(ImGui::GetWindowContentRegionWidth() - FontHeight * 5.0f);
+    if (ImGui::SmallButton(u8"折叠全部"))
+        treeIdBump++;
+    ImGui::Separator();
+    
+    if (IBB_ModuleAltDefault::IsModuleTreeEmpty())
+    {
+        ImGui::TextDisabled(u8"(无可用模块)");
+        return;
     }
-    */
+    
+    ImGui::PushID(treeIdBump);
+    ImGui::BeginChild("ModuleTreeScroll", { 0, 0 }, false, ImGuiWindowFlags_AlwaysVerticalScrollbar);
+    IBB_ModuleAltDefault::Tree_RenderUISidebar();
+    ImGui::EndChild();
+    ImGui::PopID();
 }
 
 void ControlPanel_View()
@@ -193,8 +202,9 @@ bool SmallButton_Disabled_Helper(bool cond, const char* Text)
 
 /*
 #define MenuItemID_FILE 0
-#define MenuItemID_VIEW 1
-#define MenuItemID_LIST 2
+#define MenuItemID_MODULES 1
+#define MenuItemID_VIEW 2
+#define MenuItemID_LIST 3
 //#define MenuItemID_MODULE 3
 #define MenuItemID_EDIT 4
 #define MenuItemID_SETTING 5
@@ -205,6 +215,7 @@ IBR_MainMenu IBR_Inst_Menu
 {
 {
     {[]() {return ImGui::SmallButton(locc("GUI_MenuItem_File")); },ControlPanel_File},
+    {[]() {ImGui::NewLine(); ImGui::SameLine(); return ImGui::SmallButton(u8"模块库"); }, ControlPanel_Modules},
     {[]() {ImGui::NewLine(); ImGui::SameLine(); return SmallButton_Disabled_Helper(IBR_ProjectManager::IsOpen(), locc("GUI_MenuItem_View")); },ControlPanel_View},
     {[]() {ImGui::NewLine(); ImGui::SameLine(); return SmallButton_Disabled_Helper(IBR_ProjectManager::IsOpen(), locc("GUI_MenuItem_List")); },ControlPanel_ListView},
     //{[]() {return false;/*SmallButton_Disabled_Helper(IsProjectOpen, u8"预设");*/ },ControlPanel_Module},

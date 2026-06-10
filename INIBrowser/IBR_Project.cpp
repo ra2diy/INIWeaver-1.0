@@ -1,7 +1,9 @@
 ﻿
+#include <set>
 #include "IBR_Project.h"
 #include "IBFront.h"
 #include "Global.h"
+#include "IBSave.h"
 #include "FromEngine/RFBump.h"
 #include "FromEngine/global_timer.h"
 #include "IBB_ModuleAlt.h"
@@ -11,6 +13,7 @@
 #include "IBR_ListView.h"
 #include "IBR_Misc.h"
 #include "IBG_UndoTree.h"
+#include "IBB_ModProject.h"
 
 void _PROJ_CMD_WRITE  _PROJ_CMD_UPDATE IBR_Project::TriggerRefreshLink()
 {
@@ -309,8 +312,8 @@ IBR_Section _PROJ_CMD_READ IBR_Project::GetSection(const IBB_Section_Desc& Desc)
         {
             IBR_SectionMap.insert({ MaxID,IBR_SectionData{Desc,locc("Back_GunMu")} });
             auto gt = UTF8toUnicode(Desc.GetText());
-            GlobalLog.AddLog_CurTime(false);
-            GlobalLog.AddLog(std::vformat(L"IBR_Project::GetSection ： " + locw("Log_SectionNotExist"), std::make_wformat_args(gt)));
+            GlobalLogB.AddLog_CurTime(false);
+            GlobalLogB.AddLog(std::vformat(L"IBR_Project::GetSection ： " + locw("Log_SectionNotExist"), std::make_wformat_args(gt)));
         }
         ++MaxID;
     }
@@ -382,8 +385,8 @@ void _PROJ_CMD_NOINTERRUPT _PROJ_CMD_READ IBR_Project::EnsureSection(const IBB_S
         {
             IBR_SectionMap.insert({ MaxID,IBR_SectionData{Desc,locc("Back_GunMu")} });
             auto gt = UTF8toUnicode(Desc.GetText());
-            GlobalLog.AddLog_CurTime(false);
-            GlobalLog.AddLog(std::vformat(L"IBR_Project::GetSection ： " + locw("Log_SectionNotExist"), std::make_wformat_args(gt)));
+            GlobalLogB.AddLog_CurTime(false);
+            GlobalLogB.AddLog(std::vformat(L"IBR_Project::GetSection ： " + locw("Log_SectionNotExist"), std::make_wformat_args(gt)));
         }
         ++MaxID;
     }
@@ -566,8 +569,8 @@ bool _PROJ_CMD_UPDATE IBR_Project::DataCheck()
 {
     if (EnableLogEx)
     {
-        GlobalLog.AddLog_CurTime(false);
-        GlobalLog.AddLog("DataCheck!!");
+        GlobalLogB.AddLog_CurTime(false);
+        GlobalLogB.AddLog("DataCheck!!");
     }
 
     for (auto& p : IBR_SectionMap)p.second.Exists = false;
@@ -588,7 +591,7 @@ bool _PROJ_CMD_UPDATE IBR_Project::DataCheck()
                 if (EnableLogEx)
                 {
                     sprintf_s(LogBuf, "Checking %s", dsc.GetText().c_str());
-                    GlobalLog.AddLog_CurTime(false); GlobalLog.AddLog(LogBuf);
+                    GlobalLogB.AddLog_CurTime(false); GlobalLogB.AddLog(LogBuf);
                 }
 
                 auto sc = GetSection(dsc);
@@ -625,8 +628,60 @@ void IBR_Project::Load(const IBS_Project& Proj)
     IBB_ClipBoardData ClipData;
     IBB_ClipBoardData::ErrorContext.ModulePath = Proj.Path;
     IBB_ClipBoardData::ErrorContext.ModuleName = UnicodetoUTF8(Proj.ProjName);
+
+    // [LOG] before SetStream
+//     GlobalLogB.AddLog_CurTime(false);
+/*    GlobalLogB.AddLog((std::string("DBG[Load] DataSz=") + std::to_string(Proj.Data.size())
+        + " Path=" + UnicodetoUTF8(Proj.Path)).c_str()); */
+
     if (ClipData.SetStream(Proj.Data, GetClipFormatVersion(Proj.GetCreateVersionN())))
+    {
+        // [LOG] dump loaded modules
+        std::string lg = "DBG[Load] SetStream OK: ModuleCount=" + std::to_string(ClipData.Modules.size());
+//         GlobalLogB.AddLog(lg.c_str());
+        for (size_t i = 0; i < ClipData.Modules.size(); i++)
+        {
+            auto& M = ClipData.Modules[i];
+            std::string mlg = "DBG[Load]  M[" + std::to_string(i) + "]: Reg=" + M.Register
+                + " DescA=" + M.Desc.A + " DescB=" + M.Desc.B
+                + " Comment=" + (M.IsComment ? M.Comment : "NO")
+                + " Hidden=" + std::to_string(M.Hidden)
+                + " EqSize=(" + std::to_string(M.EqSize.x) + "," + std::to_string(M.EqSize.y) + ")"
+                + " EqDelta=(" + std::to_string(M.EqDelta.x) + "," + std::to_string(M.EqDelta.y) + ")"
+                + " VarCount=" + std::to_string(M.VarList.size())
+                + " LinesCount=" + std::to_string(M.Lines.size());
+            for (auto& v : M.VarList)
+                mlg += " [" + v.A + "=" + v.B.substr(0, std::min(v.B.size(), size_t(60))) + "]";
+//             GlobalLogB.AddLog(mlg.c_str());
+            int lc = 0;
+            for (auto& line : M.Lines)
+            {
+                // if (lc >= 10) { GlobalLogB.AddLog("DBG[Load]   ...(lines truncated)"); break; }
+                // GlobalLogB.AddLog((std::string("DBG[Load]   LINE: ") + line.Key + "=" + line.Value.substr(0, 60)).c_str());
+                lc++;
+            }
+        }
         AddModule(ClipData.Modules, false);
+        // [LOG] after AddModule
+/*        GlobalLogB.AddLog((std::string("DBG[Load] AFTER_AddModule: RevMapSz=")
+            + std::to_string(IBR_Inst_Project.IBR_Rev_SectionMap.size())).c_str()); */
+
+        // Read binary metadata tail (BuildOutputDir etc.)
+        if (Proj.Path.ends_with(L".modproj"))
+        {
+            auto meta = IBB_ModProject::ReadMetaTail(Proj.Data);
+            auto it = meta.find("BuildOutputDir");
+            if (it != meta.end() && !it->second.empty())
+            {
+                IBF_Inst_ModProject.BuildOutputDir = UTF8toUnicode(it->second);
+                // GlobalLogB.AddLog((std::string("DBG[Load] MetaTail: BuildOutputDir=") + it->second).c_str());
+            }
+        }
+    }
+    else
+    {
+        // GlobalLogB.AddLog("DBG[Load] SetStream FAILED");
+    }
     IBF_Inst_Project.Project.ChangeAfterSave = false;
     //MAGIC
     //DONT ASK ME WHY THERE IS SO MANY LAYERS OF SendToR
@@ -635,6 +690,18 @@ void IBR_Project::Load(const IBS_Project& Proj)
     //If more frames will be needed you should add more layers
     //Or rewrite the Bump Logic to allow dalay in frames
     IBRF_CoreBump.SendToR({ []() {
+        // Mark iproj_ref modules whose .iproj files are missing
+        for (auto& [D, I] : IBR_Inst_Project.IBR_Rev_SectionMap)
+        {
+            IBR_Section Sec{ &IBR_Inst_Project, I };
+            auto sd = Sec.GetSectionData();
+            if (!sd) continue;
+            auto bk = Sec.GetBack();
+            if (!bk) continue;
+            auto ip = bk->VarList.GetVariable("iproj_path");
+            if (!ip.empty() && GetFileAttributesW(UTF8toUnicode(ip).c_str()) == INVALID_FILE_ATTRIBUTES)
+                sd->Missing = true;
+        }
         IBF_Inst_Project.Project.ChangeAfterSave = false;
         IBRF_CoreBump.SendToR({ []() {
             IBF_Inst_Project.Project.ChangeAfterSave = false;
@@ -658,9 +725,261 @@ void IBR_Project::Save(IBS_Project& Proj)
 {
     Proj.FullView_EqCenter = IBR_FullView::EqCenter;
     Proj.FullView_Ratio = IBR_FullView::Ratio;
+
+    // [LOG] pre-GenerateAll state
+    {
+        std::string lg = "DBG[Save] PRE_GEN: RevMapSz=" + std::to_string(IBR_Rev_SectionMap.size())
+            + " IBR_SectionMapSz=" + std::to_string(IBR_SectionMap.size())
+            + " Proj_IniCount=" + std::to_string(IBF_Inst_Project.Project.Inis.size());
+        for (auto& Ini : IBF_Inst_Project.Project.Inis)
+            lg += " Ini[" + Ini.Name + "]_SecCount=" + std::to_string(Ini.Secs.size());
+//         GlobalLogB.AddLog_CurTime(false); GlobalLogB.AddLog(lg.c_str());
+    }
+
     IBB_ClipBoardData ClipData;
     ClipData.GenerateAll(true, true);
+
+    // [LOG] post-GenerateAll: dump each module's key fields
+    {
+        std::string lg = "DBG[Save] POST_GEN: ModuleCount=" + std::to_string(ClipData.Modules.size());
+//         GlobalLogB.AddLog(lg.c_str());
+        for (size_t i = 0; i < ClipData.Modules.size(); i++)
+        {
+            auto& M = ClipData.Modules[i];
+            std::string mlg = "DBG[Save]  M[" + std::to_string(i) + "]: Reg=" + M.Register
+                + " DescA=" + M.Desc.A + " DescB=" + M.Desc.B
+                + " Comment=" + (M.IsComment ? M.Comment : "NO")
+                + " Hidden=" + std::to_string(M.Hidden)
+                + " EqSize=(" + std::to_string(M.EqSize.x) + "," + std::to_string(M.EqSize.y) + ")"
+                + " EqDelta=(" + std::to_string(M.EqDelta.x) + "," + std::to_string(M.EqDelta.y) + ")"
+                + " VarCount=" + std::to_string(M.VarList.size())
+                + " LinesCount=" + std::to_string(M.Lines.size());
+            for (auto& v : M.VarList)
+                mlg += " [" + v.A + "=" + v.B.substr(0, std::min(v.B.size(), size_t(60))) + "]";
+//             GlobalLogB.AddLog(mlg.c_str());
+            int lc = 0;
+            for (auto& line : M.Lines)
+            {
+                // if (lc >= 10) { GlobalLogB.AddLog("DBG[Load]   ...(lines truncated)"); break; }
+                // GlobalLogB.AddLog((std::string("DBG[Load]   LINE: ") + line.Key + "=" + line.Value.substr(0, 60)).c_str());
+                lc++;
+            }
+        }
+    }
+
+    // Deduplicate VarList entries
+    for (auto& M : ClipData.Modules)
+    {
+        std::set<std::pair<std::string, std::string>> seen;
+        std::vector<PairClipString> deduped;
+        for (auto& v : M.VarList)
+            if (seen.insert({ v.A, v.B }).second)
+                deduped.push_back(std::move(v));
+        M.VarList = std::move(deduped);
+    }
+
+    // For each AssetFile .hva/.vxl, also add the counterpart
+    for (auto& M : ClipData.Modules)
+    {
+        std::set<std::string> toAdd;
+        for (auto& v : M.VarList)
+        {
+            if (v.A != "AssetFile") continue;
+            std::string p = v.B;
+            if (p.size() > 4)
+            {
+                auto ext = p.substr(p.size() - 4);
+                if (_stricmp(ext.c_str(), ".hva") == 0)
+                    toAdd.insert(p.substr(0, p.size() - 4) + ".vxl");
+                else if (_stricmp(ext.c_str(), ".vxl") == 0)
+                    toAdd.insert(p.substr(0, p.size() - 4) + ".hva");
+            }
+        }
+        for (auto& add : toAdd)
+            M.VarList.push_back({ "AssetFile", add });
+    }
+
+    // iproj_ref: sync ModProjPath metadata (diff current vs previous save)
+    if (IBF_Inst_Project.Project.Path.ends_with(L".modproj"))
+    {
+        auto& mpPath = IBF_Inst_Project.Project.Path;
+
+        // Collect current iproj paths
+        std::set<std::string> curSet;
+        for (auto& M : ClipData.Modules)
+            for (auto& v : M.VarList)
+                if (v.A == "iproj_path") curSet.insert(v.B);
+
+        // GlobalLogB.AddLog((std::string("DBG[Save] MODPROJ curSetSz=") + std::to_string(curSet.size())).c_str());
+
+        // Collect previous iproj paths from last save on disk
+        std::set<std::string> prevSet;
+        if (GetFileAttributesW(mpPath.c_str()) != INVALID_FILE_ATTRIBUTES)
+        {
+            auto origData = std::move(IBS_Inst_Project.Data);
+            auto origPath = std::move(IBS_Inst_Project.Path);
+            auto origRatio = IBS_Inst_Project.FullView_Ratio;
+            auto origCenter = IBS_Inst_Project.FullView_EqCenter;
+            IBS_Inst_Project.Path = mpPath;
+            if (IBS_Inst_Project.Load())
+            {
+                IBB_ClipBoardData oldClip;
+                oldClip.SetStream(IBS_Inst_Project.Data, VersionN);
+                for (auto& M : oldClip.Modules)
+                    for (auto& v : M.VarList)
+                        if (v.A == "iproj_path") prevSet.insert(v.B);
+            }
+            IBS_Inst_Project.Data = std::move(origData);
+            IBS_Inst_Project.Path = std::move(origPath);
+            IBS_Inst_Project.FullView_Ratio = origRatio;
+            IBS_Inst_Project.FullView_EqCenter = origCenter;
+        }
+
+        // GlobalLogB.AddLog((std::string("DBG[Save] MODPROJ prevSetSz=") + std::to_string(prevSet.size())).c_str());
+
+        // Remove from deleted iproj refs
+        for (auto& oldPath : prevSet)
+            if (!curSet.count(oldPath))
+            {
+                // GlobalLogB.AddLog((std::string("DBG[Save] MODPROJ REMOVE: ") + oldPath).c_str());
+                IBB_ModProject::RemoveIprojModProjPath(UTF8toUnicode(oldPath), mpPath);
+            }
+
+        // Add for current iproj refs
+        for (auto& path : curSet)
+        {
+            // GlobalLogB.AddLog((std::string("DBG[Save] MODPROJ ADD: ") + path).c_str());
+            IBB_ModProject::AddIprojModProjPath(UTF8toUnicode(path), mpPath);
+        }
+
+        // [LOG] IBS state after sync
+/*        GlobalLogB.AddLog((std::string("DBG[Save] MODPROJ AFTER_SYNC: IBS_DataSz=") + std::to_string(IBS_Inst_Project.Data.size())
+            + " IBS_Path=" + UnicodetoUTF8(IBS_Inst_Project.Path)).c_str()); */
+    }
+
+    // Resolve .pal asset paths from Palette=/CustomPalette= in SHP modules
+    for (auto& M : ClipData.Modules)
+    {
+        std::string paletteName, customPalette;
+        for (auto& tok : M.Lines)
+        {
+            if (tok.Key == "Palette" && !tok.Value.empty())
+                paletteName = tok.Value;
+            else if (tok.Key == "CustomPalette" && !tok.Value.empty())
+                customPalette = tok.Value;
+        }
+        if (paletteName.empty() && customPalette.empty()) continue;
+
+        // Find .shp path from existing AssetFile entries
+        std::wstring shpDir;
+        for (auto& v : M.VarList)
+        {
+            if (v.A == "AssetFile")
+            {
+                auto w = UTF8toUnicode(v.B);
+                auto p = w.rfind(L'\\');
+                if (p != std::wstring::npos)
+                    shpDir = w.substr(0, p + 1);
+                break;
+            }
+        }
+        if (shpDir.empty()) continue;
+
+        // Derive .pal paths
+        std::vector<std::wstring> palFiles;
+        if (!customPalette.empty())
+        {
+            palFiles.push_back(UTF8toUnicode(customPalette));
+        }
+        else if (!paletteName.empty())
+        {
+            static const wchar_t* suffixes[] = { L"tem",L"sno",L"urb",L"unb",L"lun",L"des" };
+            auto nameW = UTF8toUnicode(paletteName);
+            for (auto* sfx : suffixes)
+                palFiles.push_back(nameW + sfx + L".pal");
+        }
+
+        for (auto& pf : palFiles)
+            M.VarList.push_back({ "AssetFile", UnicodetoUTF8(shpDir + pf) });
+    }
+
+    // iproj_ref: collect rename mappings (backend VarList for correct old path)
+    struct RenameEntry { std::string oldPath; std::wstring oldW, newW; ModuleClipData* M; PairClipString* v; };
+    std::vector<RenameEntry> renames;
+    for (auto& M : ClipData.Modules)
+    {
+        for (auto& v : M.VarList)
+        {
+            if (v.A != "iproj_path") continue;
+            auto sec = IBR_Inst_Project.GetSection(IBB_Section_Desc{ M.Desc.A, M.Desc.B });
+            auto bk = sec.GetBack();
+            if (!bk) break;
+            auto oldBk = bk->VarList.GetVariable("iproj_path");
+            if (oldBk.empty()) break;
+            auto oldW = UTF8toUnicode(oldBk);
+            auto p = oldW.rfind(L'\\');
+            auto oldName = (p != std::wstring::npos ? oldW.substr(p + 1) : oldW);
+            auto newW = (p != std::wstring::npos ? oldW.substr(0, p + 1) : L"") + UTF8toUnicode(M.Desc.B) + L".iproj";
+            if (_wcsicmp(oldName.c_str(), (UTF8toUnicode(M.Desc.B) + L".iproj").c_str()) != 0)
+                renames.push_back({ oldBk, oldW, newW, &M, &v });
+            break;
+        }
+    }
+    // Phase 2: propagate rename to other referencing modprojs, then MoveFileW
+    for (auto& r : renames)
+    {
+        auto& mpSelf = IBF_Inst_Project.Project.Path;
+        auto paths = IBB_ModProject::GetIprojModProjPaths(r.oldW);
+        for (auto& mpPath : paths)
+        {
+            if (_wcsicmp(mpPath.c_str(), mpSelf.c_str()) == 0) continue;
+            auto origData = std::move(IBS_Inst_Project.Data);
+            auto origPath = std::move(IBS_Inst_Project.Path);
+            IBS_Inst_Project.Path = mpPath;
+            if (IBS_Inst_Project.Load())
+            {
+                IBB_ClipBoardData mpClip;
+                mpClip.SetStream(IBS_Inst_Project.Data, VersionN);
+                for (auto& mpM : mpClip.Modules)
+                {
+                    bool isTarget = false;
+                    for (auto& mpV : mpM.VarList)
+                        if (mpV.A == "iproj_path" && mpV.B == r.oldPath)
+                            { mpV.B = UnicodetoUTF8(r.newW); isTarget = true; }
+                    if (isTarget)
+                        mpM.Desc.B = r.M->Desc.B;
+                }
+                IBS_Inst_Project.Data = mpClip.GetStream();
+                IBS_Inst_Project.Save();
+            }
+            IBS_Inst_Project.Data = std::move(origData);
+            IBS_Inst_Project.Path = std::move(origPath);
+        }
+        if (MoveFileW(r.oldW.c_str(), r.newW.c_str()))
+        {
+            r.v->B = UnicodetoUTF8(r.newW);
+            auto sec = IBR_Inst_Project.GetSection(IBB_Section_Desc{ r.M->Desc.A, r.M->Desc.B });
+            auto bk = sec.GetBack();
+            if (bk) bk->VarList.Value["iproj_path"] = r.v->B;
+        }
+    }
+
+    // Preserve existing binary metadata tail before GetStream overwrites Proj.Data
+    auto oldMeta = IBB_ModProject::ReadMetaTail(Proj.Data);
+
     Proj.Data = ClipData.GetStream();
+
+    // Merge in new BuildOutputDir (modproj only), then write all metadata back
+    if (IsModProject() && !IBF_Inst_ModProject.BuildOutputDir.empty())
+        oldMeta["BuildOutputDir"] = UnicodetoUTF8(IBF_Inst_ModProject.BuildOutputDir);
+    if (!oldMeta.empty())
+    {
+        IBB_ModProject::WriteMetaTail(Proj.Data, oldMeta);
+        // GlobalLogB.AddLog((std::string("DBG[Save] MetaTail: keys=") + std::to_string(oldMeta.size())).c_str());
+    }
+
+/*    GlobalLogB.AddLog((std::string("DBG[Save] FINAL: Proj_DataSz=") + std::to_string(Proj.Data.size())
+        + " ClipModules=" + std::to_string(ClipData.Modules.size())).c_str()); */
 }
 
 void IBR_Project::Clear()
