@@ -956,6 +956,7 @@ namespace IBR_Color
     ImColor FrozenSecColor;
     ImColor HiddenSecColor;
     ImColor FrozenMaskColor;
+    ImColor MissingFileMaskColor;
 
     namespace Light
     {
@@ -987,6 +988,7 @@ namespace IBR_Color
         ImColor FrozenSecColor(37, 127, 224, 255);
         ImColor HiddenSecColor(255, 255, 224, 255);
         ImColor FrozenMaskColor(37, 127, 224, 60);
+        ImColor MissingFileMaskColor(224, 37, 37, 60);
     }
 
     namespace Dark
@@ -1022,6 +1024,7 @@ namespace IBR_Color
         ImColor FrozenSecColor(37, 127, 224, 255);
         ImColor HiddenSecColor(254, 180, 100, 255);
         ImColor FrozenMaskColor(37, 127, 224, 60);
+        ImColor MissingFileMaskColor(224, 60, 60, 60);
     }
 
     void LoadCol(JsonObject Obj, const char* ColName,ImColor& I)
@@ -1052,6 +1055,7 @@ namespace IBR_Color
         LoadLightCol(FrozenSecColor);
         LoadLightCol(HiddenSecColor);
         LoadLightCol(FrozenMaskColor);
+        LoadLightCol(MissingFileMaskColor);
     }
     void LoadDark(JsonObject Obj)
     {
@@ -1073,6 +1077,7 @@ namespace IBR_Color
         LoadDarkCol(FrozenSecColor);
         LoadDarkCol(HiddenSecColor);
         LoadDarkCol(FrozenMaskColor);
+        LoadDarkCol(MissingFileMaskColor);
     }
 
     void StyleLight()
@@ -1097,6 +1102,7 @@ namespace IBR_Color
         FrozenSecColor = Light::FrozenSecColor;
         HiddenSecColor = Light::HiddenSecColor;
         FrozenMaskColor = Light::FrozenMaskColor;
+        MissingFileMaskColor = Light::MissingFileMaskColor;
 
         IBB_DefaultRegType::SwitchLightColor();
     }
@@ -1122,6 +1128,7 @@ namespace IBR_Color
         FrozenSecColor = Dark::FrozenSecColor;
         HiddenSecColor = Dark::HiddenSecColor;
         FrozenMaskColor = Dark::FrozenMaskColor;
+        MissingFileMaskColor = Dark::MissingFileMaskColor;
 
         IBB_DefaultRegType::SwitchDarkColor();
     }

@@ -89,6 +89,18 @@ void ControlPanel_File()
     if (ImGui::Button(locc("GUI_OpenProject"), { lw1 / 2.0f, lh }))IBR_ProjectManager::ProjOpen_OpenAction();//
 
     ImGui::NewLine();
+    if (IsModProject())
+    {
+        if (ImGui::Button(locc("GUI_CompileMod"), { lw1, lh })) IBR_ProjectManager::CompileModAction();
+    }
+    else
+    {
+        ImGui::BeginDisabled();
+        ImGui::Button(locc("GUI_CompileMod"), { lw1, lh });
+        ImGui::EndDisabled();
+    }
+
+    ImGui::NewLine();
     if (ImGui::Button(locc("GUI_SetFileAssoc"), { ImGui::GetWindowContentRegionWidth() , FontHeight * 1.5F }))
     {
         bool SetFileAssociation();

@@ -891,6 +891,12 @@ void IBR_SectionData::RenderUI_Virtual()
                 auto FL = ImGui::GetWindowDrawList();
                 FL->AddRectFilled(PosUL, PosDR, IBR_Color::FrozenMaskColor, 5.0F);
             }
+            // iproj_ref: red mask if referenced .iproj file is missing
+            if (Data->Missing)
+            {
+                auto FL = ImGui::GetWindowDrawList();
+                FL->AddRectFilled(PosUL, PosDR, IBR_Color::MissingFileMaskColor, 5.0F);
+            }
             if (!ImGui::GetCurrentContext()->OpenPopupStack.Size)
             {
                 if (id == IBR_EditFrame::CurSection.ID)

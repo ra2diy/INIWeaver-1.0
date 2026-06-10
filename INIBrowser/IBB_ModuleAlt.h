@@ -285,5 +285,6 @@ namespace IBB_ModuleAltDefault
     IBB_ModuleAlt* DefaultArt_Animation();
     IBB_ModuleAlt* DefaultSound();
     IBB_ModuleAlt* DefaultPCX();
+    IBB_ModuleAlt* DefaultIPROJ();
 }
 

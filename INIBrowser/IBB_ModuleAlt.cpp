@@ -1867,6 +1867,13 @@ namespace IBB_ModuleAltDefault
         md->FullyLoad();
         return md;
     }
+    //DefaultIPROJ
+    IBB_ModuleAlt* DefaultIPROJ()
+    {
+        auto md = GetModuleII("DefaultIPROJ");
+        md->FullyLoad();
+        return md;
+    }
     void Load(const wchar_t* FileRange, const wchar_t* FileRange2, const wchar_t* FileRange3, const wchar_t* FileRange4)
     {
         Range1 = FileRange;//Modules

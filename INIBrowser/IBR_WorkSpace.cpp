@@ -1639,6 +1639,24 @@ namespace IBR_WorkSpace
         BackupStyleSize(Style);
         Style.ScaleAllSizes(IBR_FullView::Ratio);
 
+        static int renderFrameCount = 0;
+        static int renderLogCount = 0;
+        renderFrameCount++;
+        bool logThisFrame = false;
+        if (IBR_Inst_Project.IBR_SectionMap.size() > 0 && renderLogCount < 12)
+        {
+            renderLogCount++;
+            logThisFrame = true;
+        }
+        if (logThisFrame)
+        {
+            std::string lg = "DBG[Render] Frame#" + std::to_string(renderFrameCount)
+                + " LogSlot#" + std::to_string(renderLogCount)
+                + " SectionMapSz=" + std::to_string(IBR_Inst_Project.IBR_SectionMap.size());
+            GlobalLogB.AddLog_CurTime(false); GlobalLogB.AddLog(lg.c_str());
+        }
+
+        size_t renderIdx = 0;
         for (auto& sp : IBR_Inst_Project.IBR_SectionMap)
         {
             auto RSec = IBR_Inst_Project.GetSectionFromID(sp.first);
@@ -1646,8 +1664,37 @@ namespace IBR_WorkSpace
             auto& sd = sp.second;
             if (sd.ModuleStrID.empty())
                 sd.ModuleStrID = std::to_string(sp.first) + " : " + sd.Desc.GetText();
-            if (sd.IsIncluded())continue;
-            if (!sd.GetBack_Inl())continue;
+
+            // [LOG] skip reasons
+            if (logThisFrame)
+            {
+                std::string lg = "DBG[Render]  F#" + std::to_string(renderFrameCount)
+                    + " I#" + std::to_string(renderIdx)
+                    + " Desc=" + sd.Desc.GetText()
+                    + " EqPos=(" + std::to_string(sd.EqPos.x) + "," + std::to_string(sd.EqPos.y) + ")"
+                    + " EqSize=(" + std::to_string(sd.EqSize.x) + "," + std::to_string(sd.EqSize.y) + ")"
+                    + " First=" + std::to_string(sd.First)
+                    + " Hidden=" + std::to_string(sd.Hidden)
+                    + " IsIncluded=" + std::to_string(sd.IsIncluded())
+                    + " Frozen=" + std::to_string(sd.Frozen)
+                    + " HasBack=" + std::to_string(sd.GetBack_Inl() != nullptr)
+                    + " Ignore=" + std::to_string(sd.Ignore)
+                    + " IsOpen=" + std::to_string(sd.IsOpen)
+                    + " IsComment=" + std::to_string(sd.IsComment);
+                GlobalLogB.AddLog(lg.c_str());
+            }
+            renderIdx++;
+
+            if (sd.IsIncluded())
+            {
+                if (logThisFrame) GlobalLogB.AddLog((std::string("DBG[Render] SKIP(IsIncluded): ") + sd.Desc.GetText()).c_str());
+                continue;
+            }
+            if (!sd.GetBack_Inl())
+            {
+                if (logThisFrame) GlobalLogB.AddLog((std::string("DBG[Render] SKIP(NoBack): ") + sd.Desc.GetText()).c_str());
+                continue;
+            }
             
             CurOnRender = &sd;
             CurOnRender_ID = sp.first;
@@ -1713,6 +1760,11 @@ namespace IBR_WorkSpace
 
             if (!sd.Hidden || sd.First)
             {
+                if (logThisFrame)
+                    GlobalLogB.AddLog((std::string("DBG[Render] DRAW: ") + sd.Desc.GetText()
+                        + " TA=(" + std::to_string(TA.x) + "," + std::to_string(TA.y) + ")"
+                        + " EqPos=(" + std::to_string(sd.EqPos.x) + "," + std::to_string(sd.EqPos.y) + ")"
+                        + " EqSize=(" + std::to_string(sd.EqSize.x) + "," + std::to_string(sd.EqSize.y) + ")").c_str());
                 //ImGuiWindowFlags_NoClamping 是非标的私货，小朋友们不要学坏哦~
                 ImGui::Begin(sd.ModuleStrID.c_str(), &sd.IsOpen,
                     ImGuiWindowFlags_NoClamping |
@@ -1856,6 +1908,11 @@ namespace IBR_WorkSpace
                         auto FL = ImGui::GetWindowDrawList();
                         FL->AddRectFilled(ImGui::GetWindowPos(), ImGui::GetWindowPos() + ImGui::GetWindowSize(), IBR_Color::FrozenMaskColor, 5.0F);
                     }
+                    if (sd.Missing)
+                    {
+                        auto FL = ImGui::GetWindowDrawList();
+                        FL->AddRectFilled(ImGui::GetWindowPos(), ImGui::GetWindowPos() + ImGui::GetWindowSize(), IBR_Color::MissingFileMaskColor, 5.0F);
+                    }
                     if (!ImGui::GetCurrentContext()->OpenPopupStack.Size)
                     {
                         if (sp.first == IBR_EditFrame::CurSection.ID)
@@ -1882,7 +1939,14 @@ namespace IBR_WorkSpace
 
                 ImGui::End();
             }
-            else sd.RenderUI();
+            else
+            {
+                if (logThisFrame)
+                    GlobalLogB.AddLog((std::string("DBG[Render] HIDDEN_SKIP: ") + sd.Desc.GetText()
+                        + " Hidden=" + std::to_string(sd.Hidden)
+                        + " First=" + std::to_string(sd.First)).c_str());
+                sd.RenderUI();
+            }
 
             if (NoMouseInput)ImGui::CaptureMouseFromApp(true);
             ImGui::PopStyleColor();

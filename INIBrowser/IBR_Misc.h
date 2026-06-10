@@ -76,6 +76,8 @@ namespace IBR_ProjectManager
     void OutputAction();
     void AutoOutputAction();
     void OutputOnSaveAction();
+    void CompileModAction();
+    void ShowBuildLog(const std::string& log);
     void OnDropFile(GLFWwindow* window, int argc, const char** argv);
     void ProjActionByKey();
 };
@@ -187,6 +189,7 @@ namespace IBR_Color
     extern ImColor FrozenSecColor;
     extern ImColor HiddenSecColor;
     extern ImColor FrozenMaskColor;
+    extern ImColor MissingFileMaskColor;
 
     void StyleLight();
     void StyleDark();
