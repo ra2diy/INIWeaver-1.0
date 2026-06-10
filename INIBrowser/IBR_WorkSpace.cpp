@@ -1687,12 +1687,12 @@ namespace IBR_WorkSpace
 
             if (sd.IsIncluded())
             {
-                if (logThisFrame) GlobalLogB.AddLog((std::string("DBG[Render] SKIP(IsIncluded): ") + sd.Desc.GetText()).c_str());
+//                if (logThisFrame) GlobalLogB.AddLog((std::string("DBG[Render] SKIP(IsIncluded): ") + sd.Desc.GetText()).c_str());
                 continue;
             }
             if (!sd.GetBack_Inl())
             {
-                if (logThisFrame) GlobalLogB.AddLog((std::string("DBG[Render] SKIP(NoBack): ") + sd.Desc.GetText()).c_str());
+//                if (logThisFrame) GlobalLogB.AddLog((std::string("DBG[Render] SKIP(NoBack): ") + sd.Desc.GetText()).c_str());
                 continue;
             }
             
@@ -1760,11 +1760,11 @@ namespace IBR_WorkSpace
 
             if (!sd.Hidden || sd.First)
             {
-                if (logThisFrame)
+/*                if (logThisFrame)
                     GlobalLogB.AddLog((std::string("DBG[Render] DRAW: ") + sd.Desc.GetText()
                         + " TA=(" + std::to_string(TA.x) + "," + std::to_string(TA.y) + ")"
                         + " EqPos=(" + std::to_string(sd.EqPos.x) + "," + std::to_string(sd.EqPos.y) + ")"
-                        + " EqSize=(" + std::to_string(sd.EqSize.x) + "," + std::to_string(sd.EqSize.y) + ")").c_str());
+                        + " EqSize=(" + std::to_string(sd.EqSize.x) + "," + std::to_string(sd.EqSize.y) + ")").c_str()); */
                 //ImGuiWindowFlags_NoClamping 是非标的私货，小朋友们不要学坏哦~
                 ImGui::Begin(sd.ModuleStrID.c_str(), &sd.IsOpen,
                     ImGuiWindowFlags_NoClamping |
@@ -1941,10 +1941,10 @@ namespace IBR_WorkSpace
             }
             else
             {
-                if (logThisFrame)
+/*                if (logThisFrame)
                     GlobalLogB.AddLog((std::string("DBG[Render] HIDDEN_SKIP: ") + sd.Desc.GetText()
                         + " Hidden=" + std::to_string(sd.Hidden)
-                        + " First=" + std::to_string(sd.First)).c_str());
+                        + " First=" + std::to_string(sd.First)).c_str()); */
                 sd.RenderUI();
             }
 

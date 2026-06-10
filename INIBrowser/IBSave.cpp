@@ -297,8 +297,8 @@ WriteFileHeader IBS_SaveProject
             };
         File.WriteVector(IBS_Inst_Project.LastOutputIniName, F);
         GlobalLogB.AddLog_CurTime(false);
-        GlobalLogB.AddLog((std::string("DBG[SaveFile] WRITE_Data: sz=") + std::to_string(IBS_Inst_Project.Data.size())
-            + " Path=" + UnicodetoUTF8(IBS_Inst_Project.Path)).c_str());
+/*        GlobalLogB.AddLog((std::string("DBG[SaveFile] WRITE_Data: sz=") + std::to_string(IBS_Inst_Project.Data.size())
+            + " Path=" + UnicodetoUTF8(IBS_Inst_Project.Path)).c_str()); */
         File.WriteVector(IBS_Inst_Project.Data);
         return true;
      }

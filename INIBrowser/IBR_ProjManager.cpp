@@ -906,14 +906,14 @@ namespace IBR_ProjectManager
                             + " EqDelta=(" + std::to_string(pIproj->Modules[0].EqDelta.x) + "," + std::to_string(pIproj->Modules[0].EqDelta.y) + ")"
                             + " VarCount=" + std::to_string(pIproj->Modules[0].VarList.size())
                             + " nameOrig=" + nameOrig + " path=" + argv[i];
-                        GlobalLogB.AddLog_CurTime(false); GlobalLogB.AddLog(lg.c_str());
+//                         GlobalLogB.AddLog_CurTime(false); GlobalLogB.AddLog(lg.c_str());
                     }
                     IBR_Inst_Project.AddModule(*pIproj, nameOrig);
                     var.pop_back();
                     // [LOG] log section count after add
                     {
                         std::string lg = "DBG[Drop_iproj] AFTER_ADD: RevMapSz=" + std::to_string(IBR_Inst_Project.IBR_Rev_SectionMap.size());
-                        GlobalLogB.AddLog(lg.c_str());
+//                         GlobalLogB.AddLog(lg.c_str());
                     }
                 }
             }
@@ -1227,18 +1227,18 @@ namespace IBR_ProjectManager
 
     void _IN_FRONT_THREAD CompileMod(const std::wstring& outputDir)
     {
-        GlobalLogB.AddLog_CurTime(false);
-        GlobalLogB.AddLog((std::string("DBG[Compile] START: ") + UnicodetoUTF8(outputDir)).c_str());
+//         GlobalLogB.AddLog_CurTime(false);
+        // GlobalLogB.AddLog((std::string("DBG[Compile] START: ") + UnicodetoUTF8(outputDir)).c_str());
         std::string log;
 
         // ---- S1: Collect GlobalFlagPacks & iproj paths from modproj ClipData ----
         std::vector<IprojEntry> iprojs;
         std::vector<FlagPackEntry> flagPacks;
         {
-            GlobalLogB.AddLog("DBG[Compile] S1: reading modproj ClipData...");
+            // GlobalLogB.AddLog("DBG[Compile] S1: reading modproj ClipData...");
             IBB_ClipBoardData modClip;
             modClip.SetStream(IBS_Inst_Project.Data, GetClipFormatVersion(IBS_Inst_Project.GetCreateVersionN()));
-            GlobalLogB.AddLog((std::string("DBG[Compile] S1: modClip.Modules.size()=") + std::to_string(modClip.Modules.size())).c_str());
+            // GlobalLogB.AddLog((std::string("DBG[Compile] S1: modClip.Modules.size()=") + std::to_string(modClip.Modules.size())).c_str());
             for (auto& M : modClip.Modules)
             {
                 auto ip = std::string{};
@@ -1246,7 +1246,7 @@ namespace IBR_ProjectManager
                 if (!ip.empty())
                 {
                     iprojs.push_back({ M.Desc.B, ip });
-                    GlobalLogB.AddLog((std::string("DBG[Compile] S1: iproj_ref: ") + M.Desc.B + " -> " + ip).c_str());
+                    // GlobalLogB.AddLog((std::string("DBG[Compile] S1: iproj_ref: ") + M.Desc.B + " -> " + ip).c_str());
                 }
                 else
                 {
@@ -1255,15 +1255,15 @@ namespace IBR_ProjectManager
                     for (auto& v : M.VarList) fp.vars.push_back({ v.A, v.B });
                     for (auto& line : M.Lines) fp.vars.push_back({ line.Key, line.Value });
                     flagPacks.push_back(fp);
-                    GlobalLogB.AddLog((std::string("DBG[Compile] S1: FlagPack: ") + fp.name
+/*                    GlobalLogB.AddLog((std::string("DBG[Compile] S1: FlagPack: ") + fp.name
                         + " vars_from_VarList=" + std::to_string(M.VarList.size())
                         + " vars_from_Lines=" + std::to_string(M.Lines.size())
-                        + " total=" + std::to_string(fp.vars.size())).c_str());
+                        + " total=" + std::to_string(fp.vars.size())).c_str()); */
                 }
             }
         }
-        GlobalLogB.AddLog((std::string("DBG[Compile] S1: done — iprojs=") + std::to_string(iprojs.size())
-            + " flagPacks=" + std::to_string(flagPacks.size())).c_str());
+/*        GlobalLogB.AddLog((std::string("DBG[Compile] S1: done — iprojs=") + std::to_string(iprojs.size())
+            + " flagPacks=" + std::to_string(flagPacks.size())).c_str()); */
 
         if (iprojs.empty())
         {
@@ -1274,7 +1274,7 @@ namespace IBR_ProjectManager
         }
 
         // ---- S2: Save current modproj state ----
-        GlobalLogB.AddLog("DBG[Compile] S2: saving modproj state...");
+        // GlobalLogB.AddLog("DBG[Compile] S2: saving modproj state...");
         auto savedProject = std::move(IBF_Inst_Project.Project);
         auto savedDisplayNames = std::move(IBF_Inst_Project.DisplayNames);
         auto savedLinkedBy = std::move(IBF_Inst_Project.LinkedBy);
@@ -1282,7 +1282,7 @@ namespace IBR_ProjectManager
         auto savedIBSPath = std::move(IBS_Inst_Project.Path);
         auto savedIBSOutDir = std::move(IBS_Inst_Project.LastOutputDir);
         auto savedIBSOutIni = std::move(IBS_Inst_Project.LastOutputIniName);
-        GlobalLogB.AddLog("DBG[Compile] S2: saved");
+        // GlobalLogB.AddLog("DBG[Compile] S2: saved");
 
         std::vector<std::wstring> allTempFiles;
 
@@ -1291,7 +1291,7 @@ namespace IBR_ProjectManager
         // ---- S3: Compile each iproj ----
         for (auto& entry : iprojs)
         {
-            GlobalLogB.AddLog((std::string("DBG[Compile] S3: ") + entry.name).c_str());
+            // GlobalLogB.AddLog((std::string("DBG[Compile] S3: ") + entry.name).c_str());
             auto wpath = UTF8toUnicode(entry.pathUtf8);
             if (GetFileAttributesW(wpath.c_str()) == INVALID_FILE_ATTRIBUTES)
             {
@@ -1301,7 +1301,7 @@ namespace IBR_ProjectManager
             }
 
             // S3a: Load iproj
-            GlobalLogB.AddLog("DBG[Compile] S3a: IBS_Load...");
+            // GlobalLogB.AddLog("DBG[Compile] S3a: IBS_Load...");
             IBS_Inst_Project.Data.clear();
             IBS_Inst_Project.Path = wpath;
             IBS_Inst_Project.LastOutputDir.clear();
@@ -1312,12 +1312,12 @@ namespace IBR_ProjectManager
                 errCount++;
                 continue;
             }
-            GlobalLogB.AddLog("DBG[Compile] S3a: loaded OK");
+            // GlobalLogB.AddLog("DBG[Compile] S3a: loaded OK");
 
             // Parse iproj ClipData
             IBB_ClipBoardData clip;
             clip.SetStream(IBS_Inst_Project.Data, GetClipFormatVersion(IBS_Inst_Project.GetCreateVersionN()));
-            GlobalLogB.AddLog((std::string("DBG[Compile] S3a: clip.Modules=") + std::to_string(clip.Modules.size())).c_str());
+            // GlobalLogB.AddLog((std::string("DBG[Compile] S3a: clip.Modules=") + std::to_string(clip.Modules.size())).c_str());
 
             // Find UseGlobalFlagPack refs and inject FlagPacks into temp clip
             struct Injection { std::string packName; ModuleClipData* srcModule; };
@@ -1326,7 +1326,7 @@ namespace IBR_ProjectManager
                 for (auto& line : M.Lines)
                     if (line.Key == "UseGlobalFlagPack")
                         injections.push_back({ line.Value, &M });
-            GlobalLogB.AddLog((std::string("DBG[Compile] S3a: UseGlobalFlagPack refs=") + std::to_string(injections.size())).c_str());
+            // GlobalLogB.AddLog((std::string("DBG[Compile] S3a: UseGlobalFlagPack refs=") + std::to_string(injections.size())).c_str());
 
             std::wstring tempPath = wpath + L"_temp.iproj";
             allTempFiles.push_back(tempPath);
@@ -1335,7 +1335,7 @@ namespace IBR_ProjectManager
             std::vector<ModuleClipData> flagPackMods;
             for (auto& inj : injections)
             {
-                GlobalLogB.AddLog((std::string("DBG[Compile] S3a: inject ") + inj.packName + " -> " + inj.srcModule->Desc.B).c_str());
+                // GlobalLogB.AddLog((std::string("DBG[Compile] S3a: inject ") + inj.packName + " -> " + inj.srcModule->Desc.B).c_str());
                 const FlagPackEntry* fp = nullptr;
                 for (auto& f : flagPacks) { if (f.name == inj.packName) { fp = &f; break; } }
                 if (!fp) { log += "  [WARN] FlagPack '" + inj.packName + "' not found\n"; continue; }
@@ -1364,7 +1364,7 @@ namespace IBR_ProjectManager
                 fpMod.IsComment = false;
                 fpMod.Comment.clear();
                 flagPackMods.push_back(fpMod);
-                GlobalLogB.AddLog((std::string("DBG[Compile] S3a: created FlagPack ") + fpUniqueName + " lines=" + std::to_string(fpMod.Lines.size())).c_str());
+                // GlobalLogB.AddLog((std::string("DBG[Compile] S3a: created FlagPack ") + fpUniqueName + " lines=" + std::to_string(fpMod.Lines.size())).c_str());
             }
             // Append all FlagPack modules to clip AFTER modifying Lines (avoids dangling ptrs)
             for (auto& fpm : flagPackMods)
@@ -1382,12 +1382,12 @@ namespace IBR_ProjectManager
                 IBS_Inst_Project.Save();
                 IBS_Inst_Project.Data = std::move(origIBSData);
                 IBS_Inst_Project.Path = wpath;
-                GlobalLogB.AddLog((std::string("DBG[Compile] S3a: temp saved ") + UnicodetoUTF8(tempPath)
-                    + " size=" + std::to_string(tempClip.GetStream().size())).c_str());
+/*                GlobalLogB.AddLog((std::string("DBG[Compile] S3a: temp saved ") + UnicodetoUTF8(tempPath)
+                    + " size=" + std::to_string(tempClip.GetStream().size())).c_str()); */
             }
 
             // Reload temp file (same flow as normal load+export)
-            GlobalLogB.AddLog("DBG[Compile] S3b: reloading temp file...");
+            // GlobalLogB.AddLog("DBG[Compile] S3b: reloading temp file...");
             IBS_Inst_Project.Data.clear();
             IBS_Inst_Project.Path = tempPath;
             IBS_Inst_Project.LastOutputDir.clear();
@@ -1402,7 +1402,7 @@ namespace IBR_ProjectManager
             for (auto& M : reloadClip.Modules)
                 IBF_Inst_Project.Project.AddModule(M);
             IBF_Inst_Project.UpdateAll();
-            GlobalLogB.AddLog((std::string("DBG[Compile] S3b: Inis=") + std::to_string(IBF_Inst_Project.Project.Inis.size())).c_str());
+            // GlobalLogB.AddLog((std::string("DBG[Compile] S3b: Inis=") + std::to_string(IBF_Inst_Project.Project.Inis.size())).c_str());
 
             // S3e: Build target INI paths
             auto projName = FileNameNoExt(UnicodetoUTF8(IBF_Inst_Project.Project.ProjName));
@@ -1415,18 +1415,18 @@ namespace IBR_ProjectManager
                 tgPath.push_back(outputDir + L"\\" + fname);
                 IBF_Inst_ModProject.CompiledIniFiles[Ini.Name].push_back(fname);
             }
-            GlobalLogB.AddLog((std::string("DBG[Compile] S3e: ") + std::to_string(tgPath.size()) + " ini targets").c_str());
+            // GlobalLogB.AddLog((std::string("DBG[Compile] S3e: ") + std::to_string(tgPath.size()) + " ini targets").c_str());
 
             // S3f: Output
-            GlobalLogB.AddLog("DBG[Compile] S3f: Output()...");
+            // GlobalLogB.AddLog("DBG[Compile] S3f: Output()...");
             Output(outputDir, tgPath, {}, false);
-            GlobalLogB.AddLog("DBG[Compile] S3f: Output() done");
+            // GlobalLogB.AddLog("DBG[Compile] S3f: Output() done");
 
             log += "[OK] " + entry.name + " → " + UnicodetoUTF8(outputDir) + "\n";
             okCount++;
 
             // S3g: Copy asset files
-            GlobalLogB.AddLog("DBG[Compile] S3g: copying assets...");
+            // GlobalLogB.AddLog("DBG[Compile] S3g: copying assets...");
             int assetOk = 0;
             for (auto& M : clip.Modules)
             {
@@ -1443,11 +1443,11 @@ namespace IBR_ProjectManager
                         log += "  [ASSET FAIL] " + v.B + "\n";
                 }
             }
-            GlobalLogB.AddLog((std::string("DBG[Compile] S3g: assets copied=") + std::to_string(assetOk)).c_str());
+            // GlobalLogB.AddLog((std::string("DBG[Compile] S3g: assets copied=") + std::to_string(assetOk)).c_str());
         }
 
         // ---- S3.5: Generate [#include] sections in md files ----
-        GlobalLogB.AddLog("DBG[Compile] S3_include: generating includes...");
+        // GlobalLogB.AddLog("DBG[Compile] S3_include: generating includes...");
         {
             // Blacklist: crash check
             const wchar_t* blackList[] = { L"Rulesmo.ini", L"Artmo.ini" };
@@ -1464,7 +1464,7 @@ namespace IBR_ProjectManager
             auto updateInclude = [&](const std::wstring& mdPath, const std::string& inType,
                                        const std::vector<std::wstring>& files)
             {
-                GlobalLogB.AddLog((std::string("DBG[Compile] S3_include: ") + inType + " -> " + UnicodetoUTF8(mdPath)).c_str());
+                // GlobalLogB.AddLog((std::string("DBG[Compile] S3_include: ") + inType + " -> " + UnicodetoUTF8(mdPath)).c_str());
                 if (GetFileAttributesW(mdPath.c_str()) == INVALID_FILE_ATTRIBUTES)
                 {
                     log += std::string("[WARN] ") + UnicodetoUTF8(FileName(mdPath)) + " not found\n";
@@ -1544,11 +1544,11 @@ namespace IBR_ProjectManager
                 else if (iniType == "Art")
                     updateInclude(outputDir + L"\\artst.ini", iniType, files);
             }
-            GlobalLogB.AddLog("DBG[Compile] S3_include: done");
+            // GlobalLogB.AddLog("DBG[Compile] S3_include: done");
         }
 
         // ---- S4: Restore modproj state ----
-        GlobalLogB.AddLog("DBG[Compile] S4: restoring modproj...");
+        // GlobalLogB.AddLog("DBG[Compile] S4: restoring modproj...");
         IBF_Inst_Project.Project = std::move(savedProject);
         IBF_Inst_Project.DisplayNames = std::move(savedDisplayNames);
         IBF_Inst_Project.LinkedBy = std::move(savedLinkedBy);
@@ -1556,17 +1556,14 @@ namespace IBR_ProjectManager
         IBS_Inst_Project.Path = std::move(savedIBSPath);
         IBS_Inst_Project.LastOutputDir = std::move(savedIBSOutDir);
         IBS_Inst_Project.LastOutputIniName = std::move(savedIBSOutIni);
-        GlobalLogB.AddLog("DBG[Compile] S4: restored");
+        // GlobalLogB.AddLog("DBG[Compile] S4: restored");
 
         // Clean up temp files
-        // for (auto& tf : allTempFiles)
-        // {
-        //     if (GetFileAttributesW(tf.c_str()) != INVALID_FILE_ATTRIBUTES)
-        //     {
-        //         DeleteFileW(tf.c_str());
-        //         GlobalLogB.AddLog((std::string("DBG[Compile] S4: deleted temp ") + UnicodetoUTF8(tf)).c_str());
-        //     }
-        // }
+        for (auto& tf : allTempFiles)
+        {
+            if (GetFileAttributesW(tf.c_str()) != INVALID_FILE_ATTRIBUTES)
+                DeleteFileW(tf.c_str());
+        }
 
         char buf[256];
         snprintf(buf, sizeof(buf), "OK:%d SKIP:%d ERR:%d", okCount, skipCount, errCount);
@@ -1581,7 +1578,7 @@ namespace IBR_ProjectManager
                 log += "  " + UnicodetoUTF8(f) + "\n";
         }
 
-        GlobalLogB.AddLog((std::string("DBG[Compile] DONE: ") + buf).c_str());
+        // GlobalLogB.AddLog((std::string("DBG[Compile] DONE: ") + buf).c_str());
         IBF_Inst_ModProject.BuildLog = log;
         IBRF_CoreBump.SendToR({ [log]() { ShowBuildLog(log); } });
     }

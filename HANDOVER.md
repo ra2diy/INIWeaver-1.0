@@ -1,7 +1,8 @@
 # INIWeaver (INI织网者) 交接文档
 
 > 项目根: `I:\WeaverAI\`
-> 版本: 1.0.9-dev-b7 → 开发中 (ModProject 分支)
+> 版本: 1.0.9-dev-b9 → 开发中 (ModProject 分支)
+> 备份: `backup_v1.0.9-dev-b9\`
 > 构建输出: `x64\Release\INIWeaver.exe`
 > 备份: `backup_v1.0.9-dev-b6\`
 

@@ -99,8 +99,8 @@ std::unordered_map<std::string, std::string> IBB_ModProject::ReadMetaTail(const 
         std::string val((const char*)&data[off], vl); off += vl;
         result[key] = val;
     }
-    GlobalLogB.AddLog((std::string("DBG[MetaTail] Read: numKeys=") + std::to_string(numKeys)
-        + " pos=" + std::to_string(pos)).c_str());
+/*    GlobalLogB.AddLog((std::string("DBG[MetaTail] Read: numKeys=") + std::to_string(numKeys)
+        + " pos=" + std::to_string(pos)).c_str()); */
     return result;
 }
 
@@ -110,27 +110,27 @@ std::unordered_map<std::string, std::string> IBB_ModProject::ReadMetaTail(const 
 static void IprojMetaOp(const std::wstring& iprojPath,
     const std::function<void(std::unordered_map<std::string, std::string>& meta)>& op)
 {
-    GlobalLogB.AddLog((std::string("DBG[MetaOp] ENTER: ") + UnicodetoUTF8(iprojPath)).c_str());
+    // GlobalLogB.AddLog((std::string("DBG[MetaOp] ENTER: ") + UnicodetoUTF8(iprojPath)).c_str());
     if (GetFileAttributesW(iprojPath.c_str()) == INVALID_FILE_ATTRIBUTES)
     {
-        GlobalLogB.AddLog("DBG[MetaOp] SKIP: file not found");
+        // GlobalLogB.AddLog("DBG[MetaOp] SKIP: file not found");
         return;
     }
     auto origData = std::move(IBS_Inst_Project.Data);
     auto origPath = std::move(IBS_Inst_Project.Path);
     auto origOutDir = std::move(IBS_Inst_Project.LastOutputDir);
     auto origOutIni = std::move(IBS_Inst_Project.LastOutputIniName);
-    GlobalLogB.AddLog((std::string("DBG[MetaOp] SAVED_STATE: origDataSz=") + std::to_string(origData.size())
-        + " origPath=" + UnicodetoUTF8(origPath)).c_str());
+/*    GlobalLogB.AddLog((std::string("DBG[MetaOp] SAVED_STATE: origDataSz=") + std::to_string(origData.size())
+        + " origPath=" + UnicodetoUTF8(origPath)).c_str()); */
     IBS_Inst_Project.Path = iprojPath;
     IBS_Inst_Project.LastOutputDir.clear();
     IBS_Inst_Project.LastOutputIniName.clear();
     if (!IBS_Inst_Project.Load()) { GlobalLogB.AddLog("DBG[MetaOp] Load FAILED"); goto restore; }
     {
-        GlobalLogB.AddLog((std::string("DBG[MetaOp] Load OK: IBS_DataSz=") + std::to_string(IBS_Inst_Project.Data.size())).c_str());
+        // GlobalLogB.AddLog((std::string("DBG[MetaOp] Load OK: IBS_DataSz=") + std::to_string(IBS_Inst_Project.Data.size())).c_str());
         // Read existing metadata
         auto meta = IBB_ModProject::ReadMetaTail(IBS_Inst_Project.Data);
-        GlobalLogB.AddLog((std::string("DBG[MetaOp] MetaTail keys=") + std::to_string(meta.size())).c_str());
+        // GlobalLogB.AddLog((std::string("DBG[MetaOp] MetaTail keys=") + std::to_string(meta.size())).c_str());
         // Call operation
         op(meta);
         // Rebuild ClipBoardData to strip old tail, then append new tail
@@ -140,25 +140,25 @@ static void IprojMetaOp(const std::wstring& iprojPath,
             + IBS_Inst_Project.GetCreateVersionN() % 10000 / 100 * 100
             + IBS_Inst_Project.GetCreateVersionN() % 100))
         {
-            GlobalLogB.AddLog((std::string("DBG[MetaOp] SetStream OK: clipModules=") + std::to_string(clip.Modules.size())).c_str());
+            // GlobalLogB.AddLog((std::string("DBG[MetaOp] SetStream OK: clipModules=") + std::to_string(clip.Modules.size())).c_str());
         }
         else
         {
-            GlobalLogB.AddLog("DBG[MetaOp] SetStream FAILED, writing meta to raw Data");
+            // GlobalLogB.AddLog("DBG[MetaOp] SetStream FAILED, writing meta to raw Data");
         }
         IBS_Inst_Project.Data = clip.GetStream();
         IBB_ModProject::WriteMetaTail(IBS_Inst_Project.Data, meta);
-        GlobalLogB.AddLog((std::string("DBG[MetaOp] PRE_SAVE: newDataSz=") + std::to_string(IBS_Inst_Project.Data.size())).c_str());
+        // GlobalLogB.AddLog((std::string("DBG[MetaOp] PRE_SAVE: newDataSz=") + std::to_string(IBS_Inst_Project.Data.size())).c_str());
         IBS_Inst_Project.Save();
-        GlobalLogB.AddLog("DBG[MetaOp] Save DONE");
+        // GlobalLogB.AddLog("DBG[MetaOp] Save DONE");
     }
 restore:
     IBS_Inst_Project.Data = std::move(origData);
     IBS_Inst_Project.Path = std::move(origPath);
     IBS_Inst_Project.LastOutputDir = std::move(origOutDir);
     IBS_Inst_Project.LastOutputIniName = std::move(origOutIni);
-    GlobalLogB.AddLog((std::string("DBG[MetaOp] RESTORED: DataSz=") + std::to_string(IBS_Inst_Project.Data.size())
-        + " Path=" + UnicodetoUTF8(IBS_Inst_Project.Path)).c_str());
+/*    GlobalLogB.AddLog((std::string("DBG[MetaOp] RESTORED: DataSz=") + std::to_string(IBS_Inst_Project.Data.size())
+        + " Path=" + UnicodetoUTF8(IBS_Inst_Project.Path)).c_str()); */
 }
 
 void IBB_ModProject::AddIprojModProjPath(const std::wstring& iprojPath, const std::wstring& modprojPath)

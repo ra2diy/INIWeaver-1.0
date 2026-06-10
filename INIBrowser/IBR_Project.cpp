@@ -630,15 +630,15 @@ void IBR_Project::Load(const IBS_Project& Proj)
     IBB_ClipBoardData::ErrorContext.ModuleName = UnicodetoUTF8(Proj.ProjName);
 
     // [LOG] before SetStream
-    GlobalLogB.AddLog_CurTime(false);
-    GlobalLogB.AddLog((std::string("DBG[Load] DataSz=") + std::to_string(Proj.Data.size())
-        + " Path=" + UnicodetoUTF8(Proj.Path)).c_str());
+//     GlobalLogB.AddLog_CurTime(false);
+/*    GlobalLogB.AddLog((std::string("DBG[Load] DataSz=") + std::to_string(Proj.Data.size())
+        + " Path=" + UnicodetoUTF8(Proj.Path)).c_str()); */
 
     if (ClipData.SetStream(Proj.Data, GetClipFormatVersion(Proj.GetCreateVersionN())))
     {
         // [LOG] dump loaded modules
         std::string lg = "DBG[Load] SetStream OK: ModuleCount=" + std::to_string(ClipData.Modules.size());
-        GlobalLogB.AddLog(lg.c_str());
+//         GlobalLogB.AddLog(lg.c_str());
         for (size_t i = 0; i < ClipData.Modules.size(); i++)
         {
             auto& M = ClipData.Modules[i];
@@ -652,19 +652,19 @@ void IBR_Project::Load(const IBS_Project& Proj)
                 + " LinesCount=" + std::to_string(M.Lines.size());
             for (auto& v : M.VarList)
                 mlg += " [" + v.A + "=" + v.B.substr(0, std::min(v.B.size(), size_t(60))) + "]";
-            GlobalLogB.AddLog(mlg.c_str());
+//             GlobalLogB.AddLog(mlg.c_str());
             int lc = 0;
             for (auto& line : M.Lines)
             {
-                if (lc >= 10) { GlobalLogB.AddLog("DBG[Load]   ...(lines truncated)"); break; }
-                GlobalLogB.AddLog((std::string("DBG[Load]   LINE: ") + line.Key + "=" + line.Value.substr(0, 60)).c_str());
+                // if (lc >= 10) { GlobalLogB.AddLog("DBG[Load]   ...(lines truncated)"); break; }
+                // GlobalLogB.AddLog((std::string("DBG[Load]   LINE: ") + line.Key + "=" + line.Value.substr(0, 60)).c_str());
                 lc++;
             }
         }
         AddModule(ClipData.Modules, false);
         // [LOG] after AddModule
-        GlobalLogB.AddLog((std::string("DBG[Load] AFTER_AddModule: RevMapSz=")
-            + std::to_string(IBR_Inst_Project.IBR_Rev_SectionMap.size())).c_str());
+/*        GlobalLogB.AddLog((std::string("DBG[Load] AFTER_AddModule: RevMapSz=")
+            + std::to_string(IBR_Inst_Project.IBR_Rev_SectionMap.size())).c_str()); */
 
         // Read binary metadata tail (BuildOutputDir etc.)
         if (Proj.Path.ends_with(L".modproj"))
@@ -674,13 +674,13 @@ void IBR_Project::Load(const IBS_Project& Proj)
             if (it != meta.end() && !it->second.empty())
             {
                 IBF_Inst_ModProject.BuildOutputDir = UTF8toUnicode(it->second);
-                GlobalLogB.AddLog((std::string("DBG[Load] MetaTail: BuildOutputDir=") + it->second).c_str());
+                // GlobalLogB.AddLog((std::string("DBG[Load] MetaTail: BuildOutputDir=") + it->second).c_str());
             }
         }
     }
     else
     {
-        GlobalLogB.AddLog("DBG[Load] SetStream FAILED");
+        // GlobalLogB.AddLog("DBG[Load] SetStream FAILED");
     }
     IBF_Inst_Project.Project.ChangeAfterSave = false;
     //MAGIC
@@ -733,7 +733,7 @@ void IBR_Project::Save(IBS_Project& Proj)
             + " Proj_IniCount=" + std::to_string(IBF_Inst_Project.Project.Inis.size());
         for (auto& Ini : IBF_Inst_Project.Project.Inis)
             lg += " Ini[" + Ini.Name + "]_SecCount=" + std::to_string(Ini.Secs.size());
-        GlobalLogB.AddLog_CurTime(false); GlobalLogB.AddLog(lg.c_str());
+//         GlobalLogB.AddLog_CurTime(false); GlobalLogB.AddLog(lg.c_str());
     }
 
     IBB_ClipBoardData ClipData;
@@ -742,7 +742,7 @@ void IBR_Project::Save(IBS_Project& Proj)
     // [LOG] post-GenerateAll: dump each module's key fields
     {
         std::string lg = "DBG[Save] POST_GEN: ModuleCount=" + std::to_string(ClipData.Modules.size());
-        GlobalLogB.AddLog(lg.c_str());
+//         GlobalLogB.AddLog(lg.c_str());
         for (size_t i = 0; i < ClipData.Modules.size(); i++)
         {
             auto& M = ClipData.Modules[i];
@@ -756,12 +756,12 @@ void IBR_Project::Save(IBS_Project& Proj)
                 + " LinesCount=" + std::to_string(M.Lines.size());
             for (auto& v : M.VarList)
                 mlg += " [" + v.A + "=" + v.B.substr(0, std::min(v.B.size(), size_t(60))) + "]";
-            GlobalLogB.AddLog(mlg.c_str());
+//             GlobalLogB.AddLog(mlg.c_str());
             int lc = 0;
             for (auto& line : M.Lines)
             {
-                if (lc >= 10) { GlobalLogB.AddLog("DBG[Load]   ...(lines truncated)"); break; }
-                GlobalLogB.AddLog((std::string("DBG[Load]   LINE: ") + line.Key + "=" + line.Value.substr(0, 60)).c_str());
+                // if (lc >= 10) { GlobalLogB.AddLog("DBG[Load]   ...(lines truncated)"); break; }
+                // GlobalLogB.AddLog((std::string("DBG[Load]   LINE: ") + line.Key + "=" + line.Value.substr(0, 60)).c_str());
                 lc++;
             }
         }
@@ -810,7 +810,7 @@ void IBR_Project::Save(IBS_Project& Proj)
             for (auto& v : M.VarList)
                 if (v.A == "iproj_path") curSet.insert(v.B);
 
-        GlobalLogB.AddLog((std::string("DBG[Save] MODPROJ curSetSz=") + std::to_string(curSet.size())).c_str());
+        // GlobalLogB.AddLog((std::string("DBG[Save] MODPROJ curSetSz=") + std::to_string(curSet.size())).c_str());
 
         // Collect previous iproj paths from last save on disk
         std::set<std::string> prevSet;
@@ -835,26 +835,26 @@ void IBR_Project::Save(IBS_Project& Proj)
             IBS_Inst_Project.FullView_EqCenter = origCenter;
         }
 
-        GlobalLogB.AddLog((std::string("DBG[Save] MODPROJ prevSetSz=") + std::to_string(prevSet.size())).c_str());
+        // GlobalLogB.AddLog((std::string("DBG[Save] MODPROJ prevSetSz=") + std::to_string(prevSet.size())).c_str());
 
         // Remove from deleted iproj refs
         for (auto& oldPath : prevSet)
             if (!curSet.count(oldPath))
             {
-                GlobalLogB.AddLog((std::string("DBG[Save] MODPROJ REMOVE: ") + oldPath).c_str());
+                // GlobalLogB.AddLog((std::string("DBG[Save] MODPROJ REMOVE: ") + oldPath).c_str());
                 IBB_ModProject::RemoveIprojModProjPath(UTF8toUnicode(oldPath), mpPath);
             }
 
         // Add for current iproj refs
         for (auto& path : curSet)
         {
-            GlobalLogB.AddLog((std::string("DBG[Save] MODPROJ ADD: ") + path).c_str());
+            // GlobalLogB.AddLog((std::string("DBG[Save] MODPROJ ADD: ") + path).c_str());
             IBB_ModProject::AddIprojModProjPath(UTF8toUnicode(path), mpPath);
         }
 
         // [LOG] IBS state after sync
-        GlobalLogB.AddLog((std::string("DBG[Save] MODPROJ AFTER_SYNC: IBS_DataSz=") + std::to_string(IBS_Inst_Project.Data.size())
-            + " IBS_Path=" + UnicodetoUTF8(IBS_Inst_Project.Path)).c_str());
+/*        GlobalLogB.AddLog((std::string("DBG[Save] MODPROJ AFTER_SYNC: IBS_DataSz=") + std::to_string(IBS_Inst_Project.Data.size())
+            + " IBS_Path=" + UnicodetoUTF8(IBS_Inst_Project.Path)).c_str()); */
     }
 
     // Resolve .pal asset paths from Palette=/CustomPalette= in SHP modules
@@ -975,11 +975,11 @@ void IBR_Project::Save(IBS_Project& Proj)
     if (!oldMeta.empty())
     {
         IBB_ModProject::WriteMetaTail(Proj.Data, oldMeta);
-        GlobalLogB.AddLog((std::string("DBG[Save] MetaTail: keys=") + std::to_string(oldMeta.size())).c_str());
+        // GlobalLogB.AddLog((std::string("DBG[Save] MetaTail: keys=") + std::to_string(oldMeta.size())).c_str());
     }
 
-    GlobalLogB.AddLog((std::string("DBG[Save] FINAL: Proj_DataSz=") + std::to_string(Proj.Data.size())
-        + " ClipModules=" + std::to_string(ClipData.Modules.size())).c_str());
+/*    GlobalLogB.AddLog((std::string("DBG[Save] FINAL: Proj_DataSz=") + std::to_string(Proj.Data.size())
+        + " ClipModules=" + std::to_string(ClipData.Modules.size())).c_str()); */
 }
 
 void IBR_Project::Clear()
