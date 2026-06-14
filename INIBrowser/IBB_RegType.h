@@ -56,6 +56,7 @@ ImColor LoadColorFromJson(JsonObject Obj, const ImColor& Default);
 
 namespace IBB_DefaultRegType
 {
+    extern std::unordered_map<_TEXT_UTF8 std::string, IBB_RegType> RegisterTypes;
     extern const ImColor DefaultColor;
     //create type && create ini
     void EnsureRegType(const _TEXT_UTF8 std::string& Type);

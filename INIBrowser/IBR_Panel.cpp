@@ -111,6 +111,11 @@ void ControlPanel_File()
         
     }
     ImGui::NewLine();
+    if (ImGui::Button(locc("GUI_ImportIni"), { ImGui::GetWindowContentRegionWidth() , FontHeight * 1.5F }))
+    {
+        IBR_ProjectManager::ImportIniAction();
+    }
+    ImGui::NewLine();
     IBR_RecentManager::RenderUI();//
     /*
     if (!IsProjectOpen)

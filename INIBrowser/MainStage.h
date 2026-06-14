@@ -12,6 +12,7 @@
 #include "IBR_Debug.h"
 #include "IBR_Misc.h"
 #include "IBR_TopMost.h"
+#include "IBR_ImportIni.h"
 #include "IBG_UndoTree.h"
 
 std::string FontPath = ".\\Resources\\";//全过程不变
@@ -237,6 +238,7 @@ void ControlPanel()
     IBR_SelectMode::RenderUI();
     IBR_HintManager::RenderUI();
     IBR_TopMost::RenderUI();
+    IBR_ImportPreview::RenderUI();
     IBR_PopupManager::RenderUI();
 
     IBR_WorkSpace::LastOperateOnText = IBR_WorkSpace::OperateOnText;

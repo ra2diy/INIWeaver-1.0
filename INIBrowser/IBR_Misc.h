@@ -75,6 +75,7 @@ namespace IBR_ProjectManager
     void OutputAction();
     void AutoOutputAction();
     void OutputOnSaveAction();
+    void ImportIniAction();
     void OnDropFile(GLFWwindow* window, int argc, const char** argv);
     void ProjActionByKey();
 };

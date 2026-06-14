@@ -13,6 +13,8 @@
 #include "IBR_HotKey.h"
 #include "IBR_ListView.h"
 #include "IBR_Components.h"
+#include "IBR_ImportIni.h"
+#include "IBB_IniImport.h"
 #include "IBB_OutputOrder.h"
 #include "IBG_UndoTree.h"
 
@@ -822,6 +824,129 @@ namespace IBR_ProjectManager
             if (AllNotEmpty)IBRF_CoreBump.SendToR({ [=]() {IBR_ProjectManager::AutoOutputAction(); } });
             else IBRF_CoreBump.SendToR({ [=]() {IBR_ProjectManager::OutputAction(); } });
         }
+    }
+
+    void _IN_RENDER_THREAD ImportIniAction()
+    {
+
+        if (!IsOpen())
+        {
+            IBR_HintManager::SetHint(loc("GUI_WaitOpen"), HintStayTimeMillis);
+            return;
+        }
+
+        // 构建文件过滤器: "INI Files (*.ini)\0*.ini\0All Files (*.*)\0*.*\0\0"
+        std::wstring IniFilter;
+        {
+            auto T1 = locw("GUI_ImportIni_FileFilter");
+            auto T2 = locw("GUI_ImportIni_FileFilterAll");
+            auto L1 = wcslen(L"*.ini");
+            IniFilter.resize(T1.size() + T2.size() + 64);
+            wcscpy(IniFilter.data(), T1.c_str());
+            wcscpy(IniFilter.data() + T1.size() + 1, L"*.ini");
+            wcscpy(IniFilter.data() + T1.size() + L1 + 2, T2.c_str());
+            wcscpy(IniFilter.data() + T1.size() + L1 + T2.size() + 3, L"*.*");
+        }
+
+        // 静态回调处理导入（放在前面，因为 IBS_Push lambda 会用到它）
+        struct _ImportFileDlg {
+            static void _IN_SAVE_THREAD Proc(const std::optional<std::wstring>& Path)
+            {
+                if (!Path) return; // 用户取消
+
+                // 2. 解析 INI 文件
+                ImportedIniFile File = ParseIniFile(*Path);
+
+                if (File.Sections.empty())
+                {
+                    IBR_HintManager::SetHint(loc("GUI_ImportIni_Empty"), HintStayTimeMillis);
+                    return;
+                }
+
+                MatchSectionToRegType(File);
+
+                // 3. 切回渲染线程，打开预览弹窗
+                auto pFile = std::make_shared<ImportedIniFile>(std::move(File));
+                IBRF_CoreBump.SendToR({ [pFile]()
+                    {
+                        IBR_ImportPreview::Open(std::move(*pFile),
+                            [](const IBR_ImportResult& Result)
+                            {
+                                if (!Result.Confirmed) return;
+
+                                // 用户确认后在渲染线程直接处理后续步骤
+                                // （IBR_ImportPreview::RenderUI 在渲染循环中调用回调）
+                                auto& CFile = Result.File;
+
+                                // 4. 检测链接关系
+                                auto Links = DetectLinkRelations(CFile);
+
+                                // 5. 计算布局
+                                ImportedIniFile LayoutFile = CFile;
+                                CalculateLayout(LayoutFile, Links);
+
+                                // 6. 转换为 ModuleClipData
+                                IniImportOptions Options;
+                                auto Modules = ImportedSectionsToModuleClipData(LayoutFile, Options);
+
+                                if (Modules.empty())
+                                {
+                                    IBR_HintManager::SetHint(loc("GUI_ImportIni_NoModules"), HintStayTimeMillis);
+                                    return;
+                                }
+
+                                // 7. 切回渲染线程，追加到 workspace（带 Undo 支持）
+                                auto pModules = std::make_shared<std::vector<ModuleClipData>>(std::move(Modules));
+                                IBRF_CoreBump.SendToR({ [pModules]()
+                                    {
+                                        auto [Success, IDs] = IBR_Inst_Project.AddModule(*pModules, true);
+                                        if (Success)
+                                        {
+                                            // 选中导入的所有块
+                                            IBR_WorkSpace::MassSelect(IDs);
+
+                                            // 记录 Undo（删除刚导入的模块）
+                                            auto ModuleIDs = IDs;
+                                            IBG_UndoStack::_Item it;
+                                            it.Id = "ImportIni";
+                                            it.UndoAction = [ModuleIDs]()
+                                            {
+                                                IBR_Inst_Project.DeleteSection(ModuleIDs);
+                                            };
+                                            it.RedoAction = [ModuleIDs, pModules]()
+                                            {
+                                                auto [ok, ids] = IBR_Inst_Project.AddModule(*pModules, true);
+                                                if (ok) IBR_WorkSpace::MassSelect(ids);
+                                            };
+                                            IBG_Undo.Push(it);
+
+                                            auto Count = ModuleIDs.size();
+                                            IBR_HintManager::SetHint(
+                                                UnicodetoUTF8(std::vformat(locw("GUI_ImportIni_Success"),
+                                                    std::make_wformat_args(Count))).c_str(),
+                                                HintStayTimeMillis);
+                                        }
+                                        else
+                                        {
+                                            IBR_HintManager::SetHint(loc("GUI_ImportIni_Failed"), HintStayTimeMillis);
+                                        }
+                                    } });
+                            });
+                    } });
+            }
+        }; // end struct _ImportFileDlg
+
+        // 1. 弹出文件选择对话框
+        auto pFilter = std::make_shared<std::wstring>(std::move(IniFilter));
+        IBS_Push([pFilter]()
+        {
+            auto Ret = InsertLoad::SelectFileName(MainWindowHandle,
+                InsertLoad::SelectFileType{ CurrentDirW ,locw("GUI_ImportIni"),
+                    L"", pFilter->c_str() },
+                ::GetOpenFileNameW, false);
+            if (Ret.Success) _ImportFileDlg::Proc(Ret.RetBuf);
+            else _ImportFileDlg::Proc(std::nullopt);
+        });
     }
 
     void _IN_RENDER_THREAD ProjOpen_CreateAction()
