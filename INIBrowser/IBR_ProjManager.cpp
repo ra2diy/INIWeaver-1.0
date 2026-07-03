@@ -895,7 +895,10 @@ namespace IBR_ProjectManager
             else if (ext == "PCX")
             {
                 auto pPcx = IBB_ModuleAltDefault::DefaultPCX();
-                if (!pPcx) {}
+                if (!pPcx)
+                    IBR_PopupManager::SetCurrentPopup(std::move(IBR_PopupManager::MessageModal(
+                        loc("Error_CreateModuleFailed"), loc("Error_NoPCXModule"),
+                        { FontHeight * 10.0f, FontHeight * 7.0f }, false, true)));
                 else if(IBR_Inst_Project.HasSection({ pPcx->GetFirstINI(), s }))
                     IBR_PopupManager::SetCurrentPopup(std::move(IBR_PopupManager::MessageModal(
                     loc("Error_CreateModuleFailed"), loc("Error_UniqueImageModule"),
@@ -906,7 +909,7 @@ namespace IBR_ProjectManager
             {
                 Shapes.push_back({ name,0 });
             }
-            else if (ext == "WAV" || ext == "WAVE")
+            else if (ext == "WAV")
             {
                 WavFiles.push_back(name);
             }
@@ -939,7 +942,16 @@ namespace IBR_ProjectManager
         if (!WavFiles.empty())
         {
             auto pSound = IBB_ModuleAltDefault::DefaultSound();
-            if (pSound)
+            auto s = GenerateModuleTag();
+            if (!pSound)
+                IBR_PopupManager::SetCurrentPopup(std::move(IBR_PopupManager::MessageModal(
+                    loc("Error_CreateModuleFailed"), loc("Error_NoWAVModule"),
+                    { FontHeight * 10.0f, FontHeight * 7.0f }, false, true)));
+            else if (IBR_Inst_Project.HasSection({ pSound->GetFirstINI(), s }))
+            IBR_PopupManager::SetCurrentPopup(std::move(IBR_PopupManager::MessageModal(
+                loc("Error_CreateModuleFailed"), loc("Error_UniqueImageModule"),
+                { FontHeight * 10.0f, FontHeight * 7.0f }, false, true)));
+            else
             {
                 std::string soundsList;
                 for (size_t i = 0; i < WavFiles.size(); i++)
@@ -951,7 +963,7 @@ namespace IBR_ProjectManager
                 for (auto& M : pSound->Modules)
                     for (auto& tok : M.Lines)
                         if (tok.Key == "Sounds") { tok.Value = soundsList; break; }
-                IBR_Inst_Project.AddModule(*pSound, GenerateModuleTag());
+                IBR_Inst_Project.AddModule(*pSound, s);
             }
         }
         auto ShapeCnt = Shapes.size();
