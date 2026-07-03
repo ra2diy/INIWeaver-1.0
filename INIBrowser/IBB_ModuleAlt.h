@@ -273,13 +273,17 @@ namespace IBB_ModuleAltDefault
     std::vector<IBB_ModuleAlt*> Search(const std::string& Str, bool ConsiderRegName, bool ConsiderDescName, bool ConsiderDesc);
 	void NewModule(IBB_ModuleAlt&& M);
 	void Tree_RenderUI();
-    void SpecialTree_RenderUI();
+	void SpecialTree_RenderUI();
+	void Tree_RenderUISidebar();
 	void Tree_ResetHover();
+	bool IsModuleTreeEmpty();
 
     IBB_ModuleAlt* DefaultArt_Voxel();
     IBB_ModuleAlt* DefaultArt_SHPVehicle();
     IBB_ModuleAlt* DefaultArt_SHPBuilding();
     IBB_ModuleAlt* DefaultArt_SHPInfantry();
     IBB_ModuleAlt* DefaultArt_Animation();
+    IBB_ModuleAlt* DefaultSound();
+    IBB_ModuleAlt* DefaultPCX();
 }
 

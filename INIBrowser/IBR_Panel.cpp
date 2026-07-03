@@ -7,6 +7,7 @@
 #include <imgui_internal.h>
 #include "IBR_Misc.h"
 #include "IBG_UndoTree.h"
+#include "IBB_ModuleAlt.h"
 
 extern bool EnableDebugList;
 
@@ -44,8 +45,8 @@ void ControlPanel_Debug()
     ImGui::Text(locc("GUI_DebugTitle"));
 
     IBR_Inst_Debug.RenderUI();
-
-    if (ImGui::TreeNode(u8"撤销栈信息："))
+    
+    if (ImGui::TreeNode(locc("GUI_DebugUndoStackInfo")))
     {
         int ii = 0;
         for (auto& s : IBG_Undo.Stack)
@@ -161,6 +162,31 @@ void ControlPanel_Edit()
     IBR_EditFrame::RenderUI();
 }
 
+void ControlPanel_Modules()
+{
+    static int treeIdBump = 0;
+    ImGui::Text(locc("GUI_MenuItem_Modules"));
+    ImGui::SameLine(ImGui::GetWindowContentRegionWidth() - FontHeight * 5.0f);
+    if (ImGui::SmallButton(locc("GUI_FoldAllModules")))
+        treeIdBump++;
+    ImGui::Separator();
+
+    if (IBB_ModuleAltDefault::IsModuleTreeEmpty())
+    {
+        ImGui::TextDisabled(locc("GUI_NoModuleAvailable"));
+        return;
+    }
+
+    ImGui::PushID(treeIdBump);
+    ImGui::BeginChild("ModuleTreeScroll",
+        { 0, ImGui::GetWindowHeight() - FontHeight * 5.5F },//4.0 base + 1.0 line + 0.5 padding 
+        false, ImGuiWindowFlags_AlwaysVerticalScrollbar);
+    IBB_ModuleAltDefault::Tree_RenderUISidebar();
+    ImGui::EndChild();
+    ImGui::PopID();
+}
+
+
 bool ImGui_TextDisabled_Helper(const char* Text)
 {
     ImGui::TextDisabled(Text); return false;
@@ -172,8 +198,9 @@ bool SmallButton_Disabled_Helper(bool cond, const char* Text)
 
 /*
 #define MenuItemID_FILE 0
-#define MenuItemID_VIEW 1
-#define MenuItemID_LIST 2
+#define MenuItemID_MODULES 1
+#define MenuItemID_VIEW 2
+#define MenuItemID_LIST 3
 //#define MenuItemID_MODULE 3
 #define MenuItemID_EDIT 4
 #define MenuItemID_SETTING 5
@@ -184,6 +211,7 @@ IBR_MainMenu IBR_Inst_Menu
 {
 {
     {[]() {return ImGui::SmallButton(locc("GUI_MenuItem_File")); },ControlPanel_File},
+    {[]() {ImGui::NewLine(); ImGui::SameLine(); return ImGui::SmallButton(locc("GUI_MenuItem_Modules")); }, ControlPanel_Modules},
     {[]() {ImGui::NewLine(); ImGui::SameLine(); return SmallButton_Disabled_Helper(IBR_ProjectManager::IsOpen(), locc("GUI_MenuItem_View")); },ControlPanel_View},
     {[]() {ImGui::NewLine(); ImGui::SameLine(); return SmallButton_Disabled_Helper(IBR_ProjectManager::IsOpen(), locc("GUI_MenuItem_List")); },ControlPanel_ListView},
     //{[]() {return false;/*SmallButton_Disabled_Helper(IsProjectOpen, u8"预设");*/ },ControlPanel_Module},

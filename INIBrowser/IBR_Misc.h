@@ -46,12 +46,13 @@ public:
 };
 extern IBR_MainMenu IBR_Inst_Menu;
 #define MenuItemID_FILE 0
-#define MenuItemID_VIEW 1
-#define MenuItemID_LIST 2
-#define MenuItemID_EDIT 3
-#define MenuItemID_SETTING 4
-#define MenuItemID_ABOUT 5
-#define MenuItemID_DEBUG 6
+#define MenuItemID_MODULES 1
+#define MenuItemID_VIEW 2
+#define MenuItemID_LIST 3
+#define MenuItemID_EDIT 4
+#define MenuItemID_SETTING 5
+#define MenuItemID_ABOUT 6
+#define MenuItemID_DEBUG 7
 
 
 

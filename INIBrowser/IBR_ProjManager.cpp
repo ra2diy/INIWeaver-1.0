@@ -994,6 +994,7 @@ namespace IBR_ProjectManager
             int Type{ 0 };
         };
         std::vector<SHPSolution> Shapes;
+        std::vector<std::string> WavFiles;
         for (int i = 0; i < argc; i++)
         {
             //get extention name from argv[i] (UTF-8 encoding)
@@ -1016,9 +1017,26 @@ namespace IBR_ProjectManager
                     { FontHeight * 10.0f, FontHeight * 7.0f }, false, true)));
                 else IBR_Inst_Project.AddModule(*pVxl, name);
             }
+            else if (ext == "PCX")
+            {
+                auto pPcx = IBB_ModuleAltDefault::DefaultPCX();
+                if (!pPcx)
+                    IBR_PopupManager::SetCurrentPopup(std::move(IBR_PopupManager::MessageModal(
+                        loc("Error_CreateModuleFailed"), loc("Error_NoPCXModule"),
+                        { FontHeight * 10.0f, FontHeight * 7.0f }, false, true)));
+                else if(IBR_Inst_Project.HasSection({ pPcx->GetFirstINI(), s }))
+                    IBR_PopupManager::SetCurrentPopup(std::move(IBR_PopupManager::MessageModal(
+                    loc("Error_CreateModuleFailed"), loc("Error_UniqueImageModule"),
+                    { FontHeight * 10.0f, FontHeight * 7.0f }, false, true)));
+                else IBR_Inst_Project.AddModule(*pPcx, s);
+            }
             else if (ext == "SHP")
             {
                 Shapes.push_back({ name,0 });
+            }
+            else if (ext == "WAV")
+            {
+                WavFiles.push_back(name);
             }
             else if (ext == "INI")
             {
@@ -1043,6 +1061,34 @@ namespace IBR_ProjectManager
                 IBR_PopupManager::SetCurrentPopup(std::move(IBR_PopupManager::MessageModal(
                     loc("Error_CreateModuleFailed"), UnicodetoUTF8(std::vformat(locw("Error_LoadUnsupportedType"), std::make_wformat_args(N))),
                     { FontHeight * 10.0f, FontHeight * 7.0f }, false, true)));
+            }
+        }
+        // Process WAV files: create one Sound module with all filenames
+        if (!WavFiles.empty())
+        {
+            auto pSound = IBB_ModuleAltDefault::DefaultSound();
+            auto s = GenerateModuleTag();
+            if (!pSound)
+                IBR_PopupManager::SetCurrentPopup(std::move(IBR_PopupManager::MessageModal(
+                    loc("Error_CreateModuleFailed"), loc("Error_NoWAVModule"),
+                    { FontHeight * 10.0f, FontHeight * 7.0f }, false, true)));
+            else if (IBR_Inst_Project.HasSection({ pSound->GetFirstINI(), s }))
+            IBR_PopupManager::SetCurrentPopup(std::move(IBR_PopupManager::MessageModal(
+                loc("Error_CreateModuleFailed"), loc("Error_UniqueImageModule"),
+                { FontHeight * 10.0f, FontHeight * 7.0f }, false, true)));
+            else
+            {
+                std::string soundsList;
+                for (size_t i = 0; i < WavFiles.size(); i++)
+                {
+                    if (i) soundsList += " ";
+                    soundsList += WavFiles[i];
+                }
+                // Set Sounds= in the template
+                for (auto& M : pSound->Modules)
+                    for (auto& tok : M.Lines)
+                        if (tok.Key == "Sounds") { tok.Value = soundsList; break; }
+                IBR_Inst_Project.AddModule(*pSound, s);
             }
         }
         auto ShapeCnt = Shapes.size();
