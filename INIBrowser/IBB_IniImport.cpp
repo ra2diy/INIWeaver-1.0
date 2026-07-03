@@ -828,9 +828,7 @@ std::vector<ModuleClipData> ImportedSectionsToModuleClipData(
         }
         else
         {
-            Clip.Register = "_Unknown";
-            // 确保 _Unknown 类型存在
-            IBB_DefaultRegType::EnsureRegType("_Unknown");
+            Clip.Register = "_AnyType";
         }
 
         // 位置
