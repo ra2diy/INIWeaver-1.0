@@ -1949,14 +1949,7 @@ namespace IBB_ModuleAltDefault
         if (!SpecialModules.Sub.empty() || !SpecialModules.Modules.empty())
         {
             auto pos = ImGui::GetCursorScreenPos();
-            DrawFolderIcon(pos, (float)FontHeight);
-            ImGui::Dummy(ImVec2((float)FontHeight, (float)FontHeight));
-            ImGui::SameLine();
-            if (ImGui::TreeNodeEx(locc("GUI_SystemModules"), ImGuiTreeNodeFlags_OpenOnArrow))
-            {
-                Render(SpecialModules);
-                ImGui::TreePop();
-            }
+            Render(SpecialModules);
         }
         // 用户模块（AllModules）
         Render(AllModules);
