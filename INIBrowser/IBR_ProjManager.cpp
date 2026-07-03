@@ -906,21 +906,9 @@ namespace IBR_ProjectManager
                                             IBR_WorkSpace::MassSelect(IDs);
 
                                             // 记录 Undo（删除刚导入的模块）
-                                            auto ModuleIDs = IDs;
-                                            IBG_UndoStack::_Item it;
-                                            it.Id = "ImportIni";
-                                            it.UndoAction = [ModuleIDs]()
-                                            {
-                                                IBR_Inst_Project.DeleteSection(ModuleIDs);
-                                            };
-                                            it.RedoAction = [ModuleIDs, pModules]()
-                                            {
-                                                auto [ok, ids] = IBR_Inst_Project.AddModule(*pModules, true);
-                                                if (ok) IBR_WorkSpace::MassSelect(ids);
-                                            };
-                                            IBG_Undo.Push(it);
+                                            IBG_Undo.SomethingShouldBeHere();
 
-                                            auto Count = ModuleIDs.size();
+                                            auto Count = IDs.size();
                                             IBR_HintManager::SetHint(
                                                 UnicodetoUTF8(std::vformat(locw("GUI_ImportIni_Success"),
                                                     std::make_wformat_args(Count))).c_str(),
