@@ -246,7 +246,7 @@ void MatchSectionToRegType(ImportedIniFile& File)
                     TargetSec.LinkMatchSource = Src;
                     if(!Visited[TargetSec.Index])
                         BFSQueue.push(TargetSec.Index);
-                    if (EnableLog)
+                    if (EnableLogEx)
                         GlobalLogB.AddLog((u8"[" + TargetSec.SectionName + u8"] -> RegType=[" + Type + u8"] via " + Src).c_str());
                 }
             }
@@ -328,7 +328,7 @@ void MatchSectionToRegType(ImportedIniFile& File)
                     Sec.MatchedRegType = PoolStr(MaxIt->first);
                     Sec.MatchStatus = IniImportMatchStatus::LinkMatched;
                     Sec.LinkMatchSource = "SecType";
-                    if (EnableLog)
+                    if (EnableLogEx)
                         GlobalLogB.AddLog((u8"[" + Sec.SectionName + u8"] -> RegType=[" + Sec.MatchedRegType + u8"] via " + Sec.LinkMatchSource).c_str());
                 }
             }
@@ -343,17 +343,6 @@ void MatchSectionToRegType(ImportedIniFile& File)
                     Visited[Sec1.Index] = 1;
                 }
         }
-    }
-
-    if (EnableLog)
-    {
-        auto Str = File.Sections |
-            std::views::filter([](const auto& S) {return S.MatchStatus == IniImportMatchStatus::Unmatched; }) |
-            std::views::transform([](const auto& S) {return S.SectionName; }) |
-            std::views::join_with(',') |
-            std::ranges::to<std::string>();
-
-        GlobalLogB.AddLog(("Unmatched sections: \n" + Str).c_str());
     }
 
     if (EnableLogEx)
