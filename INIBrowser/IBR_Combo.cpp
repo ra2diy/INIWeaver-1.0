@@ -139,6 +139,8 @@ inline bool Matches(std::string& str, const std::string& Name, const IBB_IniLine
         contains_b_cap_ignore_case(str, pd);
 }
 
+bool Acceptor_CheckSecType(StrPoolID SourceReg, StrPoolID SecType);
+
 void EditStringWithOptions(
     StrPoolID Reg,
     bool Active,
@@ -146,13 +148,15 @@ void EditStringWithOptions(
 {
     static bool LastActive = false;
     static bool LastActive2 = false;
+    static int LastCount = 0;
     if(Active || LastActive || LastActive2)
     {
         LastActive2 = LastActive;
         LastActive = Active;
+        auto Height = (LastCount >= 10 ? 10.0f : (LastCount <= 2 ? 2.0f : LastCount * 1.0f)) + 0.2f;
 
         //Scrollbar cannot work properly here
-        ImGui::BeginChildFrame(ImGui::GetID("##TYPEALT_DICT"), { 0, FontHeight * 10.0f },
+        ImGui::BeginChildFrame(ImGui::GetID("##TYPEALT_DICT"), { 0, FontHeight * Height },
             ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoScrollbar);
 
         int Count = 0;
@@ -166,7 +170,7 @@ void EditStringWithOptions(
                 ImGui::TextDisabled(locc("GUI_TooManyOptions"));
                 break;
             }
-            bool InWrongSection = (Line.SecType != EmptyPoolStr && Reg != Line.SecType);
+            bool InWrongSection = !Acceptor_CheckSecType(Reg, Line.SecType);
             if (InWrongSection)ImGui::PushStyleColor(ImGuiCol_Text, IBR_Color::ErrorTextColor.Value);
             if (ImGui::Selectable((NameStr + " : " + PoolDesc(Line.DescShort)).c_str(), false))
                 str = NameStr;
@@ -176,6 +180,7 @@ void EditStringWithOptions(
             if(ImGui::IsItemHovered())
                 IBR_ToolTip(PoolDesc(Line.DescLong));
         }
+        LastCount = Count;
         ImGui::EndChildFrame();
     }
 }
