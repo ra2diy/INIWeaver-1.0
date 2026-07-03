@@ -115,30 +115,6 @@ void ControlPanel_File()
     IBR_RecentManager::RenderUI();
 }
 
-void ControlPanel_Modules()
-{
-    static int treeIdBump = 0;
-    ImGui::Text(locc("GUI_MenuItem_Modules"));
-    ImGui::SameLine(ImGui::GetWindowContentRegionWidth() - FontHeight * 5.0f);
-    if (ImGui::SmallButton(locc("GUI_FoldAllModules")))
-        treeIdBump++;
-    ImGui::Separator();
-    
-    if (IBB_ModuleAltDefault::IsModuleTreeEmpty())
-    {
-        ImGui::TextDisabled(locc("GUI_NoModuleAvailable"));
-        return;
-    }
-    
-    ImGui::PushID(treeIdBump);
-    ImGui::BeginChild("ModuleTreeScroll",
-        { 0, ImGui::GetWindowHeight() - FontHeight * 5.5F },//4.0 base + 1.0 line + 0.5 padding 
-        false, ImGuiWindowFlags_AlwaysVerticalScrollbar);
-    IBB_ModuleAltDefault::Tree_RenderUISidebar();
-    ImGui::EndChild();
-    ImGui::PopID();
-}
-
 void ControlPanel_View()
 {
     if (!IBR_ProjectManager::IsOpen())
@@ -180,6 +156,31 @@ void ControlPanel_Edit()
     }
     IBR_EditFrame::RenderUI();
 }
+
+void ControlPanel_Modules()
+{
+    static int treeIdBump = 0;
+    ImGui::Text(locc("GUI_MenuItem_Modules"));
+    ImGui::SameLine(ImGui::GetWindowContentRegionWidth() - FontHeight * 5.0f);
+    if (ImGui::SmallButton(locc("GUI_FoldAllModules")))
+        treeIdBump++;
+    ImGui::Separator();
+
+    if (IBB_ModuleAltDefault::IsModuleTreeEmpty())
+    {
+        ImGui::TextDisabled(locc("GUI_NoModuleAvailable"));
+        return;
+    }
+
+    ImGui::PushID(treeIdBump);
+    ImGui::BeginChild("ModuleTreeScroll",
+        { 0, ImGui::GetWindowHeight() - FontHeight * 5.5F },//4.0 base + 1.0 line + 0.5 padding 
+        false, ImGuiWindowFlags_AlwaysVerticalScrollbar);
+    IBB_ModuleAltDefault::Tree_RenderUISidebar();
+    ImGui::EndChild();
+    ImGui::PopID();
+}
+
 
 bool ImGui_TextDisabled_Helper(const char* Text)
 {
