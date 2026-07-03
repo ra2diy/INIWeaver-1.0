@@ -75,7 +75,7 @@ struct IBB_Project
 
 struct IBB_DefaultTypeAlt
 {
-    StrPoolID Name, LinkType, Input;
+    StrPoolID Name, LinkType, Input, SecType;
     DescPoolOffset DescLong, DescShort;
     int LinkLimit{ 1 };
     ImU32 Color{ 0xFF000000 };

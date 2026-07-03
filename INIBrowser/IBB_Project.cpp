@@ -31,7 +31,9 @@ void IBB_DefaultTypeList::EnsureType(const IBB_DefaultTypeAlt& D)
     L.InputName = D.Input;
     L.LinkNode.LinkType = D.LinkType;
     L.LinkNode.LinkLimit = D.LinkLimit;
+    L.SecType = D.SecType;
     IBB_DefaultRegType::EnsureRegType(PoolStr(D.LinkType));
+    IBB_DefaultRegType::EnsureRegType(PoolStr(D.SecType));
 }
 
 bool IBB_DefaultTypeList::LoadFromAlt()
@@ -110,8 +112,9 @@ bool IBB_DefaultTypeAlt::Load(JsonObject FromJson)
     LinkType = NewPoolStr(FromJson.ItemStringOr("LinkType"));
     LinkLimit = FromJson.ItemIntOr("LinkLimit", 1);
     Color = StrToCol(FromJson.ItemStringOr("LineColor", "00000000").c_str());
-    auto InStr = FromJson.ItemStringOr("InputType", "");
+    auto InStr = FromJson.ItemStringOr("InputType");
     Input = InStr.empty() ? SelectDefaultInput(LinkType) : NewPoolStr(InStr);
+    SecType = NewPoolStr(FromJson.ItemStringOr("SecType"));
     return true;
 }
 
@@ -126,6 +129,7 @@ bool IBB_DefaultTypeAlt::Load(const std::vector<std::string>& FromCSV)
     DescLong = NewPoolDesc(IBR_L10n::ProcessEscape(FromCSV[4]));
     Color = StrToCol((FromCSV.size() > 5 && !FromCSV[5].empty()) ? FromCSV[5].c_str() : "00000000");
     Input = (FromCSV.size() > 6 && !FromCSV[6].empty()) ? NewPoolStr(FromCSV[6]) : SelectDefaultInput(LinkType);
+    SecType = (FromCSV.size() > 7 && !FromCSV[7].empty()) ? NewPoolStr(FromCSV[7]) : EmptyPoolStr;
     return true;
 }
 

@@ -44,6 +44,7 @@ struct IBB_IniLine_Default
     StrPoolID InputName;
     const IBG_InputType* Input;
     LinkNodeSetting LinkNode;
+    StrPoolID SecType;
 
     //SubSec关联
     IBB_SubSec_Default* InSubSec;
