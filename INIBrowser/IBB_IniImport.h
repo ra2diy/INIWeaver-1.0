@@ -18,20 +18,11 @@ enum class IniImportMatchStatus
     Unmatched    // 未能匹配
 };
 
-// ---------- 单条键值对 ----------
-struct IniImportKeyValue
-{
-    std::string Key;
-    std::string Value;
-    bool HasDesc{ false };
-    std::string Desc;
-};
-
 // ---------- 解析后的一节 ----------
 struct ImportedIniSection
 {
     std::string SectionName;                        // 原始 section 名（不含括号）
-    std::vector<IniImportKeyValue> KeyValues;       // 键值对列表
+    std::vector<IniToken> KeyValues;       // 键值对列表
     IniImportMatchStatus MatchStatus{ IniImportMatchStatus::Unmatched };
     std::string MatchedRegType;                     // 匹配到的注册表类型名（空表示未匹配）
 

@@ -19,101 +19,26 @@ extern int FontHeight;
 //  Step 1: Parse INI File
 // ============================================================
 
-static std::string Trim(const std::string& Str)
-{
-    auto Start = Str.find_first_not_of(" \t\r\n");
-    if (Start == std::string::npos) return "";
-    auto End = Str.find_last_not_of(" \t\r\n");
-    return Str.substr(Start, End - Start + 1);
-}
-
-static std::vector<std::string> Split(const std::string& Str, char Delim)
-{
-    std::vector<std::string> Parts;
-    size_t Start = 0, End;
-    while ((End = Str.find(Delim, Start)) != std::string::npos)
-    {
-        auto Part = Trim(Str.substr(Start, End - Start));
-        if (!Part.empty()) Parts.push_back(Part);
-        Start = End + 1;
-    }
-    auto Last = Trim(Str.substr(Start));
-    if (!Last.empty()) Parts.push_back(Last);
-    return Parts;
-}
+std::vector<std::string> SplitParam(const std::string& Text);
 
 ImportedIniFile ParseIniFile(const std::wstring& FilePath)
 {
     ImportedIniFile Result;
     Result.FilePath = FilePath;
 
-    // 打开文件
-    std::ifstream Stream(FilePath);
-    if (!Stream.is_open())
+    auto Secs = SplitTokens(GetTokens(GetLines(GetStringFromFile(FilePath.c_str()))));
+
+    for (auto& sec : Secs)
     {
-        if (EnableLog)
-        {
-            GlobalLogB.AddLog_CurTime(false);
-            auto Msg = std::vformat(L"ParseIniFile: Failed to open file : {}",
-                std::make_wformat_args(FilePath));
-            GlobalLogB.AddLog(UnicodetoUTF8(Msg).c_str());
-        }
-        return Result;
+        if (sec.empty() || !sec[0].IsSection) continue;
+        Result.Sections.emplace_back();
+        auto& imp = Result.Sections.back();
+
+        imp.SectionName = sec[0].Key;
+        imp.Inherit = sec[0].Value;
+        imp.KeyValues.assign(sec.begin() + 1, sec.end());
     }
 
-    std::string Line;
-    ImportedIniSection CurrentSection;
-    size_t SectionIdx = 0;
-
-    while (std::getline(Stream, Line))
-    {
-        auto Trimmed = Trim(Line);
-
-        // 跳过空行和注释
-        if (Trimmed.empty() || Trimmed[0] == ';' || Trimmed[0] == '#')
-            continue;
-
-        // 检查是否是新 section：[SectionName] 或 [SectionName]:[Parent]
-        if (Trimmed.front() == '[' && Trimmed.back() == ']')
-        {
-            // 保存上一节
-            if (!CurrentSection.SectionName.empty())
-            {
-                CurrentSection.Index = SectionIdx++;
-                Result.Sections.push_back(std::move(CurrentSection));
-                CurrentSection = ImportedIniSection{};
-            }
-            auto Inner = Trim(Trimmed.substr(1, Trimmed.size() - 2));
-            // 处理继承：SectionName]:[Parent → 解析出父块名
-            auto InheritPos = Inner.find("]:[");
-            if (InheritPos != std::string::npos)
-            {
-                CurrentSection.Inherit = Inner.substr(InheritPos + 3);
-                Inner = Inner.substr(0, InheritPos);
-            }
-            CurrentSection.SectionName = Inner;
-            continue;
-        }
-
-        // 键值对：key=value
-        auto EqPos = Trimmed.find('=');
-        if (EqPos != std::string::npos && !CurrentSection.SectionName.empty())
-        {
-            IniImportKeyValue KV;
-            KV.Key = Trim(Trimmed.substr(0, EqPos));
-            KV.Value = Trim(Trimmed.substr(EqPos + 1));
-            CurrentSection.KeyValues.push_back(std::move(KV));
-        }
-    }
-
-    // 保存最后一节
-    if (!CurrentSection.SectionName.empty())
-    {
-        CurrentSection.Index = SectionIdx++;
-        Result.Sections.push_back(std::move(CurrentSection));
-    }
-
-    // 确保 Index 正确
     for (size_t i = 0; i < Result.Sections.size(); i++)
         Result.Sections[i].Index = i;
 
@@ -316,7 +241,7 @@ void MatchSectionToRegType(ImportedIniFile& File)
                     }
 
                     // 检查此键的值是否匹配某个未匹配的块名（支持逗号分隔的多值）
-                    auto Parts = Split(KV.Value, ',');
+                    auto Parts = SplitParam(KV.Value);
                     for (auto& V : Parts)
                     {
                         auto UnmatchedIt = UnmatchedNames.find(V);
@@ -412,7 +337,7 @@ std::vector<IniImportLinkRelation> DetectLinkRelations(const ImportedIniFile& Fi
                 continue;
 
             // 检查此键的值是否匹配另一个 section 的名字（支持逗号分隔的多值）
-            auto Parts = Split(KV.Value, ',');
+            auto Parts = SplitParam(KV.Value);
             for (auto& V : Parts)
             {
                 auto NameIt = NameToIdx.find(V);
@@ -471,7 +396,7 @@ std::vector<IniImportLinkRelation> DetectLinkRelations(const ImportedIniFile& Fi
             continue;
         for (auto& KV : Src.KeyValues)
         {
-            auto Parts = Split(KV.Value, ',');
+            auto Parts = SplitParam(KV.Value);
             for (auto& V : Parts)
             {
                 auto NameIt = NameToIdx.find(V);
