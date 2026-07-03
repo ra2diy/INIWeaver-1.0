@@ -95,7 +95,7 @@ void ControlPanel_File()
         bool IsDefaultForExtension();
         if (SetFileAssociation())
         {
-            
+
             if (IsDefaultForExtension())
             {
                 IBR_HintManager::SetHint(locc("GUI_AlreadySetFileAssoc"), HintStayTimeMillis);
@@ -108,7 +108,7 @@ void ControlPanel_File()
         }
         else
             IBR_HintManager::SetHint(locc("GUI_SetFileAssocFailure"), HintStayTimeMillis);
-        
+
     }
     ImGui::NewLine();
     if (ImGui::Button(locc("GUI_ImportIni"), { ImGui::GetWindowContentRegionWidth() , FontHeight * 1.5F }))
@@ -116,33 +116,7 @@ void ControlPanel_File()
         IBR_ProjectManager::ImportIniAction();
     }
     ImGui::NewLine();
-    IBR_RecentManager::RenderUI();//
-    /*
-    if (!IsProjectOpen)
-    {
-        if (ImGui::Button(u8"新建"))IBR_ProjectManager::CreateAction();//
-        if (ImGui::Button(u8"打开"))IBR_ProjectManager::OpenAction();//
-        ImGui::NewLine();
-        IBR_RecentManager::RenderUI();//
-    }
-    else
-    {
-        if (ImGui::Button(u8"保存"))IBR_ProjectManager::SaveOptAction();//
-        if (ImGui::Button(u8"另存为"))IBR_ProjectManager::SaveAsAction();//
-        if (IBR_Inst_Project.IBR_SectionMap.empty())ImGui::TextDisabled(u8"导出");
-        else if (ImGui::Button(u8"导出"))IBR_ProjectManager::OutputAction();//
-
-        ImGui::NewLine();
-        if (ImGui::Button(u8"关闭"))IBR_ProjectManager::ProjOpen_CreateAction(); //王德发你猜为什么是CreateAction
-        //IBR_ProjectManager::CloseAction();//
-
-        ImGui::NewLine();
-        //if (ImGui::Button(u8"新建"))IBR_ProjectManager::ProjOpen_CreateAction();//
-        if (ImGui::Button(u8"打开"))IBR_ProjectManager::ProjOpen_OpenAction();//
-        ImGui::NewLine();
-        IBR_RecentManager::RenderUI();//
-    }
-    */
+    IBR_RecentManager::RenderUI();
 }
 
 void ControlPanel_View()
