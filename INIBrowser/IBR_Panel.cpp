@@ -111,7 +111,6 @@ void ControlPanel_File()
             IBR_HintManager::SetHint(locc("GUI_SetFileAssocFailure"), HintStayTimeMillis);
 
     }
-    ImGui::NewLine();
     if (ImGui::Button(locc("GUI_ImportIni"), { ImGui::GetWindowContentRegionWidth() , FontHeight * 1.5F }))
     {
         IBR_ProjectManager::ImportIniAction();
