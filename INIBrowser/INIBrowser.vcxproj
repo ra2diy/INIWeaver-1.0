@@ -198,6 +198,7 @@
     <ClInclude Include="FromEngine\types.h" />
     <ClInclude Include="IBB_CustomBool.h" />
     <ClInclude Include="IBB_FileChecker.h" />
+    <ClInclude Include="IBB_IniImport.h" />
     <ClInclude Include="IBB_Index.h" />
     <ClInclude Include="IBB_Components.h" />
     <ClInclude Include="IBB_Ini.h" />
@@ -225,6 +226,7 @@
     <ClInclude Include="IBR_ListView.h" />
     <ClInclude Include="IBR_Localization.h" />
     <ClInclude Include="IBR_Components.h" />
+    <ClInclude Include="IBR_ImportIni.h" />
     <ClInclude Include="IBR_Misc.h" />
     <ClInclude Include="IBR_TopMost.h" />
     <ClInclude Include="IBSave.h" />
@@ -254,6 +256,7 @@
     <ClCompile Include="IBB_FileChecker.cpp" />
     <ClCompile Include="IBB_Ini.cpp" />
     <ClCompile Include="IBB_Components.cpp" />
+    <ClCompile Include="IBB_IniImport.cpp" />
     <ClCompile Include="IBB_Index.cpp" />
     <ClCompile Include="IBB_IniLine.cpp" />
     <ClCompile Include="IBB_ModuleAlt.cpp" />
@@ -279,6 +282,7 @@
     <ClCompile Include="IBR_Components.cpp" />
     <ClCompile Include="IBR_Debug.cpp" />
     <ClCompile Include="IBR_FullView.cpp" />
+    <ClCompile Include="IBR_ImportIni.cpp" />
     <ClCompile Include="IBR_Panel.cpp" />
     <ClCompile Include="IBR_Project.cpp" />
     <ClCompile Include="IBR_ProjManager.cpp" />
@@ -317,6 +321,7 @@
     <None Include="..\Release\Resources\language.ini" />
     <None Include="..\x64\Release\Resources\config.json" />
     <None Include="..\x64\Release\Resources\language.ini" />
+    <None Include="Resources\Language.ini" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />

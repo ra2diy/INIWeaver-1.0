@@ -213,6 +213,12 @@
     <ClInclude Include="IBB_FileChecker.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="IBB_IniImport.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="IBR_ImportIni.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
     <ClInclude Include="IBG_InputType_Derived.h">
       <Filter>头文件</Filter>
     </ClInclude>
@@ -408,6 +414,12 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="IBB_FileAssoc.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="IBB_IniImport.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="IBR_ImportIni.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

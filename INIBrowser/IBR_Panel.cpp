@@ -96,7 +96,7 @@ void ControlPanel_File()
         bool IsDefaultForExtension();
         if (SetFileAssociation())
         {
-            
+
             if (IsDefaultForExtension())
             {
                 IBR_HintManager::SetHint(locc("GUI_AlreadySetFileAssoc"), HintStayTimeMillis);
@@ -109,7 +109,12 @@ void ControlPanel_File()
         }
         else
             IBR_HintManager::SetHint(locc("GUI_SetFileAssocFailure"), HintStayTimeMillis);
-        
+
+    }
+    ImGui::NewLine();
+    if (ImGui::Button(locc("GUI_ImportIni"), { ImGui::GetWindowContentRegionWidth() , FontHeight * 1.5F }))
+    {
+        IBR_ProjectManager::ImportIniAction();
     }
     ImGui::NewLine();
     IBR_RecentManager::RenderUI();
