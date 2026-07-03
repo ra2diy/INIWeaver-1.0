@@ -258,12 +258,16 @@ void MatchSectionToRegType(ImportedIniFile& File)
         Visited[Sec.Index] = 1;
         BFSQueue.pop();
 
+        std::map<StrPoolID, int> SecTypeCount;
+
         for (auto& Tok : Sec.KeyValues)
         {
             auto& Key = Tok.Key;
             auto pLine = IBF_Inst_DefaultTypeList.List.KeyBelongToLine(Key);
             if (!pLine) continue;
             auto& LinkNode = pLine->LinkNode;
+            if (pLine->SecType != EmptyPoolStr)
+                SecTypeCount[pLine->SecType]++;
             if (LinkNode.LinkType == EmptyPoolStr)
                 continue;
 
@@ -311,6 +315,33 @@ void MatchSectionToRegType(ImportedIniFile& File)
                 break;
             }
             }
+        }
+
+        if (!SecTypeCount.empty())
+        {
+            auto MaxIt = std::max_element(SecTypeCount.begin(), SecTypeCount.end(),
+                [](const auto& a, const auto& b) { return a.second < b.second; });
+            if (MaxIt != SecTypeCount.end())
+            {
+                if (Sec.MatchStatus == IniImportMatchStatus::Unmatched)
+                {
+                    Sec.MatchedRegType = PoolStr(MaxIt->first);
+                    Sec.MatchStatus = IniImportMatchStatus::LinkMatched;
+                    Sec.LinkMatchSource = "SecType";
+                    if (EnableLog)
+                        GlobalLogB.AddLog((u8"[" + Sec.SectionName + u8"] -> RegType=[" + Sec.MatchedRegType + u8"] via " + Sec.LinkMatchSource).c_str());
+                }
+            }
+        }
+
+        if (BFSQueue.empty())
+        {
+            for (auto& Sec1 : File.Sections)
+                if (!Visited[Sec1.Index])
+                {
+                    BFSQueue.push(Sec1.Index);
+                    Visited[Sec1.Index] = 1;
+                }
         }
     }
 
@@ -687,7 +718,7 @@ void CalculateLayout(ImportedIniFile& File, const std::vector<IniImportLinkRelat
             for (auto Idx : Indices)
             {
                 auto& Sec = File.Sections[Idx];
-                float SecHeight = DefaultHeight + KeyHeight * std::max(0, (int)Sec.KeyValues.size() - 3);
+                float SecHeight = DefaultHeight + KeyHeight * std::min(std::max(0, (int)Sec.KeyValues.size() - 3), 30);
                 Sec.EqPos = ImVec2{ CurX, CurY };
                 Sec.EqSize = ImVec2{ DefaultWidth, SecHeight };
                 CurY += SecHeight + RowGap;

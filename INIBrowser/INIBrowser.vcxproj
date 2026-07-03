@@ -321,6 +321,9 @@
     <None Include="..\Release\Resources\language.ini" />
     <None Include="..\x64\Release\Global\RegisterTypes.json" />
     <None Include="..\x64\Release\Global\RegisterTypesSpecial.json" />
+    <None Include="..\x64\Release\Global\TypeAlt2Unit.csv" />
+    <None Include="..\x64\Release\Global\TypeAlt2Weapon.csv" />
+    <None Include="..\x64\Release\Global\TypeAlt8Compound.csv" />
     <None Include="..\x64\Release\Global\TypeAlt9Links.csv" />
     <None Include="..\x64\Release\Resources\config.json" />
     <None Include="..\x64\Release\Resources\language.ini" />
