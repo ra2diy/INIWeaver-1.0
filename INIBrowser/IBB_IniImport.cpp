@@ -4,6 +4,8 @@
 #include "IBB_ModuleAlt.h"
 #include "IBFront.h"
 #include "FromEngine/RFBump.h"
+#include "IBR_Components.h"
+#include "IBG_InputType_Derived.h"
 
 #include <algorithm>
 #include <fstream>
@@ -14,6 +16,10 @@
 #include <unordered_set>
 
 extern int FontHeight;
+namespace IBB_DefaultRegType
+{
+    extern std::unordered_map<std::string, std::string> TypeOfSection;
+}
 
 // ============================================================
 //  Step 1: Parse INI File
@@ -28,16 +34,30 @@ ImportedIniFile ParseIniFile(const std::wstring& FilePath)
 
     auto Secs = SplitTokens(GetTokens(GetLines(GetStringFromFile(FilePath.c_str()))));
 
+    std::unordered_map<std::string, size_t> SectionIndex;
+
     for (auto& sec : Secs)
     {
         if (sec.empty() || !sec[0].IsSection) continue;
-        Result.Sections.emplace_back();
-        Result.Matched.push_back(true);
-        auto& imp = Result.Sections.back();
+        auto& Name = sec[0].Key;
+        if (SectionIndex.contains(Name))
+        {
+            auto& imp = Result.Sections.at(SectionIndex[Name]);
+            if(!imp.Inherit.empty() && sec[0].Value.empty())
+                imp.Inherit += "," + sec[0].Value;
+            imp.KeyValues.insert(imp.KeyValues.end(), sec.begin() + 1, sec.end());
+        }
+        else
+        {
+            Result.Sections.emplace_back();
+            Result.Matched.push_back(true);
+            SectionIndex[Name] = Result.Sections.size() - 1;
+            auto& imp = Result.Sections.back();
 
-        imp.SectionName = sec[0].Key;
-        imp.Inherit = sec[0].Value;
-        imp.KeyValues.assign(sec.begin() + 1, sec.end());
+            imp.SectionName = Name;
+            imp.Inherit = sec[0].Value;
+            imp.KeyValues.assign(sec.begin() + 1, sec.end());
+        }
     }
 
     for (size_t i = 0; i < Result.Sections.size(); i++)
@@ -80,12 +100,11 @@ void MatchSectionToRegType(ImportedIniFile& File)
         auto& Sec = File.Sections[i];
         auto It = RegTypes.find(Sec.SectionName);
 
-        // 也尝试匹配 Reg.Name 字段
         if (It == RegTypes.end())
         {
             for (auto& [RN, R] : RegTypes)
             {
-                if (R.Name == Sec.SectionName || R.ExportName == Sec.SectionName)
+                if ((R.ExportName.empty() ? R.Name : R.ExportName) == Sec.SectionName)
                 {
                     It = RegTypes.find(RN);
                     break;
@@ -176,6 +195,18 @@ void MatchSectionToRegType(ImportedIniFile& File)
 
         if (!Found)
         {
+            if (IBB_DefaultRegType::TypeOfSection.contains(Sec.SectionName))
+            {
+                Sec.MatchStatus = IniImportMatchStatus::Matched;
+                Sec.MatchedRegType = IBB_DefaultRegType::TypeOfSection[Sec.SectionName];
+                Found = true;
+                if (EnableLogEx)
+                    GlobalLogB.AddLog((u8"[ImportINI] TypeOfSection match: [" + Sec.SectionName + u8"] -> RegType=[" + Sec.MatchedRegType + u8"]").c_str());
+            }
+        }
+
+        if (!Found)
+        {
             Sec.MatchStatus = IniImportMatchStatus::Unmatched;
             Sec.MatchedRegType.clear();
             if (EnableLogEx)
@@ -183,8 +214,109 @@ void MatchSectionToRegType(ImportedIniFile& File)
         }
     }
 
+    // 第4步：基于画布链接规则的自动匹配，基于BFS
+    // 源块无论是否已匹配，只要键是链接键就参与匹配
+    std::queue<size_t> BFSQueue;
+    std::vector<size_t> Visited(File.Sections.size(), 0);
+    std::unordered_map<std::string, ImportedIniSection*> UnmatchedNameToSection;
+    for (auto& Sec : File.Sections)
+    {
+        if (Sec.IsRegistryList)continue;
+        if (Sec.MatchStatus == IniImportMatchStatus::Matched)
+        {
+            BFSQueue.push(Sec.Index);
+            Visited[Sec.Index] = 1;
+        }
+        else if (Sec.MatchStatus == IniImportMatchStatus::Unmatched)
+        {
+            UnmatchedNameToSection[Sec.SectionName] = &Sec;
+        }
+    }
+
+    auto ColorSection = [&](const std::string& val, const std::string& Type, const std::string& Src)
+        {
+            for (auto& V : SplitParam(val))
+            {
+                if (!UnmatchedNameToSection.contains(V))continue;
+                auto& TargetSec = *UnmatchedNameToSection[V];
+                if (TargetSec.MatchStatus == IniImportMatchStatus::Unmatched)
+                {
+                    TargetSec.MatchStatus = IniImportMatchStatus::LinkMatched;
+                    TargetSec.MatchedRegType = Type;
+                    TargetSec.LinkMatchSource = Src;
+                    if(!Visited[TargetSec.Index])
+                        BFSQueue.push(TargetSec.Index);
+                    if (EnableLog)
+                        GlobalLogB.AddLog((u8"[" + TargetSec.SectionName + u8"] -> RegType=[" + Type + u8"] via " + Src).c_str());
+                }
+            }
+        };
+
+    while (!BFSQueue.empty())
+    {
+        auto& Sec = File.Sections[BFSQueue.front()];
+        Visited[Sec.Index] = 1;
+        BFSQueue.pop();
+
+        for (auto& Tok : Sec.KeyValues)
+        {
+            auto& Key = Tok.Key;
+            auto pLine = IBF_Inst_DefaultTypeList.List.KeyBelongToLine(Key);
+            if (!pLine) continue;
+            auto& LinkNode = pLine->LinkNode;
+            if (LinkNode.LinkType == EmptyPoolStr)
+                continue;
+
+            std::string LinkTypeStr = PoolStr(LinkNode.LinkType);
+            if (LinkTypeStr == "_AnyType")
+                continue;
+            if (LinkTypeStr == "_MyType")
+            {
+                if (Sec.MatchStatus == IniImportMatchStatus::Unmatched)
+                    continue;
+                LinkTypeStr = Sec.MatchedRegType;
+            }
+
+            auto FormType = pLine->GetInputType().Type;
+            switch (FormType)
+            {
+            case IBG_InputType::Bool:
+                break;
+            case IBG_InputType::Link:
+                ColorSection(Tok.Value, LinkTypeStr, Sec.SectionName + "." + Key);
+                break;
+            case IBG_InputType::IIF:
+            {
+                auto pIIF = pLine->GetInputType().Form->Duplicate();
+                pIIF->ParseFromString(Tok.Value);
+                for (auto& Component : *pIIF->InputComponents)
+                {
+                    if (auto textComp = std::dynamic_pointer_cast<IIC_InputText>(Component))
+                    {
+                        auto ValueID = textComp->GetCurrentTargetValueID();
+                        auto& ValueStr = pIIF->GetValue(ValueID).Value;
+                        if(textComp->UseCustomSetting)
+                            ColorSection(ValueStr, PoolStr(textComp->NodeSetting.LinkType), Sec.SectionName + "." + Key);
+                        else
+                            ColorSection(ValueStr, LinkTypeStr, Sec.SectionName + "." + Key);
+                    }
+                }
+                break;
+            }
+            default:
+            {
+                auto Type = static_cast<int>(FormType);
+                auto wss = UnicodetoUTF8(std::vformat(locw("Error_UnknownInputTypeSubclass"), std::make_wformat_args(Type)));
+                IBR_PopupManager::AddLoadConfigErrorPopup(std::move(wss), "");
+                break;
+            }
+            }
+        }
+    }
+
     // 第4步：基于画布链接规则的自动匹配（迭代多轮，直到不再新增匹配）
     // 源块无论是否已匹配，只要键是链接键就参与匹配
+#if 0
     {
         int Step4Iter = 0;
         bool NewMatch = true;
@@ -263,6 +395,18 @@ void MatchSectionToRegType(ImportedIniFile& File)
                 }
             }
         }
+    }
+#endif
+
+    if (EnableLog)
+    {
+        auto Str = File.Sections |
+            std::views::filter([](const auto& S) {return S.MatchStatus == IniImportMatchStatus::Unmatched; }) |
+            std::views::transform([](const auto& S) {return S.SectionName; }) |
+            std::views::join_with(',') |
+            std::ranges::to<std::string>();
+
+        GlobalLogB.AddLog(("Unmatched sections: \n" + Str).c_str());
     }
 
     if (EnableLogEx)

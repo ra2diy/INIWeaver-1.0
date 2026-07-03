@@ -84,6 +84,7 @@ namespace IBB_DefaultRegType
     ImColor DefaultNodeColor;
     std::unordered_set<StrPoolID> RingCheckKeys;
     std::unordered_map<StrPoolID, IBB_SubSec_Default::_Type> InSubSecKeys;
+    std::unordered_map<std::string, std::string> TypeOfSection;
 
     std::unordered_map<_TEXT_UTF8 std::string, IBG_InputType> InputTypes;
 
@@ -416,6 +417,21 @@ R"({
                     else if (V == u8"Import")T = IBB_SubSec_Default::Import;
                     InSubSecKeys[NewPoolStr(K)] = T;
                 }
+        }
+
+        S = Obj.GetObjectItem(u8"TypeOfSection");
+        if (S)
+        {
+            TypeOfSection = S.GetMapString();
+        }
+
+        S = Obj.GetObjectItem(u8"SkipTypeMatchingSections");
+        if (S)
+        {
+            for (auto& s : S.GetArrayString())
+            {
+                TypeOfSection[s] = AnyTypeName;
+            }
         }
 
         return true;

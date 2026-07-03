@@ -319,6 +319,8 @@
     <None Include="..\Release\Global\TypeAltSpecial.csv" />
     <None Include="..\Release\Resources\config.json" />
     <None Include="..\Release\Resources\language.ini" />
+    <None Include="..\x64\Release\Global\RegisterTypes.json" />
+    <None Include="..\x64\Release\Global\RegisterTypesSpecial.json" />
     <None Include="..\x64\Release\Resources\config.json" />
     <None Include="..\x64\Release\Resources\language.ini" />
   </ItemGroup>
