@@ -153,10 +153,10 @@ void EditStringWithOptions(
     {
         LastActive2 = LastActive;
         LastActive = Active;
-        auto Height = (LastCount >= 10 ? 10.0f : (LastCount <= 2 ? 2.0f : LastCount * 1.0f)) + 0.2f;
+        auto Height = (LastCount >= 9 ? 9.0f : (LastCount <= 2 ? 2.0f : LastCount * 1.0f));
 
         //Scrollbar cannot work properly here
-        ImGui::BeginChildFrame(ImGui::GetID("##TYPEALT_DICT"), { 0, FontHeight * Height },
+        ImGui::BeginChildFrame(ImGui::GetID("##TYPEALT_DICT"), { 0, ImGui::GetTextLineHeightWithSpacing() * Height },
             ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoScrollbar);
 
         int Count = 0;

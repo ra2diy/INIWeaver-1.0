@@ -31,6 +31,7 @@ bool ImGui_TextDisabled_Helper(const char* Text);
 bool SmallButton_Disabled_Helper(bool cond, const char* Text);
 bool InputTextStdString(const char* label, std::string& str,
     ImGuiInputTextFlags flags);
+bool Acceptor_CheckSecType(StrPoolID SourceReg, StrPoolID SecType);
 
 int HintStayTimeMillis = 3000;
 
@@ -286,9 +287,7 @@ void IBR_IniLine::RenderUI(
 
     ImGui::PushID(Back.GetComponentID());
 
-    bool InWrongSection = false;
-    if (Back.Default->SecType != EmptyPoolStr)
-        InWrongSection = (Back.Default->SecType != LinkNodeContext::CurSub->Root->Register);
+    bool InWrongSection = !Acceptor_CheckSecType(LinkNodeContext::CurSub->Root->Register, Back.Default->SecType);
     if (InWrongSection)ImGui::PushStyleColor(ImGuiCol_Text, IBR_Color::ErrorTextColor.Value);
     ImGui::TextEx(Line);
     if (InWrongSection)ImGui::PopStyleColor();

@@ -435,6 +435,16 @@ bool IBR_SectionData::RenderUI_Line(const std::string& OnShow, StrPoolID Name)
     return true;
 }
 
+bool Acceptor_CheckSecType(StrPoolID SourceReg, StrPoolID SecType)
+{
+    bool Check = true;
+    if(SourceReg != EmptyPoolStr && SecType != EmptyPoolStr)
+    {
+        Check = IBB_DefaultRegType::MatchType(SecType, SourceReg);
+    }
+    return Check;
+}
+
 bool Acceptor_CheckLinkType(StrPoolID SourceReg, StrPoolID TargetReg, StrPoolID LinkType)
 {
     bool Check = true;
