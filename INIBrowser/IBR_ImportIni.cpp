@@ -194,7 +194,7 @@ namespace IBR_ImportPreview
                                         if (KV.Value.empty()) continue;
                                         ImGui::TextColored(ImVec4{ 0.6F, 0.8F, 1.0F, 1.0F }, "  %s", KV.Key.c_str());
                                         ImGui::SameLine();
-                                        ImGui::Text("= %s", KV.Value.c_str());
+                                        ImGui::TextWrapped("= %s", KV.Value.c_str());
                                     }
                                     ImGui::TreePop();
                                 }
@@ -275,7 +275,7 @@ namespace IBR_ImportPreview
                                         if (KV.Value.empty()) continue;
                                         ImGui::TextColored(ImVec4{ 0.6F, 0.8F, 1.0F, 1.0F }, "  %s", KV.Key.c_str());
                                         ImGui::SameLine();
-                                        ImGui::Text("= %s", KV.Value.c_str());
+                                        ImGui::TextWrapped("= %s", KV.Value.c_str());
                                     }
                                     ImGui::TreePop();
                                 }
