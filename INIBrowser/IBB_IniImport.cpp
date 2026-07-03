@@ -256,7 +256,7 @@ void MatchSectionToRegType(ImportedIniFile& File)
                             TargetSec.LinkMatchSource = SrcSec.SectionName + "." + KV.Key;
                             NewMatch = true;
 
-                            if (EnableLog)
+                            if (EnableLogEx)
                                 GlobalLogB.AddLog((u8"[ImportINI] Link match: [" + TargetSec.SectionName + u8"] -> RegType=[" + TargetRegType + u8"] (via " + TargetSec.LinkMatchSource + u8")").c_str());
                         }
                     }
@@ -265,7 +265,7 @@ void MatchSectionToRegType(ImportedIniFile& File)
         }
     }
 
-    if (EnableLog)
+    if (EnableLogEx)
     {
         int Matched = 0, LinkMatched = 0, Unmatched = 0;
         for (auto& S : File.Sections)
@@ -417,17 +417,13 @@ std::vector<IniImportLinkRelation> DetectLinkRelations(const ImportedIniFile& Fi
     }
 
     if (EnableLogEx)
+    {
         GlobalLogB.AddLog((u8"[ImportINI] Round3 done: " + std::to_string(Round3Links) + u8" links").c_str());
-
-    if (EnableLogEx)
         GlobalLogB.AddLog_CurTime(false);
-
-    if (EnableLog)
         GlobalLogB.AddLog((u8"[ImportINI] DetectLinkRelations: found " + std::to_string(Result.size()) + u8" links").c_str());
-
-    for (auto& L : Result)
-        if (EnableLog)
+        for (auto& L : Result)
             GlobalLogB.AddLog((u8"  Link: Section[" + std::to_string(L.FromSectionIdx) + u8"]." + L.FromKey + u8" -> Section[" + std::to_string(L.ToSectionIdx) + u8"]." + L.ToKey).c_str());
+    }
 
     return Result;
 }
@@ -698,7 +694,17 @@ void CalculateLayout(ImportedIniFile& File, const std::vector<IniImportLinkRelat
             CurrentY = CurY + RowGap;
     }
 
-    if (EnableLog)
+    //平衡整体坐标 (0,0) ~ (xm, ym) -> (-xm/2, -ym/2) ~ (xm/2, ym/2)
+    auto hxm = std::ranges::max(File.Sections, [](const auto& a, const auto& b) {return a.EqPos.x < b.EqPos.x; }).EqPos.x / 2.0F;
+    auto hym = std::ranges::max(File.Sections, [](const auto& a, const auto& b) {return a.EqPos.y < b.EqPos.y; }).EqPos.y / 2.0F;
+    for (auto& Sec : File.Sections)
+    {
+        Sec.EqPos.x -= hxm;
+        Sec.EqPos.y -= hym;
+    }
+
+
+    if (EnableLogEx)
     {
         GlobalLogB.AddLog_CurTime(false);
         GlobalLogB.AddLog(u8"[ImportINI] CalculateLayout done:");
@@ -789,7 +795,7 @@ std::vector<ModuleClipData> ImportedSectionsToModuleClipData(
         Result.push_back(std::move(Clip));
     }
 
-    if (EnableLog)
+    if (EnableLogEx)
     {
         GlobalLogB.AddLog_CurTime(false);
         GlobalLogB.AddLog((u8"[ImportINI] ImportedSectionsToModuleClipData: created " + std::to_string(Result.size()) + u8" ModuleClipData entries").c_str());
