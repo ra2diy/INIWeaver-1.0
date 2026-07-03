@@ -835,6 +835,8 @@ namespace IBR_ProjectManager
             return;
         }
 
+        SetWaitingPopup();
+
         // 构建文件过滤器: "INI Files (*.ini)\0*.ini\0All Files (*.*)\0*.*\0\0"
         std::wstring IniFilter;
         {
@@ -852,7 +854,11 @@ namespace IBR_ProjectManager
         struct _ImportFileDlg {
             static void _IN_SAVE_THREAD Proc(const std::optional<std::wstring>& Path)
             {
-                if (!Path) return; // 用户取消
+                if (!Path)
+                {
+                    IBR_PopupManager::ClearPopupDelayed();
+                    return; // 用户取消
+                }
 
                 // 2. 解析 INI 文件
                 ImportedIniFile File = ParseIniFile(*Path);
@@ -860,6 +866,7 @@ namespace IBR_ProjectManager
                 if (File.Sections.empty())
                 {
                     IBR_HintManager::SetHint(loc("GUI_ImportIni_Empty"), HintStayTimeMillis);
+                    IBR_PopupManager::ClearPopupDelayed();
                     return;
                 }
 
