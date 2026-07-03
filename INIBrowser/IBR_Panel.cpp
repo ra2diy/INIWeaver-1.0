@@ -131,7 +131,9 @@ void ControlPanel_Modules()
     }
     
     ImGui::PushID(treeIdBump);
-    ImGui::BeginChild("ModuleTreeScroll", { 0, 0 }, false, ImGuiWindowFlags_AlwaysVerticalScrollbar);
+    ImGui::BeginChild("ModuleTreeScroll",
+        { 0, ImGui::GetWindowHeight() - FontHeight * 5.5F },//4.0 base + 1.0 line + 0.5 padding 
+        false, ImGuiWindowFlags_AlwaysVerticalScrollbar);
     IBB_ModuleAltDefault::Tree_RenderUISidebar();
     ImGui::EndChild();
     ImGui::PopID();
