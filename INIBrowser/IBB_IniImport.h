@@ -51,6 +51,7 @@ struct ImportedIniFile
 {
     std::wstring FilePath;                          // 原始文件路径
     std::vector<ImportedIniSection> Sections;       // 所有 section
+    std::vector<uint8_t> Matched;
 };
 
 // ---------- 导入选项（预留扩展点） ----------

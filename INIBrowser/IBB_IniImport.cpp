@@ -32,6 +32,7 @@ ImportedIniFile ParseIniFile(const std::wstring& FilePath)
     {
         if (sec.empty() || !sec[0].IsSection) continue;
         Result.Sections.emplace_back();
+        Result.Matched.push_back(true);
         auto& imp = Result.Sections.back();
 
         imp.SectionName = sec[0].Key;
@@ -42,7 +43,7 @@ ImportedIniFile ParseIniFile(const std::wstring& FilePath)
     for (size_t i = 0; i < Result.Sections.size(); i++)
         Result.Sections[i].Index = i;
 
-    if (EnableLog)
+    if (EnableLogEx)
     {
         GlobalLogB.AddLog_CurTime(false);
         GlobalLogB.AddLog((u8"[ImportINI] ParseIniFile: found " + std::to_string(Result.Sections.size()) + u8" sections").c_str());

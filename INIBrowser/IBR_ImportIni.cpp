@@ -19,6 +19,7 @@ namespace IBR_ImportPreview
     static ImportedIniFile g_File;
     static std::function<void(const IBR_ImportResult&)> g_Callback;
     static bool g_OpenPending = false;
+    static std::string g_FilterText;
 
     // 每个未匹配 section 的 RegType 选择缓存
     static std::unordered_map<size_t, std::string> g_SelectionCache;
@@ -32,6 +33,7 @@ namespace IBR_ImportPreview
         g_Callback = Callback;
         g_OpenPending = true;
         g_SelectionCache.clear();
+        g_FilterText.clear();
 
         // 收集所有可用注册表类型
         g_AvailableRegTypes.clear();
@@ -41,27 +43,28 @@ namespace IBR_ImportPreview
         std::sort(g_AvailableRegTypes.begin(), g_AvailableRegTypes.end());
     }
 
+    void RegenMatch(const std::string& Search)
+    {
+        // 判断 a 是否在 b 中出现（不区分大小写）
+        bool contains_ignore_case(const std::string& a, const std::string& b);
+
+        for (auto&& [Sec, Match] : std::views::zip(g_File.Sections, g_File.Matched))
+        {
+            if(contains_ignore_case(Search, Sec.SectionName))
+                Match = true;
+            else
+                Match = false;
+        }
+    }
+
     void RenderUI()
     {
-        // 首次打开时触发 OpenPopup（仅一次）
-        // 注意：BeginPopupModal 必须每帧调用，不能用 g_OpenPending 提前 return
-        if (g_OpenPending)
-        {
-            g_OpenPending = false;
-            ImGui::OpenPopup(loc("GUI_ImportIni_Title").c_str());
-        }
-
-        // 没有待处理的导入时直接跳过
-        if (g_File.Sections.empty() && !g_Callback)
-            return;
-
-        ImGui::SetNextWindowSize(ImVec2{ FontHeight * 30.0F, FontHeight * 22.0F }, ImGuiCond_FirstUseEver);
-        if (ImGui::BeginPopupModal(loc("GUI_ImportIni_Title").c_str(), nullptr,
-            ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize))
+        auto Action = []()
         {
             ImGui::BeginChild("##ImportContent", ImVec2(0, -(FontHeight * 4.5F)));
             size_t MatchedCount = 0, LinkMatchedCount = 0, UnmatchedCount = 0;
-            for (auto& Sec : g_File.Sections)
+            size_t MatchedSearch = 0, LinkMatchedSearch = 0, UnmatchedSearch = 0;
+            for (auto&& [Sec, Match] : std::views::zip(g_File.Sections, g_File.Matched))
             {
                 if (Sec.MatchStatus == IniImportMatchStatus::Matched)
                     MatchedCount++;
@@ -69,6 +72,16 @@ namespace IBR_ImportPreview
                     LinkMatchedCount++;
                 else
                     UnmatchedCount++;
+
+                if (Match)
+                {
+                    if (Sec.MatchStatus == IniImportMatchStatus::Matched)
+                        MatchedSearch++;
+                    else if (Sec.MatchStatus == IniImportMatchStatus::LinkMatched)
+                        LinkMatchedSearch++;
+                    else
+                        UnmatchedSearch++;
+                }
             }
 
             // ---- 摘要 + 全选 ----
@@ -83,6 +96,14 @@ namespace IBR_ImportPreview
                     if (!Sec.IsRegistryList)
                         Sec.Selected = AllSelected;
             }
+
+            ImGui::SameLine();
+            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + FontHeight * 2.0F);
+            if (InputTextStdString(locc("GUI_SearchSection"), g_FilterText, ImGuiInputTextFlags_SearchIconBg))
+            {
+                RegenMatch(g_FilterText);
+            }
+
             ImGui::Separator();
             ImGui::NewLine();
 
@@ -124,13 +145,18 @@ namespace IBR_ImportPreview
                 ImGui::SameLine();
                 ImGui::SetNextItemOpen(true, ImGuiCond_FirstUseEver);
                 ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{ 0.2F, 0.8F, 0.2F, 1.0F });
-                if (ImGui::TreeNode("##Sec_Matched", "%s  (%d)", locc("GUI_ImportIni_Matched"), (int)MatchedCount))
+                if (
+                    g_FilterText.empty() ?
+                    ImGui::TreeNode("##Sec_Matched", "%s  (%d)", locc("GUI_ImportIni_Matched"), (int)MatchedCount) :
+                    ImGui::TreeNode("##Sec_Matched", "%s  (%d/%d)", locc("GUI_ImportIni_Matched"), (int)MatchedSearch, (int)MatchedCount)
+                    )
                 {
                     ImGui::PopStyleColor();
                     // 按注册表类型分组
                     std::unordered_map<std::string, std::vector<ImportedIniSection*>> MatchedGroups;
-                    for (auto& Sec : g_File.Sections)
+                    for (auto&& [Sec, Match] : std::views::zip(g_File.Sections, g_File.Matched))
                     {
+                        if (!Match)continue;
                         if (Sec.MatchStatus == IniImportMatchStatus::Matched)
                             MatchedGroups[Sec.MatchedRegType].push_back(&Sec);
                     }
@@ -199,13 +225,17 @@ namespace IBR_ImportPreview
                 ImGui::SameLine();
                 ImGui::SetNextItemOpen(true, ImGuiCond_FirstUseEver);
                 ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{ 0.0F, 0.6F, 0.9F, 1.0F });
-                if (ImGui::TreeNode("##Sec_LinkMatched", "%s  (%d)", locc("GUI_ImportIni_LinkMatched"), (int)LinkMatchedCount))
+                if (g_FilterText.empty() ?
+                    ImGui::TreeNode("##Sec_LinkMatched", "%s  (%d)", locc("GUI_ImportIni_LinkMatched"), (int)LinkMatchedCount) :
+                    ImGui::TreeNode("##Sec_LinkMatched", "%s  (%d/%d)", locc("GUI_ImportIni_LinkMatched"), (int)LinkMatchedSearch, (int)LinkMatchedCount)
+                    )
                 {
                     ImGui::PopStyleColor();
                     // 按注册表类型分组
                     std::unordered_map<std::string, std::vector<ImportedIniSection*>> LinkMatchedGroups;
-                    for (auto& Sec : g_File.Sections)
+                    for (auto&& [Sec, Match] : std::views::zip(g_File.Sections, g_File.Matched))
                     {
+                        if(!Match)continue;
                         if (Sec.MatchStatus == IniImportMatchStatus::LinkMatched)
                             LinkMatchedGroups[Sec.MatchedRegType].push_back(&Sec);
                     }
@@ -278,11 +308,15 @@ namespace IBR_ImportPreview
 
                 ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{ 0.8F, 0.2F, 0.0F, 1.0F });
                 ImGui::SetNextItemOpen(true, ImGuiCond_FirstUseEver);
-                if (ImGui::TreeNode("##Sec_Unmatched", "%s  (%d)", locc("GUI_ImportIni_Unmatched"), (int)UnmatchedCount))
+                if (g_FilterText.empty() ?
+                    ImGui::TreeNode("##Sec_Unmatched", "%s  (%d)", locc("GUI_ImportIni_Unmatched"), (int)UnmatchedCount) :
+                    ImGui::TreeNode("##Sec_Unmatched", "%s  (%d/%d)", locc("GUI_ImportIni_Unmatched"), (int)UnmatchedSearch, (int)UnmatchedCount)
+                )
                 {
                     ImGui::PopStyleColor();
-                    for (auto& Sec : g_File.Sections)
+                    for (auto&& [Sec, Match] : std::views::zip(g_File.Sections, g_File.Matched))
                     {
+                        if (!Match)continue;
                         if (Sec.MatchStatus != IniImportMatchStatus::Unmatched)
                             continue;
 
@@ -325,7 +359,7 @@ namespace IBR_ImportPreview
                                 if (!IBF_Inst_DefaultTypeList.List.KeyBelongToLine(KV.Key)) continue;
                                 ImGui::TextColored(ImVec4{ 0.6F, 0.8F, 1.0F, 1.0F }, "  %s", KV.Key.c_str());
                                 ImGui::SameLine();
-                                ImGui::Text("= %s", KV.Value.c_str());
+                                ImGui::TextWrapped("= %s", KV.Value.c_str());
                             }
                             ImGui::TreePop();
                         }
@@ -361,9 +395,9 @@ namespace IBR_ImportPreview
                         }
                         else
                         {
-                            // 用户未选择则设为 _Unknown
-                            SetSectionRegType(Sec, "_Unknown");
-                            IBB_DefaultRegType::EnsureRegType("_Unknown");
+                            // 用户未选择则设为 _AnyType
+                            SetSectionRegType(Sec, "_AnyType");
+                            IBB_DefaultRegType::EnsureRegType("_AnyType");
                         }
                     }
                 }
@@ -376,8 +410,9 @@ namespace IBR_ImportPreview
                 if (g_Callback)
                     g_Callback(Result);
 
-                ImGui::CloseCurrentPopup();
                 g_Callback = nullptr;
+                IBR_PopupManager::ClearCurrentPopup();
+                return;
             }
 
             ImGui::SameLine();
@@ -391,11 +426,28 @@ namespace IBR_ImportPreview
                 if (g_Callback)
                     g_Callback(Result);
 
-                ImGui::CloseCurrentPopup();
                 g_Callback = nullptr;
+                IBR_PopupManager::ClearCurrentPopup();
+                return;
             }
+        };
 
-            ImGui::EndPopup();
+        // 首次打开时触发 OpenPopup（仅一次）
+        // 注意：BeginPopupModal 必须每帧调用，不能用 g_OpenPending 提前 return
+        if (g_OpenPending)
+        {
+            g_OpenPending = false;
+            //ImGui::OpenPopup(loc("GUI_ImportIni_Title").c_str());
+            IBR_PopupManager::SetCurrentPopup(std::move(IBR_PopupManager::Popup{}
+                .CreateModal(loc("GUI_ImportIni_Title"), false)
+                .SetSize(ImVec2{ FontHeight * 30.0F, FontHeight * 22.0F })
+                .SetFlag(ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize)
+                .PushMsgBack(Action)
+            ));
         }
+
+        // 没有待处理的导入时直接跳过
+        if (g_File.Sections.empty() && !g_Callback)
+            return;
     }
 }
