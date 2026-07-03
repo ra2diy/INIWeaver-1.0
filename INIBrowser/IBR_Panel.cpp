@@ -255,7 +255,7 @@ void ControlPanel_About()
     ImGui::Text(u8"GLFW/Dear ImGui/CJSON/FmtLib");
     ImGui::Separator();
     ImGui::TextWrapped((loc("GUI_About5")).c_str());
-    ImGui::TextWrapped(u8"      钢铁之锤");
+    ImGui::TextWrapped(u8"      钢铁之锤/Kenosis/白羽鸽");
     ImGui::TextWrapped((loc("GUI_About6")).c_str());
     ImGui::TextWrapped(u8"      Kenosis");
     ImGui::TextWrapped((loc("GUI_About8")).c_str());
