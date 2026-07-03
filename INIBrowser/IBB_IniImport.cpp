@@ -62,7 +62,7 @@ ImportedIniFile ParseIniFile(const std::wstring& FilePath)
 
 void MatchSectionToRegType(ImportedIniFile& File)
 {
-    if (EnableLog)
+    if (EnableLogEx)
     {
         GlobalLogB.AddLog_CurTime(false);
         GlobalLogB.AddLog(u8"[ImportINI] MatchSectionToRegType: start");
@@ -105,7 +105,7 @@ void MatchSectionToRegType(ImportedIniFile& File)
             }
             RegToInstanceNames[It->first] = std::move(Instances);
 
-            if (EnableLog)
+            if (EnableLogEx)
                 GlobalLogB.AddLog((u8"[ImportINI] Registry list: '" + Sec.SectionName + u8"' -> " + It->first + u8" (" + std::to_string(Instances.size()) + u8" instances)").c_str());
 
             // 标记注册表列表块，后续跳过导入
@@ -135,7 +135,7 @@ void MatchSectionToRegType(ImportedIniFile& File)
                     Sec.MatchStatus = IniImportMatchStatus::Matched;
                     Sec.MatchedRegType = RegName;
                     Found = true;
-                    if (EnableLog)
+                    if (EnableLogEx)
                         GlobalLogB.AddLog((u8"[ImportINI] Instance match: [" + Sec.SectionName + u8"] -> RegType=[" + RegName + u8"]").c_str());
                     break;
                 }
@@ -151,7 +151,7 @@ void MatchSectionToRegType(ImportedIniFile& File)
             {
                 Sec.MatchStatus = IniImportMatchStatus::Matched;
                 Sec.MatchedRegType = It->first;
-                if (EnableLog)
+                if (EnableLogEx)
                     GlobalLogB.AddLog((u8"[ImportINI] Direct match: [" + Sec.SectionName + u8"] -> RegType=[" + It->first + u8"]").c_str());
                 Found = true;
             }
@@ -167,7 +167,7 @@ void MatchSectionToRegType(ImportedIniFile& File)
                     Sec.MatchStatus = IniImportMatchStatus::Matched;
                     Sec.MatchedRegType = RN;
                     Found = true;
-                    if (EnableLog)
+                    if (EnableLogEx)
                         GlobalLogB.AddLog((u8"[ImportINI] Name match: [" + Sec.SectionName + u8"] -> RegType=[" + RN + u8"]").c_str());
                     break;
                 }
@@ -178,7 +178,7 @@ void MatchSectionToRegType(ImportedIniFile& File)
         {
             Sec.MatchStatus = IniImportMatchStatus::Unmatched;
             Sec.MatchedRegType.clear();
-            if (EnableLog)
+            if (EnableLogEx)
                 GlobalLogB.AddLog((u8"[ImportINI] Unmatched: [" + Sec.SectionName + u8"]").c_str());
         }
     }
