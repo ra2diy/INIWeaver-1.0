@@ -1561,7 +1561,6 @@ bool IBB_ClipBoardData::SetStream(const std::vector<BYTE>& Vec, int ClipFormatVe
 {
     if (Vec.empty())
     {
-        ProjectRID = 0;
         Modules.clear();
         return true;
     }
