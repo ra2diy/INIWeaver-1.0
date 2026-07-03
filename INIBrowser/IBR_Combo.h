@@ -27,6 +27,7 @@ void IBR_ToolTip(const std::string& Str);
 void IBR_ToolTip(const std::wstring& Str);
 
 void EditStringWithOptions(
+    StrPoolID Reg,
     bool Active,
     std::string& str
 );

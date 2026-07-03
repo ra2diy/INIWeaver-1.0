@@ -140,6 +140,7 @@ inline bool Matches(std::string& str, const std::string& Name, const IBB_IniLine
 }
 
 void EditStringWithOptions(
+    StrPoolID Reg,
     bool Active,
     std::string& str)
 {
@@ -165,9 +166,11 @@ void EditStringWithOptions(
                 ImGui::TextDisabled(locc("GUI_TooManyOptions"));
                 break;
             }
-
+            bool InWrongSection = (Line.SecType != EmptyPoolStr && Reg != Line.SecType);
+            if (InWrongSection)ImGui::PushStyleColor(ImGuiCol_Text, IBR_Color::ErrorTextColor.Value);
             if (ImGui::Selectable((NameStr + " : " + PoolDesc(Line.DescShort)).c_str(), false))
                 str = NameStr;
+            if (InWrongSection)ImGui::PopStyleColor();
             if (ImGui::IsItemHovered() && ImGui::IsMouseDown(ImGuiMouseButton_Left))
                 str = NameStr;
             if(ImGui::IsItemHovered())

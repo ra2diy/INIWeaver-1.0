@@ -285,7 +285,13 @@ void IBR_IniLine::RenderUI(
     if(!nlad)LinkNodeContext::AcceptEdge.push_back(ImGui::GetCursorPos());
 
     ImGui::PushID(Back.GetComponentID());
+
+    bool InWrongSection = false;
+    if (Back.Default->SecType != EmptyPoolStr)
+        InWrongSection = (Back.Default->SecType != LinkNodeContext::CurSub->Root->Register);
+    if (InWrongSection)ImGui::PushStyleColor(ImGuiCol_Text, IBR_Color::ErrorTextColor.Value);
     ImGui::TextEx(Line);
+    if (InWrongSection)ImGui::PopStyleColor();
 
     if (slid && !nlad && multiple)
     {
@@ -736,7 +742,7 @@ namespace IBR_EditFrame
             }
         }
 
-        EditStringWithOptions(Active, NewLineKey);
+        EditStringWithOptions(pbk->Register, Active, NewLineKey);
     }
 
     void RenderUI_SwitchToText()

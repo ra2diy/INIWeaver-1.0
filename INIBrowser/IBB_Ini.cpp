@@ -281,12 +281,13 @@ void IBB_DefaultTypeList::CreateUnknownType(StrPoolID KeyName)
 
     Alt.Name = KeyName;
     Alt.DescShort = NewPoolDesc(PoolStr(KeyName));
-    Alt.DescLong = NewPoolDesc("");
+    Alt.DescLong = EmptyPoolStr;
 
     const auto& link = IBB_DefaultRegType::GetDefaultLinkNodeSetting();
     Alt.LinkType = link.LinkType;
     Alt.LinkLimit = link.LinkLimit;
     Alt.Color = link.LinkCol;
+    Alt.SecType = EmptyPoolStr;
 
     Alt.Input = SelectDefaultInput(Alt.LinkType);
 
