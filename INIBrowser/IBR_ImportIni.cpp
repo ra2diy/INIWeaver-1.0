@@ -12,6 +12,10 @@
 #include <ranges>
 
 extern int FontHeight;
+namespace IBB_DefaultRegType
+{
+    std::vector<std::string> GetIniTypeList();
+}
 
 namespace IBR_ImportPreview
 {
@@ -20,6 +24,8 @@ namespace IBR_ImportPreview
     static std::function<void(const IBR_ImportResult&)> g_Callback;
     static bool g_OpenPending = false;
     static std::string g_FilterText;
+    static std::string g_IniType;
+    static std::vector<std::string> g_IniTypeOptions;
 
     // 每个未匹配 section 的 RegType 选择缓存
     static std::unordered_map<size_t, std::string> g_SelectionCache;
@@ -34,6 +40,8 @@ namespace IBR_ImportPreview
         g_OpenPending = true;
         g_SelectionCache.clear();
         g_FilterText.clear();
+        g_IniType = DefaultIniName;
+        g_IniTypeOptions = IBB_DefaultRegType::GetIniTypeList();
 
         // 收集所有可用注册表类型
         g_AvailableRegTypes.clear();
@@ -110,6 +118,16 @@ namespace IBR_ImportPreview
             {
                 RegenMatch(g_FilterText);
             }
+
+            IBR_Combo(locc("GUI_ImportIni_IniType"), g_IniType.c_str(), 0, []() {
+                for (auto& s : g_IniTypeOptions)
+                {
+                    if (ImGui::Selectable(s.c_str(), g_IniType == s))
+                    {
+                        g_IniType = s;
+                    }
+                }
+            });
 
             ImGui::Separator();
             ImGui::NewLine();
@@ -412,6 +430,7 @@ namespace IBR_ImportPreview
                 IBR_ImportResult Result;
                 Result.Confirmed = true;
                 Result.File = std::move(g_File);
+                Result.INIType = g_IniType;
 
                 if (g_Callback)
                     g_Callback(Result);

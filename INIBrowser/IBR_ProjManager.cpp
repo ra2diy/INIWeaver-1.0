@@ -862,6 +862,7 @@ namespace IBR_ProjectManager
 
                         // 6. 转换为 ModuleClipData
                         IniImportOptions Options;
+                        Options.TargetIniName = Result.INIType;
                         auto Modules = ImportedSectionsToModuleClipData(LayoutFile, Options);
 
                         if (Modules.empty())

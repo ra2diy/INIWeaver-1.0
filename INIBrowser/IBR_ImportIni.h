@@ -12,6 +12,7 @@ struct IBR_ImportResult
 {
     bool Confirmed{ false };                    // 用户是否确认
     ImportedIniFile File;                       // 最终的 section 列表（含用户修正后的类型）
+    std::string INIType;
 };
 
 // ---------- 导入预览弹窗 ----------

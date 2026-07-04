@@ -30,6 +30,8 @@ void subreplace(std::string& dst_str, const std::string& sub_str, const std::str
 
 const char* AnyTypeName = "_AnyType";
 const char* MyTypeName = "_MyType";
+extern const char* Internal_IniName;
+bool StrCmpZHCN(const std::string& l, const std::string& r);
 StrPoolID AnyTypeID()
 {
     static StrPoolID ID = NewPoolStr(AnyTypeName);
@@ -198,6 +200,20 @@ R"({
         if (!InputTypes[u8"ImportAndMerge"].Load(IAMObj))
             rttpt(L"ImportAndMerge", ImportAndMergeTypeJSON);
 
+    }
+
+    std::vector<std::string> GetIniTypeList()
+    {
+        std::unordered_set<std::string> Names;
+        for (auto& Ini : IBF_Inst_Project.Project.Inis)
+            Names.insert(Ini.Name);
+        for (auto& [Name, Type] : RegisterTypes)
+            Names.insert(Type.IniType);
+        Names.insert(DefaultIniName);
+        Names.erase(Internal_IniName);
+        auto Result = Names | std::ranges::to<std::vector>();
+        std::ranges::sort(Result, StrCmpZHCN);
+        return Result;
     }
 
     void ClearModuleCount()
