@@ -157,19 +157,6 @@ void MatchSectionToRegType(ImportedIniFile& File)
             if (Found) break;
         }
 
-        if (!Found)
-        {
-            // 第3步（兜底）：直接匹配 section name 到 RegisterTypes key
-            auto It = RegTypes.find(Sec.SectionName);
-            if (It != RegTypes.end())
-            {
-                Sec.MatchStatus = IniImportMatchStatus::Matched;
-                Sec.MatchedRegType = It->first;
-                if (EnableLogEx)
-                    GlobalLogB.AddLog((u8"[ImportINI] Direct match: [" + Sec.SectionName + u8"] -> RegType=[" + It->first + u8"]").c_str());
-                Found = true;
-            }
-        }
 
         if (!Found)
         {
@@ -267,9 +254,9 @@ void MatchSectionToRegType(ImportedIniFile& File)
                 continue;
 
             std::string LinkTypeStr = PoolStr(LinkNode.LinkType);
-            if (LinkTypeStr == "_AnyType")
+            if (LinkTypeStr == AnyTypeName)
                 continue;
-            if (LinkTypeStr == "_MyType")
+            if (LinkTypeStr == MyTypeName)
             {
                 if (Sec.MatchStatus == IniImportMatchStatus::Unmatched)
                     continue;
@@ -409,7 +396,7 @@ std::vector<IniImportLinkRelation> DetectLinkRelations(const ImportedIniFile& Fi
             if (pLine->LinkNode.LinkType == EmptyPoolStr)
                 continue;
             auto LinkTypeStr = PoolStr(pLine->LinkNode.LinkType);
-            if (LinkTypeStr == "_AnyType")
+            if (LinkTypeStr == AnyTypeName)
                 continue;
 
             // 检查此键的值是否匹配另一个 section 的名字（支持逗号分隔的多值）
@@ -862,7 +849,7 @@ std::vector<ModuleClipData> ImportedSectionsToModuleClipData(
         }
         else
         {
-            Clip.Register = "_AnyType";
+            Clip.Register = AnyTypeName;
         }
 
         // 位置

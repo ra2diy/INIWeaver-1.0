@@ -403,8 +403,7 @@ namespace IBR_ImportPreview
                         else
                         {
                             // 用户未选择则设为 _AnyType
-                            SetSectionRegType(Sec, "_AnyType");
-                            IBB_DefaultRegType::EnsureRegType("_AnyType");
+                            SetSectionRegType(Sec, AnyTypeName);
                         }
                     }
                 }
