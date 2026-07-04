@@ -360,10 +360,9 @@ void IBS_Thr_SaveLoop()
     IBS_Complete();
     while (1)
     {
-        for (const auto& msg : SStack.Release())
-        {
-            msg();
-        }
+        while(!SStack.Empty())
+            for (const auto& msg : SStack.Release())
+                msg();
         IBS_Complete();
     }
 }

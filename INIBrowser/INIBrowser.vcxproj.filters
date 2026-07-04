@@ -482,5 +482,24 @@
     <None Include="..\x64\Release\Resources\language.ini">
       <Filter>资源文件\x64</Filter>
     </None>
+    <None Include="..\.gitignore" />
+    <None Include="..\x64\Release\Global\RegisterTypes.json">
+      <Filter>资源文件\x64</Filter>
+    </None>
+    <None Include="..\x64\Release\Global\RegisterTypesSpecial.json">
+      <Filter>资源文件\x64</Filter>
+    </None>
+    <None Include="..\x64\Release\Global\TypeAlt2Unit.csv">
+      <Filter>资源文件\x64</Filter>
+    </None>
+    <None Include="..\x64\Release\Global\TypeAlt8Compound.csv">
+      <Filter>资源文件\x64</Filter>
+    </None>
+    <None Include="..\x64\Release\Global\TypeAlt2Weapon.csv">
+      <Filter>资源文件\x64</Filter>
+    </None>
+    <None Include="..\x64\Release\Global\TypeAlt9Links.csv">
+      <Filter>资源文件\x64</Filter>
+    </None>
   </ItemGroup>
 </Project>

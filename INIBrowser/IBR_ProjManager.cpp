@@ -840,14 +840,21 @@ namespace IBR_ProjectManager
 
         MatchSectionToRegType(File);
 
+        std::atomic_bool wait = false;
+
         // 3. 切回渲染线程，打开预览弹窗
         auto pFile = std::make_shared<ImportedIniFile>(std::move(File));
-        IBRF_CoreBump.SendToR({ [pFile]()
+        IBRF_CoreBump.SendToR({ [&wait, pFile]()
             {
                 IBR_ImportPreview::Open(std::move(*pFile),
-                    [](const IBR_ImportResult& Result)
+                    [&wait](const IBR_ImportResult& Result)
                     {
-                        if (!Result.Confirmed) return;
+                        if (!Result.Confirmed)
+                        {
+                            wait.store(true);
+                            wait.notify_all();
+                            return;
+                        }
 
                         // 用户确认后在渲染线程直接处理后续步骤
                         // （IBR_ImportPreview::RenderUI 在渲染循环中调用回调）
@@ -868,12 +875,14 @@ namespace IBR_ProjectManager
                         if (Modules.empty())
                         {
                             IBR_HintManager::SetHint(loc("GUI_ImportIni_NoModules"), HintStayTimeMillis);
+                            wait.store(true);
+                            wait.notify_all();
                             return;
                         }
 
                         // 7. 推到下一帧
                         auto pModules = std::make_shared<std::vector<ModuleClipData>>(std::move(Modules));
-                        IBRF_CoreBump.SendToR({ [pModules]()
+                        IBRF_CoreBump.SendToR({ [&wait, pModules]()
                             {
                                 auto [Success, IDs] = IBR_Inst_Project.AddModule(*pModules, true);
                                 if (Success)
@@ -890,17 +899,22 @@ namespace IBR_ProjectManager
                                             std::make_wformat_args(Count))).c_str(),
                                         HintStayTimeMillis);
 
-                                    IBRF_CoreBump.SendToR({ []() {
+                                    IBRF_CoreBump.SendToR({ [&wait]() {
                                         IBR_Inst_Project.UpdateAll();
+                                        wait.store(true);
+                                        wait.notify_all();
                                     } });
                                 }
                                 else
                                 {
                                     IBR_HintManager::SetHint(loc("GUI_ImportIni_Failed"), HintStayTimeMillis);
+                                    wait.store(true);
+                                    wait.notify_all();
                                 }
                             } });
                     });
             } });
+        wait.wait(false);
     }
     void _IN_RENDER_THREAD ImportIniAction()
     {
