@@ -284,7 +284,6 @@ void IBR_IniLine::RenderUI(
     ImVec2 slix;
 
     if(!nlad)LinkNodeContext::AcceptEdge.push_back(ImGui::GetCursorPos());
-
     ImGui::PushID(Back.GetComponentID());
 
     bool InWrongSection = !Acceptor_CheckSecType(LinkNodeContext::CurSub->Root->Register, Back.Default->SecType);
