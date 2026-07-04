@@ -760,6 +760,37 @@ bool IBG_InputForm::Load(const JsonObject& Obj)
     return Ret;
 }
 
+bool IBG_InputType::ContainsNode() const
+{
+    switch (Type)
+    {
+    case _Type::Bool: return false;
+    case _Type::Link:
+    {
+        if (Form->InputComponents->empty())return false;
+        auto First = Form->InputComponents->at(0);
+        if (auto textComp = std::dynamic_pointer_cast<IIC_InputText>(First); textComp)
+        {
+            return textComp->InitialStatus.InputMethod == IICStatus::Link;
+        }
+        return false;
+    }
+    case _Type::IIF:
+    {
+        if (Form->InputComponents->empty())return false;
+        for (auto& Component : *Form->InputComponents)
+        {
+            if (auto textComp = std::dynamic_pointer_cast<IIC_InputText>(Component); textComp)
+            {
+                if (textComp->InitialStatus.InputMethod == IICStatus::Link)return true;
+            }
+        }
+        return false;
+    }
+    default:return false;
+    }
+}
+
 bool IBG_InputType::Load(const JsonObject& Obj)
 {
     auto TypeStr = Obj.ItemStringOr("Type", "Form");

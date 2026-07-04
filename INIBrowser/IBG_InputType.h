@@ -231,6 +231,7 @@ struct IBG_InputType
     IIFPtr Form;
     KVFormatter_t KVFmt;
     bool Load(const JsonObject& Obj);
+    bool ContainsNode() const;
 
     IBG_InputType(const IBG_InputType&);
     IBG_InputType() = default;
