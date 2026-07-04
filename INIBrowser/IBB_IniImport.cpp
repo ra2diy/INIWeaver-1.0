@@ -95,24 +95,19 @@ void MatchSectionToRegType(ImportedIniFile& File)
     std::unordered_map<std::string, std::vector<std::string>> RegToInstanceNames;
     std::unordered_set<size_t> RegistryListIndices; // 注册表列表块的索引，稍后跳过
 
+    std::unordered_map<std::string, std::string> RegListToRegType;
+    for (auto& [RN, R] : RegTypes)
+    {
+        if (!R.Export)continue;
+        RegListToRegType[R.ExportName.empty() ? RN : R.ExportName] = RN;
+    }
+
     for (size_t i = 0; i < File.Sections.size(); i++)
     {
         auto& Sec = File.Sections[i];
-        auto It = RegTypes.find(Sec.SectionName);
+        auto It = RegListToRegType.find(Sec.SectionName);
 
-        if (It == RegTypes.end())
-        {
-            for (auto& [RN, R] : RegTypes)
-            {
-                if ((R.ExportName.empty() ? R.Name : R.ExportName) == Sec.SectionName)
-                {
-                    It = RegTypes.find(RN);
-                    break;
-                }
-            }
-        }
-
-        if (It != RegTypes.end())
+        if (It != RegListToRegType.end())
         {
             // 这是个注册表列表块 → 收集实例名
             RegistryListIndices.insert(i);
@@ -122,15 +117,15 @@ void MatchSectionToRegType(ImportedIniFile& File)
                 if (!KV.Value.empty())
                     Instances.push_back(KV.Value);
             }
-            RegToInstanceNames[It->first] = std::move(Instances);
+            RegToInstanceNames[It->second] = std::move(Instances);
 
             if (EnableLogEx)
-                GlobalLogB.AddLog((u8"[ImportINI] Registry list: '" + Sec.SectionName + u8"' -> " + It->first + u8" (" + std::to_string(Instances.size()) + u8" instances)").c_str());
+                GlobalLogB.AddLog((u8"[ImportINI] Registry list: '" + Sec.SectionName + u8"' -> " + It->second).c_str());
 
             // 标记注册表列表块，后续跳过导入
             Sec.IsRegistryList = true;
             Sec.MatchStatus = IniImportMatchStatus::Matched;
-            Sec.MatchedRegType = It->first;
+            Sec.MatchedRegType = It->second;
         }
     }
 
@@ -295,7 +290,7 @@ void MatchSectionToRegType(ImportedIniFile& File)
                 pIIF->ParseFromString(Tok.Value);
                 for (auto& Component : *pIIF->InputComponents)
                 {
-                    if (auto textComp = std::dynamic_pointer_cast<IIC_InputText>(Component))
+                    if (auto textComp = std::dynamic_pointer_cast<IIC_InputText>(Component); textComp)
                     {
                         auto ValueID = textComp->GetCurrentTargetValueID();
                         auto& ValueStr = pIIF->GetValue(ValueID).Value;
@@ -515,7 +510,7 @@ std::vector<IniImportLinkRelation> DetectLinkRelations(const ImportedIniFile& Fi
 void CalculateLayout(ImportedIniFile& File, const std::vector<IniImportLinkRelation>& Links)
 {
     const float ColGap = FontHeight * 24.0F;   // 列间距
-    const float RowGap = FontHeight * 4.0F;    // 行间距（块间垂直间距）
+    const float RowGap = FontHeight * 2.0F;    // 行间距（块间垂直间距）
     const float DefaultWidth = FontHeight * 18.0F;
     const float DefaultHeight = FontHeight * 6.0F;
     const float ComponentGap = DefaultHeight * 0.5F; // 连通分量间距（按块大小）
@@ -523,6 +518,25 @@ void CalculateLayout(ImportedIniFile& File, const std::vector<IniImportLinkRelat
 
     size_t SectionCount = File.Sections.size();
     if (SectionCount == 0) return;
+
+    for (auto& Sec : File.Sections)
+    {
+        Sec.OnShowCount = 0;
+        for (auto& Tok : Sec.KeyValues)
+        {
+            Tok.HasDesc = false;
+            auto pLine = IBF_Inst_DefaultTypeList.List.KeyBelongToLine(Tok.Key);
+            if (pLine && pLine->Known && pLine->GetInputType().ContainsNode())
+                Tok.HasDesc = true;
+
+            if (Tok.HasDesc)
+            {
+                Tok.Desc = EmptyOnShowDesc;
+                Sec.OnShowCount++;
+            }
+            else Tok.Desc.clear();
+        }
+    }
 
     // 1. 按 regType 分组（含 LinkMatched）
     std::unordered_map<std::string, std::vector<size_t>> TypeGroups;
@@ -764,7 +778,7 @@ void CalculateLayout(ImportedIniFile& File, const std::vector<IniImportLinkRelat
         for (auto Idx : UnmatchedIndices)
         {
             auto& Sec = File.Sections[Idx];
-            float SecHeight = DefaultHeight + KeyHeight * std::max(0, (int)Sec.KeyValues.size() - 3);
+            float SecHeight = /*DefaultHeight + */KeyHeight * std::max(0, std::min(Sec.OnShowCount - 3, 30));
             Sec.EqPos = ImVec2{ CurX, CurY };
             Sec.EqSize = ImVec2{ DefaultWidth, SecHeight };
             CurY += SecHeight + RowGap;
@@ -854,21 +868,9 @@ std::vector<ModuleClipData> ImportedSectionsToModuleClipData(
         // 位置
         Clip.EqDelta = Sec.EqPos;
         Clip.EqSize = Sec.EqSize;
-
+        
         // 转换为 IniToken 列表（TypeAlt 中有定义的键默认展开，否则默认收起）
-        Clip.Lines.clear();
-        for (auto& KV : Sec.KeyValues)
-        {
-            IniToken Token;
-            Token.Key = KV.Key;
-            Token.Value = KV.Value;
-            bool KnownKey = IBF_Inst_DefaultTypeList.List.KeyBelongToLine(KV.Key) != nullptr;
-            Token.HasDesc = KnownKey;
-            Token.Desc = KnownKey ? EmptyOnShowDesc : "";
-            Token.IsSection = false;
-            Token.Empty = false;
-            Clip.Lines.push_back(std::move(Token));
-        }
+        Clip.Lines = Sec.KeyValues;
 
         Result.push_back(std::move(Clip));
     }

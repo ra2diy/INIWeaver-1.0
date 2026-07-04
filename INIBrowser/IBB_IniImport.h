@@ -44,6 +44,8 @@ struct ImportedIniSection
 
     // 用于链接检测的内部索引
     size_t Index{ 0 };
+
+    int OnShowCount{ 0 };
 };
 
 // ---------- 解析后的整个 INI 文件 ----------

@@ -64,8 +64,15 @@ namespace IBR_ImportPreview
             ImGui::BeginChild("##ImportContent", ImVec2(0, -(FontHeight * 4.5F)));
             size_t MatchedCount = 0, LinkMatchedCount = 0, UnmatchedCount = 0;
             size_t MatchedSearch = 0, LinkMatchedSearch = 0, UnmatchedSearch = 0;
+            size_t RegistryCount = 0;
             for (auto&& [Sec, Match] : std::views::zip(g_File.Sections, g_File.Matched))
             {
+                if (Sec.IsRegistryList)
+                {
+                    RegistryCount++;
+                    continue;
+                }
+
                 if (Sec.MatchStatus == IniImportMatchStatus::Matched)
                     MatchedCount++;
                 else if (Sec.MatchStatus == IniImportMatchStatus::LinkMatched)
@@ -86,7 +93,7 @@ namespace IBR_ImportPreview
 
             // ---- 摘要 + 全选 ----
             ImGui::Text(locc("GUI_ImportIni_Summary"),
-                (int)g_File.Sections.size(), (int)MatchedCount, (int)LinkMatchedCount, (int)UnmatchedCount);
+                g_File.Sections.size() - RegistryCount, RegistryCount, MatchedCount, LinkMatchedCount, UnmatchedCount);
 
             // 全局全选/取消
             bool AllSelected = std::ranges::all_of(g_File.Sections, [](auto& S) { return !S.IsRegistryList ? S.Selected : true; });
