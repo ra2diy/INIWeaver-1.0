@@ -775,14 +775,36 @@ void CalculateLayout(ImportedIniFile& File, const std::vector<IniImportLinkRelat
             CurrentY = CurY + RowGap;
     }
 
-    //平衡整体坐标 (0,0) ~ (xm, ym) -> (-xm/2, -ym/2) ~ (xm/2, ym/2)
-    auto hxm = std::ranges::max(File.Sections, [](const auto& a, const auto& b) {return a.EqPos.x < b.EqPos.x; }).EqPos.x / 2.0F;
-    auto hym = std::ranges::max(File.Sections, [](const auto& a, const auto& b) {return a.EqPos.y < b.EqPos.y; }).EqPos.y / 2.0F;
-    for (auto& Sec : File.Sections)
+    
+    auto xm = std::ranges::max(File.Sections, [](const auto& a, const auto& b) {return a.EqPos.x < b.EqPos.x; }).EqPos.x;
+    auto ym = std::ranges::max(File.Sections, [](const auto& a, const auto& b) {return a.EqPos.y < b.EqPos.y; }).EqPos.y;
+    if(!IBR_Inst_Project.IBR_SectionMap.empty())
     {
-        Sec.EqPos.x -= hxm;
-        Sec.EqPos.y -= hym;
+        auto SecEqPos = IBR_Inst_Project.IBR_SectionMap | std::views::transform([](const auto& p) { return p.second.EqPos; });
+        auto mxmax = std::ranges::max(SecEqPos, std::less<float>{}, & ImVec2::x).x;
+        auto mxmin = std::ranges::min(SecEqPos, std::less<float>{}, & ImVec2::x).x;
+        //原来的：(mxmin, mymin) ~ (mxmax, mymax)，并立放置
+        if (mxmin + mxmax > 0)
+        {
+            //放左边，平衡整体坐标 (0,0) ~ (xm, ym) -> (mxmin - ColGap - xm, -ym/2) ~ (mxmin - ColGap, ym/2)
+            for (auto& Sec : File.Sections)
+                Sec.EqPos.x += mxmin - ColGap - xm;
+        }
+        else
+        {
+            //放右边，平衡整体坐标 (0,0) ~ (xm, ym) -> (mxmax + ColGap, -ym/2) ~ (mxmax + ColGap + xm, ym/2)
+            for (auto& Sec : File.Sections)
+                Sec.EqPos.x += mxmax + ColGap;
+        }
     }
+    else
+    {
+        //平衡整体坐标 (0,0) ~ (xm, ym) -> (-xm/2, -ym/2) ~ (xm/2, ym/2)
+        for (auto& Sec : File.Sections)
+            Sec.EqPos.x -= xm / 2.0F;
+    }
+    for (auto& Sec : File.Sections)
+        Sec.EqPos.y -= ym / 2.0F;
 
 
     if (EnableLogEx)
