@@ -182,7 +182,8 @@ void IniToken::Tokenize(std::string_view Line, bool UseDesc)
     if (UseDesc)
     {
         p = Line.find_first_of("#");
-        if (p != std::string_view::npos)
+        auto p2 = Line.find_first_of("=");
+        if (p != std::string_view::npos && (p2 == std::string_view::npos || p2 > p))
         {
             HasDesc = true;
             Desc = Line.substr(0, p);
