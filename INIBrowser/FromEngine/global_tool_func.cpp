@@ -752,6 +752,7 @@ JsonFile JsonObject::DetachArrayItem(int Index) { return cJSON_DetachItemFromArr
 void JsonObject::Merge(JsonObject Obj)
 {
     if (!Obj.Available())return;
+    if (Obj.Object == Object)return;
     if (!Available())
     {
         CreateCopy(Obj, true);

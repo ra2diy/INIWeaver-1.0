@@ -30,6 +30,7 @@ void IBB_VariableMultiList::Merge(const IBB_VariableList& Another, bool MergeUpV
 }
 void IBB_VariableMultiList::Merge(const IBB_VariableMultiList& Another)
 {
+    if (&Another == this)return;
     for (const auto& p : Another.Value)
         for (const auto& v : p.second)
             Push(p.first, v);
@@ -53,6 +54,7 @@ void IBB_VariableList::FillKeys(const std::vector<std::string>& List, const std:
 }
 void IBB_VariableList::Merge(const IBB_VariableList& Another, bool MergeUpValue)
 {
+    if (&Another == this)return;
     for (const auto& p : Another.Value)
         Value[p.first] = p.second;
     if (MergeUpValue && UpValue != nullptr && Another.UpValue != nullptr && UpValue != Another.UpValue)
