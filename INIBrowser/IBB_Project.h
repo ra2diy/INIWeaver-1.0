@@ -11,6 +11,7 @@
 
 struct IniToken;
 struct ModuleClipData;
+struct IBS_RegisterList;
 
 struct IBB_RegisterList
 {
@@ -26,6 +27,8 @@ struct IBB_RegisterList
 
     bool Merge(const IBB_RegisterList& Another);
     void AddPresetOrder(const std::vector<std::string>& order);
+    void Load(const IBS_RegisterList&);
+    void Save(IBS_RegisterList&) const;
 
     std::string GetText(bool PrintExtraData) const;
 };

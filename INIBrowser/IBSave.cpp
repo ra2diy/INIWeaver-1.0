@@ -245,6 +245,15 @@ WriteFileHeader IBS_SaveProject
                 return R;
             };
         File.WriteVector(IBS_Inst_Project.LastOutputIniName, F);
+        std::function<bool(const ExtFileClass&, const IBS_RegisterList&)> G = [](const auto& E, const auto& U)->auto
+            {
+                auto R = true;
+                R &= E.WriteData(U.Type);
+                R &= E.WriteData(U.IniType);
+                R &= (bool)E.WriteVector(U.PresetOrder);
+                return R;
+            };
+        File.WriteVector(IBS_Inst_Project.RegisterLists, G);
         File.WriteVector(IBS_Inst_Project.Data);
         return true;
      }
@@ -292,6 +301,15 @@ ReadFileHeader IBS_LoadProject
                     return R;
                 };
             File.ReadVector(IBS_Inst_Project.LastOutputIniName, F);
+            std::function<bool(const ExtFileClass&, IBS_RegisterList&)> G = [](const auto& E, auto& U)->auto
+                {
+                    auto R = true;
+                    R &= E.ReadData(U.Type);
+                    R &= E.ReadData(U.IniType);
+                    R &= (bool)E.ReadVector(U.PresetOrder);
+                    return R;
+                };
+            File.ReadVector(IBS_Inst_Project.RegisterLists, G);
             File.ReadVector(IBS_Inst_Project.Data);
         }
         else if (FVersion >= 204)

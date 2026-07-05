@@ -50,6 +50,13 @@ void IBS_Complete();
 
 void IBS_Thr_SaveLoop();
 
+struct IBS_RegisterList
+{
+    std::string Type;
+    std::string IniType;
+    std::vector<std::string> PresetOrder;
+};
+
 
 struct IBS_Project
 {
@@ -57,6 +64,7 @@ struct IBS_Project
     std::wstring Path;
     std::wstring LastOutputDir;
     std::vector<std::pair<std::string, std::wstring>> LastOutputIniName;
+    std::vector<IBS_RegisterList> RegisterLists;
 
     uint64_t CreateTime;
     int CreateVersionMajor, CreateVersionMinor, CreateVersionRelease;

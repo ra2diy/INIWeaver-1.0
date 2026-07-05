@@ -5,6 +5,7 @@
 #include "Global.h"
 #include "IBB_RegType.h"
 #include "IBR_LinkNode.h"
+#include "IBSave.h"
 #include <ranges>
 
 const char* Internal_IniName = "_LINKGROUP_INI_FILE";
@@ -151,6 +152,19 @@ void IBB_RegisterList::AddPresetOrder(const std::vector<std::string>& order)
     MergePresetOrder(PresetOrder, order);
 }
 
+void IBB_RegisterList::Load(const IBS_RegisterList& L)
+{
+    Type = L.Type;
+    IniType = L.IniType;
+    PresetOrder = L.PresetOrder;
+}
+
+void IBB_RegisterList::Save(IBS_RegisterList& L) const
+{
+    L.Type = Type;
+    L.IniType = IniType;
+    L.PresetOrder = PresetOrder;
+}
 
 bool IBB_RegisterList::Merge(const IBB_RegisterList& Another)
 {

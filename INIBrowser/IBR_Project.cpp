@@ -628,6 +628,8 @@ void IBR_Project::Load(const IBS_Project& Proj)
     if (ClipData.SetStream(Proj.Data, GetClipFormatVersion(Proj.GetCreateVersionN())))
         AddModule(ClipData.Modules, false);
     IBF_Inst_Project.Project.ChangeAfterSave = false;
+    for (auto& List : Proj.RegisterLists)
+        IBF_Inst_Project.Project.GetRegisterList(List.Type, List.IniType).Load(List);
     //MAGIC
     //DONT ASK ME WHY THERE IS SO MANY LAYERS OF SendToR
     //Actually 5 main loops are needed to fully initialize
@@ -661,6 +663,11 @@ void IBR_Project::Save(IBS_Project& Proj)
     IBB_ClipBoardData ClipData;
     ClipData.GenerateAll(true, true);
     Proj.Data = ClipData.GetStream();
+    for (auto& List : IBF_Inst_Project.Project.RegisterLists)
+    {
+        Proj.RegisterLists.emplace_back();
+        List.Save(Proj.RegisterLists.back());
+    }
 }
 
 void IBR_Project::Clear()
