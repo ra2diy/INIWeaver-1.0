@@ -138,12 +138,23 @@ IBB_LineLocation IBB_Project::GetSecAndLineID(const std::string& KeyName, const 
 
 
 
+void MergePresetOrder(std::vector<std::string>& tg, const std::vector<std::string>& order)
+{
+    tg.reserve(tg.size() + order.size());
+    auto Pre = tg | std::ranges::to<std::unordered_set<std::string_view>>();
+    tg.insert_range(tg.end(), order | std::views::filter([&](const auto& s) {return !Pre.contains(s); }));
+}
 
+void IBB_RegisterList::AddPresetOrder(const std::vector<std::string>& order)
+{
+    MergePresetOrder(PresetOrder, order);
+}
 
 
 bool IBB_RegisterList::Merge(const IBB_RegisterList& Another)
 {
     List.insert(List.end(), Another.List.begin(), Another.List.end());
+    AddPresetOrder(Another.PresetOrder);
     return true;//return !Another.List.empty();
 }
 std::string IBB_RegisterList::GetText(bool PrintExtraData) const

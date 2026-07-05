@@ -94,3 +94,5 @@ std::vector<ModuleClipData> ImportedSectionsToModuleClipData(
     const ImportedIniFile& File,
     const IniImportOptions& Options = IniImportOptions{}
 );
+
+void InsertRegistryPresetOrder(const std::string& IniType, const ImportedIniFile& File, IBB_Project& Proj);

@@ -264,9 +264,13 @@ namespace IBR_ProjectManager
             Idx.GetIni(Proj);
             //MessageBoxA(NULL, Idx.GetIni(Proj)->Name.c_str(), std::to_string(Idx.Ini.Index).c_str(), MB_OK);
             std::string V;
+            auto& RegList = Proj.GetRegisterList(N, RegType.IniType);
+            auto Order = RegList.PresetOrder;
+            MergePresetOrder(Order, R);
+            
             const auto& ExportName = RegType.ExportName.empty() ? N : RegType.ExportName;
             V += '[';V += ExportName;V += "]\n";
-            for (auto& v : R)
+            for (auto& v : Order)
             {
                 V += v; V += '='; V += v; V += '\n';
             }
@@ -879,6 +883,8 @@ namespace IBR_ProjectManager
                             wait.notify_all();
                             return;
                         }
+
+                        InsertRegistryPresetOrder(Result.INIType, LayoutFile, IBF_Inst_Project.Project);
 
                         // 7. 推到下一帧
                         auto pModules = std::make_shared<std::vector<ModuleClipData>>(std::move(Modules));

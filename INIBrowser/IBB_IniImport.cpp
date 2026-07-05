@@ -894,3 +894,15 @@ std::vector<ModuleClipData> ImportedSectionsToModuleClipData(
 
     return Result;
 }
+
+void InsertRegistryPresetOrder(const std::string& IniType, const ImportedIniFile& File, IBB_Project& Proj)
+{
+    for (auto& Sec : File.Sections)
+    {
+        if (Sec.IsRegistryList)
+        {
+            auto& Reg = Proj.GetRegisterList(Sec.SectionName, IniType);
+            Reg.AddPresetOrder(Sec.KeyValues | std::views::transform(&IniToken::Value) | std::ranges::to<std::vector>());
+        }
+    }
+}

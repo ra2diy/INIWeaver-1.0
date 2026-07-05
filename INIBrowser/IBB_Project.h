@@ -19,11 +19,13 @@ struct IBB_RegisterList
     std::string Type;
     std::string IniType;
     std::vector<IBB_Section*> List;
+    std::vector<std::string> PresetOrder;
 
     bool ChangeRoot(IBB_Project* NewRoot) { Root = NewRoot; return true; }
     IBB_RegisterList& ChangeRootAndBack(IBB_Project* NewRoot) { Root = NewRoot; return *this; }
 
     bool Merge(const IBB_RegisterList& Another);
+    void AddPresetOrder(const std::vector<std::string>& order);
 
     std::string GetText(bool PrintExtraData) const;
 };
@@ -107,7 +109,7 @@ public:
     IBB_SubSec_Default* KeyBelongToSubSec(StrPoolID KeyName);
 };
 
-
+void MergePresetOrder(std::vector<std::string>& tg, const std::vector<std::string>& order);
 
 
 
