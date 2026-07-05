@@ -708,7 +708,7 @@ namespace IBR_EditFrame
 
                 if (NewLineValue.empty())
                 {
-                    auto pLine = IBF_Inst_DefaultTypeList.List.KeyBelongToLine(NewKeyID);
+                    auto pLine = IBF_Inst_DefaultTypeList.List.KeyBelongToLine(NewKeyID, pbk->Register);
                     if (pLine)
                     {
                         auto& Input = pLine->GetInputType();
@@ -728,7 +728,7 @@ namespace IBR_EditFrame
 
         if (NewLineValue.empty() && !NewLineKey.empty())
         {
-            auto pLine = IBF_Inst_DefaultTypeList.List.KeyBelongToLine(NewLineKey);
+            auto pLine = IBF_Inst_DefaultTypeList.List.KeyBelongToLine(NewLineKey, pbk->Register);
             if (pLine)
             {
                 auto& Input = pLine->GetInputType();

@@ -240,12 +240,14 @@ void MatchSectionToRegType(ImportedIniFile& File)
         Visited[Sec.Index] = 1;
         BFSQueue.pop();
 
+        auto TypeID = (Sec.MatchStatus == IniImportMatchStatus::Unmatched) ? AnyTypeID() : NewPoolStr(Sec.MatchedRegType);
+
         std::map<StrPoolID, int> SecTypeCount;
 
         for (auto& Tok : Sec.KeyValues)
         {
             auto& Key = Tok.Key;
-            auto pLine = IBF_Inst_DefaultTypeList.List.KeyBelongToLine(Key);
+            auto pLine = IBF_Inst_DefaultTypeList.List.KeyBelongToLine(Key, TypeID);
             if (!pLine) continue;
             auto& LinkNode = pLine->LinkNode;
             if (pLine->SecType != EmptyPoolStr)
@@ -388,10 +390,12 @@ std::vector<IniImportLinkRelation> DetectLinkRelations(const ImportedIniFile& Fi
         if (Src.IsRegistryList)
             continue;
 
+        auto TypeID = (Src.MatchStatus == IniImportMatchStatus::Unmatched) ? AnyTypeID() : NewPoolStr(Src.MatchedRegType);
+
         for (auto& KV : Src.KeyValues)
         {
             // 通过 TypeAlt 获取该键的画布链接规则
-            auto pLine = IBF_Inst_DefaultTypeList.List.KeyBelongToLine(KV.Key);
+            auto pLine = IBF_Inst_DefaultTypeList.List.KeyBelongToLine(KV.Key, TypeID);
             if (!pLine) continue;
             if (pLine->LinkNode.LinkType == EmptyPoolStr)
                 continue;
@@ -506,13 +510,15 @@ void CalculateLayout(ImportedIniFile& File, const std::vector<IniImportLinkRelat
     size_t SectionCount = File.Sections.size();
     if (SectionCount == 0) return;
 
+
     for (auto& Sec : File.Sections)
     {
         Sec.OnShowCount = 0;
+        auto TypeID = (Sec.MatchStatus == IniImportMatchStatus::Unmatched) ? AnyTypeID() : NewPoolStr(Sec.MatchedRegType);
         for (auto& Tok : Sec.KeyValues)
         {
             Tok.HasDesc = false;
-            auto pLine = IBF_Inst_DefaultTypeList.List.KeyBelongToLine(Tok.Key);
+            auto pLine = IBF_Inst_DefaultTypeList.List.KeyBelongToLine(Tok.Key, TypeID);
             if (pLine && pLine->Known && pLine->GetInputType().ContainsNode())
                 Tok.HasDesc = true;
 

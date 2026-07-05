@@ -381,7 +381,6 @@ namespace IBR_ImportPreview
                             for (auto& KV : Sec.KeyValues)
                             {
                                 if (KV.Value.empty()) continue;
-                                if (!IBF_Inst_DefaultTypeList.List.KeyBelongToLine(KV.Key)) continue;
                                 ImGui::TextColored(ImVec4{ 0.6F, 0.8F, 1.0F, 1.0F }, "  %s", KV.Key.c_str());
                                 ImGui::SameLine();
                                 ImGui::TextWrapped("= %s", KV.Value.c_str());

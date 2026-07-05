@@ -18,10 +18,24 @@ namespace IBB_DefaultRegType
     extern std::unordered_map<StrPoolID, IBB_SubSec_Default::_Type> InSubSecKeys;
 }
 
+StrPoolID MixKeyAndReg(StrPoolID Key, StrPoolID Reg);
+
+IBB_IniLine_Default& IBB_DefaultTypeList::CreateLineDefault(StrPoolID KeyName, StrPoolID RegType)
+{
+    auto DefaultID = EmptyPoolStr;
+    if (RegType == AnyTypeID() || RegType == MyTypeID() || RegType == EmptyPoolStr)
+        RegType = DefaultID;
+    auto MixID = MixKeyAndReg(KeyName, RegType);
+    auto& Def = IniLine_MixedDefault[MixID];
+    IniLine_Variants[KeyName].push_back(MixID);
+    if (!IniLine_FirstDefault.contains(KeyName) || RegType == DefaultID)
+        IniLine_FirstDefault[KeyName] = &Def;
+    return Def;
+}
 
 void IBB_DefaultTypeList::EnsureType(const IBB_DefaultTypeAlt& D)
 {
-    auto& L = IniLine_Default[D.Name];
+    auto& L = CreateLineDefault(D.Name, D.SecType);
     L.Name = D.Name;
     L.DescShort = D.DescShort;
     L.DescLong = D.DescLong;
@@ -52,13 +66,17 @@ bool IBB_DefaultTypeList::LoadFromAlt()
     ImportSubSec.Type = IBB_SubSec_Default::Import;
 
     //默认都在DefaultSubSec里，然后再分出去
-    for (auto& [k, v] : IniLine_Default)v.InSubSec = &DefaultSubSec;
+    for (auto& [k, v] : IniLine_MixedDefault)v.InSubSec = &DefaultSubSec;
 
     for (auto& [k, v] : IBB_DefaultRegType::InSubSecKeys)
     {
-        if (v == IBB_SubSec_Default::Inherit)IniLine_Default[k].InSubSec = &InheritSubSec;
-        else if (v == IBB_SubSec_Default::Import)IniLine_Default[k].InSubSec = &ImportSubSec;
-        else IniLine_Default[k].InSubSec = &DefaultSubSec;
+        IBB_SubSec_Default* pDef;
+        if (v == IBB_SubSec_Default::Inherit)pDef = &InheritSubSec;
+        else if (v == IBB_SubSec_Default::Import)pDef = &ImportSubSec;
+        else pDef = &DefaultSubSec;
+
+        for (auto& MixID : IniLine_Variants[k])
+            IniLine_MixedDefault[MixID].InSubSec = pDef;
     }
 
     return true;

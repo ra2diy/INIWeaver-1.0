@@ -9,6 +9,7 @@
 
 const char* Internal_IniName = "_LINKGROUP_INI_FILE";
 extern const char* LinkAltPropType;
+extern const char* DefaultSubSecName;
 
 namespace ExportContext
 {
@@ -282,6 +283,21 @@ bool IBB_Ini::UpdateAll()
 }
 
 
+StrPoolID MixKeyAndReg(StrPoolID Key, StrPoolID Reg)
+{
+    // 使用黄金比例和位移旋转，让两个 8 字节充分混合
+    uint64_t x = Key;
+    uint64_t y = Reg;
+    x += 0x9e3779b97f4a7c15ULL; // 黄金比例常数
+    y += 0x9e3779b97f4a7c15ULL;
+    x = (x ^ (x >> 30)) * 0xbf58476d1ce4e5b9ULL;
+    x = (x ^ (x >> 27)) * 0x94d049bb133111ebULL;
+    x = x ^ (x >> 31);
+    y = (y ^ (y >> 30)) * 0xbf58476d1ce4e5b9ULL;
+    y = (y ^ (y >> 27)) * 0x94d049bb133111ebULL;
+    y = y ^ (y >> 31);
+    return x ^ (y + 0x9e3779b97f4a7c15ULL + (x << 6) + (x >> 2));
+}
 
 
 StrPoolID SelectDefaultInput(StrPoolID LinkType);
@@ -305,38 +321,48 @@ void IBB_DefaultTypeList::CreateUnknownType(StrPoolID KeyName)
 
     EnsureType(Alt);
 
-    auto& Def = IniLine_Default[KeyName];
-    Def.Known = false;
-
-    extern const char* DefaultSubSecName;
+    auto Ptr = KeyBelongToLine_NoNew(KeyName, Alt.SecType);
+    if (!Ptr) throw std::runtime_error("CreateUnknownType failed to create line for key: " + PoolStr(KeyName));
     auto& Sub = SubSec_Default[DefaultSubSecName];
-    Def.InSubSec = &Sub;
+    Ptr->Known = false;
+    Ptr->InSubSec = &Sub;
 }
 
-IBB_IniLine_Default* IBB_DefaultTypeList::KeyBelongToLine(const std::string& KeyName)
+IBB_IniLine_Default* IBB_DefaultTypeList::KeyBelongToLine(const std::string& KeyName, StrPoolID RegType)
 {
-    return KeyBelongToLine(NewPoolStr(KeyName));
+    return KeyBelongToLine(NewPoolStr(KeyName), RegType);
 }
 
-IBB_SubSec_Default* IBB_DefaultTypeList::KeyBelongToSubSec(const std::string& KeyName)
+IBB_SubSec_Default* IBB_DefaultTypeList::KeyBelongToSubSec(const std::string& KeyName, StrPoolID RegType)
 {
-    auto ptr = KeyBelongToLine(KeyName);
+    auto ptr = KeyBelongToLine(KeyName, RegType);
     return ptr ? ptr->InSubSec : nullptr;
 }
 
-IBB_IniLine_Default* IBB_DefaultTypeList::KeyBelongToLine(StrPoolID KeyName)
+IBB_IniLine_Default* IBB_DefaultTypeList::KeyBelongToLine_NoNew(StrPoolID KeyName, StrPoolID RegType)
 {
-    auto it = IniLine_Default.find(KeyName);
-    if (it == IniLine_Default.end())CreateUnknownType(KeyName);
-    else return &it->second;
-
-    it = IniLine_Default.find(KeyName);
-    if (it == IniLine_Default.end())return nullptr;
-    return &it->second;
+    IM_UNUSED(RegType);
+    //MyType AnyType Empty -> Default
+    if (RegType != AnyTypeID() && RegType != MyTypeID() && RegType != EmptyPoolStr)
+    {
+        auto MixedID = MixKeyAndReg(KeyName, RegType);
+        auto it = IniLine_MixedDefault.find(MixedID);
+        if (it != IniLine_MixedDefault.end())return &it->second;
+    }
+    auto it = IniLine_FirstDefault.find(KeyName);
+    if (it == IniLine_FirstDefault.end())return nullptr;
+    return it->second;
 }
 
-IBB_SubSec_Default* IBB_DefaultTypeList::KeyBelongToSubSec(StrPoolID KeyName)
+IBB_IniLine_Default* IBB_DefaultTypeList::KeyBelongToLine(StrPoolID KeyName, StrPoolID RegType)
 {
-    auto ptr = KeyBelongToLine(KeyName);
+    if (auto ptr = KeyBelongToLine_NoNew(KeyName, RegType)) return ptr;
+    CreateUnknownType(KeyName);
+    return KeyBelongToLine_NoNew(KeyName, RegType);
+}
+
+IBB_SubSec_Default* IBB_DefaultTypeList::KeyBelongToSubSec(StrPoolID KeyName, StrPoolID RegType)
+{
+    auto ptr = KeyBelongToLine(KeyName, RegType);
     return ptr ? ptr->InSubSec : nullptr;
 }

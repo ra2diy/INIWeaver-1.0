@@ -501,5 +501,8 @@
     <None Include="..\x64\Release\Global\TypeAlt9Links.csv">
       <Filter>资源文件\x64</Filter>
     </None>
+    <None Include="..\x64\Release\Global\TypeAltGlobalSetting.csv">
+      <Filter>资源文件\x64</Filter>
+    </None>
   </ItemGroup>
 </Project>

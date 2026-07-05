@@ -106,7 +106,7 @@ bool IBB_SubSec::MergeLine(StrPoolID Key, size_t Index, const std::string& Value
     auto it = Lines.find(Key);
     if (it == Lines.end())
     {
-        IBB_IniLine_Default* Def = IBF_Inst_DefaultTypeList.List.KeyBelongToLine(Key);
+        IBB_IniLine_Default* Def = IBF_Inst_DefaultTypeList.List.KeyBelongToLine(Key, Root->Register);
         if (Def == nullptr)return false;
         Lines_ByName.push_back(Key);
 
@@ -209,7 +209,7 @@ void IBB_SubSec::ClaimLink(size_t LineIdx, size_t LineMult, size_t ComponentIdx,
 
 bool IBB_SubSec::CanOwnKey(StrPoolID Key) const
 {
-    auto pSub = IBF_Inst_DefaultTypeList.List.KeyBelongToSubSec(Key);
+    auto pSub = IBF_Inst_DefaultTypeList.List.KeyBelongToSubSec(Key, Root->Register);
     return pSub == Default;
 }
 

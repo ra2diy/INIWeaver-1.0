@@ -325,6 +325,7 @@
     <None Include="..\x64\Release\Global\TypeAlt2Weapon.csv" />
     <None Include="..\x64\Release\Global\TypeAlt8Compound.csv" />
     <None Include="..\x64\Release\Global\TypeAlt9Links.csv" />
+    <None Include="..\x64\Release\Global\TypeAltGlobalSetting.csv" />
     <None Include="..\x64\Release\Resources\config.json" />
     <None Include="..\x64\Release\Resources\language.ini" />
   </ItemGroup>

@@ -160,10 +160,10 @@ void EditStringWithOptions(
             ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoScrollbar);
 
         int Count = 0;
-        for (auto& [Name, Line] : IBF_Inst_DefaultTypeList.List.IniLine_Default)
+        for (auto& [ID, Line] : IBF_Inst_DefaultTypeList.List.IniLine_MixedDefault)
         {
             if (!Line.Known)continue;
-            auto NameStr = PoolStr(Name);
+            auto NameStr = PoolStr(Line.Name);
             if (!Matches(str, NameStr, Line))continue;
             if(Count++ > 100)
             {

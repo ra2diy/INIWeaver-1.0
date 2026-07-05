@@ -90,8 +90,10 @@ struct IBB_DefaultTypeAlt
 struct IBB_DefaultTypeList
 {
 public:
-    // std::unordered_map<Name, Object>
-    std::unordered_map<StrPoolID, IBB_IniLine_Default> IniLine_Default;
+    std::unordered_map<StrPoolID, IBB_IniLine_Default*> IniLine_FirstDefault;
+    // MixedDefault : Key is not direct ID but mixed ID of RegType and KeyName
+    std::unordered_map<StrPoolID, IBB_IniLine_Default> IniLine_MixedDefault;
+    std::unordered_map<StrPoolID, std::vector<StrPoolID>> IniLine_Variants;
     std::unordered_map<std::string, IBB_SubSec_Default> SubSec_Default;//一个IniLine只能属于一个SubSec
 
     bool LoadFromAlt();
@@ -103,10 +105,14 @@ public:
     bool LoadFromJsonFile(const wchar_t* Name);
     bool LoadFromCSVFile(const wchar_t* Name);
 
-    IBB_IniLine_Default* KeyBelongToLine(const std::string& KeyName);
-    IBB_SubSec_Default* KeyBelongToSubSec(const std::string& KeyName);
-    IBB_IniLine_Default* KeyBelongToLine(StrPoolID KeyName);
-    IBB_SubSec_Default* KeyBelongToSubSec(StrPoolID KeyName);
+    IBB_IniLine_Default* KeyBelongToLine(const std::string& KeyName, StrPoolID RegType);
+    IBB_SubSec_Default* KeyBelongToSubSec(const std::string& KeyName, StrPoolID RegType);
+    IBB_IniLine_Default* KeyBelongToLine(StrPoolID KeyName, StrPoolID RegType);
+    IBB_SubSec_Default* KeyBelongToSubSec(StrPoolID KeyName, StrPoolID RegType);
+
+private :
+    IBB_IniLine_Default* KeyBelongToLine_NoNew(StrPoolID KeyName, StrPoolID RegType);
+    IBB_IniLine_Default& CreateLineDefault(StrPoolID KeyName, StrPoolID RegType);
 };
 
 void MergePresetOrder(std::vector<std::string>& tg, const std::vector<std::string>& order);

@@ -204,7 +204,7 @@ bool IBB_Section::SetText(const std::vector<IniToken>& Tokens, const std::vector
     auto u = [&](const IniToken& tok, const ClipIICStatus& stat) {
         //if (tok.Value.empty())MessageBoxA(MainWindowHandle, tok.Key.c_str(), "fff1", MB_OK);
 
-        auto ptr = IBF_Inst_DefaultTypeList.List.KeyBelongToSubSec(tok.Key);
+        auto ptr = IBF_Inst_DefaultTypeList.List.KeyBelongToSubSec(tok.Key, Register);
         auto It = SubSecList.find(ptr);
         if (It == SubSecList.end())
         {
@@ -665,7 +665,7 @@ IBB_SubSec& IBB_Section::GetSubSecByDef(IBB_SubSec_Default* Def)
 //返回包含Key的SubSec，若没有则构造一个新的SubSec并返回
 IBB_SubSec& IBB_Section::GetSubSecByLine(const std::string& Key)
 {
-    auto ptr = IBF_Inst_DefaultTypeList.List.KeyBelongToSubSec(Key);
+    auto ptr = IBF_Inst_DefaultTypeList.List.KeyBelongToSubSec(Key, Register);
     return GetSubSecByDef(ptr);
 }
 
@@ -698,14 +698,14 @@ bool IBB_Section::MergeLine(StrPoolID Key, size_t Index, const std::string& Valu
     {
     case IBB_IniMergeMode::Replace:
     {
-        auto ptr = IBF_Inst_DefaultTypeList.List.KeyBelongToSubSec(Key);
+        auto ptr = IBF_Inst_DefaultTypeList.List.KeyBelongToSubSec(Key, Register);
         PushLineOrder(Key);
         auto& Sub = GetSubSecByDef(ptr);
         return Sub.MergeLine(Key, Index, Value, IBB_IniMergeMode::Replace, NoUpdate);
     }
     case IBB_IniMergeMode::Merge:
     {
-        auto ptr = IBF_Inst_DefaultTypeList.List.KeyBelongToSubSec(Key);
+        auto ptr = IBF_Inst_DefaultTypeList.List.KeyBelongToSubSec(Key, Register);
         const auto MergeVal = [&](const std::string & Orig, const std::string & Value)->std::string
         {
             auto & pv = SplitParamCached(Orig);
@@ -719,7 +719,7 @@ bool IBB_Section::MergeLine(StrPoolID Key, size_t Index, const std::string& Valu
                 str += Value;
             }
             void TakeByLinkLimit(std::string& Value, int LinkLimit);
-            auto L = IBF_Inst_DefaultTypeList.List.KeyBelongToLine(Key);
+            auto L = IBF_Inst_DefaultTypeList.List.KeyBelongToLine(Key, Register);
             if (L)TakeByLinkLimit(str, L->GetLinkLimit());
             return str;
         };
