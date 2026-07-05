@@ -153,7 +153,7 @@ void IBB_RegisterList::AddPresetOrder(const std::vector<std::string>& order)
 
 bool IBB_RegisterList::Merge(const IBB_RegisterList& Another)
 {
-    if (&Another == this)return;
+    if (&Another == this)return false;
     List.insert(List.end(), Another.List.begin(), Another.List.end());
     AddPresetOrder(Another.PresetOrder);
     return true;//return !Another.List.empty();
